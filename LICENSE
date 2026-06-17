@@ -1,0 +1,35 @@
+MIT License
+
+Copyright (c) 2026 ian (jian45154)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+NOTICE on third-party components:
+
+- The Linux kernel built by these recipes (LineageOS/android_kernel_xiaomi_sm8250)
+  is licensed under GPL-2.0. The merged kernel config
+  (config-xiaomi-lmi.aarch64) is derived from that GPL-2.0 source and is covered
+  by GPL-2.0.
+- The MIT license above covers the original work in this repository: the
+  porting notes and documentation, helper scripts, and the postmarketOS
+  packaging recipes (APKBUILD, deviceinfo) authored here.
+- Stock/recovery boot images for the device are proprietary third-party
+  binaries and are intentionally NOT distributed in this repository.

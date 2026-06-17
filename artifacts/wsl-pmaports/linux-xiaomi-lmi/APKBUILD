@@ -1,0 +1,83 @@
+# Reference: <https://postmarketos.org/vendorkernel>
+# Kernel config merged from: arch/arm64/configs/vendor/{kona-perf_defconfig,
+#   debugfs.config,xiaomi/sm8250-common.config,xiaomi/lmi.config}
+# SELinux disabled to avoid building the SELinux host tools (genheaders/mdp).
+
+maintainer=""
+pkgname=linux-xiaomi-lmi
+pkgver=4.19.325
+pkgrel=0
+pkgdesc="xiaomi lmi kernel fork"
+arch="aarch64"
+_carch="arm64"
+_flavor="xiaomi-lmi"
+url="https://github.com/LineageOS/android_kernel_xiaomi_sm8250"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps pmb:cross-native"
+makedepends="
+	bash
+	bc
+	bison
+	clang
+	devicepkg-dev
+	findutils
+	flex
+	gcc
+	lld
+	llvm
+	openssl-dev
+	perl
+"
+
+# Source
+_repository="android_kernel_xiaomi_sm8250"
+_commit="a5b3099017ae581aae8bf597b2f9c8c765026af1"
+_config="config-$_flavor.$arch"
+source="
+	$pkgname-$_commit.tar.gz::https://github.com/LineageOS/$_repository/archive/$_commit.tar.gz
+	$_config
+"
+builddir="$srcdir/$_repository-$_commit"
+_outdir="out"
+
+prepare() {
+	default_prepare
+	# Configure with the same LLVM toolchain as build(), so the Kconfig linker
+	# probe resolves $(LD) to ld.lld instead of the absent GNU cross linker
+	# aarch64-alpine-linux-musl-ld.
+	export LLVM=1 LLVM_IAS=1
+	# Downstream tree ships its own compiler-gcc.h; keep it (REPLACE_GCCH=0).
+	export REPLACE_GCCH=0
+	. downstreamkernel_prepare
+}
+
+build() {
+	unset LDFLAGS
+	# SELinux is disabled in config-xiaomi-lmi.aarch64, so the SELinux host
+	# tools (genheaders/mdp) that needed the arm64 UAPI headers are no longer
+	# built. A plain LLVM build is sufficient; no host include injection.
+	make O="$_outdir" ARCH="$_carch" LLVM=1 LLVM_IAS=1 \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS"
+	# Device trees are not part of the default arm64 image target; build them
+	# explicitly. dtbs_install does not understand this downstream overlay
+	# tree, so package() collects the blobs by hand.
+	make O="$_outdir" ARCH="$_carch" LLVM=1 LLVM_IAS=1 dtbs
+}
+
+package() {
+	downstreamkernel_package "$builddir" "$pkgdir" "$_carch" \
+		"$_flavor" "$_outdir"
+
+	# `make dtbs_install` does not collect this downstream qcom overlay tree,
+	# so install the built kona base DTBs (and the lmi overlay) by hand. The
+	# boot image carries the base DTBs; the lmi bootloader picks the one
+	# matching the SoC revision and merges the device dtbo partition on top.
+	_dts="$builddir/$_outdir/arch/arm64/boot/dts/vendor/qcom"
+	install -Dm644 "$_dts/kona.dtb"      "$pkgdir/boot/dtbs/qcom/kona.dtb"
+	install -Dm644 "$_dts/kona-v2.dtb"   "$pkgdir/boot/dtbs/qcom/kona-v2.dtb"
+	install -Dm644 "$_dts/kona-v2.1.dtb" "$pkgdir/boot/dtbs/qcom/kona-v2.1.dtb"
+	install -Dm644 "$_dts/lmi-sm8250-overlay.dtbo" \
+		"$pkgdir/boot/dtbs/qcom/lmi-sm8250-overlay.dtbo"
+}
+
+sha512sums="(run 'pmbootstrap checksum linux-xiaomi-lmi' to fill)"

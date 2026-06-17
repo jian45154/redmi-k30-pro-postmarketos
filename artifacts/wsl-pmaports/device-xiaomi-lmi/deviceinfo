@@ -1,0 +1,29 @@
+# Reference: <https://postmarketos.org/deviceinfo>
+# Please use double quotes only. You can source this file in shell
+# scripts.
+
+deviceinfo_format_version="0"
+deviceinfo_name="xiaomi lmi"
+deviceinfo_manufacturer="xiaomi"
+deviceinfo_codename="xiaomi-lmi"
+deviceinfo_year="2020"
+deviceinfo_dtb="qcom/kona-v2.1"
+deviceinfo_arch="aarch64"
+
+# Device related
+deviceinfo_chassis="handset"
+
+# Bootloader related
+deviceinfo_flash_method="fastboot"
+deviceinfo_kernel_cmdline="androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery"
+deviceinfo_generate_bootimg="true"
+deviceinfo_flash_pagesize="4096"
+deviceinfo_bootimg_qcdt="false"
+deviceinfo_header_version="2"
+deviceinfo_append_dtb="false"
+deviceinfo_flash_offset_dtb="0x01f00000"
+deviceinfo_flash_offset_base="0x00000000"
+deviceinfo_flash_offset_kernel="0x00008000"
+deviceinfo_flash_offset_ramdisk="0x01000000"
+deviceinfo_flash_offset_second="0x00000000"
+deviceinfo_flash_offset_tags="0x00000100"
