@@ -19,17 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-NOTICE on third-party components:
-
-- The Linux kernel built by these recipes (LineageOS/android_kernel_xiaomi_sm8250)
-  is licensed under GPL-2.0. The merged kernel config
-  (config-xiaomi-lmi.aarch64) is derived from that GPL-2.0 source and is covered
-  by GPL-2.0.
-- The MIT license above covers the original work in this repository: the
-  porting notes and documentation, helper scripts, and the postmarketOS
-  packaging recipes (APKBUILD, deviceinfo) authored here.
-- Stock/recovery boot images for the device are proprietary third-party
-  binaries and are intentionally NOT distributed in this repository.

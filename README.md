@@ -75,4 +75,4 @@ too.
 ## License
 
 MIT for the original work here (notes, scripts, recipes); the kernel and its
-derived config are GPL-2.0. See [LICENSE](LICENSE).
+derived config are GPL-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
