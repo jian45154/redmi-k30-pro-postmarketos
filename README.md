@@ -87,6 +87,12 @@ The latest evidence is summarized in
 and
 [`notes/repair-phase43-v27-full-hardware-check-2026-06-23.md`](notes/repair-phase43-v27-full-hardware-check-2026-06-23.md).
 
+The hardware enablement workflow is tracked in
+[`docs/hardware-enablement-workflow.md`](docs/hardware-enablement-workflow.md),
+[`docs/hardware-enablement-subagents.md`](docs/hardware-enablement-subagents.md),
+and
+[`notes/hardware-enablement-queue-2026-06-23.md`](notes/hardware-enablement-queue-2026-06-23.md).
+
 ## Safety
 
 This project never flashes the phone without an explicit decision and a
