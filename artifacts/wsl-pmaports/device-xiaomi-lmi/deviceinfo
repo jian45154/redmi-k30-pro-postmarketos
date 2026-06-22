@@ -7,14 +7,18 @@ deviceinfo_name="xiaomi lmi"
 deviceinfo_manufacturer="xiaomi"
 deviceinfo_codename="xiaomi-lmi"
 deviceinfo_year="2020"
-deviceinfo_dtb="qcom/kona-v2.1"
+deviceinfo_dtb="qcom/kona-v2.1-lmi"
 deviceinfo_arch="aarch64"
 
 # Device related
 deviceinfo_chassis="handset"
+deviceinfo_screen_width="1080"
+deviceinfo_screen_height="2400"
+deviceinfo_rootfs_image_sector_size="4096"
 
 # Bootloader related
 deviceinfo_flash_method="fastboot"
+deviceinfo_flash_fastboot_partition_rootfs="userdata"
 deviceinfo_kernel_cmdline="androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery"
 deviceinfo_generate_bootimg="true"
 deviceinfo_flash_pagesize="4096"

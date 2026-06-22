@@ -1,0 +1,4 @@
+interface:
+  display_name: "Port Unsupported Device to postmarketOS"
+  short_description: "Port, build, test, and install unsupported phones"
+  default_prompt: "Use $pmos-port-unsupported-device to assess and safely port this unsupported phone to postmarketOS."

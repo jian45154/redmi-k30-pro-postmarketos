@@ -3,7 +3,7 @@ maintainer=""
 pkgname=device-xiaomi-lmi
 pkgdesc="xiaomi lmi"
 pkgver=1
-pkgrel=0
+pkgrel=1
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
@@ -13,6 +13,9 @@ depends="
 	mkbootimg
 	postmarketos-base
 	postmarketos-base-downstream
+	pd-mapper
+	rmtfs
+	tqftpserv
 "
 makedepends="devicepkg-dev"
 source="
@@ -28,4 +31,7 @@ package() {
 	devicepkg_package $startdir $pkgname
 }
 
-sha512sums="(run 'pmbootstrap checksum device-xiaomi-lmi' to fill)"
+sha512sums="
+53a7e0e758b83acce9dad9b3f5f9b7512a5566121cc114775664919e08c8e1daf69924b9619b645836561ef02f181641b3c4235e6d28d2f6987cf7d670a57cfd  deviceinfo
+e70bae17df23dcaaaea0e2d3616556f04baa23f8ee1357785c0f539bf97282d8ddff53953e155b72689bb73beb38c2da3d08de2a61e866684edfa10a6593885d  modules-initfs
+"
