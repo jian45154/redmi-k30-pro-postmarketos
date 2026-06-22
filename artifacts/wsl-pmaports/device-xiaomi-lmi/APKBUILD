@@ -3,19 +3,30 @@ maintainer=""
 pkgname=device-xiaomi-lmi
 pkgdesc="xiaomi lmi"
 pkgver=1
-pkgrel=3
+pkgrel=4
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
 options="!check !archcheck"
 depends="
+	alsa-utils
+	bluez
+	bluez-deprecated
+	iw
+	kmscube
+	libdrm-tests
 	linux-xiaomi-lmi
+	mesa-demos
+	mesa-utils
 	mkbootimg
 	postmarketos-base
 	postmarketos-base-downstream
 	pd-mapper
 	rmtfs
+	tinydm
 	tqftpserv
+	weston
+	wpa_supplicant
 "
 makedepends="devicepkg-dev"
 source="

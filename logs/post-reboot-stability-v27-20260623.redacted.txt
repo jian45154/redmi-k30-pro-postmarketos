@@ -1,0 +1,1004 @@
+
+=== identity ===
+$ date
+Sat Nov 28 07:14:29 AEST 1970
+$ cat /proc/sys/kernel/random/boot_id
+c1e0a6cb-856d-415b-91f5-defde8c085e0
+$ uptime
+ 07:14:29 up 2 min,  0 users,  load average: 0.97, 0.73, 0.30
+$ uname -a
+Linux xiaomi-lmi 4.19.325-cip128-st12-perf #7-postmarketOS SMP PREEMPT Mon Jun 22 18:40:33 UTC 2026 aarch64 Linux
+$ id
+uid=10000(lmi) gid=10000(lmi) groups=10(wheel),18(audio),23(input),27(video),28(netdev),102(plugdev),10000(lmi)
+
+=== boot and mounts ===
+$ cat /proc/cmdline
+cgroup_disable=pressure ramoops_memreserve=4M rcupdate.rcu_expedited=1 rcu_nocbs=0-7 kpti=off androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery  pmos_boot_uuid=3c14f75f-450e-4457-b109-6fc5d9f7c54c pmos_root_uuid=b50c1119-2cd9-4675-a9be-3201c98d54ec pmos_rootfsopts=defaults androidboot.verifiedbootstate=orange androidboot.keymaster=1  androidboot.bootdevice=1d84000.ufshc androidboot.fstab_suffix=default androidboot.boot_devices=soc/1d84000.ufshc androidboot.serialno=<redacted> androidboot.secureboot=1 androidboot.hwversion=3.9.0 androidboot.cpuid=<redacted> androidboot.camera.config=1 androidboot.network.mode=1 androidboot.hwc=CN androidboot.hwlevel=MP androidboot.product.hardware.sku=std androidboot.baseband=mdm msm_drm.dsi_display0=qcom,mdss_dsi_j11_38_08_0a_fhd_cmd: androidboot.dtbo_idx=7 androidboot.dtb_idx=0 androidboot.ramdump=disable block2mtd.block2mtd=/dev/block/sda15,2097152 mtdoops.mtddev=0 mtdoops.record_size=2097152 mtdoops.dump_oops=0 printk.always_kmsg_dump=1 androidboot.dp=0x0 androidboot.cert=M2001J11E
+$ findmnt / /boot /dev /sys /proc /run /tmp
+$ lsblk -o NAME,MAJ:MIN,SIZE,TYPE,FSTYPE,LABEL,PARTLABEL,MOUNTPOINTS
+NAME      MAJ:MIN   SIZE TYPE FSTYPE LABEL PARTLABEL MOUNTPOINTS
+loop0       7:0     107G loop                        
+├─loop0p1   7:1     480M part                        /boot
+└─loop0p2   7:2   106.5G part                        /
+sda         8:0     118G disk                        
+├─sda1      8:1       8K part                        
+├─sda2      8:2      32K part                        
+├─sda3      8:3      32K part                        
+├─sda4      8:4      32K part                        
+├─sda5      8:5     128K part                        
+├─sda6      8:6     256K part                        
+├─sda7      8:7     512K part                        
+├─sda8      8:8     512K part                        
+├─sda9      8:9     512K part                        
+├─sda10     8:10      2M part                        
+├─sda11     8:11      4M part                        
+├─sda12     8:12      8M part                        
+├─sda13     8:13      8M part                        
+├─sda14     8:14      8M part                        
+├─sda15     8:15     16M part                        
+├─sda16   259:0      16M part                        
+├─sda17   259:1       1M part                        
+├─sda18   259:2      16M part                        
+├─sda19   259:3      15M part                        
+├─sda20   259:4      32M part                        
+├─sda21   259:5      32M part                        
+├─sda22   259:6      64M part                        
+├─sda23   259:7      64M part                        
+├─sda24   259:8      64M part                        
+├─sda25   259:9     128M part                        
+├─sda26   259:10     96M part                        
+├─sda27   259:11     32M part                        
+├─sda28   259:12    128M part                        
+├─sda29   259:13    384M part                        
+├─sda30   259:14    384M part                        
+├─sda31   259:15      1G part                        
+├─sda32   259:16    8.5G part                        
+├─sda33   259:17     32M part                        
+└─sda34   259:18    107G part                        
+sdb         8:16     16M disk                        
+├─sdb1      8:17      7M part                        
+├─sdb2      8:18      7M part                        
+├─sdb3      8:19    512K part                        
+└─sdb4      8:20    1.5M part                        
+sdc         8:32     16M disk                        
+├─sdc1      8:33      7M part                        
+├─sdc2      8:34      7M part                        
+├─sdc3      8:35    512K part                        
+└─sdc4      8:36    1.5M part                        
+sdd         8:48     32M disk                        
+├─sdd1      8:49    104K part                        
+├─sdd2      8:50    128K part                        
+├─sdd3      8:51      1M part                        
+├─sdd4      8:52      2M part                        
+├─sdd5      8:53      2M part                        
+└─sdd6      8:54      1M part                        
+sde         8:64      1G disk                        
+├─sde1      8:65    104K part                        
+├─sde2      8:66     32K part                        
+├─sde3      8:67     32K part                        
+├─sde4      8:68     32K part                        
+├─sde5      8:69     32K part                        
+├─sde6      8:70    128K part                        
+├─sde7      8:71    128K part                        
+├─sde8      8:72    256K part                        
+├─sde9      8:73    256K part                        
+├─sde10     8:74     32K part                        
+├─sde11     8:75     32K part                        
+├─sde12     8:76     32K part                        
+├─sde13     8:77     32K part                        
+├─sde14     8:78    128K part                        
+├─sde15     8:79    128K part                        
+├─sde16   259:19    128K part                        
+├─sde17   259:20    128K part                        
+├─sde18   259:21    128K part                        
+├─sde19   259:22    256K part                        
+├─sde20   259:23    256K part                        
+├─sde21   259:24    256K part                        
+├─sde22   259:25    512K part                        
+├─sde23   259:26    512K part                        
+├─sde24   259:27    512K part                        
+├─sde25   259:28    128K part                        
+├─sde26   259:29    128K part                        
+├─sde27   259:30    128K part                        
+├─sde28   259:31    3.6M part                        
+├─sde29   259:32      1M part                        
+├─sde30   259:33      1M part                        
+├─sde31   259:34      1M part                        
+├─sde32   259:35      1M part                        
+├─sde33   259:36      1M part                        
+├─sde34   259:37      1M part                        
+├─sde35   259:38      1M part                        
+├─sde36   259:39      1M part                        
+├─sde37   259:40      2M part                        
+├─sde38   259:41      2M part                        
+├─sde39   259:42      2M part                        
+├─sde40   259:43      2M part                        
+├─sde41   259:44      4M part                        
+├─sde42   259:45      4M part                        
+├─sde43   259:46     32M part                        
+├─sde44   259:47      8M part                        
+├─sde45   259:48      8M part                        
+├─sde46   259:49     16M part                        
+├─sde47   259:50     32M part                        
+├─sde48   259:51     64M part                        
+├─sde49   259:52     64M part                        
+├─sde50   259:53    128M part                        
+├─sde51   259:54    448M part                        
+├─sde52   259:55     32M part                        
+├─sde53   259:56     32M part                        
+├─sde54   259:57     52M part                        
+├─sde55   259:58      4M part                        
+├─sde56   259:59      4M part                        
+├─sde57   259:60      2M part                        
+└─sde58   259:61      2M part                        
+sdf         8:80     64M disk                        
+├─sdf1      8:81    104K part                        
+├─sdf2      8:82      2M part                        
+├─sdf3      8:83      2M part                        
+├─sdf4      8:84      2M part                        
+├─sdf5      8:85    128K part                        
+├─sdf6      8:86    768K part                        
+├─sdf7      8:87      8M part                        
+├─sdf8      8:88      8M part                        
+├─sdf9      8:89      8M part                        
+└─sdf10     8:90      1M part                        
+mtdblock0  31:0      16M disk                        
+zram0     254:0       0B disk                        
+$ blkid /dev/loop0p1 /dev/loop0p2
+/dev/loop0p1: LABEL="pmOS_boot" UUID="3c14f75f-450e-4457-b109-6fc5d9f7c54c" BLOCK_SIZE="4096" TYPE="ext2" PARTLABEL="primary" PARTUUID="c9d18210-9f5e-4c59-999c-fd8f8fa44cb1"
+/dev/loop0p2: LABEL="pmOS_root" UUID="b50c1119-2cd9-4675-a9be-3201c98d54ec" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="primary" PARTUUID="ddf246fe-118d-48cb-86ef-c2753ec2821e"
+
+=== usb network ssh ===
+$ ip addr show usb0
+8: usb0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether <mac-redacted> brd <mac-redacted>
+    inet 172.16.42.1/16 brd 172.16.255.255 scope global usb0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::2c30:e0ff:fe66:45da/64 scope link 
+       valid_lft forever preferred_lft forever
+$ ip route
+172.16.0.0/16 dev usb0 scope link  src 172.16.42.1 
+$ ps aux
+PID   USER     TIME  COMMAND
+    1 root      0:00 /sbin/init
+    2 root      0:00 [kthreadd]
+    3 root      0:00 [rcu_gp]
+    4 root      0:00 [rcu_par_gp]
+    5 root      0:00 [kworker/0:0-eve]
+    6 root      0:00 [kworker/0:0H-ev]
+    7 root      0:00 [kworker/u16:0+M]
+    8 root      0:00 [mm_percpu_wq]
+    9 root      0:00 [ksoftirqd/0]
+   10 root      0:00 [rcu_preempt]
+   11 root      0:00 [rcu_sched]
+   12 root      0:00 [rcu_bh]
+   13 root      0:00 [rcuop/0]
+   14 root      0:00 [rcuos/0]
+   15 root      0:00 [rcuob/0]
+   16 root      0:00 [migration/0]
+   17 root      0:00 [cpuhp/0]
+   18 root      0:00 [kworker/0:1+eve]
+   19 root      0:00 [cpuhp/1]
+   20 root      0:00 [migration/1]
+   21 root      0:00 [ksoftirqd/1]
+   22 root      0:00 [kworker/1:0+eve]
+   23 root      0:00 [kworker/1:0H-ev]
+   24 root      0:00 [rcuop/1]
+   25 root      0:00 [rcuos/1]
+   26 root      0:00 [rcuob/1]
+   27 root      0:00 [cpuhp/2]
+   28 root      0:00 [migration/2]
+   29 root      0:00 [ksoftirqd/2]
+   30 root      0:00 [kworker/2:0-eve]
+   31 root      0:00 [kworker/2:0H-ev]
+   32 root      0:00 [rcuop/2]
+   33 root      0:00 [rcuos/2]
+   34 root      0:00 [rcuob/2]
+   35 root      0:00 [cpuhp/3]
+   36 root      0:00 [migration/3]
+   37 root      0:00 [ksoftirqd/3]
+   38 root      0:00 [kworker/3:0-eve]
+   39 root      0:00 [kworker/3:0H-ev]
+   40 root      0:00 [rcuop/3]
+   41 root      0:00 [rcuos/3]
+   42 root      0:00 [rcuob/3]
+   43 root      0:00 [cpuhp/4]
+   44 root      0:00 [migration/4]
+   45 root      0:00 [ksoftirqd/4]
+   46 root      0:00 [kworker/4:0-mm_]
+   47 root      0:00 [kworker/4:0H-ev]
+   48 root      0:00 [rcuop/4]
+   49 root      0:00 [rcuos/4]
+   50 root      0:00 [rcuob/4]
+   51 root      0:00 [cpuhp/5]
+   52 root      0:00 [migration/5]
+   53 root      0:00 [ksoftirqd/5]
+   54 root      0:00 [kworker/5:0-rcu]
+   55 root      0:00 [kworker/5:0H-ev]
+   56 root      0:00 [rcuop/5]
+   57 root      0:00 [rcuos/5]
+   58 root      0:00 [rcuob/5]
+   59 root      0:00 [cpuhp/6]
+   60 root      0:00 [migration/6]
+   61 root      0:00 [ksoftirqd/6]
+   62 root      0:00 [kworker/6:0-eve]
+   63 root      0:00 [kworker/6:0H-ev]
+   64 root      0:00 [rcuop/6]
+   65 root      0:00 [rcuos/6]
+   66 root      0:00 [rcuob/6]
+   67 root      0:00 [cpuhp/7]
+   68 root      0:00 [migration/7]
+   69 root      0:00 [ksoftirqd/7]
+   70 root      0:00 [kworker/7:0-mm_]
+   71 root      0:00 [kworker/7:0H-ev]
+   72 root      0:00 [rcuop/7]
+   73 root      0:00 [rcuos/7]
+   74 root      0:00 [rcuob/7]
+   75 root      0:00 [kdevtmpfs]
+   76 root      0:00 [netns]
+   77 root      0:00 [rcu_tasks_kthre]
+   78 root      0:00 [kauditd]
+   79 root      0:00 [kworker/5:1-mm_]
+   80 root      0:00 [kworker/u16:1+L]
+   81 root      0:00 [kworker/4:1-mm_]
+   82 root      0:00 [kworker/6:1-eve]
+   83 root      0:00 [kworker/1:1+eve]
+   84 root      0:00 [kworker/7:1-pm]
+   85 root      0:00 [kworker/2:1-eve]
+   86 root      0:00 [kworker/u17:0-u]
+   87 root      0:00 [kworker/3:1-eve]
+   88 root      0:00 [ipa_usb_wq]
+   89 root      0:00 [msm_watchdog]
+   90 root      0:00 [qmp_aop]
+   91 root      0:00 [oom_reaper]
+   92 root      0:00 [writeback]
+   93 root      0:00 [kcompactd0]
+   94 root      0:00 [crypto]
+   95 root      0:00 [kblockd]
+   96 root      0:00 [blk_crypto_wq]
+   97 root      0:00 [irq/156-arm-smm]
+   98 root      0:00 [irq/157-arm-smm]
+   99 root      0:00 [irq/166-arm-smm]
+  100 root      0:00 [irq/167-arm-smm]
+  101 root      0:00 [irq/41-tsens-up]
+  102 root      0:00 [irq/42-tsens-cr]
+  103 root      0:00 [irq/43-tsens-up]
+  104 root      0:00 [irq/44-tsens-cr]
+  105 root      0:00 [edac-poller]
+  106 root      0:00 [irq/8-dcvsh-irq]
+  107 root      0:00 [irq/9-dcvsh-irq]
+  108 root      0:00 [irq/10-dcvsh-ir]
+  109 root      0:00 [ion-pool-uncach]
+  110 root      0:00 [ion-pool-cached]
+  111 root      0:00 [system]
+  112 root      0:00 [ion-pool-uncach]
+  113 root      0:00 [ion-pool-cached]
+  114 root      0:00 [camera]
+  115 root      0:00 [ipa_power_mgmt]
+  116 root      0:00 [transport_power]
+  117 root      0:00 [ipa_pm_activate]
+  118 root      0:00 [irq/173-arm-smm]
+  119 root      0:00 [irq/174-arm-smm]
+  120 root      0:00 [irq/175-arm-smm]
+  121 root      0:00 [irq/176-arm-smm]
+  122 root      0:00 [devfreq_wq]
+  123 root      0:00 [governor_msm_ad]
+  124 root      0:00 [irq/177-arm-smm]
+  125 root      0:00 [kworker/7:2-eve]
+  126 root      0:00 [irq/178-arm-smm]
+  127 root      0:00 [irq/179-arm-smm]
+  128 root      0:00 [cfg80211]
+  169 root      0:00 [kswapd0:0]
+  228 root      0:00 [irq/180-arm-smm]
+  229 root      0:00 [irq/181-arm-smm]
+  230 root      0:00 [irq/182-arm-smm]
+  231 root      0:00 [irq/377-smp2p]
+  232 root      0:00 [irq/378-smp2p]
+  233 root      0:00 [irq/379-smp2p]
+  234 root      0:00 [geni_serial_dum]
+  235 root      0:00 [okl4vtty]
+  236 root      0:00 [hwrng]
+  238 root      0:00 [diag_real_time_]
+  239 root      0:00 [diag_wq]
+  240 root      0:00 [DIAG_USB_diag]
+  241 root      0:00 [diag_cntl_wq]
+  242 root      0:00 [diag_dci_wq]
+  243 root      0:00 [MODEM_CNTL]
+  244 root      0:00 [MODEM_DATA]
+  245 root      0:00 [MODEM_CMD]
+  246 root      0:00 [MODEM_DCI]
+  247 root      0:00 [MODEM_DCI_CMD]
+  248 root      0:00 [LPASS_CNTL]
+  249 root      0:00 [LPASS_DATA]
+  250 root      0:00 [LPASS_CMD]
+  251 root      0:00 [LPASS_DCI]
+  252 root      0:00 [LPASS_DCI_CMD]
+  253 root      0:00 [WCNSS_CNTL]
+  254 root      0:00 [WCNSS_DATA]
+  255 root      0:00 [WCNSS_CMD]
+  256 root      0:00 [WCNSS_DCI]
+  257 root      0:00 [WCNSS_DCI_CMD]
+  258 root      0:00 [SENSORS_CNTL]
+  259 root      0:00 [SENSORS_DATA]
+  260 root      0:00 [SENSORS_CMD]
+  261 root      0:00 [SENSORS_DCI]
+  262 root      0:00 [SENSORS_DCI_CMD]
+  263 root      0:00 [DIAG_CTRL]
+  264 root      0:00 [DIAG_DATA]
+  265 root      0:00 [DIAG_CMD]
+  266 root      0:00 [DIAG_DCI_DATA]
+  267 root      0:00 [DIAG_DCI_CMD]
+  268 root      0:00 [CDSP_CNTL]
+  269 root      0:00 [CDSP_DATA]
+  270 root      0:00 [CDSP_CMD]
+  271 root      0:00 [CDSP_DCI]
+  272 root      0:00 [CDSP_DCI_CMD]
+  273 root      0:00 [NPU_CNTL]
+  274 root      0:00 [NPU_DATA]
+  275 root      0:00 [NPU_CMD]
+  276 root      0:00 [NPU_DCI]
+  277 root      0:00 [NPU_DCI_CMD]
+  278 root      0:00 [DIAG_RPMSG_DIAG]
+  279 root      0:00 [DIAG_RPMSG_DIAG]
+  280 root      0:00 [DIAG_RPMSG_DIAG]
+  281 root      0:00 [DIAG_RPMSG_DIAG]
+  282 root      0:00 [DIAG_RPMSG_DIAG]
+  283 root      0:00 [DIAG_RPMSG_DIAG]
+  284 root      0:00 [DIAG_RPMSG_DIAG]
+  285 root      0:00 [DIAG_RPMSG_DIAG]
+  286 root      0:00 [DIAG_RPMSG_DIAG]
+  287 root      0:00 [DIAG_RPMSG_DIAG]
+  288 root      0:00 [DIAG_RPMSG_APPS]
+  289 root      0:00 [DIAG_RPMSG_APPS]
+  290 root      0:00 [DIAG_RPMSG_DIAG]
+  291 root      0:00 [DIAG_RPMSG_DIAG]
+  292 root      0:00 [DIAG_RPMSG_DIAG]
+  293 root      0:00 [DIAG_RPMSG_DIAG]
+  294 root      0:00 [DIAG_RPMSG_DIAG]
+  295 root      0:00 [DIAG_RPMSG_DIAG]
+  296 root      0:00 [DIAG_RPMSG_DIAG]
+  297 root      0:00 [DIAG_RPMSG_DIAG]
+  298 root      0:00 [kworker/u16:2+W]
+  299 root      0:00 [kworker/u16:3+S]
+  300 root      0:00 [diag_mhi_MDM]
+  301 root      0:00 [DIAG_USB_diag_m]
+  302 root      0:00 [kworker/u16:4+D]
+  303 root      0:00 [diag_mhi_MDM_DC]
+  304 root      0:00 [kworker/u16:5+C]
+  305 root      0:00 [diag_dci_MDM_DC]
+  306 root      0:00 [kworker/u16:6+N]
+  307 root      0:00 [diag_mhi_MDM_2]
+  308 root      0:00 [kworker/u16:7-f]
+  309 root      0:00 [DIAG_USB_diag_m]
+  310 root      0:00 [diag_mhi_MDM_DC]
+  311 root      0:00 [diag_dci_MDM_DC]
+  312 root      0:00 [kgsl-workqueue]
+  313 root      0:00 [kgsl-mementry]
+  314 root      0:00 [kgsl_worker_thr]
+  315 root      0:00 [qseecom-unreg-l]
+  316 root      0:00 [qseecom-unload-]
+  317 root      0:00 [kworker/u16:8-f]
+  318 root      0:00 [irq/183-arm-smm]
+  319 root      0:00 [irq/184-arm-smm]
+  320 root      0:00 [irq/185-arm-smm]
+  321 root      0:00 [qcrypto_seq_res]
+  322 root      0:00 [irq/186-arm-smm]
+  343 root      0:00 [scsi_eh_0]
+  344 root      0:00 [scsi_tmf_0]
+  345 root      0:00 [ufs_pm_qos_0]
+  346 root      0:00 [ufs_recovery_wq]
+  347 root      0:00 [ufs_clk_gating_]
+  348 root      0:00 [spi0]
+  349 root      0:00 [bond0]
+  350 root      0:00 [kworker/u16:9-u]
+  351 root      0:00 [atlantic-fwd]
+  352 root      0:00 [irq/187-arm-smm]
+  357 root      0:00 [k_ipa_usb]
+  360 root      0:00 [kworker/u16:10-]
+  361 root      0:00 [irq/400-aw8697]
+  362 root      0:00 [aw8976_vibrator]
+  363 root      0:00 [fts_wq]
+  364 root      0:00 [kworker/u16:11-]
+  365 root      0:00 [kworker/0:2-eve]
+  366 root      0:00 [kworker/u16:12-]
+  367 root      0:00 [kworker/u16:13-]
+  368 root      0:00 [kworker/u16:14-]
+  369 root      0:00 [kworker/u16:15-]
+  370 root      0:00 [kworker/u16:16-]
+  371 root      0:00 [irq/188-arm-smm]
+  372 root      0:00 [irq/189-arm-smm]
+  373 root      0:00 [kworker/u17:1-d]
+  374 root      0:00 [irq/401-focal]
+  375 root      0:00 [irq/434-akm0997]
+  376 root      0:00 [akm09970_poll_w]
+  377 root      0:00 [msm_cvp_workerq]
+  378 root      0:00 [pm_workerq_iris]
+  379 root      0:00 [irq/190-arm-smm]
+  380 root      0:00 [irq/191-arm-smm]
+  381 root      0:00 [irq/192-arm-smm]
+  382 root      0:00 [irq/193-arm-smm]
+  383 root      0:00 [npu_general_wq]
+  384 root      0:00 [irq/357-ptrain-]
+  385 root      0:00 [irq/435-ima-rdy]
+  386 root      0:00 [irq/436-ima-xcp]
+  387 root      0:00 [irq/437-dma-xcp]
+  388 root      0:00 [irq/438-dma-gra]
+  389 root      0:00 [irq/439-mem-att]
+  390 root      0:00 [irq/440-batt-mi]
+  391 root      0:00 [irq/441-batt-id]
+  392 root      0:00 [irq/442-batt-te]
+  393 root      0:00 [irq/443-batt-te]
+  394 root      0:00 [irq/444-batt-te]
+  395 root      0:00 [irq/445-vbatt-l]
+  396 root      0:00 [irq/446-vbatt-p]
+  397 root      0:00 [irq/447-esr-del]
+  398 root      0:00 [irq/448-soc-upd]
+  399 root      0:00 [irq/449-soc-rea]
+  400 root      0:00 [irq/450-bsoc-de]
+  401 root      0:00 [irq/451-msoc-de]
+  402 root      0:00 [irq/452-msoc-lo]
+  403 root      0:00 [irq/453-msoc-em]
+  404 root      0:00 [irq/454-msoc-hi]
+  405 root      0:00 [irq/455-msoc-fu]
+  406 root      0:00 [kworker/3:2+eve]
+  407 root      0:00 [irq/456-bq2597x]
+  408 root      0:00 [irq/319-bcl-lvl]
+  409 root      0:00 [irq/320-bcl-lvl]
+  410 root      0:00 [irq/321-bcl-lvl]
+  411 root      0:00 [irq/337-bcl-lvl]
+  412 root      0:00 [irq/338-bcl-lvl]
+  413 root      0:00 [irq/339-bcl-lvl]
+  414 root      0:00 [kworker/0:1H-kb]
+  415 root      0:00 [kworker/1:1H-kb]
+  416 root      0:00 [kworker/2:1H-kb]
+  417 root      0:00 [kworker/3:1H-kb]
+  418 root      0:00 [kworker/4:1H-kb]
+  419 root      0:00 [kworker/5:1H-kb]
+  420 root      0:00 [kworker/6:1H-kb]
+  421 root      0:00 [kworker/7:1H-kb]
+  422 root      0:00 [dm_bufio_cache]
+  423 root      0:00 [irq/30-KRYO L3-]
+  424 root      0:00 [irq/23-8804000.]
+  425 root      0:00 [memlat_wq]
+  426 root      0:00 [irq/458-mdm sta]
+  427 root      0:00 [irq/194-arm-smm]
+  428 root      0:00 [uaudio_svc]
+  429 root      0:00 [apr_driver]
+  430 root      0:00 [irq/459-tfa98xx]
+  431 root      0:00 [dsi_dma_cmd_wor]
+  432 root      0:00 [dsi_dma_cmd_wor]
+  433 root      0:00 [disp_fod:0]
+  434 root      0:00 [irq/172-arm-smm]
+  435 root      0:00 [irq/195-arm-smm]
+  436 root      0:00 [irq/460-esd_err]
+  437 root      0:00 [crtc_commit:129]
+  438 root      0:00 [crtc_event:129]
+  439 root      0:00 [crtc_commit:184]
+  440 root      0:00 [crtc_event:184]
+  441 root      0:00 [pp_event]
+  442 root      0:00 [msm_vidc_worker]
+  443 root      0:00 [pm_workerq_venu]
+  444 root      0:00 [vidc_core_workq]
+  445 root      0:00 [irq/196-arm-smm]
+  446 root      0:00 [irq/197-arm-smm]
+  447 root      0:00 [irq/198-arm-smm]
+  448 root      0:00 [irq/199-arm-smm]
+  449 root      0:00 [irq/200-arm-smm]
+  450 root      0:00 [irq/201-arm-smm]
+  451 root      0:00 [irq/202-arm-smm]
+  452 root      0:00 [irq/203-arm-smm]
+  453 root      0:00 [irq/204-arm-smm]
+  454 root      0:00 [cam-cpas]
+  455 root      0:00 [qcom,cam_virtua]
+  456 root      0:00 [qcom,cam170-cpa]
+  457 root      0:00 [cam_cci_wq]
+  458 root      0:00 [cam_cci_wq]
+  459 root      0:00 [cam_cci_wq]
+  460 root      0:00 [cam_cci_wq]
+  461 root      0:00 [ipv6_addrconf]
+  462 root      0:00 [kworker/6:2-eve]
+  463 root      0:00 [irq/380-smp2p]
+  464 root      0:00 [irq/158-arm-smm]
+  465 root      0:00 [irq/159-arm-smm]
+  466 root      0:00 [irq/160-arm-smm]
+  467 root      0:00 [irq/22-mmc0]
+  468 root      0:00 [irq/161-arm-smm]
+  469 root      0:00 [kgsl-events]
+  470 root      0:00 [irq/463-8804000]
+  471 root      0:00 [kgsl_devfreq_wq]
+  479 root      0:00 [irq/464-wdog-sn]
+  480 root      0:00 [irq/465-wdog-ba]
+  481 root      0:00 [irq/467-aicl-do]
+  482 root      0:00 [irq/468-smb-en]
+  483 root      0:00 [irq/469-temp-ch]
+  484 root      0:00 [irq/471-typec-o]
+  485 root      0:00 [irq/473-typec-c]
+  486 root      0:00 [irq/474-typec-v]
+  487 root      0:00 [irq/476-typec-a]
+  488 root      0:00 [irq/477-typec-l]
+  489 root      0:00 [irq/480-dcin-uv]
+  490 root      0:00 [irq/481-dcin-ov]
+  491 root      0:00 [irq/482-dcin-pl]
+  492 root      0:00 [irq/484-dcin-po]
+  493 root      0:00 [irq/485-dcin-en]
+  494 root      0:00 [irq/486-usbin-c]
+  495 root      0:00 [irq/487-usbin-v]
+  496 root      0:00 [irq/488-usbin-u]
+  497 root      0:00 [irq/489-usbin-o]
+  498 root      0:00 [irq/490-usbin-p]
+  499 root      0:00 [irq/492-usbin-s]
+  500 root      0:00 [irq/493-usbin-i]
+  501 root      0:00 [irq/494-bat-tem]
+  502 root      0:00 [irq/495-bat-ov]
+  503 root      0:00 [irq/496-bat-low]
+  504 root      0:00 [irq/497-bat-the]
+  505 root      0:00 [irq/498-bat-ter]
+  506 root      0:00 [irq/501-otg-fai]
+  507 root      0:00 [irq/504-high-du]
+  508 root      0:00 [irq/505-input-c]
+  509 root      0:00 [irq/507-switche]
+  510 root      0:00 [irq/508-chgr-er]
+  511 root      0:00 [irq/509-chg-sta]
+  512 root      0:00 [irq/332-qcom,te]
+  513 root      0:00 [irq/358-qcom,te]
+  514 root      0:00 [irq/368-qcom,te]
+  515 root      0:00 [irq/318-thr-int]
+  516 root      0:00 [irq/335-thr-int]
+  517 root      0:00 [irq/359-thr-int]
+  523 root      0:00 [kworker/6:3-eve]
+  524 root      0:00 [kworker/6:4-eve]
+  525 root      0:00 [kworker/6:5-eve]
+  526 root      0:00 [kworker/6:6]
+  527 root      0:00 [kworker/6:7-eve]
+  528 root      0:00 [kworker/6:8-eve]
+  529 root      0:00 [irq/340-sig-tx]
+  530 root      0:00 [irq/341-sig-rx]
+  531 root      0:00 [irq/266-pwr_eve]
+  532 root      0:00 [irq/265-dp_hs_p]
+  533 root      0:00 [irq/268-dm_hs_p]
+  534 root      0:00 [irq/267-ss_phy_]
+  535 root      0:00 [usb_bam_wq]
+  536 root      0:00 [core_ctl/0]
+  537 root      0:00 [core_ctl/4]
+  538 root      0:00 [core_ctl/7]
+  539 root      0:00 [rq_stats]
+  540 root      0:00 [msm_perf:events]
+  541 root      0:00 [cdsprm-wq]
+  542 root      0:00 [cdsprm-wq-delay]
+  543 root      0:00 [kworker/1:2-eve]
+  544 root      0:00 [irq/205-arm-smm]
+  545 root      0:00 [irq/206-arm-smm]
+  546 root      0:00 [irq/207-arm-smm]
+  547 root      0:00 [irq/208-arm-smm]
+  548 root      0:00 [irq/209-arm-smm]
+  549 root      0:00 [irq/210-arm-smm]
+  550 root      0:00 [irq/211-arm-smm]
+  551 root      0:00 [kworker/u17:2-d]
+  552 root      0:00 [irq/212-arm-smm]
+  553 root      0:00 [kworker/2:2-eve]
+  554 root      0:00 [kworker/2:3-eve]
+  555 root      0:00 [kworker/2:4-eve]
+  556 root      0:00 [irq/213-arm-smm]
+  557 root      0:00 [irq/214-arm-smm]
+  558 root      0:00 [kworker/1:3-cgr]
+  559 root      0:00 [irq/215-arm-smm]
+  560 root      0:00 [irq/216-arm-smm]
+  561 root      0:00 [irq/217-arm-smm]
+  562 root      0:00 [irq/218-arm-smm]
+  563 root      0:00 [irq/219-arm-smm]
+  564 root      0:00 [irq/220-arm-smm]
+  565 root      0:00 [sb-1]
+  566 root      0:00 [ngd_rx_thread1]
+  567 root      0:00 [ngd_notify_sl1]
+  568 root      0:00 [irq/317-qpnp_fl]
+  569 root      0:00 [irq/316-qpnp_fl]
+  570 root      0:00 [irq/315-qpnp_fl]
+  630 root      0:00 [kworker/3:3-mm_]
+ 1520 root      0:00 [kworker/2:5-eve]
+ 1666 root      0:00 [loop0]
+ 2562 root      0:00 [kworker/0:3-eve]
+ 2571 root      0:00 [jbd2/loop0p2-8]
+ 2572 root      0:00 [ext4-rsv-conver]
+ 2583 root      0:00 [kworker/0:4-eve]
+ 2765 root      0:00 [kworker/3:4-eve]
+ 2766 root      0:00 [kworker/3:5]
+ 2939 root      0:00 /sbin/udevd
+ 3128 root      0:00 [kworker/1:4-mm_]
+ 3300 root      0:00 [ext4-rsv-conver]
+ 3459 root      0:00 /usr/bin/logbookd -p /run/logbookd.pid -r -g 8192 -d /var/log/logbookd.db
+ 3490 root      0:00 {shelli-calld} /usr/bin/python3 /usr/share/shelli/bin/shelli-calld
+ 3617 messageb  0:00 /usr/bin/dbus-daemon --system --nofork --nopidfile --syslog-only
+ 3673 root      0:00 /usr/sbin/haveged --Foreground
+ 3707 root      0:00 supervise-daemon wpa_supplicant --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /sbin/wpa_supplicant -- -u -Dnl80211,wext
+ 3709 root      0:00 /sbin/wpa_supplicant -u -Dnl80211,wext
+ 3737 root      0:00 supervise-daemon networkmanager --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/sbin/NetworkManager -- -n
+ 3738 root      0:00 /usr/sbin/NetworkManager -n
+ 3775 chrony    0:00 /usr/sbin/chronyd -f /etc/chrony/chrony.conf -F 1
+ 3776 chrony    0:00 /usr/sbin/chronyd -f /etc/chrony/chrony.conf -F 1
+ 3862 root      0:00 supervise-daemon ofono --start --pidfile /run/ofono.pid --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/sbin/ofonod -- -n
+ 3863 root      0:00 /usr/sbin/ofonod -n
+ 3893 root      0:00 /usr/libexec/openrc-settingsd --ntp-service=chronyd --syslog
+ 4042 root      0:00 supervise-daemon sleep-inhibitor --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/bin/sleep-inhibitor --
+ 4043 root      0:00 {sleep-inhibitor} /usr/bin/python3 /usr/bin/sleep-inhibitor
+ 4072 root      0:00 {shelli-smsd} /usr/bin/python3 /usr/share/shelli/bin/shelli-smsd
+ 4118 root      0:00 sshd.pam: /usr/sbin/sshd.pam [listener] 0 of 10-100 startups
+ 4210 root      0:00 elogind-daemon
+ 4213 root      0:00 [psimon]
+ 4486 root      0:00 /sbin/udevd
+ 4491 root      0:00 [init]
+ 4492 root      0:00 sshd-session.pam: lmi [priv]
+ 4515 root      0:00 supervise-daemon user.lmi --start --respawn-delay 500ms --respawn-max 3 --respawn-period 5 --notify fd:3 /usr/libexec/rc/bin/openrc-user -- lmi
+ 4523 lmi       0:00 sshd-session.pam: lmi@notty
+ 4524 lmi       0:00 sh -s
+ 4536 lmi       0:00 ps aux
+
+=== display baseline ===
+$ ls -l /dev/dri /dev/kgsl-3d0 /sys/class/drm
+crw-------    1 root     root      504,   0 Nov 28 07:11 /dev/kgsl-3d0
+
+/dev/dri:
+total 0
+drwxr-xr-x    2 root     root            80 Nov 28 07:11 by-path
+crw-rw----    1 root     video     226,   0 Nov 28 07:11 card0
+crw-rw-rw-    1 root     video     226, 128 Nov 28 07:11 renderD128
+
+/sys/class/drm:
+total 0
+lrwxrwxrwx    1 root     root             0 Nov 28 07:11 card0 -> ../../devices/platform/soc/ae00000.qcom,mdss_mdp/drm/card0
+lrwxrwxrwx    1 root     root             0 Nov 28 07:11 card0-DSI-1 -> ../../devices/platform/soc/ae00000.qcom,mdss_mdp/drm/card0/card0-DSI-1
+lrwxrwxrwx    1 root     root             0 Nov 28 07:11 card0-Virtual-1 -> ../../devices/platform/soc/ae00000.qcom,mdss_mdp/drm/card0/card0-Virtual-1
+lrwxrwxrwx    1 root     root             0 Nov 28 07:11 renderD128 -> ../../devices/platform/soc/ae00000.qcom,mdss_mdp/drm/renderD128
+lrwxrwxrwx    1 root     root             0 Nov 28 07:11 sde-crtc-0 -> ../../devices/platform/soc/ae00000.qcom,mdss_mdp/drm/card0/sde-crtc-0
+lrwxrwxrwx    1 root     root             0 Nov 28 07:11 sde-crtc-1 -> ../../devices/platform/soc/ae00000.qcom,mdss_mdp/drm/card0/sde-crtc-1
+-r--r--r--    1 root     root          4096 Nov 28 07:11 version
+/sys/class/drm/card0-DSI-1/status=connected
+/sys/class/drm/card0-Virtual-1/status=unknown
+/sys/class/drm/card0-DSI-1/modes=1080x2400x60x184345cmd
+/sys/class/drm/card0-Virtual-1/modes=/sys/class/drm/card0-DSI-1/enabled=disabled
+/sys/class/drm/card0-Virtual-1/enabled=disabled
+/sys/class/drm/card0-DSI-1/dpms=On
+/sys/class/drm/card0-Virtual-1/dpms=On
+modetest=<missing>
+kmscube=<missing>
+weston=<missing>
+tinydm=<missing>
+drm_info=<missing>
+fbset=/usr/sbin/fbset
+
+=== power ===
+--- /sys/class/power_supply/batt_verify
+type=Nothing attached
+--- /sys/class/power_supply/battery
+type=Battery
+status=Full
+capacity=100
+voltage_now=4388904
+current_now=976
+temp=242
+health=Good
+present=1
+--- /sys/class/power_supply/bms
+type=BMS
+capacity=100
+voltage_now=4388904
+current_now=976
+temp=242
+--- /sys/class/power_supply/bq2597x-standalone
+type=Mains
+status=Unknown
+present=0
+--- /sys/class/power_supply/dc
+type=Wireless
+voltage_now=present=0
+online=0
+--- /sys/class/power_supply/main
+type=Main
+health=Unknown
+--- /sys/class/power_supply/pc_port
+type=USB
+online=1
+--- /sys/class/power_supply/usb
+type=USB
+voltage_now=5061330
+present=1
+online=0
+
+=== focused dmesg ===
+[    0.000000] Linux version 4.19.325-cip128-st12-perf (pmos@DESKTOP-JID71RJ) (Alpine clang version 22.1.8, LLD 22.1.8) #7-postmarketOS SMP PREEMPT Mon Jun 22 18:40:33 UTC 2026
+[    0.000000] OF: reserved mem: initialized node cnss_wlan_region, compatible id shared-dma-pool
+[    0.000000] OF: reserved mem: initialized node pil_wlan_fw_region@86700000, compatible id removed-dma-pool
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] Kernel command line: cgroup_disable=pressure ramoops_memreserve=4M rcupdate.rcu_expedited=1 rcu_nocbs=0-7 kpti=off androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery  pmos_boot_uuid=3c14f75f-450e-4457-b109-6fc5d9f7c54c pmos_root_uuid=b50c1119-2cd9-4675-a9be-3201c98d54ec pmos_rootfsopts=defaults androidboot.verifiedbootstate=orange androidboot.keymaster=1  androidboot.bootdevice=1d84000.ufshc androidboot.fstab_suffix=default androidboot.boot_devices=soc/1d84000.ufshc androidboot.serialno=<redacted> androidboot.secureboot=1 androidboot.hwversion=3.9.0 androidboot.cpuid=<redacted> androidboot.camera.config=1 androidboot.network.mode=1 androidboot.hwc=CN androidboot.hwlevel=MP androidboot.product.
+[    0.005412] scm_call failed: func id 0x42001907, ret: -1, syscall returns: 0x0, 0x0, 0x0
+[    0.005418] scm_mem_protection_init_do_qrks: SCM call failed
+[    0.005534] scm_mem_protection_init: SCM call failed
+[    0.191520] regulator: Failed to create debugfs directory
+[    0.325019] arm-smmu 3da0000.kgsl-smmu: Linked as a consumer to regulator.74
+[    0.325067] arm-smmu 3da0000.kgsl-smmu: 	non-coherent table walk
+[    0.325071] arm-smmu 3da0000.kgsl-smmu: 	(IDR0.CTTW overridden by FW configuration)
+[    0.325076] arm-smmu 3da0000.kgsl-smmu: 	stream matching with 6 register groups
+[    0.330227] Error: Driver 'arm-smmu' is already registered, aborting...
+[    0.331679] qcom,qpnp-power-on: probe of c440000.qcom,spmi:qcom,pm8009@a:qcom,power-on@800 failed with error -22
+[    0.338232] virt zone: sensor[gpuss-1-usr] read error:-22
+[    0.338239] thermal thermal_zone51: failed to read out thermal zone (-22)
+[    0.435031] ipa 1e00000.qcom,ipa:ipa_smmu_wlan: Linked as a consumer to 15000000.apps-smmu
+[    0.439004] iommu: Adding device 1e00000.qcom,ipa:ipa_smmu_wlan to group 1
+[    0.448841] devfreq-qcom-fw 18590000.qcom,devfreq-l3:qcom,cpu0-cpu-l3-lat: Devfreq QCOM Firmware dev registered.
+[    0.448896] devfreq-qcom-fw 18590000.qcom,devfreq-l3:qcom,cpu4-cpu-l3-lat: Devfreq QCOM Firmware dev registered.
+[    0.448996] devfreq-qcom-fw 18590000.qcom,devfreq-l3:qcom,cpu7-cpu-l3-lat: Devfreq QCOM Firmware dev registered.
+[    0.449048] devfreq-qcom-fw 18590000.qcom,devfreq-l3:qcom,cdsp-cdsp-l3-lat: Devfreq QCOM Firmware dev registered.
+[    0.449053] devfreq-qcom-fw 18590000.qcom,devfreq-l3: Devfreq QCOM Firmware parent dev inited.
+[    0.449808] Bluetooth: Core ver 2.22
+[    0.449817] Bluetooth: HCI device and connection manager initialized
+[    0.449822] Bluetooth: HCI socket layer initialized
+[    0.449825] Bluetooth: L2CAP socket layer initialized
+[    0.449829] Bluetooth: SCO socket layer initialized
+[    0.494086] mdss_pll_probe: MDSS pll label = MDSS DSI 0 PLL
+[    0.494092] mdss_pll_probe: mdss_pll_probe: label=MDSS DSI 0 PLL PLL SSC enabled
+[    0.495521] dsi_pll_clock_register_7nm: Registered DSI PLL ndx=0, clocks successfully
+[    0.495561] mdss_pll_probe: MDSS pll label = MDSS DSI 1 PLL
+[    0.495563] mdss_pll_probe: mdss_pll_probe: label=MDSS DSI 1 PLL PLL SSC enabled
+[    0.506802] dsi_pll_clock_register_7nm: Registered DSI PLL ndx=1, clocks successfully
+[    0.621835] subsys-pil-tz soc:qcom,kgsl-hyp: for a650_zap segments only will be dumped.
+[    0.621865] subsys-pil-tz soc:qcom,kgsl-hyp: for md_a650_zap segments only will be dumped.
+[    0.624229] msm_geni_serial 998000.qcom,qup_uart: Failed to create dbg dir
+[    0.658794] wcnss_pre_alloc_init: Failed to create debugfs dir
+[    0.659180] cnss: Got regulator: vdd-wlan-io, min_uv: 1800000, max_uv: 1800000, load_ua: 0, delay_us: 0, need_unvote: 1
+[    0.659403] cnss: Got regulator: vdd-wlan-aon, min_uv: 950000, max_uv: 950000, load_ua: 0, delay_us: 0, need_unvote: 1
+[    0.659437] cnss: Got regulator: vdd-wlan-dig, min_uv: 950000, max_uv: 952000, load_ua: 0, delay_us: 0, need_unvote: 1
+[    0.659461] cnss: Got regulator: vdd-wlan-rfa1, min_uv: 1900000, max_uv: 1900000, load_ua: 0, delay_us: 0, need_unvote: 1
+[    0.659488] cnss: Got regulator: vdd-wlan-rfa2, min_uv: 1350000, max_uv: 1350000, load_ua: 0, delay_us: 0, need_unvote: 1
+[    0.659567] cnss: Failed to get optional clock rf_clk, err = -2
+[    0.659693] cnss: Regulator vdd-wlan-io is being enabled
+[    0.659710] cnss: Regulator vdd-wlan-aon is being enabled
+[    0.659790] cnss: Regulator vdd-wlan-dig is being enabled
+[    0.660355] cnss: Regulator vdd-wlan-rfa1 is being enabled
+[    0.660438] cnss: Regulator vdd-wlan-rfa2 is being enabled
+[    0.660531] cnss: BT_EN_GPIO State: Off. Delay WLAN_GPIO enable
+[    0.660838] dwc3 a600000.dwc3: Failed to get clk 'ref': -2
+[    0.661664] register_client_adhoc:Client handle 37 usb0
+[    0.663882] qpnp-pdphy c440000.qcom,spmi:qcom,pm8150b@2:qcom,usb-pdphy@1700: usbpd_create failed: -517
+[    0.665764] nq-nci 0-0028: ese GPIO <OPTIONAL> error getting from OF node
+[    0.665773] nq-nci 0-0028: error reading NFC VDDIO min and max value
+[    0.665780] nq-nci 0-0028: error reading NFC current value
+[    0.666438] aw8697_parse_dt_common Read  qcom,wf-repeat-count failed !
+[    0.666443] aw8697_parse_dt_common Read  qcom,wf-s-repeat-count failed !
+[    0.666467] aw8697_parse_dt_common Read  qcom,wf-repeat-count failed !
+[    0.666471] aw8697_parse_dt_common Read  qcom,wf-s-repeat-count failed !
+[    0.666494] aw8697_parse_dt_common Read  qcom,wf-repeat-count failed !
+[    0.666499] aw8697_parse_dt_common Read  qcom,wf-s-repeat-count failed !
+[    0.666521] aw8697_parse_dt_common Read  qcom,wf-repeat-count failed !
+[    0.666526] aw8697_parse_dt_common Read  qcom,wf-s-repeat-count failed !
+[    0.666548] aw8697_parse_dt_common Read  qcom,wf-repeat-count failed !
+[    0.666553] aw8697_parse_dt_common Read  qcom,wf-s-repeat-count failed !
+[    0.666575] aw8697_parse_dt_common Read  qcom,wf-repeat-count failed !
+[    0.666580] aw8697_parse_dt_common Read  qcom,wf-s-repeat-count failed !
+[    0.666602] aw8697_parse_dt_common Read  qcom,wf-repeat-count failed !
+[    0.666606] aw8697_parse_dt_common Read  qcom,wf-s-repeat-count failed !
+[    0.666629] aw8697_parse_dt_common Read  qcom,wf-repeat-count failed !
+[    0.666634] aw8697_parse_dt_common Read  qcom,wf-s-repeat-count failed !
+[    0.666656] aw8697_parse_dt_common Read  qcom,wf-repeat-count failed !
+[    0.666661] aw8697_parse_dt_common Read  qcom,wf-s-repeat-count failed !
+[    0.666683] aw8697_parse_dt_common Read  qcom,wf-repeat-count failed !
+[    0.666688] aw8697_parse_dt_common Read  qcom,wf-s-repeat-count failed !
+[    0.740092] [FTS][Error]Pin state[release] not found
+[    0.740832] [FTS][Error]i2c read invalid, read:0x0000
+[    0.765059] cnss: Assert WLAN_EN GPIO successfully
+[    0.827957] cnss_pci 0000:01:00.0: assigned reserved memory node cnss_wlan_region
+[    0.827959] cnss: CMA area is cnss_wlan_region
+[    0.828084] cnss2 b0000000.qcom,cnss-qca6390: for wlan segments only will be dumped.
+[    0.844420] [FTS][Error]verify id:0xb1b1
+[    0.844425] [FTS][Error]TP not ready, read:0xb1b1
+[    0.944780] cnss: De-assert WLAN_EN GPIO successfully
+[    0.944785] cnss: Regulator vdd-wlan-rfa2 is being disabled
+[    0.944842] cnss: Regulator vdd-wlan-rfa1 is being disabled
+[    0.944876] cnss: Regulator vdd-wlan-dig is being disabled
+[    0.944909] cnss: Regulator vdd-wlan-aon is being disabled
+[    0.944941] cnss: Regulator vdd-wlan-io is being disabled
+[    0.948522] [FTS][Error]verify id:0x5452
+[    0.948598] [FTS][Error][Mode]create sysfs succeeded
+[    0.948663] [FTS][TEST][Error]fts_test_init. line: 1798.  create file node of tp_data_dump
+[    1.048076] [FTS][Error]pram not supported, confirm in bootloader
+[    1.064233] [FTS][Error]hidi2c change to stdi2c successful
+[    1.172463] [FTS][Error]TP Not Ready, ReadData = 0xb1
+[    1.177790] msm_cvp:  err: Failed to create debugfs for msm_cvp
+[    1.178537] msm_cvp:  err: Failed to create debugfs for msm_cvp
+[    1.189484] NPU_ERR: npu_debugfs_init: 303 debugfs_create_dir for npu failed, error -19
+[    1.207041] FG: fg_gen4_get_batt_profile: verifty battery fail. recheck after, retry:1
+[    1.208204] [ds28e16] set_sched_affinity_to_current: Setting cpu affinity to current cpu failed(-22) in set_sched_affinity_to_current.
+[    1.260558] [ds28e16] set_sched_affinity_to_all: Setting cpu affinity to all valid cpus failed(-22) in set_sched_affinity_to_all.
+[    1.260570] [ds28e16] set_sched_affinity_to_current: Setting cpu affinity to current cpu failed(-22) in set_sched_affinity_to_current.
+[    1.261782] [ds28e16] set_sched_affinity_to_all: Setting cpu affinity to all valid cpus failed(-22) in set_sched_affinity_to_all.
+[    1.273108] sdhci_msm 8804000.sdhci: Reset data parsing error
+[    1.276659] [FTS][Error]**********tp fw(app/param) upgrade success*********
+[    1.282959] wlan_hdd_state wlan major(483) initialized
+[    1.284290] [FTS][Error][GESTURE]Write fod reg success!
+[    1.296813] usbcore: registered new interface driver snd-usb-audio
+[    1.296999] uaudio-qmi soc:usb_audio_qmi_dev: Linked as a consumer to 15000000.apps-smmu
+[    1.297063] iommu: Adding device soc:usb_audio_qmi_dev to group 21
+[    1.362069] dsi_phy ae94400.qcom,mdss_dsi_phy0: ae94400.qcom,mdss_dsi_phy0 supply gdsc not found, using dummy regulator
+[    1.362074] dsi_phy ae94400.qcom,mdss_dsi_phy0: Linked as a consumer to regulator.0
+[    1.362080] dsi_phy ae94400.qcom,mdss_dsi_phy0: Linked as a consumer to regulator.13
+[    1.362090] [drm:dsi_phy_driver_probe] [msm-dsi-info]: DSI_0: Probe successful
+[    1.362110] dsi_phy ae96400.qcom,mdss_dsi_phy1: ae96400.qcom,mdss_dsi_phy1 supply gdsc not found, using dummy regulator
+[    1.362113] dsi_phy ae96400.qcom,mdss_dsi_phy1: Linked as a consumer to regulator.0
+[    1.362117] dsi_phy ae96400.qcom,mdss_dsi_phy1: Linked as a consumer to regulator.13
+[    1.362121] [drm:dsi_phy_driver_probe] [msm-dsi-info]: DSI_1: Probe successful
+[    1.362359] drm_dsi_ctrl ae94000.qcom,mdss_dsi_ctrl0: Linked as a consumer to regulator.62
+[    1.362364] drm_dsi_ctrl ae94000.qcom,mdss_dsi_ctrl0: Linked as a consumer to regulator.21
+[    1.362367] AXI: get_pdata(): Error: Client name not found
+[    1.362373] [drm:dsi_ctrl_dev_probe] [msm-dsi-info]: dsi-ctrl-0: Probe successful
+[    1.362398] drm_dsi_ctrl ae96000.qcom,mdss_dsi_ctrl1: Linked as a consumer to regulator.62
+[    1.362402] drm_dsi_ctrl ae96000.qcom,mdss_dsi_ctrl1: Linked as a consumer to regulator.21
+[    1.362404] AXI: get_pdata(): Error: Client name not found
+[    1.362408] [drm:dsi_ctrl_dev_probe] [msm-dsi-info]: dsi-ctrl-1: Probe successful
+[    1.362734] [drm] [msm-dsi-warn]: panel_node  not found
+[    1.362848] OF: graph: no port node found in /soc/qcom,dsi-display-primary
+[    1.362874] [drm:dsi_panel_get] [msm-dsi-info]: [xiaomi j11 38 08 0a fhd panel] clk_strength default value = 0
+[    1.362952] mi-dsi-panel:[dsi_panel_parse_mi_config:374] mi,panel-id is 0x4a323200380801
+[    1.362955] mi-dsi-panel:[dsi_panel_parse_mi_config:380] mi feature enabled
+[    1.362962] mi-dsi-panel:[dsi_panel_parse_mi_config:418] mi,mdss-dsi-panel-fod-off-b5-index not defined
+[    1.362964] mi-dsi-panel:[dsi_panel_parse_mi_config:424] fod dimlayer enabled.
+[    1.362967] mi-dsi-panel:[dsi_panel_parse_mi_config:433] fod hbm on need prepare.
+[    1.362969] mi-dsi-panel:[dsi_panel_parse_mi_config:441] delay before fod hbm on.
+[    1.362971] mi-dsi-panel:[dsi_panel_parse_mi_config:453] delay before fod hbm off.
+[    1.362974] mi-dsi-panel:[dsi_panel_parse_mi_config:459] delay after fod hbm off.
+[    1.362975] mi-dsi-panel:[dsi_panel_parse_mi_config:465] j1 fod skip nolp
+[    1.362977] mi-dsi-panel:[dsi_panel_parse_mi_config:482] length: 42
+[    1.362983] mi-dsi-panel:[dsi_panel_parse_mi_config:593] panel disp_rate gpio not specified
+[    1.362985] mi-dsi-panel:[dsi_panel_parse_mi_config:602] panel on dimming delay 120 ms
+[    1.362987] mi-dsi-panel:[dsi_panel_parse_mi_config:617] fod_off_dimming_delay 85
+[    1.362990] mi-dsi-panel:[dsi_panel_parse_mi_config:629] mi,mdss-dsi-panel-gamma-update-flag feature not defined
+[    1.362992] mi-dsi-panel:[dsi_panel_parse_mi_config:635] mi,mdss-dsi-greenish-update-gamma-flag feature is defined
+[    1.362998] mi-dsi-panel:[dsi_panel_parse_mi_config:655] mi,mdss-dsi-panel-dc-update-flag feature not defined
+[    1.363001] mi-dsi-panel:[dsi_panel_parse_mi_config:687] mi,mdss-dsi-panel-dc-update-flag feature not defined
+[    1.363004] mi-dsi-panel:[dsi_panel_parse_mi_config:707] mi,mdss-dsi-panel-gir-update-flag not defined
+[    1.363007] mi-dsi-panel:[dsi_panel_parse_mi_config:717] mi white point read not defined
+[    1.363009] mi-dsi-panel:[dsi_panel_parse_mi_config:729] mi,elvss_dimming_check_enable not defined
+[    1.363011] mi-dsi-panel:[dsi_panel_parse_mi_config:738] dc backlight threshold 470 
+[    1.363013] mi-dsi-panel:[dsi_panel_parse_mi_config:747] dc backlight type 2 
+[    1.363015] mi-dsi-panel:[dsi_panel_parse_mi_config:753] default hbm brightness is 0
+[    1.363018] mi-dsi-panel:[dsi_panel_parse_mi_config:762] default max_brightness_clone is 4095
+[    1.363358] LMI_VFS_DIAG vfs_get_tree enter fs=drm fs_flags=0x0 source=(null) root=          (null)
+[    1.363412] msm_drm ae00000.qcom,mdss_mdp: Linked as a consumer to regulator.34
+[    1.363844] [drm:sde_dbg_init:4764] evtlog_status: enable:11, panic:1, dump:2
+[    1.363854] msm_drm ae00000.qcom,mdss_mdp: bound soc:qcom,wb-display@0 (ops sde_wb_comp_ops)
+[    1.363872] msm-dsi-display soc:qcom,dsi-display-primary: Linked as a consumer to regulator.82
+[    1.363878] msm-dsi-display soc:qcom,dsi-display-primary: Linked as a consumer to regulator.28
+[    1.363920] [drm:dsi_display_bind] [msm-dsi-info]: Successfully bind display panel 'qcom,mdss_dsi_j11_38_08_0a_fhd_cmd'
+[    1.364027] [mi-lhbm] lhbm attach primary_dsi_display success
+[    1.364031] msm_drm ae00000.qcom,mdss_mdp: bound soc:qcom,dsi-display-primary (ops dsi_display_comp_ops)
+[    1.364034] msm_drm ae00000.qcom,mdss_mdp: bound soc:qcom,dsi-display-secondary (ops dsi_display_comp_ops)
+[    1.364038] msm_drm ae00000.qcom,mdss_mdp: bound af20000.qcom,sde_rscc (ops sde_rsc_comp_ops)
+[    1.364050] [drm] mapped mdp address space @0000000052b0a34d
+[    1.364295] [drm:_sde_kms_hw_init_blocks:3646] sde hardware revision:0x60000000
+[    1.364890] msmdrm_smmu ae00000.qcom,mdss_mdp:qcom,smmu_sde_unsec_cb: Linked as a consumer to 15000000.apps-smmu
+[    1.365098] [drm] probing device qcom,smmu_sde_unsec
+[    1.365101] [drm] Created domain mdp_ns, secure=0
+[    1.365497] msmdrm_smmu ae00000.qcom,mdss_mdp:qcom,smmu_sde_sec_cb: Linked as a consumer to 15000000.apps-smmu
+[    1.365888] [drm] probing device qcom,smmu_sde_sec
+[    1.365890] [drm] Created domain mdp_s, secure=1
+[    1.366505] [drm:dsi_panel_get_mode] [msm-dsi-info]: default topology: lm: 1 comp_enc:0 intf: 1
+[    1.366726] [drm:sde_connector_register_esd_irq:2780] register esd irq success
+[    1.367841] [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
+[    1.367843] [drm] No driver support for vblank timestamp query.
+[    1.368035] [drm] Initialized msm_drm 1.3.0 20130625 for ae00000.qcom,mdss_mdp on minor 0
+[    1.368048] [drm] cont_splash enabled in 1 of 1 display(s)
+[    1.368103] [drm:dsi_ctrl_isr_configure] [msm-dsi-info]: dsi-ctrl-0: IRQ 462 registered
+[    1.394975] CAM_WARN: CAM-ISP: cam_vfe_init_soc_resources: 151 Option clk get failed with rc -22
+[    1.395663] CAM_WARN: CAM-ISP: cam_vfe_init_soc_resources: 151 Option clk get failed with rc -22
+[    1.410001] platform 3d6a000.qcom,gmu:gmu_user: Linked as a consumer to 3da0000.kgsl-smmu
+[    1.410476] platform 3d6a000.qcom,gmu:gmu_kernel: Linked as a consumer to 3da0000.kgsl-smmu
+[    1.411187] kgsl-3d 3d00000.qcom,kgsl-3d0: Linked as a consumer to regulator.74
+[    1.411196] kgsl-3d 3d00000.qcom,kgsl-3d0: Linked as a consumer to regulator.75
+[    1.411424] platform 3da0000.qcom,kgsl-iommu:gfx3d_user: Linked as a consumer to 3da0000.kgsl-smmu
+[    1.411441] iommu: Adding device 3da0000.qcom,kgsl-iommu:gfx3d_user to group 35
+[    1.411635] platform 3da0000.qcom,kgsl-iommu:gfx3d_secure: Linked as a consumer to 3da0000.kgsl-smmu
+[    1.411649] iommu: Adding device 3da0000.qcom,kgsl-iommu:gfx3d_secure to group 36
+[    1.477632] [ds28e16] set_sched_affinity_to_current: Setting cpu affinity to current cpu failed(-22) in set_sched_affinity_to_current.
+[    1.532709] [ds28e16] set_sched_affinity_to_all: Setting cpu affinity to all valid cpus failed(-22) in set_sched_affinity_to_all.
+[    1.532734] [ds28e16] set_sched_affinity_to_current: Setting cpu affinity to current cpu failed(-22) in set_sched_affinity_to_current.
+[    1.584921] [ds28e16] set_sched_affinity_to_all: Setting cpu affinity to all valid cpus failed(-22) in set_sched_affinity_to_all.
+[    1.584926] [ds28e16] set_sched_affinity_to_current: Setting cpu affinity to current cpu failed(-22) in set_sched_affinity_to_current.
+[    1.586045] [ds28e16] set_sched_affinity_to_all: Setting cpu affinity to all valid cpus failed(-22) in set_sched_affinity_to_all.
+[    1.801868] [ds28e16] set_sched_affinity_to_current: Setting cpu affinity to current cpu failed(-22) in set_sched_affinity_to_current.
+[    1.801873] [ds28e16] set_sched_affinity_to_all: Setting cpu affinity to all valid cpus failed(-22) in set_sched_affinity_to_all.
+[    1.860461] dwc3 a600000.dwc3: Failed to get clk 'ref': -2
+[    1.861234] register_client_adhoc:Client handle 64 usb0
+[    1.861565] usb_bam_ipa_delete_resources: Failed to delete USB_PROD resource
+[    1.861570] usb_bam_ipa_delete_resources: Failed to delete USB_CONS resource
+[    1.862300] qpnp-pdphy c440000.qcom,spmi:qcom,pm8150b@2:qcom,usb-pdphy@1700: usbpd_create failed: -517
+[    1.862665] read mi,support-second-ffc-term-current-diff failed
+[    1.950294] dwc3 a600000.dwc3: Failed to get clk 'ref': -2
+[    1.951024] register_client_adhoc:Client handle 64 usb0
+[    1.976022] usb_bam_ipa_delete_resources: Failed to delete USB_PROD resource
+[    1.976026] usb_bam_ipa_delete_resources: Failed to delete USB_CONS resource
+[    1.979038] [ds28e16] set_sched_affinity_to_current: Setting cpu affinity to current cpu failed(-22) in set_sched_affinity_to_current.
+[    1.981078] i2c_geni 884000.i2c: i2c error :-107
+[    1.981236] i2c_geni 884000.i2c: i2c error :-107
+[    1.981358] i2c_geni 884000.i2c: i2c error :-107
+[    1.981501] i2c_geni 884000.i2c: i2c error :-107
+[    1.981641] i2c_geni 884000.i2c: i2c error :-107
+[    1.981777] i2c_geni 884000.i2c: i2c error :-107
+[    1.981995] i2c_geni 884000.i2c: i2c error :-107
+[    1.982119] i2c_geni 884000.i2c: i2c error :-107
+[    1.982249] i2c_geni 884000.i2c: i2c error :-107
+[    1.982370] i2c_geni 884000.i2c: i2c error :-107
+[    1.982948] dwc3 a600000.dwc3: Failed to get clk 'ref': -2
+[    1.983628] register_client_adhoc:Client handle 64 usb0
+[    2.035130] [ds28e16] set_sched_affinity_to_all: Setting cpu affinity to all valid cpus failed(-22) in set_sched_affinity_to_all.
+[    2.037468] spss_utils [spss_probe]: Initialization completed ok, firmware_name [spss2p].
+[    2.039103] Error: swapper/0: fastrpc_device_init: failed to create debugfs root dir
+[    2.039839] adsprpc: fastrpc_probe: service location enabled for avs/audio (audio_pdr_adsprpc)
+[    2.051488] LMI_VFS_DIAG lookup_bdev kern_path fail err=-2
+[    2.064949] RNDIS_IPA module is loaded.
+[    2.070046] cam_cc_sleep_clk_src: CXO configuration failed
+[    2.071756] ALSA device list:
+[    2.102798] [pmOS-rd]:   ❬❬ PMOS STAGE 1 ❭❭
+[    2.102837] [pmOS-rd]: initramfs version: 3.12.0-r0
+[    2.102870] [pmOS-rd]:   ❬❬ PMOS STAGE 2 ❭❭
+[    2.334085] synth uevent: /devices/platform/soc/soc:maxim_ds28e16/power_supply/batt_verify: failed to send uevent
+[    2.334088] power_supply batt_verify: uevent: failed to send synthetic uevent
+[    2.500850] [pmOS-rd]:   Setting up USB gadget through configfs
+[    2.595994] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
+[    2.596799] [pmOS-rd]: Trying to start server with parameters: Server IP addr: 172.16.42.1:67, client IP addr: 172.16.42.2, interface: usb0
+[    2.896525] IPv6: ADDRCONF(NETDEV_CHANGE): usb0: link becomes ready
+[    3.872033] QCOM-STEPCHG: read_range_data_from_node: Count qcom,step-chg-ranges failed, rc=-22
+[    3.872038] QCOM-STEPCHG: read_range_data_from_node: Count qcom,cold-step-chg-ranges failed, rc=-22
+[    4.084800] [pmOS-rd]: Trying to mount subpartitions for 10 seconds...
+[    4.675343] [pmOS-rd]: Mount subpartitions of /dev/sda34
+[    4.678706]  loop0: p1 p2
+[    5.765229] [pmOS-rd]: Not resizing root partition (/dev/loop0p2): no free space left
+[    5.767627] [pmOS-rd]: Auto-repair and check 'ext' filesystem (/dev/loop0p2)
+[    5.794329] [pmOS-rd]: pmOS_root: recovering journal
+[    5.830894] [pmOS-rd]: pmOS_root: clean, 12662/6469152 files, 627801/27926518 blocks
+[    5.876954] [pmOS-rd]: Resize 'ext4' root filesystem (/dev/loop0p2)
+[    5.878731] [pmOS-rd]: modprobe: FATAL: Module ext4 not found in directory /lib/modules/4.19.325-cip128-st12-perf
+[    5.879827] [pmOS-rd]: resize2fs 1.47.4 (6-Mar-2025)
+[    5.905983] [pmOS-rd]: The filesystem is already 27926518 (4k) blocks long.  Nothing to do!
+[    5.913035] [pmOS-rd]: Mount root partition (/dev/loop0p2) to /sysroot (read-write) with options defaults
+[    5.950437] [pmOS-rd]: modprobe: FATAL: Module ext4 not found in directory /lib/modules/4.19.325-cip128-st12-perf
+[    5.951157] LMI_VFS_DIAG do_new_mount enter fstype=ext4 name=/dev/loop0p2 data=(null)
+[    5.951180] LMI_VFS_DIAG do_new_mount pre_get_tree fs=ext4 name=/dev/loop0p2 err=0 fc_source=/dev/loop0p2
+[    5.951187] LMI_VFS_DIAG vfs_get_tree enter fs=ext4 fs_flags=0x1 source=/dev/loop0p2 root=          (null)
+[    5.951191] fs_context: LMI_VFS_DIAG legacy_get_tree enter fs=ext4 source=/dev/loop0p2 flags=0x8000
+[    5.951196] LMI_VFS_DIAG mount_bdev enter fs=ext4 dev=/dev/loop0p2 flags=0x8000
+[    5.951200] LMI_VFS_DIAG lookup_bdev enter path=/dev/loop0p2
+[    5.951255] LMI_VFS_DIAG ext4_fill_super enter dev=7:2 data=(null)
+[    5.956512] EXT4-fs (loop0p2): mounted filesystem with ordered data mode. Opts: (null)
+[    5.956519] LMI_VFS_DIAG mount_bdev fill_super fs=ext4 ret=0
+[    5.956523] fs_context: LMI_VFS_DIAG legacy_get_tree ok fs=ext4
+[    5.977755] [pmOS-rd]: Switching root
+[    5.977767] [pmOS-rd]: [pmOS-rd] Disabling console output again (use 'pmos.debug-shell' to keep it enabled)
+[    6.999135] [ds28e16] Read_RomID: Failed to reset ds28e16!
+[    7.051182] [ds28e16] Read_RomID: Failed to reset ds28e16!
+[    7.431315] CAM_ERR: CAM-MEM: cam_mem_mgr_request_mem: 1071 failed. mem_mgr not initialized
+[    7.434850] CAM_ERR: CAM-ICP: cam_icp_subdev_open: 94 FW download failed
+[   68.576129] subsys-pil-tz aab0000.qcom,venus: venus: Failed to locate venus.mdt(rc:-110)
+[   68.576143] msm_vidc:   err : ffffffff: .....: Failed to download firmware
+[   68.578857] msm_vidc:   err : ffffffff: .....: Failed to load Venus FW
+[   68.578860] msm_vidc:   err : ffffffff: .....: Core init failed
+[   68.578864] msm_vidc:   err : 00000001: ....d: Failed to init core, id = 0
+[   68.578886] msm_vidc:   err : 00000001: ....d: Failed to move from state: 1 to 3
+[   68.578893] msm_vidc:   err : 00000001: ....d: Failed to move video instance to init state
+[  130.016165] subsys-pil-tz aab0000.qcom,venus: venus: Failed to locate venus.mdt(rc:-110)
+[  130.016179] msm_vidc:   err : ffffffff: .....: Failed to download firmware
+[  130.018892] msm_vidc:   err : ffffffff: .....: Failed to load Venus FW
+[  130.018894] msm_vidc:   err : ffffffff: .....: Core init failed
+[  130.018898] msm_vidc:   err : 00000002: ....e: Failed to init core, id = 0
+[  130.018912] msm_vidc:   err : 00000002: ....e: Failed to move from state: 1 to 3
+[  130.018919] msm_vidc:   err : 00000002: ....e: Failed to move video instance to init state
+[  130.018945] msm_vidc:   err : ffffffff: .....: Failed to create instance, core: 0, type = 1
+[  130.018974] msm_vidc:   err : ffffffff: .....: Failed to create instance, core: 0, type = 0
+[  131.476926] EXT4-fs (loop0p2): re-mounted. Opts: (null)
+[  131.520095] LMI_VFS_DIAG do_new_mount enter fstype=ext2 name=/dev/loop0p1 data=(null)
+[  131.520110] LMI_VFS_DIAG do_new_mount pre_get_tree fs=ext2 name=/dev/loop0p1 err=0 fc_source=/dev/loop0p1
+[  131.520113] LMI_VFS_DIAG vfs_get_tree enter fs=ext2 fs_flags=0x1 source=/dev/loop0p1 root=          (null)
+[  131.520115] fs_context: LMI_VFS_DIAG legacy_get_tree enter fs=ext2 source=/dev/loop0p1 flags=0x0
+[  131.520118] LMI_VFS_DIAG mount_bdev enter fs=ext2 dev=/dev/loop0p1 flags=0x0
+[  131.520120] LMI_VFS_DIAG lookup_bdev enter path=/dev/loop0p1
+[  131.520164] LMI_VFS_DIAG ext4_fill_super enter dev=7:1 data=(null)
+[  131.520841] EXT4-fs (loop0p1): mounting ext2 file system using the ext4 subsystem
+[  131.522358] EXT4-fs (loop0p1): warning: mounting unchecked fs, running e2fsck is recommended
+[  131.523011] EXT4-fs (loop0p1): mounted filesystem without journal. Opts: (null)
+
