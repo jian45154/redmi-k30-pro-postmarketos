@@ -63,9 +63,10 @@ fastboot boot /tmp/postmarketOS-export/boot.img # RAM only; writes nothing
 - `artifacts/wsl-pmaports/` — the device + kernel pmaports packages.
 - `artifacts/kernel-source/` — config fragments and device-tree evidence used to
   derive the kernel config.
-- `notes/` — dated working log (build failures, fixes, boot test, flash plan).
-- `scripts/` — Windows/WSL helper scripts for env checks, image inspection,
-  config generation, and pmaports sync. Output goes to `logs/` (gitignored).
+- `notes/` — compact archive notes for the current v27 baseline, rollback plan,
+  and hardware enablement plan.
+- `scripts/` — current WSL/device helper scripts for rebuilding v27/v28,
+  checking the exported images, and collecting hardware evidence.
 
 ## Current hardware focus
 
@@ -81,7 +82,9 @@ enablement. The immediate targets are:
 - Bluetooth: unblock and initialize BT after WLAN/firmware service dependencies
   are understood.
 
-The latest evidence is recorded in
+The latest evidence is summarized in
+[`notes/archive-summary-2026-06-23.md`](notes/archive-summary-2026-06-23.md)
+and
 [`notes/repair-phase43-v27-full-hardware-check-2026-06-23.md`](notes/repair-phase43-v27-full-hardware-check-2026-06-23.md).
 
 ## Safety
