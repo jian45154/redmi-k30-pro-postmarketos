@@ -15,6 +15,9 @@ deviceinfo_chassis="handset"
 deviceinfo_screen_width="1080"
 deviceinfo_screen_height="2400"
 deviceinfo_rootfs_image_sector_size="4096"
+deviceinfo_usb_network_function="rndis.usb0"
+deviceinfo_usb_idVendor="0x0525"
+deviceinfo_usb_idProduct="0xA4A2"
 
 # Bootloader related
 deviceinfo_flash_method="fastboot"

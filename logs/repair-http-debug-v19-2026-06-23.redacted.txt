@@ -1,0 +1,446 @@
+generated=Fri Nov 27 16:21:09 UTC 1970
+__CMDLINE__
+cgroup_disable=pressure ramoops_memreserve=4M rcupdate.rcu_expedited=1 rcu_nocbs=0-7 kpti=off androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery pmos.debug-shell pmos_boot_uuid=2c2600b1-700f-4bdd-a22c-bb12cc589baa pmos_root_uuid=8646c5cd-6298-46b4-8465-47c4a0fbb370 pmos_rootfsopts=defaults androidboot.verifiedbootstate=orange androidboot.keymaster=1  androidboot.bootdevice=1d84000.ufshc androidboot.fstab_suffix=default androidboot.boot_devices=soc/1d84000.ufshc androidboot.serialno=<redacted> androidboot.secureboot=1 androidboot.hwversion=3.9.0 androidboot.cpuid=<redacted> androidboot.camera.config=1 androidboot.network.mode=1 androidboot.hwc=CN androidboot.hwlevel=MP androidboot.product.hardware.sku=std androidboot.baseband=mdm msm_drm.dsi_display0=qcom,mdss_dsi_j11_38_08_0a_fhd_cmd: androidboot.dtbo_idx=7 androidboot.dtb_idx=0 androidboot.ramdump=disable block2mtd.block2mtd=/dev/block/sda15,2097152 mtdoops.mtddev=0 mtdoops.record_size=2097152 mtdoops.dump_oops=0 printk.always_kmsg_dump=1 androidboot.dp=0x0 androidboot.cert=M2001J11E
+__PMOS_INIT_LOG__
+tee: /dev/: Is a directory
+  ❬❬ PMOS STAGE 1 ❭❭
+initramfs version: 3.12.0-r0
+  ❬❬ PMOS STAGE 2 ❭❭
+starting version 3.2.14
+  Setting up USB gadget through configfs
+Trying to start server with parameters: Server IP addr: 172.16.42.1:67, client IP addr: 172.16.42.2, interface: usb0
+Entering debug shell
+mkdir: can't create directory '/sys/kernel/config/usb_gadget/g1/functions/acm.usb0': No such file or directory
+  Couldn't create /sys/kernel/config/usb_gadget/g1/functions/acm.usb0
+ln: /sys/kernel/config/usb_gadget/g1/configs/c.1/acm.usb0: No such file or directory
+  Couldn't symlink acm.usb0
+mount: mounting none on /sys/kernel/debug failed: No such file or directory
+cat: can't open '/sys/devices/virtual/tty/tty0/active': No such file or directory
+/usr/bin/buffyboard
+modprobe: FATAL: Module uinput not found in directory /lib/modules/4.19.325-cip128-st12-perf
+setfont: ioctl 0x4b72 failed: Not a tty
+Ignoring invalid config file /etc/buffyboard.conf
+Could not retrieve current termimal state: Not a tty
+Could not prepare for terminal resizing: Not a tty
+Could not open /dev/uinput: No such file or directory
+__BEFORE__
+PMOS_ROOT=
+PMOS_BOOT=
+SUBPARTITION_DEV=
+SUBPARTITION_LOOP=
+root_uuid=8646c5cd-6298-46b4-8465-47c4a0fbb370
+boot_uuid=2c2600b1-700f-4bdd-a22c-bb12cc589baa
+deviceinfo_rootfs_image_sector_size=4096
+__NETWORK__
+1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN qlen 1000
+    link/loopback <redacted-mac> brd <redacted-mac>
+2: bond0: <BROADCAST,MULTICAST400> mtu 1500 qdisc noop state DOWN qlen 1000
+    link/ether <redacted-mac> brd <redacted-mac>
+3: dummy0: <BROADCAST,NOARP> mtu 1500 qdisc noop state DOWN qlen 1000
+    link/ether <redacted-mac> brd <redacted-mac>
+4: ip_vti0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN qlen 1000
+    link/ipip 0.0.0.0 brd 0.0.0.0
+5: ip6_vti0@NONE: <NOARP> mtu 1364 qdisc noop state DOWN qlen 1000
+    link/tunnel6 <redacted-mac>:<redacted-mac>:00:00:00:00 brd <redacted-mac>:<redacted-mac>:00:00:00:00
+6: sit0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN qlen 1000
+    link/sit 0.0.0.0 brd 0.0.0.0
+7: ip6tnl0@NONE: <NOARP> mtu 1452 qdisc noop state DOWN qlen 1000
+    link/tunnel6 <redacted-mac>:<redacted-mac>:00:00:00:00 brd <redacted-mac>:<redacted-mac>:00:00:00:00
+8: usb0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc pfifo_fast state DOWN qlen 1000
+    link/ether <redacted-mac> brd <redacted-mac>
+    inet 172.16.42.1/16 brd 172.16.255.255 scope global usb0
+       valid_lft forever preferred_lft forever
+172.16.0.0/16 dev usb0 scope link  src 172.16.42.1 
+__PORTS__
+netstat: applet not found
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 172.16.42.1:8080        0.0.0.0:*               LISTEN      692/busybox-extras
+tcp        0      0 172.16.42.1:23          0.0.0.0:*               LISTEN      690/telnetd
+__PARTITIONS__
+major minor  #blocks  name
+
+   1        0       8192 ram0
+   1        1       8192 ram1
+   1        2       8192 ram2
+   1        3       8192 ram3
+   1        4       8192 ram4
+   1        5       8192 ram5
+   1        6       8192 ram6
+   1        7       8192 ram7
+   1        8       8192 ram8
+   1        9       8192 ram9
+   1       10       8192 ram10
+   1       11       8192 ram11
+   1       12       8192 ram12
+   1       13       8192 ram13
+   1       14       8192 ram14
+   1       15       8192 ram15
+   8       48      32768 sdd
+   8       49        104 sdd1
+   8       50        128 sdd2
+   8       51       1024 sdd3
+   8       52       2048 sdd4
+   8       53       2048 sdd5
+   8       54       1024 sdd6
+   8       32      16384 sdc
+   8       33       7168 sdc1
+   8       34       7168 sdc2
+   8       35        512 sdc3
+   8       36       1492 sdc4
+   8       80      65536 sdf
+   8       81        104 sdf1
+   8       82       2048 sdf2
+   8       83       2048 sdf3
+   8       84       2048 sdf4
+   8       85        128 sdf5
+   8       86        768 sdf6
+   8       87       8192 sdf7
+   8       88       8192 sdf8
+   8       89       8192 sdf9
+   8       90       1024 sdf10
+   8       64    1048576 sde
+   8       65        104 sde1
+   8       66         32 sde2
+   8       67         32 sde3
+   8       68         32 sde4
+   8       69         32 sde5
+   8       70        128 sde6
+   8       71        128 sde7
+   8       72        256 sde8
+   8       73        256 sde9
+   8       74         32 sde10
+   8       75         32 sde11
+   8       76         32 sde12
+   8       77         32 sde13
+   8       78        128 sde14
+   8       79        128 sde15
+ 259       19        128 sde16
+ 259       20        128 sde17
+ 259       21        128 sde18
+ 259       22        256 sde19
+ 259       23        256 sde20
+ 259       24        256 sde21
+ 259       25        512 sde22
+ 259       26        512 sde23
+ 259       27        512 sde24
+ 259       28        128 sde25
+ 259       29        128 sde26
+ 259       30        128 sde27
+ 259       31       3712 sde28
+ 259       32       1024 sde29
+ 259       33       1024 sde30
+ 259       34       1024 sde31
+ 259       35       1024 sde32
+ 259       36       1024 sde33
+ 259       37       1024 sde34
+ 259       38       1024 sde35
+ 259       39       1024 sde36
+ 259       40       2048 sde37
+ 259       41       2048 sde38
+ 259       42       2048 sde39
+ 259       43       2048 sde40
+ 259       44       4096 sde41
+ 259       45       4096 sde42
+ 259       46      32768 sde43
+ 259       47       8192 sde44
+ 259       48       8192 sde45
+ 259       49      16384 sde46
+ 259       50      32768 sde47
+ 259       51      65536 sde48
+ 259       52      65536 sde49
+ 259       53     131072 sde50
+ 259       54     458752 sde51
+ 259       55      32768 sde52
+ 259       56      32768 sde53
+ 259       57      53248 sde54
+ 259       58       4096 sde55
+ 259       59       4096 sde56
+ 259       60       2048 sde57
+ 259       61       2048 sde58
+   8       16      16384 sdb
+   8       17       7168 sdb1
+   8       18       7168 sdb2
+   8       19        512 sdb3
+   8       20       1492 sdb4
+   8        0  123740160 sda
+   8        1          8 sda1
+   8        2         32 sda2
+   8        3         32 sda3
+   8        4         32 sda4
+   8        5        128 sda5
+   8        6        256 sda6
+   8        7        512 sda7
+   8        8        512 sda8
+   8        9        512 sda9
+   8       10       2048 sda10
+   8       11       4096 sda11
+   8       12       8192 sda12
+   8       13       8192 sda13
+   8       14       8192 sda14
+   8       15      16384 sda15
+ 259        0      16384 sda16
+ 259        1       1024 sda17
+ 259        2      16384 sda18
+ 259        3      15360 sda19
+ 259        4      32768 sda20
+ 259        5      32768 sda21
+ 259        6      65536 sda22
+ 259        7      65536 sda23
+ 259        8      65536 sda24
+ 259        9     131072 sda25
+ 259       10      98304 sda26
+ 259       11      32768 sda27
+ 259       12     131072 sda28
+ 259       13     393216 sda29
+ 259       14     393216 sda30
+ 259       15    1048576 sda31
+ 259       16    8912896 sda32
+ 259       17      32768 sda33
+ 259       18  112205804 sda34
+  31        0      16384 mtdblock0
+__BLKID_BEFORE__
+__USERDATA__
+userdata=
+__CALL_MOUNT_SUBPARTITIONS__
+Trying to mount subpartitions for 10 seconds...
+ERROR: failed to mount subpartitions!
+__AFTER_MOUNT_SUBPARTITIONS__
+PMOS_ROOT=
+PMOS_BOOT=
+SUBPARTITION_DEV=
+SUBPARTITION_LOOP=
+ls: /dev/loop*: No such file or directory
+ls: /dev/disk/by-partlabel: No such file or directory
+ls: /dev/block/by-name: No such file or directory
+__ROOT_TYPE__
+__MOUNTS__
+none on / type rootfs (rw,size=2673952k,nr_inodes=668488)
+proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
+run on /run type tmpfs (rw,nosuid,nodev,relatime)
+configfs on /sys/kernel/config type configfs (rw,nosuid,nodev,noexec,relatime)
+devpts on /dev/pts type devpts (rw,relatime,mode=600,ptmxmode=000)
+pstore on /sys/fs/pstore type pstore (rw,relatime)
+__DMESG_TAIL__
+[    2.144662] register_client_adhoc:find path.src 61 dest 676
+[    2.144802] register_client_adhoc:find path.src 1 dest 583
+[    2.144889] register_client_adhoc:Client handle 64 usb0
+[    2.145309] [ds28e16] set_sched_affinity_to_all: Setting cpu affinity to all valid cpus failed(-22) in set_sched_affinity_to_all.
+[    2.145908] msm-dwc3 a600000.ssusb: Linked as a consumer to regulator.95
+[    2.146324] core_ctl: Creating CPU group 0
+[    2.146330] core_ctl: Init CPU0 state
+[    2.146333] core_ctl: Init CPU1 state
+[    2.146337] core_ctl: Init CPU2 state
+[    2.146340] core_ctl: Init CPU3 state
+[    2.146433] core_ctl: Creating CPU group 4
+[    2.146437] core_ctl: Init CPU4 state
+[    2.146441] core_ctl: Init CPU5 state
+[    2.146444] core_ctl: Init CPU6 state
+[    2.146559] core_ctl: Creating CPU group 7
+[    2.146564] core_ctl: Init CPU7 state
+[    2.146791] registered taskstats version 1
+[    2.146803] Loading compiled-in X.509 certificates
+[    2.146879] Key type ._fscrypt registered
+[    2.146884] Key type .fscrypt registered
+[    2.146888] Key type fscrypt-provisioning registered
+[    2.146965] pstore: Invalid compression size for deflate: 0
+[    2.147281] spss_utils [spss_parse_dt]: iar_buf_addr [0x8e0f0000].
+[    2.147371] spss_utils [spss_probe]: Initialization completed ok, firmware_name [spss2p].
+[    2.149039] Error: swapper/0: fastrpc_device_init: failed to create debugfs root dir
+[    2.149622] fastrpc soc:qcom,msm-adsprpc-mem: for adsp_rh segments only will be dumped.
+[    2.149696] adsprpc: init_secure_vmid_list: secure VMID = 22
+[    2.149700] adsprpc: init_secure_vmid_list: secure VMID = 37
+[    2.149719] adsprpc: fastrpc_probe: service location enabled for avs/audio (audio_pdr_adsprpc)
+[    2.149725] adsprpc: fastrpc_probe: service location enabled for tms/servreg (sensors_pdr_adsprpc)
+[    2.150011] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb1: Linked as a consumer to 15000000.apps-smmu
+[    2.150197] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb1 to group 37
+[    2.150592] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb2: Linked as a consumer to 15000000.apps-smmu
+[    2.150757] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb2 to group 38
+[    2.151146] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb3: Linked as a consumer to 15000000.apps-smmu
+[    2.151311] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb3 to group 39
+[    2.151576] FG: fg_psy_get_property: unsupported property 67
+[    2.151582] FG: fg_psy_get_property: unsupported property 4
+[    2.151619] Get prop 67 is not supported in pc_port
+[    2.151656] [FTS][Info]fts_power_supply_work 1
+[    2.151656] 
+[    2.151661] [FTS][Info]fts_power_supply_work USB is exist
+[    2.151661] 
+[    2.151666] [FTS][Info][Mode]enter charger mode
+[    2.151851] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb4: Linked as a consumer to 15000000.apps-smmu
+[    2.152042] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb4 to group 40
+[    2.152440] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb5: Linked as a consumer to 15000000.apps-smmu
+[    2.152604] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb5 to group 41
+[    2.153022] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb6: Linked as a consumer to 15000000.apps-smmu
+[    2.153195] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb6 to group 42
+[    2.153715] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb7: Linked as a consumer to 15000000.apps-smmu
+[    2.153888] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb7 to group 43
+[    2.154282] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb8: Linked as a consumer to 15000000.apps-smmu
+[    2.154446] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb8 to group 44
+[    2.154847] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb9: Linked as a consumer to 15000000.apps-smmu
+[    2.155324] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb9 to group 45
+[    2.155756] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb10: Linked as a consumer to 15000000.apps-smmu
+[    2.155921] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb10 to group 46
+[    2.156412] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb11: Linked as a consumer to 15000000.apps-smmu
+[    2.156571] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb11 to group 47
+[    2.156961] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb12: Linked as a consumer to 15000000.apps-smmu
+[    2.157131] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb12 to group 48
+[    2.157522] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb13: Linked as a consumer to 15000000.apps-smmu
+[    2.157682] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb13 to group 49
+[    2.158076] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb14: Linked as a consumer to 15000000.apps-smmu
+[    2.158242] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb14 to group 50
+[    2.158638] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb15: Linked as a consumer to 15000000.apps-smmu
+[    2.158816] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb15 to group 51
+[    2.159729] adsprpc: fastrpc_device_init: SSR notifier registered for adsp
+[    2.159738] adsprpc: fastrpc_device_init: SSR notifier registered for modem
+[    2.159743] adsprpc: fastrpc_device_init: SSR notifier registered for slpi
+[    2.159748] adsprpc: fastrpc_device_init: SSR notifier registered for cdsp
+[    2.160590] LMI_VFS_DIAG lookup_bdev enter path=/dev/block/sda15
+[    2.160631] LMI_VFS_DIAG lookup_bdev kern_path fail err=-2
+[    2.160822] mtdoops: mtd0 is too large (limit is 8 MiB)
+[    2.161099] block2mtd: mtd0: [/dev/block/sda15] erase_size = 2048KiB [2097152]
+[    2.161240] ngd_msm_ctrl 3ac0000.slim: Linked as a consumer to 15000000.apps-smmu
+[    2.161428] iommu: Adding device 3ac0000.slim to group 52
+[    2.163347] input: gpio-keys as /devices/platform/soc/soc:gpio_keys/input/input5
+[    2.164175] [USBPD-PM]: usbpd_pm_probe: usbpd_pm_probe enter
+[    2.164182] [USBPD-PM]: pd_policy_parse_dt: pm_config.bat_volt_lp_lmt:4480
+[    2.164187] [USBPD-PM]: pd_policy_parse_dt: pm_config.bat_curr_lp_lmt:6000
+[    2.164191] [USBPD-PM]: pd_policy_parse_dt: pm_config.bus_volt_lp_lmt:12000
+[    2.164196] [USBPD-PM]: pd_policy_parse_dt: pm_config.bus_curr_lp_lmt:3000
+[    2.164200] [USBPD-PM]: pd_policy_parse_dt: pdpm->step_charge_high_vol_curr_max:0
+[    2.164205] [USBPD-PM]: pd_policy_parse_dt: pdpm->cell_vol_high_threshold_mv:0
+[    2.164209] [USBPD-PM]: pd_policy_parse_dt: pdpm->cell_vol_max_threshold_mv:0
+[    2.164213] [USBPD-PM]: pd_policy_parse_dt: pdpm->non_ffc_bat_volt_max:4450
+[    2.164218] [USBPD-PM]: pd_policy_parse_dt: therm-level-threshold missing, use default val
+[    2.164222] [USBPD-PM]: pd_policy_parse_dt: therm-level-threshold:13
+[    2.164226] [USBPD-PM]: pd_policy_parse_dt: pd-battery-warm-th:480
+[    2.164231] [USBPD-PM]: pd_policy_parse_dt: pd-power-max:33
+[    2.164239] [USBPD-PM]: usbpd_check_cp_sec_psy: cp_sec_psy not found
+[    2.164910] [FC2-PM]: cp_qc30_probe: cp_qc30_probe enter
+[    2.164920] [FC2-PM]: cp_qc30_probe: battery_warm_th = 480
+[    2.164924] [FC2-PM]: cp_qc30_probe: charge pump qc3 probe
+[    2.166790] lpm_levels: Cluster (L3) stats not registered
+[    2.170683] rmnet_ipa3 started initialization
+[    2.171343] RNDIS_IPA module is loaded.
+[    2.172146] msm notifier probed successfully
+[    2.173761] cfg80211: Loading compiled-in X.509 certificates for regulatory database
+[    2.174414] cfg80211: Loaded X.509 cert 'sforshee: 00b28ddf47aef9cea7'
+[    2.174759] cfg80211: Loaded X.509 cert 'wens: 61c038651aabdcf94bd0ac7ff06c7248db18c600'
+[    2.175245] cam_cc_sleep_clk_src: CXO configuration failed
+[    2.176089] msm_bus_late_init: Remove handoff bw requests
+[    2.176703] regulator_proxy_consumer_remove_all: removing regulator proxy consumer requests
+[    2.176877] ALSA device list:
+[    2.176882]   No soundcards found.
+[    2.176922] Warning: unable to open an initial console.
+[    2.177468] Freeing unused kernel memory: 2048K
+[    2.177633] Run /init as init process
+[    2.189599] LMI_VFS_DIAG do_new_mount enter fstype=proc name=proc data=(null)
+[    2.189619] LMI_VFS_DIAG do_new_mount pre_get_tree fs=proc name=proc err=0 fc_source=proc
+[    2.189625] LMI_VFS_DIAG vfs_get_tree enter fs=proc fs_flags=0x8 source=proc root=          (null)
+[    2.189629] fs_context: LMI_VFS_DIAG legacy_get_tree enter fs=proc source=proc flags=0x8000
+[    2.189636] fs_context: LMI_VFS_DIAG legacy_get_tree ok fs=proc
+[    2.190351] LMI_VFS_DIAG do_new_mount enter fstype=sysfs name=sysfs data=(null)
+[    2.190361] LMI_VFS_DIAG do_new_mount pre_get_tree fs=sysfs name=sysfs err=0 fc_source=sysfs
+[    2.190365] LMI_VFS_DIAG vfs_get_tree enter fs=sysfs fs_flags=0x8 source=sysfs root=          (null)
+[    2.190370] fs_context: LMI_VFS_DIAG legacy_get_tree enter fs=sysfs source=sysfs flags=0x8000
+[    2.190405] fs_context: LMI_VFS_DIAG legacy_get_tree ok fs=sysfs
+[    2.191118] LMI_VFS_DIAG do_new_mount enter fstype=devtmpfs name=dev data=mode=0755
+[    2.191140] request_module fs-devtmpfs succeeded, but still no fs?
+[    2.192085] LMI_VFS_DIAG do_new_mount enter fstype=tmpfs name=run data=mode=0755
+[    2.192095] LMI_VFS_DIAG do_new_mount pre_get_tree fs=tmpfs name=run err=0 fc_source=run
+[    2.192100] LMI_VFS_DIAG vfs_get_tree enter fs=tmpfs fs_flags=0x8 source=run root=          (null)
+[    2.195860] LMI_VFS_DIAG do_new_mount enter fstype=configfs name=configfs data=(null)
+[    2.195871] LMI_VFS_DIAG do_new_mount pre_get_tree fs=configfs name=configfs err=0 fc_source=configfs
+[    2.195876] LMI_VFS_DIAG vfs_get_tree enter fs=configfs fs_flags=0x0 source=configfs root=          (null)
+[    2.197278] LMI_VFS_DIAG do_new_mount enter fstype=devpts name=devpts data=(null)
+[    2.197289] LMI_VFS_DIAG do_new_mount pre_get_tree fs=devpts name=devpts err=0 fc_source=devpts
+[    2.197294] LMI_VFS_DIAG vfs_get_tree enter fs=devpts fs_flags=0x8 source=devpts root=          (null)
+[    2.197299] fs_context: LMI_VFS_DIAG legacy_get_tree enter fs=devpts source=devpts flags=0x8000
+[    2.197325] fs_context: LMI_VFS_DIAG legacy_get_tree ok fs=devpts
+[    2.208174] msm-dwc3 a600000.ssusb: DWC3 exited from low power mode
+[    2.209430] ps5169_present_check: info is null
+[    2.272412] [bq2597x-STANDALONE]:bq2597x_charger_get_property:POWER_SUPPLY_PROP_CHARGING_ENABLED: disable
+[    2.276567] [bq2597x-STANDALONE]:bq2597x_get_work_mode:work mode:Standalone
+[    2.285495] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.285499] [ds28e16] verify_get_property: get RomID = <redacted>
+[    2.336052] FG: battery_authentic_work: FG: authentic prop is 1
+[    2.337822] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.337828] [ds28e16] verify_get_property: get RomID = <redacted>
+[    2.337833] FG: ds_romid_work: battery authentic work begin to restart.
+[    2.338427] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.338430] [ds28e16] verify_get_property: get chip_ok read RomID = <redacted>
+[    2.338585] [bq2597x-STANDALONE]:bq2597x_charger_get_property:POWER_SUPPLY_PROP_CHARGING_ENABLED: disable
+[    2.342981] [bq2597x-STANDALONE]:bq2597x_get_work_mode:work mode:Standalone
+[    2.343360] [bq2597x-STANDALONE]:bq2597x_charger_get_property:POWER_SUPPLY_PROP_CHARGING_ENABLED: disable
+[    2.343761] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.343764] [ds28e16] verify_get_property: get RomID = <redacted>
+[    2.348604] [bq2597x-STANDALONE]:bq2597x_get_work_mode:work mode:Standalone
+[    2.350648] [bq2597x-STANDALONE]:bq2597x_charger_get_property:POWER_SUPPLY_PROP_CHARGING_ENABLED: disable
+[    2.356426] [bq2597x-STANDALONE]:bq2597x_get_work_mode:work mode:Standalone
+[    2.372498] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.372502] [ds28e16] verify_get_property: get RomID = <redacted>
+[    2.424773] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.424776] [ds28e16] verify_get_property: get chip_ok read RomID = <redacted>
+[    2.430381] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.430385] [ds28e16] verify_get_property: get RomID = <redacted>
+[    2.447219] synth uevent: /devices/platform/soc/soc:maxim_ds28e16/power_supply/batt_verify: failed to send uevent
+[    2.447221] power_supply batt_verify: uevent: failed to send synthetic uevent
+[    2.461881] FG: fg_psy_get_property: unsupported property 67
+[    2.461892] FG: fg_psy_get_property: unsupported property 4
+[    2.482656] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.482661] [ds28e16] verify_get_property: get chip_ok read RomID = <redacted>
+[    2.488989] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.488992] [ds28e16] verify_get_property: get RomID = <redacted>
+[    2.542166] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.542168] [ds28e16] verify_get_property: get chip_ok read RomID = <redacted>
+[    2.551919] using random self ethernet address
+[    2.551927] using random host ethernet address
+[    2.557188] configfs-gadget gadget: HOST MAC <redacted-mac>
+[    2.557193] configfs-gadget gadget: MAC <redacted-mac>
+[    2.616751] android_work: did not send uevent (0 0 000000002ca40a11)
+[    2.622992] msm-dwc3 a600000.ssusb: Avail curr from USB = 2
+[    2.643370] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
+[    2.649320] LMI_VFS_DIAG do_new_mount enter fstype=pstore name=pstore data=(null)
+[    2.649349] LMI_VFS_DIAG do_new_mount pre_get_tree fs=pstore name=pstore err=0 fc_source=pstore
+[    2.649355] LMI_VFS_DIAG vfs_get_tree enter fs=pstore fs_flags=0x0 source=pstore root=          (null)
+[    2.649360] fs_context: LMI_VFS_DIAG legacy_get_tree enter fs=pstore source=pstore flags=0x8000
+[    2.649386] fs_context: LMI_VFS_DIAG legacy_get_tree ok fs=pstore
+[    2.756539] android_work: did not send uevent (0 0 000000002ca40a11)
+[    2.856627] msm-dwc3 a600000.ssusb: Avail curr from USB = 100
+[    2.900280] FG: ds_status_work: FG: ds_status prop is 00 00 08 03 02 00 ff 4b
+[    2.943284] android_work: sent uevent USB_STATE=CONNECTED
+[    3.329177] FG: fg_gen4_get_batt_profile: cmdline of batt profile is not defined, read page0 to reload file
+[    3.329190] of_batterydata_get_best_profile: No battery data found
+[    3.329195] FG: fg_gen4_get_batt_profile: couldn't find profile handle
+[    3.329199] FG: profile_load_work: profile for batt_id=99KOhms not found..using OTP, rc:-61
+[    3.361171] [ds28e16] Read_RomID: RomID = <redacted>
+[    3.361178] [ds28e16] verify_get_property: get RomID = <redacted>
+[    3.361184] FG: ds_romid_work: FG: romid prop is <redacted>
+[    3.361192] FG: ds_page0_work: FG: ds_page0 prop is 53 42 4d 34 51 30 34 38 00 8e ef 46 4d 44 31 31
+[    3.392169] configfs-gadget gadget: high-speed config #1: c
+[    3.392241] msm-dwc3 a600000.ssusb: Avail curr from USB = 500
+[    3.392289] android_work: sent uevent USB_STATE=CONFIGURED
+[    3.968024] of_batterydata_get_best_profile: j11sun_4700mah found
+[    3.968032] QCOM-STEPCHG: read_range_data_from_node: Count qcom,step-chg-ranges failed, rc=-22
+[    3.968036] QCOM-STEPCHG: read_range_data_from_node: Count qcom,cold-step-chg-ranges failed, rc=-22
+[    4.336529] FG: fg_psy_get_property: unsupported property 67
+[    4.336536] FG: fg_psy_get_property: unsupported property 4
+[    4.337135] PL_AWAKE: current vote is now 1 voted by TAPER_END_VOTER,0, previous voted 0
+[    4.338062] FCC: current vote is now -22 voted by TAPER_STEPPER_VOTER,5, previous voted 6000000
+[    4.338071] FCC: current vote is now 6000000 voted by HW_LIMIT_VOTER,0, previous voted -22
+[    4.338100] PL_AWAKE: current vote is now 0 voted by TAPER_END_VOTER,0, previous voted 1
+[    5.856130] aw8697_haptic 3-005a: Falling back to syfs fallback for: aw8697_haptic.bin
+[    6.368346] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[    6.368358] FG: calculate_average_current: current_now_ma=-158203 averaged_iavg_ma=-158203
+[    6.368369] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:0, batt_ma:-158203, smooth_low_batt_soc:0, smooth_soc: 0
+[    6.368374] FG: soc_monitor_work: soc:100, raw_soc:100, c:-158203, s:1
+[    6.368839] FG: fg_psy_get_property: unsupported property 67
+[    6.368845] FG: fg_psy_get_property: unsupported property 4
+[   10.063010] FG: fg_psy_get_property: unsupported property 67
+[   10.063022] FG: fg_psy_get_property: unsupported property 4
+[   10.063061] smb5_usb_port_get_prop: 3 callbacks suppressed
+[   10.063063] Get prop 67 is not supported in pc_port
+[   10.185904] FG: fg_psy_get_property: unsupported property 67
+[   10.185915] FG: fg_psy_get_property: unsupported property 4
+[   10.186033] Get prop 67 is not supported in pc_port
+

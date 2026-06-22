@@ -1,11 +1,14 @@
 # Raw device logs — contain serial numbers, CPU IDs, bootloader tokens
 logs/*.txt
 logs/*.tmp
+!logs/*.redacted.txt
 
 # Large / third-party binary images — keep local, do NOT publish
 # (stock boot.img, skkk recovery images, and pmOS build artifacts)
 artifacts/images/*.img
 artifacts/images/*.zip
+artifacts/images/*DO-NOT-FLASH*
+artifacts/images/*REJECTED*
 
 # Stray/empty scratch files
 /Running

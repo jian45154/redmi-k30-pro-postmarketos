@@ -1,0 +1,910 @@
+__REMOTE_IDENTITY__
+xiaomi-lmi
+uid=10000(lmi) gid=10000(lmi) groups=10(wheel),18(audio),23(input),27(video),28(netdev),102(plugdev),10000(lmi)
+Linux xiaomi-lmi 4.19.325-cip128-st12-perf #5-postmarketOS SMP PREEMPT Mon Jun 22 14:37:26 UTC 2026 aarch64 Linux
+PRETTY_NAME="postmarketOS edge"
+NAME="postmarketOS"
+VERSION_ID="edge"
+VERSION="edge"
+ID="postmarketos"
+ID_LIKE="alpine"
+HOME_URL="https://www.postmarketos.org/"
+SUPPORT_URL="https://gitlab.postmarketos.org/postmarketOS"
+BUG_REPORT_URL="https://gitlab.postmarketos.org/postmarketOS/pmaports/issues"
+LOGO="postmarketos-logo"
+ANSI_COLOR="0;32"
+ 03:39:48 up 6 min,  0 users,  load average: 0.00, 0.09, 0.07
+__CMDLINE__
+cgroup_disable=pressure ramoops_memreserve=4M rcupdate.rcu_expedited=1 rcu_nocbs=0-7 kpti=off androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery pmos_boot_uuid=2c2600b1-700f-4bdd-a22c-bb12cc589baa pmos_root_uuid=8646c5cd-6298-46b4-8465-47c4a0fbb370 pmos_rootfsopts=defaults androidboot.verifiedbootstate=orange androidboot.keymaster=1  androidboot.bootdevice=1d84000.ufshc androidboot.fstab_suffix=default androidboot.boot_devices=soc/1d84000.ufshc androidboot.serialno=<redacted> androidboot.secureboot=1 androidboot.hwversion=3.9.0 androidboot.cpuid=<redacted> androidboot.camera.config=1 androidboot.network.mode=1 androidboot.hwc=CN androidboot.hwlevel=MP androidboot.product.hardware.sku=std androidboot.baseband=mdm msm_drm.dsi_display0=qcom,mdss_dsi_j11_38_08_0a_fhd_cmd: androidboot.dtbo_idx=7 androidboot.dtb_idx=0 androidboot.ramdump=disable block2mtd.block2mtd=/dev/block/sda15,2097152 mtdoops.mtddev=0 mtdoops.record_size=2097152 mtdoops.dump_oops=0 printk.always_kmsg_dump=1 androidboot.dp=0x0 androidboot.cert=M2001J11E
+__MOUNTS__
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+run /run tmpfs rw,nosuid,nodev,relatime 0 0
+configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+/dev/loop0p2 / ext4 rw,relatime 0 0
+dev /dev tmpfs rw,nosuid,noexec,relatime 0 0
+devpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0
+shm /dev/shm tmpfs rw,nosuid,nodev,noexec,relatime 0 0
+tracefs /sys/kernel/tracing tracefs rw,nosuid,nodev,noexec,relatime 0 0
+fusectl /sys/fs/fuse/connections fusectl rw,nosuid,nodev,noexec,relatime 0 0
+pstore /sys/fs/pstore pstore rw,nosuid,nodev,noexec,relatime 0 0
+bpf /sys/fs/bpf bpf rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev 0 0
+cgroup2 /sys/fs/cgroup cgroup2 rw,nosuid,nodev,noexec,relatime,nsdelegate 0 0
+tmpfs /run/user/10000 tmpfs rw,nosuid,nodev,relatime 0 0
+__DF__
+Filesystem           Type            Size      Used Available Use% Mounted on
+run                  tmpfs           2.7G      1.0M      2.7G   0% /run
+/dev/loop0p2         ext4          104.9G    829.1M     98.8G   1% /
+dev                  tmpfs           2.7G         0      2.7G   0% /dev
+shm                  tmpfs           2.7G      4.0K      2.7G   0% /dev/shm
+tmpfs                tmpfs           2.7G         0      2.7G   0% /tmp
+tmpfs                tmpfs           2.7G         0      2.7G   0% /run/user/10000
+__OPENRC__
+Runlevel: nonetwork
+Runlevel: sysinit
+ devfs                                                             [  started  ]
+ udev                                                              [  stopped  ]
+ dmesg                                                             [  started  ]
+ udev-trigger                                                      [  stopped  ]
+ udev-settle                                                       [  stopped  ]
+Runlevel: shutdown
+ savecache                                                         [  stopped  ]
+ killprocs                                                         [  stopped  ]
+ mount-ro                                                          [  stopped  ]
+Runlevel: boot
+ modules                                                           [  started  ]
+ hwclock                                                           [  started  ]
+ sysctl                                                            [  started  ]
+ tmpfs                                                             [  started  ]
+ bootmisc                                                          [  started  ]
+ tqftpserv                                             [  started 00:06:11 (0) ]
+ hostname                                                          [  started  ]
+ logbookd                                                          [  started  ]
+ pd-mapper                                                            [ failed ]
+Runlevel: default
+ largefont                                                         [  stopped  ]
+ swapfile                                                          [  started  ]
+ postmarketos-zram-swap                                            [  stopped  ]
+ haveged                                                           [  crashed  ]
+ sshd                                                              [  started  ]
+ calld                                                             [  stopped  ]
+ dbus                                                              [  started  ]
+ wpa_supplicant                                        [  started 00:06:11 (0) ]
+ udev-postmount                                                    [  started  ]
+ ofono                                                 [  started 00:06:11 (0) ]
+ rfkill                                                            [  started  ]
+ cgroups                                                           [  started  ]
+ nftables                                                          [  stopped  ]
+ networkmanager                                        [  started 00:06:11 (0) ]
+ chronyd                                                           [  started  ]
+ openrc-settingsd                                                  [  started  ]
+ powerkey                                                          [  stopped  ]
+ shelli                                                            [  stopped  ]
+ sleep-inhibitor                                       [  started 00:06:11 (0) ]
+ smsd                                                              [  stopped  ]
+ local                                                             [  started  ]
+Dynamic Runlevel: hotplugged
+Dynamic Runlevel: needed/wanted
+ fsck                                                              [  started  ]
+ root                                                              [  started  ]
+ localmount                                                        [  started  ]
+ sysfs                                                             [  started  ]
+Dynamic Runlevel: manual
+ pd-mapper                                                            [ failed ]
+__NETWORK__
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1000
+    link/loopback <redacted-mac> brd <redacted-mac>
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: bond0: <BROADCAST,MULTICAST400> mtu 1500 qdisc noop state DOWN qlen 1000
+    link/ether <redacted-mac> brd <redacted-mac>
+3: dummy0: <BROADCAST,NOARP> mtu 1500 qdisc noop state DOWN qlen 1000
+    link/ether <redacted-mac> brd <redacted-mac>
+4: ip_vti0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN qlen 1000
+    link/ipip 0.0.0.0 brd 0.0.0.0
+5: ip6_vti0@NONE: <NOARP> mtu 1364 qdisc noop state DOWN qlen 1000
+    link/tunnel6 <redacted-mac>:<redacted-mac>:00:00:00:00 brd <redacted-mac>:<redacted-mac>:00:00:00:00
+6: sit0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN qlen 1000
+    link/sit 0.0.0.0 brd 0.0.0.0
+7: ip6tnl0@NONE: <NOARP> mtu 1452 qdisc noop state DOWN qlen 1000
+    link/tunnel6 <redacted-mac>:<redacted-mac>:00:00:00:00 brd <redacted-mac>:<redacted-mac>:00:00:00:00
+8: usb0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether <redacted-mac> brd <redacted-mac>
+    inet 172.16.42.1/16 brd 172.16.255.255 scope global usb0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::8028:bbff:fe43:680/64 scope link 
+       valid_lft forever preferred_lft forever
+172.16.0.0/16 dev usb0 scope link  src 172.16.42.1 
+sh: ss: not found
+__PROCESSES__
+PID   USER     TIME  COMMAND
+    1 root      0:01 /sbin/init
+    2 root      0:00 [kthreadd]
+    3 root      0:00 [rcu_gp]
+    4 root      0:00 [rcu_par_gp]
+    5 root      0:00 [kworker/0:0-eve]
+    6 root      0:00 [kworker/0:0H-ev]
+    7 root      0:00 [kworker/u16:0+M]
+    8 root      0:00 [mm_percpu_wq]
+    9 root      0:00 [ksoftirqd/0]
+   10 root      0:00 [rcu_preempt]
+   11 root      0:00 [rcu_sched]
+   12 root      0:00 [rcu_bh]
+   13 root      0:00 [rcuop/0]
+   14 root      0:00 [rcuos/0]
+   15 root      0:00 [rcuob/0]
+   16 root      0:00 [migration/0]
+   17 root      0:00 [cpuhp/0]
+   18 root      0:00 [kworker/0:1+eve]
+   19 root      0:00 [cpuhp/1]
+   20 root      0:00 [migration/1]
+   21 root      0:00 [ksoftirqd/1]
+   22 root      0:00 [kworker/1:0+eve]
+   23 root      0:00 [kworker/1:0H-ev]
+   24 root      0:00 [rcuop/1]
+   25 root      0:00 [rcuos/1]
+   26 root      0:00 [rcuob/1]
+   27 root      0:00 [cpuhp/2]
+   28 root      0:00 [migration/2]
+   29 root      0:00 [ksoftirqd/2]
+   30 root      0:00 [kworker/2:0-eve]
+   31 root      0:00 [kworker/2:0H-ev]
+   32 root      0:00 [rcuop/2]
+   33 root      0:00 [rcuos/2]
+   34 root      0:00 [rcuob/2]
+   35 root      0:00 [cpuhp/3]
+   36 root      0:00 [migration/3]
+   37 root      0:00 [ksoftirqd/3]
+   38 root      0:00 [kworker/3:0-eve]
+   39 root      0:00 [kworker/3:0H-ev]
+   40 root      0:00 [rcuop/3]
+   41 root      0:00 [rcuos/3]
+   42 root      0:00 [rcuob/3]
+   43 root      0:00 [cpuhp/4]
+   44 root      0:00 [migration/4]
+   45 root      0:00 [ksoftirqd/4]
+   46 root      0:00 [kworker/4:0-mm_]
+   47 root      0:00 [kworker/4:0H-ev]
+   48 root      0:00 [rcuop/4]
+   49 root      0:00 [rcuos/4]
+   50 root      0:00 [rcuob/4]
+   51 root      0:00 [cpuhp/5]
+   52 root      0:00 [migration/5]
+   53 root      0:00 [ksoftirqd/5]
+   55 root      0:00 [kworker/5:0H-ev]
+   56 root      0:00 [rcuop/5]
+   57 root      0:00 [rcuos/5]
+   58 root      0:00 [rcuob/5]
+   59 root      0:00 [cpuhp/6]
+   60 root      0:00 [migration/6]
+   61 root      0:00 [ksoftirqd/6]
+   63 root      0:00 [kworker/6:0H-ev]
+   64 root      0:00 [rcuop/6]
+   65 root      0:00 [rcuos/6]
+   66 root      0:00 [rcuob/6]
+   67 root      0:00 [cpuhp/7]
+   68 root      0:00 [migration/7]
+   69 root      0:00 [ksoftirqd/7]
+   71 root      0:00 [kworker/7:0H-ev]
+   72 root      0:00 [rcuop/7]
+   73 root      0:00 [rcuos/7]
+   74 root      0:00 [rcuob/7]
+   75 root      0:00 [netns]
+   76 root      0:00 [rcu_tasks_kthre]
+   77 root      0:00 [kauditd]
+   78 root      0:00 [kworker/5:1-eve]
+   79 root      0:00 [kworker/u16:1+L]
+   80 root      0:00 [kworker/6:1-eve]
+   81 root      0:00 [kworker/2:1-eve]
+   82 root      0:00 [kworker/1:1+eve]
+   83 root      0:00 [kworker/7:1-pm]
+   84 root      0:00 [kworker/3:1-eve]
+   85 root      0:00 [kworker/u17:0-d]
+   86 root      0:00 [ipa_usb_wq]
+   87 root      0:00 [msm_watchdog]
+   88 root      0:00 [qmp_aop]
+   89 root      0:00 [kworker/4:1-mm_]
+   90 root      0:00 [oom_reaper]
+   91 root      0:00 [writeback]
+   92 root      0:00 [kcompactd0]
+   93 root      0:00 [crypto]
+   94 root      0:00 [kblockd]
+   95 root      0:00 [blk_crypto_wq]
+   96 root      0:00 [irq/156-arm-smm]
+   97 root      0:00 [irq/157-arm-smm]
+   98 root      0:00 [irq/166-arm-smm]
+   99 root      0:00 [irq/167-arm-smm]
+  100 root      0:00 [irq/41-tsens-up]
+  101 root      0:00 [irq/42-tsens-cr]
+  102 root      0:00 [irq/43-tsens-up]
+  103 root      0:00 [irq/44-tsens-cr]
+  104 root      0:00 [edac-poller]
+  105 root      0:00 [irq/8-dcvsh-irq]
+  106 root      0:00 [irq/9-dcvsh-irq]
+  107 root      0:00 [irq/10-dcvsh-ir]
+  108 root      0:00 [ion-pool-uncach]
+  109 root      0:00 [ion-pool-cached]
+  110 root      0:00 [system]
+  111 root      0:00 [ion-pool-uncach]
+  112 root      0:00 [ion-pool-cached]
+  113 root      0:00 [camera]
+  114 root      0:00 [ipa_power_mgmt]
+  115 root      0:00 [transport_power]
+  116 root      0:00 [ipa_pm_activate]
+  117 root      0:00 [irq/173-arm-smm]
+  118 root      0:00 [irq/174-arm-smm]
+  119 root      0:00 [irq/175-arm-smm]
+  120 root      0:00 [irq/176-arm-smm]
+  121 root      0:00 [devfreq_wq]
+  122 root      0:00 [governor_msm_ad]
+  123 root      0:00 [irq/177-arm-smm]
+  124 root      0:00 [kworker/7:2-mm_]
+  125 root      0:00 [irq/178-arm-smm]
+  126 root      0:00 [irq/179-arm-smm]
+  127 root      0:00 [cfg80211]
+  168 root      0:00 [kswapd0:0]
+  227 root      0:00 [irq/180-arm-smm]
+  228 root      0:00 [irq/181-arm-smm]
+  229 root      0:00 [irq/182-arm-smm]
+  230 root      0:00 [irq/377-smp2p]
+  231 root      0:00 [irq/378-smp2p]
+  232 root      0:00 [irq/379-smp2p]
+  233 root      0:00 [geni_serial_dum]
+  234 root      0:00 [okl4vtty]
+  235 root      0:00 [hwrng]
+  237 root      0:00 [diag_real_time_]
+  238 root      0:00 [diag_wq]
+  239 root      0:00 [DIAG_USB_diag]
+  240 root      0:00 [diag_cntl_wq]
+  241 root      0:00 [diag_dci_wq]
+  242 root      0:00 [MODEM_CNTL]
+  243 root      0:00 [MODEM_DATA]
+  244 root      0:00 [MODEM_CMD]
+  245 root      0:00 [MODEM_DCI]
+  246 root      0:00 [MODEM_DCI_CMD]
+  247 root      0:00 [LPASS_CNTL]
+  248 root      0:00 [LPASS_DATA]
+  249 root      0:00 [LPASS_CMD]
+  250 root      0:00 [LPASS_DCI]
+  251 root      0:00 [LPASS_DCI_CMD]
+  252 root      0:00 [WCNSS_CNTL]
+  253 root      0:00 [WCNSS_DATA]
+  254 root      0:00 [WCNSS_CMD]
+  255 root      0:00 [WCNSS_DCI]
+  256 root      0:00 [WCNSS_DCI_CMD]
+  257 root      0:00 [SENSORS_CNTL]
+  258 root      0:00 [SENSORS_DATA]
+  259 root      0:00 [SENSORS_CMD]
+  260 root      0:00 [SENSORS_DCI]
+  261 root      0:00 [SENSORS_DCI_CMD]
+  262 root      0:00 [DIAG_CTRL]
+  263 root      0:00 [DIAG_DATA]
+  264 root      0:00 [DIAG_CMD]
+  265 root      0:00 [DIAG_DCI_DATA]
+  266 root      0:00 [DIAG_DCI_CMD]
+  267 root      0:00 [CDSP_CNTL]
+  268 root      0:00 [CDSP_DATA]
+  269 root      0:00 [CDSP_CMD]
+  270 root      0:00 [CDSP_DCI]
+  271 root      0:00 [CDSP_DCI_CMD]
+  272 root      0:00 [NPU_CNTL]
+  273 root      0:00 [NPU_DATA]
+  274 root      0:00 [NPU_CMD]
+  275 root      0:00 [NPU_DCI]
+  276 root      0:00 [NPU_DCI_CMD]
+  277 root      0:00 [DIAG_RPMSG_DIAG]
+  278 root      0:00 [DIAG_RPMSG_DIAG]
+  279 root      0:00 [DIAG_RPMSG_DIAG]
+  280 root      0:00 [DIAG_RPMSG_DIAG]
+  281 root      0:00 [DIAG_RPMSG_DIAG]
+  282 root      0:00 [DIAG_RPMSG_DIAG]
+  283 root      0:00 [DIAG_RPMSG_DIAG]
+  284 root      0:00 [DIAG_RPMSG_DIAG]
+  285 root      0:00 [DIAG_RPMSG_DIAG]
+  286 root      0:00 [DIAG_RPMSG_DIAG]
+  287 root      0:00 [DIAG_RPMSG_APPS]
+  288 root      0:00 [DIAG_RPMSG_APPS]
+  289 root      0:00 [DIAG_RPMSG_DIAG]
+  290 root      0:00 [DIAG_RPMSG_DIAG]
+  291 root      0:00 [DIAG_RPMSG_DIAG]
+  292 root      0:00 [DIAG_RPMSG_DIAG]
+  293 root      0:00 [DIAG_RPMSG_DIAG]
+  294 root      0:00 [DIAG_RPMSG_DIAG]
+  295 root      0:00 [DIAG_RPMSG_DIAG]
+  296 root      0:00 [DIAG_RPMSG_DIAG]
+  297 root      0:00 [kworker/u16:2+W]
+  298 root      0:00 [diag_mhi_MDM]
+  299 root      0:00 [kworker/u16:3+S]
+  300 root      0:00 [DIAG_USB_diag_m]
+  301 root      0:00 [kworker/u16:4+D]
+  302 root      0:00 [diag_mhi_MDM_DC]
+  303 root      0:00 [kworker/u16:5+C]
+  304 root      0:00 [diag_dci_MDM_DC]
+  305 root      0:00 [kworker/u16:6+N]
+  306 root      0:00 [diag_mhi_MDM_2]
+  308 root      0:00 [DIAG_USB_diag_m]
+  309 root      0:00 [diag_mhi_MDM_DC]
+  310 root      0:00 [diag_dci_MDM_DC]
+  311 root      0:00 [kgsl-workqueue]
+  312 root      0:00 [kgsl-mementry]
+  313 root      0:00 [kgsl_worker_thr]
+  314 root      0:00 [qseecom-unreg-l]
+  315 root      0:00 [qseecom-unload-]
+  317 root      0:00 [irq/183-arm-smm]
+  318 root      0:00 [irq/184-arm-smm]
+  319 root      0:00 [irq/185-arm-smm]
+  320 root      0:00 [qcrypto_seq_res]
+  321 root      0:00 [irq/186-arm-smm]
+  342 root      0:00 [scsi_eh_0]
+  343 root      0:00 [scsi_tmf_0]
+  344 root      0:00 [ufs_pm_qos_0]
+  345 root      0:00 [ufs_recovery_wq]
+  346 root      0:00 [ufs_clk_gating_]
+  347 root      0:00 [spi0]
+  348 root      0:00 [bond0]
+  350 root      0:00 [atlantic-fwd]
+  351 root      0:00 [irq/187-arm-smm]
+  356 root      0:00 [k_ipa_usb]
+  360 root      0:00 [irq/400-aw8697]
+  361 root      0:00 [aw8976_vibrator]
+  362 root      0:00 [fts_wq]
+  363 root      0:00 [kworker/0:2-eve]
+  364 root      0:00 [kworker/u16:11-]
+  365 root      0:00 [kworker/u16:12-]
+  367 root      0:00 [kworker/u16:14-]
+  369 root      0:00 [irq/188-arm-smm]
+  370 root      0:00 [irq/189-arm-smm]
+  371 root      0:00 [kworker/u17:1-d]
+  372 root      0:00 [irq/401-focal]
+  373 root      0:00 [irq/434-akm0997]
+  374 root      0:00 [akm09970_poll_w]
+  375 root      0:00 [msm_cvp_workerq]
+  376 root      0:00 [pm_workerq_iris]
+  377 root      0:00 [irq/190-arm-smm]
+  378 root      0:00 [irq/191-arm-smm]
+  379 root      0:00 [irq/192-arm-smm]
+  380 root      0:00 [irq/193-arm-smm]
+  381 root      0:00 [npu_general_wq]
+  382 root      0:00 [irq/357-ptrain-]
+  383 root      0:00 [irq/435-ima-rdy]
+  384 root      0:00 [irq/436-ima-xcp]
+  385 root      0:00 [irq/437-dma-xcp]
+  386 root      0:00 [irq/438-dma-gra]
+  387 root      0:00 [irq/439-mem-att]
+  388 root      0:00 [irq/440-batt-mi]
+  389 root      0:00 [irq/441-batt-id]
+  390 root      0:00 [irq/442-batt-te]
+  391 root      0:00 [irq/443-batt-te]
+  392 root      0:00 [irq/444-batt-te]
+  393 root      0:00 [irq/445-vbatt-l]
+  394 root      0:00 [irq/446-vbatt-p]
+  395 root      0:00 [irq/447-esr-del]
+  396 root      0:00 [irq/448-soc-upd]
+  397 root      0:00 [irq/449-soc-rea]
+  398 root      0:00 [irq/450-bsoc-de]
+  399 root      0:00 [irq/451-msoc-de]
+  400 root      0:00 [irq/452-msoc-lo]
+  401 root      0:00 [irq/453-msoc-em]
+  402 root      0:00 [irq/454-msoc-hi]
+  403 root      0:00 [irq/455-msoc-fu]
+  404 root      0:00 [kworker/3:2+eve]
+  405 root      0:00 [irq/456-bq2597x]
+  406 root      0:00 [irq/319-bcl-lvl]
+  407 root      0:00 [irq/320-bcl-lvl]
+  408 root      0:00 [irq/321-bcl-lvl]
+  409 root      0:00 [irq/337-bcl-lvl]
+  410 root      0:00 [irq/338-bcl-lvl]
+  411 root      0:00 [irq/339-bcl-lvl]
+  412 root      0:00 [kworker/0:1H-kb]
+  413 root      0:00 [kworker/1:1H-kb]
+  414 root      0:00 [kworker/2:1H-kb]
+  415 root      0:00 [kworker/3:1H-kb]
+  416 root      0:00 [kworker/4:1H]
+  417 root      0:00 [kworker/5:1H-kb]
+  418 root      0:00 [kworker/6:1H-kb]
+  419 root      0:00 [kworker/7:1H-kb]
+  420 root      0:00 [dm_bufio_cache]
+  421 root      0:00 [irq/30-KRYO L3-]
+  422 root      0:00 [irq/23-8804000.]
+  423 root      0:00 [memlat_wq]
+  424 root      0:00 [irq/458-mdm sta]
+  425 root      0:00 [irq/194-arm-smm]
+  426 root      0:00 [uaudio_svc]
+  427 root      0:00 [apr_driver]
+  428 root      0:00 [irq/459-tfa98xx]
+  429 root      0:00 [dsi_dma_cmd_wor]
+  430 root      0:00 [dsi_dma_cmd_wor]
+  431 root      0:00 [disp_fod:0]
+  432 root      0:00 [irq/172-arm-smm]
+  433 root      0:00 [irq/195-arm-smm]
+  434 root      0:00 [irq/460-esd_err]
+  435 root      0:00 [crtc_commit:129]
+  436 root      0:00 [crtc_event:129]
+  437 root      0:00 [crtc_commit:184]
+  438 root      0:00 [crtc_event:184]
+  439 root      0:00 [pp_event]
+  440 root      0:00 [msm_vidc_worker]
+  441 root      0:00 [pm_workerq_venu]
+  442 root      0:00 [vidc_core_workq]
+  443 root      0:00 [irq/196-arm-smm]
+  444 root      0:00 [irq/197-arm-smm]
+  445 root      0:00 [irq/198-arm-smm]
+  446 root      0:00 [irq/199-arm-smm]
+  447 root      0:00 [irq/200-arm-smm]
+  448 root      0:00 [irq/201-arm-smm]
+  449 root      0:00 [irq/202-arm-smm]
+  450 root      0:00 [irq/203-arm-smm]
+  451 root      0:00 [irq/204-arm-smm]
+  452 root      0:00 [cam-cpas]
+  453 root      0:00 [qcom,cam_virtua]
+  454 root      0:00 [qcom,cam170-cpa]
+  455 root      0:00 [cam_cci_wq]
+  456 root      0:00 [cam_cci_wq]
+  457 root      0:00 [cam_cci_wq]
+  458 root      0:00 [cam_cci_wq]
+  459 root      0:00 [ipv6_addrconf]
+  461 root      0:00 [irq/380-smp2p]
+  462 root      0:00 [irq/158-arm-smm]
+  463 root      0:00 [irq/159-arm-smm]
+  464 root      0:00 [irq/160-arm-smm]
+  465 root      0:00 [irq/22-mmc0]
+  466 root      0:00 [irq/161-arm-smm]
+  467 root      0:00 [kgsl-events]
+  468 root      0:00 [irq/463-8804000]
+  469 root      0:00 [kgsl_devfreq_wq]
+  477 root      0:00 [irq/464-wdog-sn]
+  478 root      0:00 [irq/465-wdog-ba]
+  479 root      0:00 [irq/467-aicl-do]
+  480 root      0:00 [irq/468-smb-en]
+  481 root      0:00 [irq/469-temp-ch]
+  482 root      0:00 [irq/471-typec-o]
+  483 root      0:00 [irq/473-typec-c]
+  484 root      0:00 [irq/474-typec-v]
+  485 root      0:00 [irq/476-typec-a]
+  486 root      0:00 [irq/477-typec-l]
+  487 root      0:00 [irq/480-dcin-uv]
+  488 root      0:00 [irq/481-dcin-ov]
+  489 root      0:00 [irq/482-dcin-pl]
+  490 root      0:00 [irq/484-dcin-po]
+  491 root      0:00 [irq/485-dcin-en]
+  492 root      0:00 [irq/486-usbin-c]
+  493 root      0:00 [irq/487-usbin-v]
+  494 root      0:00 [irq/488-usbin-u]
+  495 root      0:00 [irq/489-usbin-o]
+  496 root      0:00 [irq/490-usbin-p]
+  497 root      0:00 [irq/492-usbin-s]
+  498 root      0:00 [irq/493-usbin-i]
+  499 root      0:00 [irq/494-bat-tem]
+  500 root      0:00 [irq/495-bat-ov]
+  501 root      0:00 [irq/496-bat-low]
+  502 root      0:00 [irq/497-bat-the]
+  503 root      0:00 [irq/498-bat-ter]
+  504 root      0:00 [irq/501-otg-fai]
+  505 root      0:00 [irq/504-high-du]
+  506 root      0:00 [irq/505-input-c]
+  507 root      0:00 [irq/507-switche]
+  508 root      0:00 [irq/508-chgr-er]
+  509 root      0:00 [irq/509-chg-sta]
+  510 root      0:00 [irq/332-qcom,te]
+  511 root      0:00 [irq/358-qcom,te]
+  512 root      0:00 [irq/368-qcom,te]
+  513 root      0:00 [irq/318-thr-int]
+  514 root      0:00 [irq/335-thr-int]
+  515 root      0:00 [irq/359-thr-int]
+  523 root      0:00 [kworker/6:5-eve]
+  527 root      0:00 [irq/340-sig-tx]
+  528 root      0:00 [irq/341-sig-rx]
+  529 root      0:00 [irq/266-pwr_eve]
+  530 root      0:00 [irq/265-dp_hs_p]
+  531 root      0:00 [irq/268-dm_hs_p]
+  532 root      0:00 [irq/267-ss_phy_]
+  533 root      0:00 [usb_bam_wq]
+  534 root      0:00 [core_ctl/0]
+  535 root      0:00 [core_ctl/4]
+  536 root      0:00 [core_ctl/7]
+  537 root      0:00 [rq_stats]
+  538 root      0:00 [msm_perf:events]
+  539 root      0:00 [cdsprm-wq]
+  540 root      0:00 [cdsprm-wq-delay]
+  544 root      0:00 [irq/205-arm-smm]
+  545 root      0:00 [kworker/3:4-eve]
+  546 root      0:00 [irq/206-arm-smm]
+  547 root      0:00 [irq/207-arm-smm]
+  548 root      0:00 [irq/208-arm-smm]
+  549 root      0:00 [irq/209-arm-smm]
+  550 root      0:00 [irq/210-arm-smm]
+  551 root      0:00 [irq/211-arm-smm]
+  552 root      0:00 [irq/212-arm-smm]
+  553 root      0:00 [irq/213-arm-smm]
+  554 root      0:00 [irq/214-arm-smm]
+  555 root      0:00 [irq/215-arm-smm]
+  556 root      0:00 [irq/216-arm-smm]
+  557 root      0:00 [irq/217-arm-smm]
+  558 root      0:00 [irq/218-arm-smm]
+  559 root      0:00 [irq/219-arm-smm]
+  560 root      0:00 [irq/220-arm-smm]
+  561 root      0:00 [sb-1]
+  562 root      0:00 [ngd_rx_thread1]
+  563 root      0:00 [ngd_notify_sl1]
+  564 root      0:00 [kworker/1:3-eve]
+  565 root      0:00 [irq/317-qpnp_fl]
+  566 root      0:00 [irq/316-qpnp_fl]
+  567 root      0:00 [irq/315-qpnp_fl]
+  626 root      0:00 [kworker/2:2-eve]
+  628 root      0:00 [kworker/2:4-eve]
+ 1675 root      0:00 [kworker/0:3-eve]
+ 1676 root      0:00 [kworker/1:4]
+ 1821 root      0:00 [loop0]
+ 2726 root      0:00 [kworker/0:5-eve]
+ 2734 root      0:00 [jbd2/loop0p2-8]
+ 2735 root      0:00 [ext4-rsv-conver]
+ 3459 root      0:00 /usr/bin/logbookd -p /run/logbookd.pid -r -g 8192 -d /var/log/logbookd.db
+ 3506 root      0:00 supervise-daemon tqftpserv --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/bin/tqftpserv --
+ 3507 root      0:00 /usr/bin/tqftpserv
+ 3685 messageb  0:00 /usr/bin/dbus-daemon --system --nofork --nopidfile --syslog-only
+ 3775 root      0:00 supervise-daemon wpa_supplicant --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /sbin/wpa_supplicant -- -u -Dnl80211,wext
+ 3776 root      0:00 /sbin/wpa_supplicant -u -Dnl80211,wext
+ 3805 root      0:00 supervise-daemon networkmanager --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/sbin/NetworkManager -- -n
+ 3806 root      0:00 /usr/sbin/NetworkManager -n
+ 3841 chrony    0:00 /usr/sbin/chronyd -f /etc/chrony/chrony.conf -F 1
+ 3842 chrony    0:00 /usr/sbin/chronyd -f /etc/chrony/chrony.conf -F 1
+ 3922 root      0:00 supervise-daemon ofono --start --pidfile /run/ofono.pid --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/sbin/ofonod -- -n
+ 3923 root      0:00 /usr/sbin/ofonod -n
+ 3981 root      0:00 /usr/libexec/openrc-settingsd --ntp-service=chronyd --syslog
+ 4106 root      0:00 supervise-daemon sleep-inhibitor --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/bin/sleep-inhibitor --
+ 4107 root      0:00 {sleep-inhibitor} /usr/bin/python3 /usr/bin/sleep-inhibitor
+ 4175 root      0:00 sshd.pam: /usr/sbin/sshd.pam [listener] 0 of 10-100 startups
+ 4262 root      0:00 [kworker/0:6-eve]
+ 4264 root      0:00 [kworker/2:5-eve]
+ 4360 root      0:00 [kworker/5:2]
+ 6075 root      0:00 [kworker/0:4-eve]
+ 6128 root      0:00 elogind-daemon
+ 6129 root      0:00 [psimon]
+ 6330 root      0:00 [kworker/6:0-eve]
+ 6539 root      0:00 sshd-session.pam: lmi [priv]
+ 6563 root      0:00 supervise-daemon user.lmi --start --respawn-delay 500ms --respawn-max 3 --respawn-period 5 --notify fd:3 /usr/libexec/rc/bin/openrc-user -- lmi
+ 6571 lmi       0:00 sshd-session.pam: lmi@notty
+ 6572 lmi       0:00 ash -c echo ZWNobyBfX1JFTU9URV9JREVOVElUWV9fCmhvc3RuYW1lCmlkCnVuYW1lIC1hCmNhdCAvZXRjL29zLXJlbGVhc2UKdXB0aW1lCgplY2hvIF9fQ01ETElORV9fCmNhdCAvcHJvYy9jbWRsaW5lCgplY2hvIF9fTU9VTlRTX18KY2F0IC9wcm9jL21vdW50cwoKZWNobyBfX0RGX18KZGYgLWhUIDI+JjEgfHwgdHJ1ZQoKZWNobyBfX09QRU5SQ19fCnJjLXN0YXR1cyAtYSAyPiYxIHx8IHRydWUKCmVjaG8gX19ORVRXT1JLX18KaXAgYWRkciAyPiYxIHx8IHRydWUKaXAgcm91dGUgMj4mMSB8fCB0cnVlCnNzIC1sbnR1cCAyPiYxIHx8IHRydWUKCmVjaG8gX19QUk9DRVNTRVNfXwpwcyB3IDI+JjEgfHwgdHJ1ZQoKZWNobyBfX01PRFVMRVNfXwpsc21vZCAyPiYxIHx8IHRydWUKCmVjaG8gX19QQVJUSVRJT05TX18KY2F0IC9wcm9jL3BhcnRpdGlvbnMKCmVjaG8gX19ERVZJQ0VTX18KbHMgLWwgL2Rldi9kcmkgL2Rldi9pbnB1dCAvZGV2L3NuZCAvc3lzL2NsYXNzL25ldCAvc3lzL2NsYXNzL3Bvd2VyX3N1cHBseSAyPiYxIHx8IHRydWUKCmVjaG8gX19SRktJTExfXwpyZmtpbGwgbGlzdCAyPiYxIHx8IHRydWUKCmVjaG8gX19ETUVTR19UQUlMX18KZG1lc2cgfCB0YWlsIC1uIDE2MCAyPiYxIHx8IHRydWU= | base64 -d | sh
+ 6575 lmi       0:00 sh
+ 6589 root      0:00 [init]
+ 6592 lmi       0:00 ps w
+__MODULES__
+Module                  Size  Used by
+__PARTITIONS__
+major minor  #blocks  name
+
+   1        0       8192 ram0
+   1        1       8192 ram1
+   1        2       8192 ram2
+   1        3       8192 ram3
+   1        4       8192 ram4
+   1        5       8192 ram5
+   1        6       8192 ram6
+   1        7       8192 ram7
+   1        8       8192 ram8
+   1        9       8192 ram9
+   1       10       8192 ram10
+   1       11       8192 ram11
+   1       12       8192 ram12
+   1       13       8192 ram13
+   1       14       8192 ram14
+   1       15       8192 ram15
+   7        0  112205804 loop0
+   7        1     491520 loop0p1
+   7        2  111706072 loop0p2
+   8        0  123740160 sda
+   8        1          8 sda1
+   8        2         32 sda2
+   8        3         32 sda3
+   8        4         32 sda4
+   8        5        128 sda5
+   8        6        256 sda6
+   8        7        512 sda7
+   8        8        512 sda8
+   8        9        512 sda9
+   8       10       2048 sda10
+   8       11       4096 sda11
+   8       12       8192 sda12
+   8       13       8192 sda13
+   8       14       8192 sda14
+   8       15      16384 sda15
+ 259        0      16384 sda16
+ 259        3       1024 sda17
+ 259        5      16384 sda18
+ 259        8      15360 sda19
+ 259       10      32768 sda20
+ 259       12      32768 sda21
+ 259       14      65536 sda22
+ 259       16      65536 sda23
+ 259       18      65536 sda24
+ 259       20     131072 sda25
+ 259       22      98304 sda26
+ 259       24      32768 sda27
+ 259       26     131072 sda28
+ 259       28     393216 sda29
+ 259       30     393216 sda30
+ 259       32    1048576 sda31
+ 259       34    8912896 sda32
+ 259       36      32768 sda33
+ 259       38  112205804 sda34
+   8       16      16384 sdb
+   8       17       7168 sdb1
+   8       18       7168 sdb2
+   8       19        512 sdb3
+   8       20       1492 sdb4
+   8       48      32768 sdd
+   8       49        104 sdd1
+   8       50        128 sdd2
+   8       51       1024 sdd3
+   8       52       2048 sdd4
+   8       53       2048 sdd5
+   8       54       1024 sdd6
+   8       80      65536 sdf
+   8       81        104 sdf1
+   8       82       2048 sdf2
+   8       83       2048 sdf3
+   8       84       2048 sdf4
+   8       85        128 sdf5
+   8       86        768 sdf6
+   8       87       8192 sdf7
+   8       88       8192 sdf8
+   8       89       8192 sdf9
+   8       90       1024 sdf10
+   8       64    1048576 sde
+   8       65        104 sde1
+   8       66         32 sde2
+   8       67         32 sde3
+   8       68         32 sde4
+   8       69         32 sde5
+   8       70        128 sde6
+   8       71        128 sde7
+   8       72        256 sde8
+   8       73        256 sde9
+   8       74         32 sde10
+   8       75         32 sde11
+   8       76         32 sde12
+   8       77         32 sde13
+   8       78        128 sde14
+   8       79        128 sde15
+ 259        1        128 sde16
+ 259        2        128 sde17
+ 259        4        128 sde18
+ 259        6        256 sde19
+ 259        7        256 sde20
+ 259        9        256 sde21
+ 259       11        512 sde22
+ 259       13        512 sde23
+ 259       15        512 sde24
+ 259       17        128 sde25
+ 259       19        128 sde26
+ 259       21        128 sde27
+ 259       23       3712 sde28
+ 259       25       1024 sde29
+ 259       27       1024 sde30
+ 259       29       1024 sde31
+ 259       31       1024 sde32
+ 259       33       1024 sde33
+ 259       35       1024 sde34
+ 259       37       1024 sde35
+ 259       39       1024 sde36
+ 259       40       2048 sde37
+ 259       41       2048 sde38
+ 259       42       2048 sde39
+ 259       43       2048 sde40
+ 259       44       4096 sde41
+ 259       45       4096 sde42
+ 259       46      32768 sde43
+ 259       47       8192 sde44
+ 259       48       8192 sde45
+ 259       49      16384 sde46
+ 259       50      32768 sde47
+ 259       51      65536 sde48
+ 259       52      65536 sde49
+ 259       53     131072 sde50
+ 259       54     458752 sde51
+ 259       55      32768 sde52
+ 259       56      32768 sde53
+ 259       57      53248 sde54
+ 259       58       4096 sde55
+ 259       59       4096 sde56
+ 259       60       2048 sde57
+ 259       61       2048 sde58
+   8       32      16384 sdc
+   8       33       7168 sdc1
+   8       34       7168 sdc2
+   8       35        512 sdc3
+   8       36       1492 sdc4
+  31        0      16384 mtdblock0
+__DEVICES__
+ls: /dev/dri: No such file or directory
+ls: /dev/input: No such file or directory
+ls: /dev/snd: No such file or directory
+/sys/class/net:
+total 0
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 bond0 -> ../../devices/virtual/net/bond0
+-rw-r--r--    1 root     root          4096 Nov 28 03:33 bonding_masters
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 dummy0 -> ../../devices/virtual/net/dummy0
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 ip6_vti0 -> ../../devices/virtual/net/ip6_vti0
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 ip6tnl0 -> ../../devices/virtual/net/ip6tnl0
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 ip_vti0 -> ../../devices/virtual/net/ip_vti0
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 lo -> ../../devices/virtual/net/lo
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 sit0 -> ../../devices/virtual/net/sit0
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 usb0 -> ../../devices/platform/soc/a600000.ssusb/a600000.dwc3/gadget/net/usb0
+
+/sys/class/power_supply:
+total 0
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 batt_verify -> ../../devices/platform/soc/soc:maxim_ds28e16/power_supply/batt_verify
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 battery -> ../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qcom,qpnp-smb5/power_supply/battery
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 bms -> ../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qpnp,fg/power_supply/bms
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 bq2597x-standalone -> ../../devices/platform/soc/884000.i2c/i2c-5/5-0066/power_supply/bq2597x-standalone
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 dc -> ../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qcom,qpnp-smb5/power_supply/dc
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 main -> ../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qcom,qpnp-smb5/power_supply/main
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 pc_port -> ../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qcom,qpnp-smb5/power_supply/pc_port
+lrwxrwxrwx    1 root     root             0 Nov 28 03:33 usb -> ../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qcom,qpnp-smb5/power_supply/usb
+__RFKILL__
+rfkill: cannot open /dev/rfkill: No such file or directory
+__DMESG_TAIL__
+[  200.928363] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  200.928366] FG: calculate_average_current: current_now_ma=2929 averaged_iavg_ma=2807
+[  200.928371] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:2929, smooth_low_batt_soc:0, smooth_soc: 0
+[  200.928373] FG: soc_monitor_work: soc:100, raw_soc:100, c:2929, s:4
+[  206.656467] FG: fg_psy_get_property: unsupported property 67
+[  206.656470] FG: fg_psy_get_property: unsupported property 4
+[  206.656513] Get prop 67 is not supported in pc_port
+[  211.168328] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  211.168333] FG: calculate_average_current: current_now_ma=3417 averaged_iavg_ma=2868
+[  211.168338] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:3417, smooth_low_batt_soc:0, smooth_soc: 0
+[  211.168340] FG: soc_monitor_work: soc:100, raw_soc:100, c:3417, s:4
+[  214.849477] FG: fg_psy_get_property: unsupported property 67
+[  214.849479] FG: fg_psy_get_property: unsupported property 4
+[  214.849522] Get prop 67 is not supported in pc_port
+[  221.408321] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  221.408326] FG: calculate_average_current: current_now_ma=2929 averaged_iavg_ma=2929
+[  221.408330] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:2929, smooth_low_batt_soc:0, smooth_soc: 0
+[  221.408333] FG: soc_monitor_work: soc:100, raw_soc:100, c:2929, s:4
+[  223.043301] FG: fg_psy_get_property: unsupported property 67
+[  223.043305] FG: fg_psy_get_property: unsupported property 4
+[  223.043349] Get prop 67 is not supported in pc_port
+[  231.237261] FG: fg_psy_get_property: unsupported property 67
+[  231.237265] FG: fg_psy_get_property: unsupported property 4
+[  231.237309] Get prop 67 is not supported in pc_port
+[  231.648308] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  231.648312] FG: calculate_average_current: current_now_ma=3417 averaged_iavg_ma=2868
+[  231.648316] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:3417, smooth_low_batt_soc:0, smooth_soc: 0
+[  231.648319] FG: soc_monitor_work: soc:100, raw_soc:100, c:3417, s:4
+[  239.430648] FG: fg_psy_get_property: unsupported property 67
+[  239.430652] FG: fg_psy_get_property: unsupported property 4
+[  239.430696] Get prop 67 is not supported in pc_port
+[  241.888342] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  241.888348] FG: calculate_average_current: current_now_ma=1464 averaged_iavg_ma=2685
+[  241.888352] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:1464, smooth_low_batt_soc:0, smooth_soc: 0
+[  241.888354] FG: soc_monitor_work: soc:100, raw_soc:100, c:1464, s:4
+[  247.623021] FG: fg_psy_get_property: unsupported property 67
+[  247.623026] FG: fg_psy_get_property: unsupported property 4
+[  247.623071] Get prop 67 is not supported in pc_port
+[  252.128304] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  252.128309] FG: calculate_average_current: current_now_ma=3906 averaged_iavg_ma=2746
+[  252.128314] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:3906, smooth_low_batt_soc:0, smooth_soc: 0
+[  252.128316] FG: soc_monitor_work: soc:100, raw_soc:100, c:3906, s:4
+[  255.816006] FG: fg_psy_get_property: unsupported property 67
+[  255.816009] FG: fg_psy_get_property: unsupported property 4
+[  255.816081] Get prop 67 is not supported in pc_port
+[  262.368327] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  262.368333] FG: calculate_average_current: current_now_ma=2929 averaged_iavg_ma=2929
+[  262.368337] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:2929, smooth_low_batt_soc:0, smooth_soc: 0
+[  262.368339] FG: soc_monitor_work: soc:100, raw_soc:100, c:2929, s:4
+[  264.009072] FG: fg_psy_get_property: unsupported property 67
+[  264.009074] FG: fg_psy_get_property: unsupported property 4
+[  264.009117] Get prop 67 is not supported in pc_port
+[  272.202450] FG: fg_psy_get_property: unsupported property 67
+[  272.202454] FG: fg_psy_get_property: unsupported property 4
+[  272.202498] Get prop 67 is not supported in pc_port
+[  272.608313] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  272.608317] FG: calculate_average_current: current_now_ma=3417 averaged_iavg_ma=3051
+[  272.608322] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:3417, smooth_low_batt_soc:0, smooth_soc: 0
+[  272.608324] FG: soc_monitor_work: soc:100, raw_soc:100, c:3417, s:4
+[  277.118547] FG: fg_psy_get_property: unsupported property 67
+[  277.118551] FG: fg_psy_get_property: unsupported property 4
+[  277.118595] Get prop 67 is not supported in pc_port
+[  280.396135] FG: fg_psy_get_property: unsupported property 67
+[  280.396137] FG: fg_psy_get_property: unsupported property 4
+[  280.396200] Get prop 67 is not supported in pc_port
+[  282.848331] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  282.848336] FG: calculate_average_current: current_now_ma=1953 averaged_iavg_ma=2929
+[  282.848340] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:1953, smooth_low_batt_soc:0, smooth_soc: 0
+[  282.848342] FG: soc_monitor_work: soc:100, raw_soc:100, c:1953, s:4
+[  288.589859] FG: fg_psy_get_property: unsupported property 67
+[  288.589863] FG: fg_psy_get_property: unsupported property 4
+[  288.589907] Get prop 67 is not supported in pc_port
+[  293.088482] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  293.088488] FG: calculate_average_current: current_now_ma=1464 averaged_iavg_ma=2685
+[  293.088492] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:1464, smooth_low_batt_soc:0, smooth_soc: 0
+[  293.088494] FG: soc_monitor_work: soc:100, raw_soc:100, c:1464, s:4
+[  296.783419] FG: fg_psy_get_property: unsupported property 67
+[  296.783423] FG: fg_psy_get_property: unsupported property 4
+[  296.783466] Get prop 67 is not supported in pc_port
+[  302.025377] AWAKE: current vote is now 1 voted by CHG_TERMINATION_VOTER,3, previous voted 0
+[  302.025427] FG: fg_psy_get_property: unsupported property 8
+[  302.025428] AWAKE: current vote is now 0 voted by CHG_TERMINATION_VOTER,3, previous voted 1
+[  303.328312] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  303.328316] FG: calculate_average_current: current_now_ma=3906 averaged_iavg_ma=2807
+[  303.328320] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:3906, smooth_low_batt_soc:0, smooth_soc: 0
+[  303.328323] FG: soc_monitor_work: soc:100, raw_soc:100, c:3906, s:4
+[  304.975896] FG: fg_psy_get_property: unsupported property 67
+[  304.975898] FG: fg_psy_get_property: unsupported property 4
+[  304.975941] Get prop 67 is not supported in pc_port
+[  313.168891] FG: fg_psy_get_property: unsupported property 67
+[  313.168895] FG: fg_psy_get_property: unsupported property 4
+[  313.168940] Get prop 67 is not supported in pc_port
+[  313.568312] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  313.568316] FG: calculate_average_current: current_now_ma=3906 averaged_iavg_ma=2807
+[  313.568321] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:3906, smooth_low_batt_soc:0, smooth_soc: 0
+[  313.568323] FG: soc_monitor_work: soc:100, raw_soc:100, c:3906, s:4
+[  321.362499] FG: fg_psy_get_property: unsupported property 67
+[  321.362503] FG: fg_psy_get_property: unsupported property 4
+[  321.362547] Get prop 67 is not supported in pc_port
+[  323.808490] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  323.808494] FG: calculate_average_current: current_now_ma=2441 averaged_iavg_ma=2685
+[  323.808498] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:2441, smooth_low_batt_soc:0, smooth_soc: 0
+[  323.808500] FG: soc_monitor_work: soc:100, raw_soc:100, c:2441, s:4
+[  329.211405] LMI_VFS_DIAG do_new_mount enter fstype=tmpfs name=tmpfs data=mode=0700,uid=10000,gid=10000,size=585322496,nr_inodes=142901
+[  329.211425] LMI_VFS_DIAG do_new_mount pre_get_tree fs=tmpfs name=tmpfs err=0 fc_source=tmpfs
+[  329.211428] LMI_VFS_DIAG vfs_get_tree enter fs=tmpfs fs_flags=0x8 source=tmpfs root=          (null)
+[  329.556318] FG: fg_psy_get_property: unsupported property 67
+[  329.556322] FG: fg_psy_get_property: unsupported property 4
+[  329.556366] Get prop 67 is not supported in pc_port
+[  334.048522] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  334.048528] FG: calculate_average_current: current_now_ma=0 averaged_iavg_ma=2502
+[  334.048532] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:0, smooth_low_batt_soc:0, smooth_soc: 0
+[  334.048535] FG: soc_monitor_work: soc:100, raw_soc:100, c:0, s:4
+[  337.750189] FG: fg_psy_get_property: unsupported property 67
+[  337.750193] FG: fg_psy_get_property: unsupported property 4
+[  337.750237] Get prop 67 is not supported in pc_port
+[  344.288292] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  344.288297] FG: calculate_average_current: current_now_ma=4394 averaged_iavg_ma=2563
+[  344.288301] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:4394, smooth_low_batt_soc:0, smooth_soc: 0
+[  344.288304] FG: soc_monitor_work: soc:100, raw_soc:100, c:4394, s:4
+[  345.943953] FG: fg_psy_get_property: unsupported property 67
+[  345.943955] FG: fg_psy_get_property: unsupported property 4
+[  345.943998] Get prop 67 is not supported in pc_port
+[  354.137541] FG: fg_psy_get_property: unsupported property 67
+[  354.137544] FG: fg_psy_get_property: unsupported property 4
+[  354.137587] Get prop 67 is not supported in pc_port
+[  354.528305] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  354.528309] FG: calculate_average_current: current_now_ma=1953 averaged_iavg_ma=2441
+[  354.528313] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:1953, smooth_low_batt_soc:0, smooth_soc: 0
+[  354.528316] FG: soc_monitor_work: soc:100, raw_soc:100, c:1953, s:4
+[  358.892835] LMI_VFS_DIAG do_new_mount enter fstype=tmpfs name=tmpfs data=mode=0700,uid=10000,gid=10000,size=585322496,nr_inodes=142901
+[  358.892855] LMI_VFS_DIAG do_new_mount pre_get_tree fs=tmpfs name=tmpfs err=0 fc_source=tmpfs
+[  358.892858] LMI_VFS_DIAG vfs_get_tree enter fs=tmpfs fs_flags=0x8 source=tmpfs root=          (null)
+[  362.330788] FG: fg_psy_get_property: unsupported property 67
+[  362.330792] FG: fg_psy_get_property: unsupported property 4
+[  362.330824] Get prop 67 is not supported in pc_port
+[  364.768276] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  364.768280] FG: calculate_average_current: current_now_ma=2929 averaged_iavg_ma=2380
+[  364.768284] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:2929, smooth_low_batt_soc:0, smooth_soc: 0
+[  364.768286] FG: soc_monitor_work: soc:100, raw_soc:100, c:2929, s:4
+[  370.524435] FG: fg_psy_get_property: unsupported property 67
+[  370.524439] FG: fg_psy_get_property: unsupported property 4
+[  370.524471] Get prop 67 is not supported in pc_port
+[  375.008335] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  375.008340] FG: calculate_average_current: current_now_ma=2929 averaged_iavg_ma=2380
+[  375.008344] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:2929, smooth_low_batt_soc:0, smooth_soc: 0
+[  375.008347] FG: soc_monitor_work: soc:100, raw_soc:100, c:2929, s:4
+[  378.718027] FG: fg_psy_get_property: unsupported property 67
+[  378.718029] FG: fg_psy_get_property: unsupported property 4
+[  378.718060] Get prop 67 is not supported in pc_port
+[  385.248319] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[  385.248325] FG: calculate_average_current: current_now_ma=2929 averaged_iavg_ma=2380
+[  385.248329] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:1, batt_ma:2929, smooth_low_batt_soc:0, smooth_soc: 0
+[  385.248332] FG: soc_monitor_work: soc:100, raw_soc:100, c:2929, s:4
+[  386.911296] FG: fg_psy_get_property: unsupported property 67
+[  386.911298] FG: fg_psy_get_property: unsupported property 4
+[  386.911331] Get prop 67 is not supported in pc_port
+[  387.187287] LMI_VFS_DIAG do_new_mount enter fstype=tmpfs name=tmpfs data=mode=0700,uid=10000,gid=10000,size=585322496,nr_inodes=142901
+[  387.187307] LMI_VFS_DIAG do_new_mount pre_get_tree fs=tmpfs name=tmpfs err=0 fc_source=tmpfs
+[  387.187310] LMI_VFS_DIAG vfs_get_tree enter fs=tmpfs fs_flags=0x8 source=tmpfs root=          (null)
+

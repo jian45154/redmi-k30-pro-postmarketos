@@ -1,0 +1,825 @@
+generated=Fri Nov 27 17:24:21 UTC 1970
+__CMDLINE__
+cgroup_disable=pressure ramoops_memreserve=4M rcupdate.rcu_expedited=1 rcu_nocbs=0-7 kpti=off androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery pmos.debug-shell pmos_boot_uuid=2c2600b1-700f-4bdd-a22c-bb12cc589baa pmos_root_uuid=8646c5cd-6298-46b4-8465-47c4a0fbb370 pmos_rootfsopts=defaults androidboot.verifiedbootstate=orange androidboot.keymaster=1  androidboot.bootdevice=1d84000.ufshc androidboot.fstab_suffix=default androidboot.boot_devices=soc/1d84000.ufshc androidboot.serialno=<redacted> androidboot.secureboot=1 androidboot.hwversion=3.9.0 androidboot.cpuid=<redacted> androidboot.camera.config=1 androidboot.network.mode=1 androidboot.hwc=CN androidboot.hwlevel=MP androidboot.product.hardware.sku=std androidboot.baseband=mdm msm_drm.dsi_display0=qcom,mdss_dsi_j11_38_08_0a_fhd_cmd: androidboot.dtbo_idx=7 androidboot.dtb_idx=0 androidboot.ramdump=disable block2mtd.block2mtd=/dev/block/sda15,2097152 mtdoops.mtddev=0 mtdoops.record_size=2097152 mtdoops.dump_oops=0 printk.always_kmsg_dump=1 androidboot.dp=0x0 androidboot.cert=M2001J11E
+__PMOS_INIT_LOG__
+tee: /dev/: Is a directory
+  ❬❬ PMOS STAGE 1 ❭❭
+initramfs version: 3.12.0-r0
+  ❬❬ PMOS STAGE 2 ❭❭
+starting version 3.2.14
+  Setting up USB gadget through configfs
+Trying to start server with parameters: Server IP addr: 172.16.42.1:67, client IP addr: 172.16.42.2, interface: usb0
+Entering debug shell
+mkdir: can't create directory '/sys/kernel/config/usb_gadget/g1/functions/acm.usb0': No such file or directory
+  Couldn't create /sys/kernel/config/usb_gadget/g1/functions/acm.usb0
+ln: /sys/kernel/config/usb_gadget/g1/configs/c.1/acm.usb0: No such file or directory
+  Couldn't symlink acm.usb0
+mount: mounting none on /sys/kernel/debug failed: No such file or directory
+cat: can't open '/sys/devices/virtual/tty/tty0/active': No such file or directory
+/usr/bin/buffyboard
+modprobe: FATAL: Module uinput not found in directory /lib/modules/4.19.325-cip128-st12-perf
+setfont: ioctl 0x4b72 failed: Not a tty
+Ignoring invalid config file /etc/buffyboard.conf
+Could not retrieve current termimal state: Not a tty
+Could not prepare for terminal resizing: Not a tty
+Could not open /dev/uinput: No such file or directory
+__DEV_BEFORE__
+ls: /dev/sda34: No such file or directory
+ls: /dev/disk/by-partlabel: No such file or directory
+ls: /dev/block/by-name: No such file or directory
+__SYSFS_USERDATA__
+/sys/class/block/sda34/uevent:PARTNAME=userdata
+__POPULATE_BLOCK_DEVS__
+__DEV_AFTER__
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 /dev/block/by-name/userdata -> ../../sda34
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 /dev/disk/by-partlabel/userdata -> ../../sda34
+brw-r--r--    1 0        0           8,   0 Nov 27 17:24 /dev/sda
+brw-r--r--    1 0        0         259,  18 Nov 27 17:24 /dev/sda34
+__USERDATA_FDISK__
+userdata=/dev/sda34
+Note: sector size is 4096 (not 512)
+Found valid GPT with protective MBR; using GPT
+
+Disk /dev/sda34: 224411608 sectors, 63.8M
+Logical sector size: 4096
+Disk identifier (GUID): 957cad5b-830c-4257-ab28-c65534debcf5
+Partition table holds up to 128 entries
+First usable sector is 6, last usable sector is 28051445
+
+Number  Start (sector)    End (sector)  Size Name
+     1            2048          124927  480M primary
+     2          124928          429567 1190M primary
+Found valid GPT with protective MBR; using GPT
+
+Disk /dev/sda34: 224411608 sectors, 63.8M
+Logical sector size: 4096
+Disk identifier (GUID): 957cad5b-830c-4257-ab28-c65534debcf5
+Partition table holds up to 128 entries
+First usable sector is 6, last usable sector is 28051445
+
+Number  Start (sector)    End (sector)  Size Name
+     1            2048          124927  480M primary
+     2          124928          429567 1190M primary
+__BEFORE_MOUNT_SUBPARTITIONS__
+PMOS_ROOT=
+PMOS_BOOT=
+SUBPARTITION_DEV=
+SUBPARTITION_LOOP=
+__CALL_MOUNT_SUBPARTITIONS__
+Trying to mount subpartitions for 10 seconds...
+Mount subpartitions of /dev/sda34
+Mount subpartitions of /dev/sda34
+Mount subpartitions of /dev/sda34
+Mount subpartitions of /dev/sda34
+Mount subpartitions of /dev/sda34
+Mount subpartitions of /dev/sda34
+Mount subpartitions of /dev/sda34
+Mount subpartitions of /dev/sda34
+ERROR: failed to mount subpartitions!
+__AFTER_MOUNT_SUBPARTITIONS__
+PMOS_ROOT=
+PMOS_BOOT=
+SUBPARTITION_DEV=
+SUBPARTITION_LOOP=
+/dev/sde49: LABEL="dsp" UUID="af32c008-2a39-7e5b-a5dc-201456d93103" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="dsp" PARTUUID="68598f18-f618-7bcd-49f3-f235d5c9752d"
+/dev/sde35: SEC_TYPE="msdos" UUID="00BC-614E" BLOCK_SIZE="4096" TYPE="vfat" PARTLABEL="bluetooth" PARTUUID="4bced19d-3854-3efe-4daf-5f3d7f5191b2"
+/dev/sde43: SEC_TYPE="msdos" UUID="00BC-614E" BLOCK_SIZE="4096" TYPE="vfat" PARTLABEL="spunvm" PARTUUID="2328f35f-b2c0-21c0-2a01-94be99d5ca2d"
+/dev/sde51: SEC_TYPE="msdos" UUID="00BC-614E" BLOCK_SIZE="4096" TYPE="vfat" PARTLABEL="modem" PARTUUID="4a51bc57-fcda-25b5-86d9-aaa83642d754"
+/dev/sda22: UUID="1afe0991-2ced-4adf-bea0-33ea3f766795" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="persist" PARTUUID="bd28d03f-4d13-6601-4318-70445157e14f"
+/dev/sda29: UUID="9df2a083-1806-4af0-8e8f-8af08c705b23" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="cache" PARTUUID="d83b8741-c2ca-811b-e01a-6d274d810d15"
+/dev/sda23: UUID="1afe0991-2ced-4adf-bea0-33ea3f766795" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="persistbak" PARTUUID="98a9d4ea-edd0-9f4c-2407-e08378a6c89a"
+/dev/sda13: SEC_TYPE="msdos" LABEL="LOGFS" UUID="D273-55EA" BLOCK_SIZE="4096" TYPE="vfat" PARTLABEL="logfs" PARTUUID="b5009c7f-bb5c-2e57-600b-2e27efdbd7d3"
+/dev/sda31: LABEL="cust" UUID="49dd35d1-5e62-42e5-9d52-62b0d602bcd1" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="cust" PARTUUID="ac143c6a-7469-6151-b0c9-57995a967bc4"
+/dev/sda18: UUID="b21d5c43-1a6f-4976-a12e-446ebed22e6c" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="metadata" PARTUUID="3b1166b2-4bc3-bb23-7a97-8696cdf56d40"
+/dev/sdf9: PARTLABEL="mdm1m9kefs2" PARTUUID="879d86bf-e9c3-ec88-6a42-76e89ae34ea8"
+/dev/sdf7: PARTLABEL="mdm1m9kefs3" PARTUUID="6fee190c-6c52-0a35-f31f-caa2767d0f0e"
+/dev/sdf5: PARTLABEL="fsc" PARTUUID="d82b44cd-d916-4384-317e-85cb805035c2"
+/dev/sdf3: PARTLABEL="modemst2" PARTUUID="dc3dccf5-e3ed-2750-61d6-17ee85033aa7"
+/dev/sdf1: PARTLABEL="ALIGN_TO_128K_2" PARTUUID="51f2c1f0-3d01-d188-d630-29a39f7319ff"
+/dev/sdf8: PARTLABEL="mdm1m9kefs1" PARTUUID="c9e53dc2-a667-6516-864e-cb75b0dd118d"
+/dev/sdf6: PARTLABEL="bk51" PARTUUID="b0c4e852-20e5-726b-057d-2f46aba31036"
+/dev/sdf10: PARTLABEL="mdm1m9kefsc" PARTUUID="d6785fe5-c154-aa60-71cc-d49cbda83968"
+/dev/sdf4: PARTLABEL="fsg" PARTUUID="300ff15c-6579-78a8-8d24-85cec3c4f051"
+/dev/sdf2: PARTLABEL="modemst1" PARTUUID="3a66a74e-833f-d57c-c82a-e895d624bb82"
+/dev/sdd2: PARTLABEL="cdt" PARTUUID="390a095b-427c-a0e6-c7fe-3f578c2dd93d"
+/dev/sdd5: PARTLABEL="bk32" PARTUUID="e1298b71-81ad-d272-0bc9-f7e44ea4979c"
+/dev/sdd3: PARTLABEL="bk31" PARTUUID="18ccd6c5-0243-1759-ac0d-bfc2cbe5e2ae"
+/dev/sdd1: PARTLABEL="ALIGN_TO_128K_1" PARTUUID="d9554071-8f75-cca7-76ec-2d70aba170a1"
+/dev/sdd6: PARTLABEL="mdmddr" PARTUUID="da90cfee-9a8a-f522-1579-b7f8c2fbaf17"
+/dev/sdd4: PARTLABEL="ddr" PARTUUID="c4586fc0-e33a-a049-b7b5-308f6bccc60f"
+/dev/sdb4: PARTLABEL="xbl_config_5" PARTUUID="acb3edb1-f932-0493-ceef-dd8b431301a1"
+/dev/sdb2: PARTLABEL="xbl_5" PARTUUID="fab663a4-7224-062c-e1f9-ddd8fa77cd3a"
+/dev/sdb3: PARTLABEL="xbl_config_4" PARTUUID="859a7626-4fd8-56b0-e5c3-d5e82835ca2e"
+/dev/sdb1: PARTLABEL="xbl_4" PARTUUID="6635ac05-ff20-eb86-58d8-fed641a74a4b"
+/dev/sde32: PARTLABEL="cmnlib64bak" PARTUUID="c871d85c-9d7c-f059-2a0a-24615ae158ac"
+/dev/sde2: PARTLABEL="multiimgoem" PARTUUID="c532d83b-af67-57c8-3f03-d4441612b0f7"
+/dev/sde22: PARTLABEL="aop" PARTUUID="9fe8ad04-4be1-dae4-01be-e42aa8581f8e"
+/dev/sde50: PARTLABEL="boot" PARTUUID="61d361f9-f31a-b94a-cdb7-dc13b07e1bbc"
+/dev/sde12: PARTLABEL="limits" PARTUUID="6d7468a2-9d7d-3210-8eee-adfd7cf018ec"
+/dev/sde40: PARTLABEL="ablbak" PARTUUID="5856b5b3-df6e-697f-146a-5f390cb72965"
+/dev/sde30: PARTLABEL="cmnlibbak" PARTUUID="e347bdc8-c86c-dd0e-bb39-17c2379c5875"
+/dev/sde20: PARTLABEL="devcfg" PARTUUID="0dd38679-4f9f-4792-8c91-86b121f1f129"
+/dev/sde10: PARTLABEL="sec" PARTUUID="9358fd93-b91d-7dc1-cd3f-cf2d8588373c"
+/dev/sde39: PARTLABEL="abl" PARTUUID="2c4dd25f-854a-271f-d07a-b6714cb3c74d"
+/dev/sde9: PARTLABEL="msadp" PARTUUID="2db86f83-b772-d2b2-f32d-c9972384e8a3"
+/dev/sde29: PARTLABEL="cmnlib" PARTUUID="b2959998-5d55-b06c-164c-e06a56cf0693"
+/dev/sde57: PARTLABEL="imagefv" PARTUUID="c1265993-53c6-8cff-111c-cb0c824df730"
+/dev/sde19: PARTLABEL="bk42" PARTUUID="c6450368-ee0c-0f6f-1708-43be419f9cf2"
+/dev/sde47: PARTLABEL="dtbo" PARTUUID="edbac38c-e95d-ac31-e0d1-d23ee58033b1"
+/dev/sde37: PARTLABEL="uefisecapp" PARTUUID="ffbb9163-c977-f339-00be-f357e0874f9e"
+/dev/sde7: PARTLABEL="qupfwbak" PARTUUID="fb52a06c-6827-0fb3-db30-db2717b7e65f"
+/dev/sde27: PARTLABEL="vbmeta_odm" PARTUUID="8b2d2856-aa07-80ef-26b1-25a367fa7ac2"
+/dev/sde55: PARTLABEL="mdtpsecapp" PARTUUID="6e284589-516b-e1a3-a03d-5607886aa12e"
+/dev/sde17: PARTLABEL="vbmeta_system" PARTUUID="c3d03b90-50b0-1bd6-e6f7-0ef1622b8296"
+/dev/sde45: PARTLABEL="hypbak" PARTUUID="d4902a23-c778-9452-6fde-1c0c0158317c"
+/dev/sde5: PARTLABEL="multiimgqtibak" PARTUUID="af906784-8e0b-f235-4635-ca0a16c49301"
+/dev/sde25: PARTLABEL="vbmeta_vendor" PARTUUID="57a127a3-17bb-4838-f100-be79901c15f3"
+/dev/sde53: PARTLABEL="mdtpbak" PARTUUID="d29150e2-b108-c15a-2f60-6bc92036ed30"
+/dev/sde15: PARTLABEL="featenablerbak" PARTUUID="4be21aa7-a291-79bd-d376-2c55010def2f"
+/dev/sde33: PARTLABEL="keymaster" PARTUUID="24a865cd-0a96-2bd7-e210-9a42b4d8606d"
+/dev/sde3: PARTLABEL="multiimgoembak" PARTUUID="4cebd15e-b615-c462-0c5b-e143c2c08c88"
+/dev/sde23: PARTLABEL="aopbak" PARTUUID="d784d02f-19cf-1990-91df-db72633ed385"
+/dev/sde13: PARTLABEL="limits-cdsp" PARTUUID="e2eef664-6cef-b517-8b0e-c73fdc4fc589"
+/dev/sde41: PARTLABEL="tz" PARTUUID="b2bcbea1-adda-4b36-97ed-aa1144dc3cd8"
+/dev/sde31: PARTLABEL="cmnlib64" PARTUUID="5e0a2b12-aad3-8611-843d-62dab71f414b"
+/dev/sde1: PARTLABEL="bk41" PARTUUID="33d7d533-a24b-eccd-e5ab-59cd1f69f2b7"
+/dev/sde21: PARTLABEL="devcfgbak" PARTUUID="fc9652eb-b2a7-d51e-1f86-927c6372109d"
+/dev/sde11: PARTLABEL="secdata" PARTUUID="9895f289-ac59-a9df-e4aa-09d63cce7e19"
+/dev/sde58: PARTLABEL="imagefvbak" PARTUUID="ef399e3f-7a53-972b-3418-cfea0341119e"
+/dev/sde48: PARTLABEL="logo" PARTUUID="5bcfb656-a5e2-d823-719e-e462c58fac35"
+/dev/sde38: PARTLABEL="uefisecappbak" PARTUUID="653aa703-42b3-5b11-1470-2b7712d3e288"
+/dev/sde8: PARTLABEL="apdp" PARTUUID="5a350ab4-16ac-4ab1-9599-45e88606b86e"
+/dev/sde28: PARTLABEL="bk43" PARTUUID="b8bb9248-f5d2-8b6e-7e0a-7ee6e9d9d7f4"
+/dev/sde56: PARTLABEL="mdtpsecappbak" PARTUUID="0e652976-1a04-025d-ff86-5522fa7e7420"
+/dev/sde18: PARTLABEL="storsec" PARTUUID="5eb55d20-2c7c-8b83-bf63-c7f4dcef4561"
+/dev/sde46: PARTLABEL="gsort" PARTUUID="97ce40c9-711c-b0f4-6e7d-7359e186df9e"
+/dev/sde36: PARTLABEL="dip" PARTUUID="7ab8f18e-43d5-dd3c-7ee9-400f09b17a56"
+/dev/sde6: PARTLABEL="qupfw" PARTUUID="21371209-fb41-568d-e9f6-acabcbcd81dd"
+/dev/sde26: PARTLABEL="vbmeta_product" PARTUUID="8b0d9429-6f29-096b-8e0e-d70bfb8978b5"
+/dev/sde54: PARTLABEL="bk45" PARTUUID="e288b1fc-269a-43ba-b47b-c80a441983d0"
+/dev/sde16: PARTLABEL="vbmeta" PARTUUID="0be7ebf7-4f6a-c8e7-b397-4f4174eefcbb"
+/dev/sde44: PARTLABEL="hyp" PARTUUID="1962c0bf-d2ea-025f-86c9-dc9606243b5d"
+/dev/sde34: PARTLABEL="keymasterbak" PARTUUID="ebb802e4-5d20-896b-2b67-f0ca8791e179"
+/dev/sde4: PARTLABEL="multiimgqti" PARTUUID="99c4a808-3365-4d86-c034-2d7322ba6a64"
+/dev/sde24: PARTLABEL="uefivarstore" PARTUUID="8dc82e54-0ff0-01f1-43ee-a8df065fd3da"
+/dev/sde52: PARTLABEL="mdtp" PARTUUID="8d6680be-40d5-0a76-a45b-7bde2e3fbc05"
+/dev/sde14: PARTLABEL="featenabler" PARTUUID="864c9cd0-a0e5-27bb-8643-302e2e3806fb"
+/dev/sde42: PARTLABEL="tzbak" PARTUUID="9a8d4258-876e-adb2-fc0b-bddd1ee072a0"
+/dev/sdc2: PARTLABEL="xbl_5bak" PARTUUID="d2a0c3a5-d54e-125f-76f6-776832b27165"
+/dev/sdc3: PARTLABEL="xbl_config_4bak" PARTUUID="0fc02680-253b-8f7f-fcb6-764385c78b41"
+/dev/sdc1: PARTLABEL="xbl_4bak" PARTUUID="e6921f2f-48ea-8512-a527-a0d6082ba873"
+/dev/sdc4: PARTLABEL="xbl_config_5bak" PARTUUID="7021cf77-0a3b-438f-f3a5-0622d29e5362"
+/dev/sda4: PARTLABEL="bk01" PARTUUID="691da5dd-a4a8-8228-0db0-fff1d37ad2ef"
+/dev/sda26: PARTLABEL="minidump" PARTUUID="4cce4684-6ca4-9ee2-3278-28cde6a70ba2"
+/dev/sda16: PARTLABEL="devinfo" PARTUUID="26e05948-d2dc-0a68-74d1-9e75999cf894"
+/dev/sda34: PTUUID="957cad5b-830c-4257-ab28-c65534debcf5" PTTYPE="gpt" PARTLABEL="userdata" PARTUUID="d5b7c6fd-e25c-4276-38e4-e7bf68bd7e1e"
+/dev/sda2: PARTLABEL="ssd" PARTUUID="ca4cbb66-3d90-fdb1-7beb-2ca38a3a9439"
+/dev/sda24: PARTLABEL="logdump" PARTUUID="8c67a91e-225f-7554-966b-e2cb6a7ec01b"
+/dev/sda14: PARTLABEL="bk07" PARTUUID="f1727859-4824-fade-c660-a60d55ec5f03"
+/dev/sda32: PARTLABEL="super" PARTUUID="61af6c8c-5bc9-828a-daef-64fd68ec8cd9"
+/dev/sda12: PARTLABEL="bk06" PARTUUID="f099d50e-ceee-ea30-f4d5-8ec7a06704df"
+/dev/sda9: PARTLABEL="frp" PARTUUID="ce583720-85f3-bde2-d96f-0e9e3acddc19"
+/dev/sda30: PARTLABEL="exaid" PARTUUID="c3dfcb16-724a-4e32-1ddb-f35ea4521ec7"
+/dev/sda20: PARTLABEL="splash" PARTUUID="77e658cc-e855-f013-693e-6e1af8e9ad6a"
+/dev/sda10: PARTLABEL="bk05" PARTUUID="136a0532-2564-60d8-5c43-e3eff83514ee"
+/dev/sda7: PARTLABEL="bk04" PARTUUID="0aa77fe5-8145-6426-316e-ac7ef1de2cd1"
+/dev/sda19: PARTLABEL="bk08" PARTUUID="9083a087-9309-71e8-38f7-ee6bb18091cd"
+/dev/sda5: PARTLABEL="bk02" PARTUUID="0117a41c-277c-c554-26e3-1c149a623f04"
+/dev/sda27: PARTLABEL="mtdblk" PARTUUID="b383d139-8a5c-d3c3-102f-cf065c714ede"
+/dev/sda17: PARTLABEL="oem_misc1" PARTUUID="2ee6f3b4-9c23-1b36-802c-715e79ae763a"
+/dev/sda3: PARTLABEL="dbg" PARTUUID="a6952818-c3f9-373d-3f74-7175fe0801c1"
+/dev/sda25: PARTLABEL="rawdump" PARTUUID="c444e403-65f6-cd37-3be6-fd1b2731785c"
+/dev/sda15: PARTLABEL="oops" PARTUUID="f6ba1f45-505e-f40f-cdcf-4e00a67ecec7"
+/dev/sda33: PARTLABEL="bk010" PARTUUID="2fa0312e-3520-66e5-ff7b-3123242815d7"
+/dev/sda1: PARTLABEL="switch" PARTUUID="9936af10-76f1-20f3-39d4-0b8c75cab297"
+/dev/sda21: PARTLABEL="bk09" PARTUUID="b68d4fc2-870c-2424-6b4f-446e42f03384"
+/dev/sda11: PARTLABEL="misc" PARTUUID="2ed2eec5-aec0-b913-0e97-aeb9c8af35b9"
+/dev/sda8: PARTLABEL="keystore" PARTUUID="d2009e2e-3d3f-ef2a-cc8d-b524e3a7675f"
+/dev/sda6: PARTLABEL="bk03" PARTUUID="f92d2cbf-8185-c5d4-fc99-997a4f961d96"
+/dev/sda28: PARTLABEL="recovery" PARTUUID="2f0d7844-d2ed-b6b4-44d0-bbdb80ade15a"
+brw-r--r--    1 0        0           7,   0 Nov 27 17:24 /dev/loop0
+brw-r--r--    1 0        0           7,   8 Nov 27 17:24 /dev/loop1
+brw-r--r--    1 0        0           7,  80 Nov 27 17:24 /dev/loop10
+brw-r--r--    1 0        0           7,  88 Nov 27 17:24 /dev/loop11
+brw-r--r--    1 0        0           7,  96 Nov 27 17:24 /dev/loop12
+brw-r--r--    1 0        0           7, 104 Nov 27 17:24 /dev/loop13
+brw-r--r--    1 0        0           7, 112 Nov 27 17:24 /dev/loop14
+brw-r--r--    1 0        0           7, 120 Nov 27 17:24 /dev/loop15
+brw-r--r--    1 0        0           7,  16 Nov 27 17:24 /dev/loop2
+brw-r--r--    1 0        0           7,  24 Nov 27 17:24 /dev/loop3
+brw-r--r--    1 0        0           7,  32 Nov 27 17:24 /dev/loop4
+brw-r--r--    1 0        0           7,  40 Nov 27 17:24 /dev/loop5
+brw-r--r--    1 0        0           7,  48 Nov 27 17:24 /dev/loop6
+brw-r--r--    1 0        0           7,  56 Nov 27 17:24 /dev/loop7
+brw-r--r--    1 0        0           7,  64 Nov 27 17:24 /dev/loop8
+brw-r--r--    1 0        0           7,  72 Nov 27 17:24 /dev/loop9
+
+/dev/block/by-name:
+total 0
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 ALIGN_TO_128K_1 -> ../../sdd1
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 ALIGN_TO_128K_2 -> ../../sdf1
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 abl -> ../../sde39
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 ablbak -> ../../sde40
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 aop -> ../../sde22
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 aopbak -> ../../sde23
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 apdp -> ../../sde8
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk01 -> ../../sda4
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk010 -> ../../sda33
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk02 -> ../../sda5
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk03 -> ../../sda6
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk04 -> ../../sda7
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk05 -> ../../sda10
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk06 -> ../../sda12
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk07 -> ../../sda14
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk08 -> ../../sda19
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk09 -> ../../sda21
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk31 -> ../../sdd3
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk32 -> ../../sdd5
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk41 -> ../../sde1
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk42 -> ../../sde19
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk43 -> ../../sde28
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk45 -> ../../sde54
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk51 -> ../../sdf6
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bluetooth -> ../../sde35
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 boot -> ../../sde50
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 cache -> ../../sda29
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 cdt -> ../../sdd2
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 cmnlib -> ../../sde29
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 cmnlib64 -> ../../sde31
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 cmnlib64bak -> ../../sde32
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 cmnlibbak -> ../../sde30
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 cust -> ../../sda31
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 dbg -> ../../sda3
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 ddr -> ../../sdd4
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 devcfg -> ../../sde20
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 devcfgbak -> ../../sde21
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 devinfo -> ../../sda16
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 dip -> ../../sde36
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 dsp -> ../../sde49
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 dtbo -> ../../sde47
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 exaid -> ../../sda30
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 featenabler -> ../../sde14
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 featenablerbak -> ../../sde15
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 frp -> ../../sda9
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 fsc -> ../../sdf5
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 fsg -> ../../sdf4
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 gsort -> ../../sde46
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 hyp -> ../../sde44
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 hypbak -> ../../sde45
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 imagefv -> ../../sde57
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 imagefvbak -> ../../sde58
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 keymaster -> ../../sde33
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 keymasterbak -> ../../sde34
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 keystore -> ../../sda8
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 limits -> ../../sde12
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 limits-cdsp -> ../../sde13
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 logdump -> ../../sda24
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 logfs -> ../../sda13
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 logo -> ../../sde48
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 mdm1m9kefs1 -> ../../sdf8
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 mdm1m9kefs2 -> ../../sdf9
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 mdm1m9kefs3 -> ../../sdf7
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 mdm1m9kefsc -> ../../sdf10
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 mdmddr -> ../../sdd6
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 mdtp -> ../../sde52
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 mdtpbak -> ../../sde53
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 mdtpsecapp -> ../../sde55
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 mdtpsecappbak -> ../../sde56
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 metadata -> ../../sda18
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 minidump -> ../../sda26
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 misc -> ../../sda11
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 modem -> ../../sde51
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 modemst1 -> ../../sdf2
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 modemst2 -> ../../sdf3
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 msadp -> ../../sde9
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 mtdblk -> ../../sda27
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 multiimgoem -> ../../sde2
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 multiimgoembak -> ../../sde3
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 multiimgqti -> ../../sde4
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 multiimgqtibak -> ../../sde5
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 oem_misc1 -> ../../sda17
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 oops -> ../../sda15
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 persist -> ../../sda22
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 persistbak -> ../../sda23
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 qupfw -> ../../sde6
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 qupfwbak -> ../../sde7
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 rawdump -> ../../sda25
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 recovery -> ../../sda28
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 sec -> ../../sde10
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 secdata -> ../../sde11
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 splash -> ../../sda20
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 spunvm -> ../../sde43
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 ssd -> ../../sda2
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 storsec -> ../../sde18
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 super -> ../../sda32
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 switch -> ../../sda1
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 tz -> ../../sde41
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 tzbak -> ../../sde42
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 uefisecapp -> ../../sde37
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 uefisecappbak -> ../../sde38
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 uefivarstore -> ../../sde24
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 userdata -> ../../sda34
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 vbmeta -> ../../sde16
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 vbmeta_odm -> ../../sde27
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 vbmeta_product -> ../../sde26
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 vbmeta_system -> ../../sde17
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 vbmeta_vendor -> ../../sde25
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_4 -> ../../sdb1
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_4bak -> ../../sdc1
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_5 -> ../../sdb2
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_5bak -> ../../sdc2
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_config_4 -> ../../sdb3
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_config_4bak -> ../../sdc3
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_config_5 -> ../../sdb4
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_config_5bak -> ../../sdc4
+
+/dev/disk/by-partlabel:
+total 0
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 ALIGN_TO_128K_1 -> ../../sdd1
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 ALIGN_TO_128K_2 -> ../../sdf1
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 abl -> ../../sde39
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 ablbak -> ../../sde40
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 aop -> ../../sde22
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 aopbak -> ../../sde23
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 apdp -> ../../sde8
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk01 -> ../../sda4
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk010 -> ../../sda33
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk02 -> ../../sda5
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk03 -> ../../sda6
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk04 -> ../../sda7
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk05 -> ../../sda10
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk06 -> ../../sda12
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk07 -> ../../sda14
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk08 -> ../../sda19
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk09 -> ../../sda21
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk31 -> ../../sdd3
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk32 -> ../../sdd5
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk41 -> ../../sde1
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk42 -> ../../sde19
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk43 -> ../../sde28
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bk45 -> ../../sde54
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 bk51 -> ../../sdf6
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 bluetooth -> ../../sde35
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 boot -> ../../sde50
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 cache -> ../../sda29
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 cdt -> ../../sdd2
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 cmnlib -> ../../sde29
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 cmnlib64 -> ../../sde31
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 cmnlib64bak -> ../../sde32
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 cmnlibbak -> ../../sde30
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 cust -> ../../sda31
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 dbg -> ../../sda3
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 ddr -> ../../sdd4
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 devcfg -> ../../sde20
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 devcfgbak -> ../../sde21
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 devinfo -> ../../sda16
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 dip -> ../../sde36
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 dsp -> ../../sde49
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 dtbo -> ../../sde47
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 exaid -> ../../sda30
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 featenabler -> ../../sde14
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 featenablerbak -> ../../sde15
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 frp -> ../../sda9
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 fsc -> ../../sdf5
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 fsg -> ../../sdf4
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 gsort -> ../../sde46
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 hyp -> ../../sde44
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 hypbak -> ../../sde45
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 imagefv -> ../../sde57
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 imagefvbak -> ../../sde58
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 keymaster -> ../../sde33
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 keymasterbak -> ../../sde34
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 keystore -> ../../sda8
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 limits -> ../../sde12
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 limits-cdsp -> ../../sde13
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 logdump -> ../../sda24
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 logfs -> ../../sda13
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 logo -> ../../sde48
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 mdm1m9kefs1 -> ../../sdf8
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 mdm1m9kefs2 -> ../../sdf9
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 mdm1m9kefs3 -> ../../sdf7
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 mdm1m9kefsc -> ../../sdf10
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 mdmddr -> ../../sdd6
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 mdtp -> ../../sde52
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 mdtpbak -> ../../sde53
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 mdtpsecapp -> ../../sde55
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 mdtpsecappbak -> ../../sde56
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 metadata -> ../../sda18
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 minidump -> ../../sda26
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 misc -> ../../sda11
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 modem -> ../../sde51
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 modemst1 -> ../../sdf2
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 modemst2 -> ../../sdf3
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 msadp -> ../../sde9
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 mtdblk -> ../../sda27
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 multiimgoem -> ../../sde2
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 multiimgoembak -> ../../sde3
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 multiimgqti -> ../../sde4
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 multiimgqtibak -> ../../sde5
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 oem_misc1 -> ../../sda17
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 oops -> ../../sda15
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 persist -> ../../sda22
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 persistbak -> ../../sda23
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 qupfw -> ../../sde6
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 qupfwbak -> ../../sde7
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 rawdump -> ../../sda25
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 recovery -> ../../sda28
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 sec -> ../../sde10
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 secdata -> ../../sde11
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 splash -> ../../sda20
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 spunvm -> ../../sde43
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 ssd -> ../../sda2
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 storsec -> ../../sde18
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 super -> ../../sda32
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 switch -> ../../sda1
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 tz -> ../../sde41
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 tzbak -> ../../sde42
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 uefisecapp -> ../../sde37
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 uefisecappbak -> ../../sde38
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 uefivarstore -> ../../sde24
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 userdata -> ../../sda34
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 vbmeta -> ../../sde16
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 vbmeta_odm -> ../../sde27
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 vbmeta_product -> ../../sde26
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 vbmeta_system -> ../../sde17
+lrwxrwxrwx    1 0        0               11 Nov 27 17:24 vbmeta_vendor -> ../../sde25
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_4 -> ../../sdb1
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_4bak -> ../../sdc1
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_5 -> ../../sdb2
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_5bak -> ../../sdc2
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_config_4 -> ../../sdb3
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_config_4bak -> ../../sdc3
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_config_5 -> ../../sdb4
+lrwxrwxrwx    1 0        0               10 Nov 27 17:24 xbl_config_5bak -> ../../sdc4
+__ROOT_RO_MOUNT__
+__PARTITIONS__
+major minor  #blocks  name
+
+   1        0       8192 ram0
+   1        1       8192 ram1
+   1        2       8192 ram2
+   1        3       8192 ram3
+   1        4       8192 ram4
+   1        5       8192 ram5
+   1        6       8192 ram6
+   1        7       8192 ram7
+   1        8       8192 ram8
+   1        9       8192 ram9
+   1       10       8192 ram10
+   1       11       8192 ram11
+   1       12       8192 ram12
+   1       13       8192 ram13
+   1       14       8192 ram14
+   1       15       8192 ram15
+   8        0  123740160 sda
+   8        1          8 sda1
+   8        2         32 sda2
+   8        3         32 sda3
+   8        4         32 sda4
+   8        5        128 sda5
+   8        6        256 sda6
+   8        7        512 sda7
+   8        8        512 sda8
+   8        9        512 sda9
+   8       10       2048 sda10
+   8       11       4096 sda11
+   8       12       8192 sda12
+   8       13       8192 sda13
+   8       14       8192 sda14
+   8       15      16384 sda15
+ 259        0      16384 sda16
+ 259        1       1024 sda17
+ 259        2      16384 sda18
+ 259        3      15360 sda19
+ 259        4      32768 sda20
+ 259        5      32768 sda21
+ 259        6      65536 sda22
+ 259        7      65536 sda23
+ 259        8      65536 sda24
+ 259        9     131072 sda25
+ 259       10      98304 sda26
+ 259       11      32768 sda27
+ 259       12     131072 sda28
+ 259       13     393216 sda29
+ 259       14     393216 sda30
+ 259       15    1048576 sda31
+ 259       16    8912896 sda32
+ 259       17      32768 sda33
+ 259       18  112205804 sda34
+   8       32      16384 sdc
+   8       33       7168 sdc1
+   8       34       7168 sdc2
+   8       35        512 sdc3
+   8       36       1492 sdc4
+   8       48      32768 sdd
+   8       49        104 sdd1
+   8       50        128 sdd2
+   8       51       1024 sdd3
+   8       52       2048 sdd4
+   8       53       2048 sdd5
+   8       54       1024 sdd6
+   8       64    1048576 sde
+   8       65        104 sde1
+   8       66         32 sde2
+   8       67         32 sde3
+   8       68         32 sde4
+   8       69         32 sde5
+   8       70        128 sde6
+   8       71        128 sde7
+   8       72        256 sde8
+   8       73        256 sde9
+   8       74         32 sde10
+   8       75         32 sde11
+   8       76         32 sde12
+   8       77         32 sde13
+   8       78        128 sde14
+   8       79        128 sde15
+ 259       19        128 sde16
+ 259       20        128 sde17
+ 259       21        128 sde18
+ 259       22        256 sde19
+ 259       23        256 sde20
+ 259       24        256 sde21
+ 259       25        512 sde22
+ 259       26        512 sde23
+ 259       27        512 sde24
+ 259       28        128 sde25
+ 259       29        128 sde26
+ 259       30        128 sde27
+ 259       31       3712 sde28
+ 259       32       1024 sde29
+ 259       33       1024 sde30
+ 259       34       1024 sde31
+ 259       35       1024 sde32
+ 259       36       1024 sde33
+ 259       37       1024 sde34
+ 259       38       1024 sde35
+ 259       39       1024 sde36
+ 259       40       2048 sde37
+ 259       41       2048 sde38
+ 259       42       2048 sde39
+ 259       43       2048 sde40
+ 259       44       4096 sde41
+ 259       45       4096 sde42
+ 259       46      32768 sde43
+ 259       47       8192 sde44
+ 259       48       8192 sde45
+ 259       49      16384 sde46
+ 259       50      32768 sde47
+ 259       51      65536 sde48
+ 259       52      65536 sde49
+ 259       53     131072 sde50
+ 259       54     458752 sde51
+ 259       55      32768 sde52
+ 259       56      32768 sde53
+ 259       57      53248 sde54
+ 259       58       4096 sde55
+ 259       59       4096 sde56
+ 259       60       2048 sde57
+ 259       61       2048 sde58
+   8       80      65536 sdf
+   8       81        104 sdf1
+   8       82       2048 sdf2
+   8       83       2048 sdf3
+   8       84       2048 sdf4
+   8       85        128 sdf5
+   8       86        768 sdf6
+   8       87       8192 sdf7
+   8       88       8192 sdf8
+   8       89       8192 sdf9
+   8       90       1024 sdf10
+   8       16      16384 sdb
+   8       17       7168 sdb1
+   8       18       7168 sdb2
+   8       19        512 sdb3
+   8       20       1492 sdb4
+  31        0      16384 mtdblock0
+__MOUNTS__
+none on / type rootfs (rw,size=2673956k,nr_inodes=668489)
+proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
+run on /run type tmpfs (rw,nosuid,nodev,relatime)
+configfs on /sys/kernel/config type configfs (rw,nosuid,nodev,noexec,relatime)
+devpts on /dev/pts type devpts (rw,relatime,mode=600,ptmxmode=000)
+pstore on /sys/fs/pstore type pstore (rw,relatime)
+__DMESG_TAIL__
+[    1.901512] core_ctl: Init CPU6 state
+[    1.901593] core_ctl: Creating CPU group 7
+[    1.901597] core_ctl: Init CPU7 state
+[    1.901826] registered taskstats version 1
+[    1.901835] Loading compiled-in X.509 certificates
+[    1.901906] Key type ._fscrypt registered
+[    1.901911] Key type .fscrypt registered
+[    1.901915] Key type fscrypt-provisioning registered
+[    1.901988] pstore: Invalid compression size for deflate: 0
+[    1.902320] FG: fg_psy_get_property: unsupported property 67
+[    1.902322] spss_utils [spss_parse_dt]: iar_buf_addr [0x8e0f0000].
+[    1.902330] FG: fg_psy_get_property: unsupported property 4
+[    1.902356] Get prop 67 is not supported in pc_port
+[    1.902380] [FTS][Info]fts_power_supply_work 1
+[    1.902380] 
+[    1.902384] [FTS][Info]fts_power_supply_work USB is exist
+[    1.902384] 
+[    1.902389] [FTS][Info][Mode]enter charger mode
+[    1.902401] spss_utils [spss_probe]: Initialization completed ok, firmware_name [spss2p].
+[    1.903931] Error: swapper/0: fastrpc_device_init: failed to create debugfs root dir
+[    1.904575] fastrpc soc:qcom,msm-adsprpc-mem: for adsp_rh segments only will be dumped.
+[    1.904657] adsprpc: init_secure_vmid_list: secure VMID = 22
+[    1.904662] adsprpc: init_secure_vmid_list: secure VMID = 37
+[    1.904682] adsprpc: fastrpc_probe: service location enabled for avs/audio (audio_pdr_adsprpc)
+[    1.904688] adsprpc: fastrpc_probe: service location enabled for tms/servreg (sensors_pdr_adsprpc)
+[    1.905006] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb1: Linked as a consumer to 15000000.apps-smmu
+[    1.905210] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb1 to group 37
+[    1.905616] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb2: Linked as a consumer to 15000000.apps-smmu
+[    1.905799] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb2 to group 38
+[    1.906188] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb3: Linked as a consumer to 15000000.apps-smmu
+[    1.906360] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb3 to group 39
+[    1.906927] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb4: Linked as a consumer to 15000000.apps-smmu
+[    1.907111] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb4 to group 40
+[    1.907510] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb5: Linked as a consumer to 15000000.apps-smmu
+[    1.907681] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb5 to group 41
+[    1.908087] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb6: Linked as a consumer to 15000000.apps-smmu
+[    1.908189] FG: fg_psy_get_property: unsupported property 67
+[    1.908194] FG: fg_psy_get_property: unsupported property 4
+[    1.908251] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb6 to group 42
+[    1.908331] Get prop 67 is not supported in pc_port
+[    1.908651] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb7: Linked as a consumer to 15000000.apps-smmu
+[    1.908812] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb7 to group 43
+[    1.909207] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb8: Linked as a consumer to 15000000.apps-smmu
+[    1.909370] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb8 to group 44
+[    1.909779] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb9: Linked as a consumer to 15000000.apps-smmu
+[    1.910258] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb9 to group 45
+[    1.910341] FG: fg_psy_get_property: unsupported property 67
+[    1.910346] FG: fg_psy_get_property: unsupported property 4
+[    1.910701] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb10: Linked as a consumer to 15000000.apps-smmu
+[    1.910891] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb10 to group 46
+[    1.911326] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb11: Linked as a consumer to 15000000.apps-smmu
+[    1.911492] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb11 to group 47
+[    1.911922] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb12: Linked as a consumer to 15000000.apps-smmu
+[    1.912099] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb12 to group 48
+[    1.912492] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb13: Linked as a consumer to 15000000.apps-smmu
+[    1.912656] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb13 to group 49
+[    1.913068] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb14: Linked as a consumer to 15000000.apps-smmu
+[    1.913235] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb14 to group 50
+[    1.913649] fastrpc soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb15: Linked as a consumer to 15000000.apps-smmu
+[    1.913823] iommu: Adding device soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb15 to group 51
+[    1.914674] adsprpc: fastrpc_device_init: SSR notifier registered for adsp
+[    1.914683] adsprpc: fastrpc_device_init: SSR notifier registered for modem
+[    1.914688] adsprpc: fastrpc_device_init: SSR notifier registered for slpi
+[    1.914692] adsprpc: fastrpc_device_init: SSR notifier registered for cdsp
+[    1.915545] LMI_VFS_DIAG lookup_bdev enter path=/dev/block/sda15
+[    1.915585] LMI_VFS_DIAG lookup_bdev kern_path fail err=-2
+[    1.915801] mtdoops: mtd0 is too large (limit is 8 MiB)
+[    1.916115] block2mtd: mtd0: [/dev/block/sda15] erase_size = 2048KiB [2097152]
+[    1.916249] ngd_msm_ctrl 3ac0000.slim: Linked as a consumer to 15000000.apps-smmu
+[    1.916446] iommu: Adding device 3ac0000.slim to group 52
+[    1.917997] input: gpio-keys as /devices/platform/soc/soc:gpio_keys/input/input5
+[    1.918453] [USBPD-PM]: usbpd_pm_probe: usbpd_pm_probe enter
+[    1.918460] [USBPD-PM]: pd_policy_parse_dt: pm_config.bat_volt_lp_lmt:4480
+[    1.918465] [USBPD-PM]: pd_policy_parse_dt: pm_config.bat_curr_lp_lmt:6000
+[    1.918470] [USBPD-PM]: pd_policy_parse_dt: pm_config.bus_volt_lp_lmt:12000
+[    1.918474] [USBPD-PM]: pd_policy_parse_dt: pm_config.bus_curr_lp_lmt:3000
+[    1.918479] [USBPD-PM]: pd_policy_parse_dt: pdpm->step_charge_high_vol_curr_max:0
+[    1.918483] [USBPD-PM]: pd_policy_parse_dt: pdpm->cell_vol_high_threshold_mv:0
+[    1.918488] [USBPD-PM]: pd_policy_parse_dt: pdpm->cell_vol_max_threshold_mv:0
+[    1.918492] [USBPD-PM]: pd_policy_parse_dt: pdpm->non_ffc_bat_volt_max:4450
+[    1.918496] [USBPD-PM]: pd_policy_parse_dt: therm-level-threshold missing, use default val
+[    1.918500] [USBPD-PM]: pd_policy_parse_dt: therm-level-threshold:13
+[    1.918504] [USBPD-PM]: pd_policy_parse_dt: pd-battery-warm-th:480
+[    1.918510] [USBPD-PM]: pd_policy_parse_dt: pd-power-max:33
+[    1.918517] [USBPD-PM]: usbpd_check_cp_sec_psy: cp_sec_psy not found
+[    1.918854] [FC2-PM]: cp_qc30_probe: cp_qc30_probe enter
+[    1.918864] [FC2-PM]: cp_qc30_probe: battery_warm_th = 480
+[    1.918868] [FC2-PM]: cp_qc30_probe: charge pump qc3 probe
+[    1.920290] lpm_levels: Cluster (L3) stats not registered
+[    1.924174] rmnet_ipa3 started initialization
+[    1.924836] RNDIS_IPA module is loaded.
+[    1.925617] msm notifier probed successfully
+[    1.927231] cfg80211: Loading compiled-in X.509 certificates for regulatory database
+[    1.927873] cfg80211: Loaded X.509 cert 'sforshee: 00b28ddf47aef9cea7'
+[    1.928233] cfg80211: Loaded X.509 cert 'wens: 61c038651aabdcf94bd0ac7ff06c7248db18c600'
+[    1.928717] cam_cc_sleep_clk_src: CXO configuration failed
+[    1.929544] msm_bus_late_init: Remove handoff bw requests
+[    1.930130] regulator_proxy_consumer_remove_all: removing regulator proxy consumer requests
+[    1.930300] ALSA device list:
+[    1.930305]   No soundcards found.
+[    1.930338] Warning: unable to open an initial console.
+[    1.930870] Freeing unused kernel memory: 2048K
+[    1.931036] Run /init as init process
+[    1.943165] LMI_VFS_DIAG do_new_mount enter fstype=proc name=proc data=(null)
+[    1.943184] LMI_VFS_DIAG do_new_mount pre_get_tree fs=proc name=proc err=0 fc_source=proc
+[    1.943189] LMI_VFS_DIAG vfs_get_tree enter fs=proc fs_flags=0x8 source=proc root=          (null)
+[    1.943194] fs_context: LMI_VFS_DIAG legacy_get_tree enter fs=proc source=proc flags=0x8000
+[    1.943201] fs_context: LMI_VFS_DIAG legacy_get_tree ok fs=proc
+[    1.943917] LMI_VFS_DIAG do_new_mount enter fstype=sysfs name=sysfs data=(null)
+[    1.943926] LMI_VFS_DIAG do_new_mount pre_get_tree fs=sysfs name=sysfs err=0 fc_source=sysfs
+[    1.943931] LMI_VFS_DIAG vfs_get_tree enter fs=sysfs fs_flags=0x8 source=sysfs root=          (null)
+[    1.943935] fs_context: LMI_VFS_DIAG legacy_get_tree enter fs=sysfs source=sysfs flags=0x8000
+[    1.943969] fs_context: LMI_VFS_DIAG legacy_get_tree ok fs=sysfs
+[    1.944723] LMI_VFS_DIAG do_new_mount enter fstype=devtmpfs name=dev data=mode=0755
+[    1.944746] request_module fs-devtmpfs succeeded, but still no fs?
+[    1.945610] LMI_VFS_DIAG do_new_mount enter fstype=tmpfs name=run data=mode=0755
+[    1.945622] LMI_VFS_DIAG do_new_mount pre_get_tree fs=tmpfs name=run err=0 fc_source=run
+[    1.945627] LMI_VFS_DIAG vfs_get_tree enter fs=tmpfs fs_flags=0x8 source=run root=          (null)
+[    1.949404] LMI_VFS_DIAG do_new_mount enter fstype=configfs name=configfs data=(null)
+[    1.949415] LMI_VFS_DIAG do_new_mount pre_get_tree fs=configfs name=configfs err=0 fc_source=configfs
+[    1.949419] LMI_VFS_DIAG vfs_get_tree enter fs=configfs fs_flags=0x0 source=configfs root=          (null)
+[    1.950790] LMI_VFS_DIAG do_new_mount enter fstype=devpts name=devpts data=(null)
+[    1.950801] LMI_VFS_DIAG do_new_mount pre_get_tree fs=devpts name=devpts err=0 fc_source=devpts
+[    1.950806] LMI_VFS_DIAG vfs_get_tree enter fs=devpts fs_flags=0x8 source=devpts root=          (null)
+[    1.950810] fs_context: LMI_VFS_DIAG legacy_get_tree enter fs=devpts source=devpts flags=0x8000
+[    1.950831] fs_context: LMI_VFS_DIAG legacy_get_tree ok fs=devpts
+[    1.960113] msm-dwc3 a600000.ssusb: DWC3 exited from low power mode
+[    1.961373] ps5169_present_check: info is null
+[    2.015590] [bq2597x-STANDALONE]:bq2597x_charger_get_property:POWER_SUPPLY_PROP_CHARGING_ENABLED: disable
+[    2.019746] [bq2597x-STANDALONE]:bq2597x_get_work_mode:work mode:Standalone
+[    2.028772] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.028776] [ds28e16] verify_get_property: get RomID = <redacted>
+[    2.081967] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.081973] [ds28e16] verify_get_property: get chip_ok read RomID = <redacted>
+[    2.086563] [bq2597x-STANDALONE]:bq2597x_charger_get_property:POWER_SUPPLY_PROP_CHARGING_ENABLED: disable
+[    2.087557] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.087561] [ds28e16] verify_get_property: get RomID = <redacted>
+[    2.090699] [bq2597x-STANDALONE]:bq2597x_get_work_mode:work mode:Standalone
+[    2.091192] [bq2597x-STANDALONE]:bq2597x_charger_get_property:POWER_SUPPLY_PROP_CHARGING_ENABLED: disable
+[    2.097532] [bq2597x-STANDALONE]:bq2597x_get_work_mode:work mode:Standalone
+[    2.099354] [bq2597x-STANDALONE]:bq2597x_charger_get_property:POWER_SUPPLY_PROP_CHARGING_ENABLED: disable
+[    2.105957] [bq2597x-STANDALONE]:bq2597x_get_work_mode:work mode:Standalone
+[    2.119036] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.119039] [ds28e16] verify_get_property: get RomID = <redacted>
+[    2.171313] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.171315] [ds28e16] verify_get_property: get chip_ok read RomID = <redacted>
+[    2.176718] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.176725] [ds28e16] verify_get_property: get RomID = <redacted>
+[    2.191014] synth uevent: /devices/platform/soc/soc:maxim_ds28e16/power_supply/batt_verify: failed to send uevent
+[    2.191016] power_supply batt_verify: uevent: failed to send synthetic uevent
+[    2.207637] FG: fg_psy_get_property: unsupported property 67
+[    2.207647] FG: fg_psy_get_property: unsupported property 4
+[    2.229016] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.229022] [ds28e16] verify_get_property: get chip_ok read RomID = <redacted>
+[    2.234968] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.234973] [ds28e16] verify_get_property: get RomID = <redacted>
+[    2.288152] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.288156] [ds28e16] verify_get_property: get chip_ok read RomID = <redacted>
+[    2.297934] using random self ethernet address
+[    2.297941] using random host ethernet address
+[    2.303275] configfs-gadget gadget: HOST MAC <redacted-mac>
+[    2.303280] configfs-gadget gadget: MAC <redacted-mac>
+[    2.304057] FG: battery_authentic_work: FG: authentic prop is 1
+[    2.305171] [ds28e16] Read_RomID: RomID = <redacted>
+[    2.305178] [ds28e16] verify_get_property: get RomID = <redacted>
+[    2.305184] FG: ds_romid_work: FG: romid prop is <redacted>
+[    2.364793] android_work: did not send uevent (0 0 00000000dd904fbc)
+[    2.371035] msm-dwc3 a600000.ssusb: Avail curr from USB = 2
+[    2.391673] IPv6: ADDRCONF(NETDEV_UP): usb0: link is not ready
+[    2.397722] LMI_VFS_DIAG do_new_mount enter fstype=pstore name=pstore data=(null)
+[    2.397749] LMI_VFS_DIAG do_new_mount pre_get_tree fs=pstore name=pstore err=0 fc_source=pstore
+[    2.397754] LMI_VFS_DIAG vfs_get_tree enter fs=pstore fs_flags=0x0 source=pstore root=          (null)
+[    2.397759] fs_context: LMI_VFS_DIAG legacy_get_tree enter fs=pstore source=pstore flags=0x8000
+[    2.397785] fs_context: LMI_VFS_DIAG legacy_get_tree ok fs=pstore
+[    2.504566] android_work: did not send uevent (0 0 00000000dd904fbc)
+[    2.604892] msm-dwc3 a600000.ssusb: Avail curr from USB = 100
+[    2.691164] android_work: sent uevent USB_STATE=CONNECTED
+[    2.868252] FG: ds_status_work: FG: ds_status prop is 00 00 08 03 02 00 ff 4c
+[    3.033770] configfs-gadget gadget: high-speed config #1: c
+[    3.033842] msm-dwc3 a600000.ssusb: Avail curr from USB = 500
+[    3.037520] android_work: sent uevent USB_STATE=CONFIGURED
+[    3.328072] FG: ds_page0_work: FG: ds_page0 prop is 53 42 4d 34 51 30 34 38 00 8e ef 46 4d 44 31 31
+[    3.329187] FG: fg_gen4_get_batt_profile: cmdline of batt profile is not defined, read page0 to reload file
+[    3.329199] of_batterydata_get_best_profile: No battery data found
+[    3.329203] FG: fg_gen4_get_batt_profile: couldn't find profile handle
+[    3.329208] FG: profile_load_work: profile for batt_id=99KOhms not found..using OTP, rc:-61
+[    3.744081] of_batterydata_get_best_profile: j11sun_4700mah found
+[    3.744096] QCOM-STEPCHG: read_range_data_from_node: Count qcom,step-chg-ranges failed, rc=-22
+[    3.744107] QCOM-STEPCHG: read_range_data_from_node: Count qcom,cold-step-chg-ranges failed, rc=-22
+[    4.235930] FG: fg_psy_get_property: unsupported property 67
+[    4.235935] FG: fg_psy_get_property: unsupported property 4
+[    4.236408] PL_AWAKE: current vote is now 1 voted by TAPER_END_VOTER,0, previous voted 0
+[    4.237195] FCC: current vote is now -22 voted by TAPER_STEPPER_VOTER,5, previous voted 6000000
+[    4.237204] FCC: current vote is now 6000000 voted by HW_LIMIT_VOTER,0, previous voted -22
+[    4.237233] PL_AWAKE: current vote is now 0 voted by TAPER_END_VOTER,0, previous voted 1
+[    5.260546] FG: fg_psy_get_property: unsupported property 67
+[    5.260556] FG: fg_psy_get_property: unsupported property 4
+[    5.781076]  loop0: p1 p2
+[    5.856166] aw8697_haptic 3-005a: Falling back to syfs fallback for: aw8697_haptic.bin
+[    6.368345] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[    6.368357] FG: calculate_average_current: current_now_ma=-71777 averaged_iavg_ma=-71777
+[    6.368368] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:0, batt_ma:-71777, smooth_low_batt_soc:0, smooth_soc: 0
+[    6.368373] FG: soc_monitor_work: soc:100, raw_soc:100, c:-71777, s:1
+[    6.368846] FG: fg_psy_get_property: unsupported property 67
+[    6.368852] FG: fg_psy_get_property: unsupported property 4
+[    7.136914]  loop0: p1 p2
+[    8.518664]  loop0: p1 p2
+[    9.747297] FG: fg_psy_get_property: unsupported property 67
+[    9.747308] FG: fg_psy_get_property: unsupported property 4
+[    9.747356] smb5_usb_port_get_prop: 5 callbacks suppressed
+[    9.747358] Get prop 67 is not supported in pc_port
+[    9.935856]  loop0: p1 p2
+[   11.280914]  loop0: p1 p2
+[   12.719800]  loop0: p1 p2
+[   14.113558]  loop0: p1 p2
+[   15.552350]  loop0: p1 p2
+[   16.608362] FG: fg_battery_soc_smooth_tracking: entry:smooth_batt_soc0
+[   16.608375] FG: calculate_average_current: current_now_ma=-62988 averaged_iavg_ma=-67383
+[   16.608381] FG: fg_battery_soc_smooth_tracking: soc:100, last_soc:100, raw_soc:100, soc_changed:0, batt_ma:-62988, smooth_low_batt_soc:0, smooth_soc: 0
+[   16.608386] FG: soc_monitor_work: soc:100, raw_soc:100, c:-62988, s:1
