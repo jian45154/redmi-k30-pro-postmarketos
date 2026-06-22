@@ -2,13 +2,18 @@
 
 ## Update: 2026-06-23
 
-- v26 RAM-only boot succeeds with the existing `userdata` rootfs.
-- Rootfs discovery and mount are working: `/dev/loop0p2` mounts as `/`, and
-  `/dev/loop0p1` mounts as `/boot`.
-- USB networking works on Windows after changing the gadget ID to
-  `0525:a4a2` and using RNDIS; SSH is reachable at `172.16.42.1:22`.
-- The kernel is still tested through temporary `fastboot boot`. No persistent
-  kernel/boot partition flash has been performed.
+- v27 persistent boot is installed and verified.
+- `userdata` contains the working postmarketOS image. Rootfs discovery and
+  mount are working: `/dev/loop0p2` mounts as `/`, and `/dev/loop0p1` mounts as
+  `/boot`.
+- USB networking works on Windows as RNDIS (`0525:a4a2 POSTMARKETOS`); SSH is
+  reachable at `172.16.42.1:22`.
+- Display kernel bring-up is present (`/dev/dri/card0`, DSI panel connected,
+  Adreno650v3), but userspace has not taken over the panel, so the screen still
+  shows the Redmi logo.
+- Audio/mic, Wi-Fi, and Bluetooth are the next main blockers: ALSA exposes no
+  soundcard, Wi-Fi exposes no wireless interface, and Bluetooth is rfkill
+  soft-blocked.
 - Raw logs remain local-only. Use `logs/*.redacted.txt` for published evidence.
 
 签名：codex_ian | 2026-05-28 12:39:41 +10:00 Australia/Sydney

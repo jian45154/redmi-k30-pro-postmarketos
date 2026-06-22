@@ -1,0 +1,1364 @@
+
+=== cpu memory clocks ===
+$ cat /proc/cpuinfo
+Processor	: AArch64 Processor rev 14 (aarch64)
+processor	: 0
+BogoMIPS	: 38.40
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x51
+CPU architecture: 8
+CPU variant	: 0xd
+CPU part	: 0x805
+CPU revision	: 14
+
+processor	: 1
+BogoMIPS	: 38.40
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x51
+CPU architecture: 8
+CPU variant	: 0xd
+CPU part	: 0x805
+CPU revision	: 14
+
+processor	: 2
+BogoMIPS	: 38.40
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x51
+CPU architecture: 8
+CPU variant	: 0xd
+CPU part	: 0x805
+CPU revision	: 14
+
+processor	: 3
+BogoMIPS	: 38.40
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x51
+CPU architecture: 8
+CPU variant	: 0xd
+CPU part	: 0x805
+CPU revision	: 14
+
+processor	: 4
+BogoMIPS	: 38.40
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x1
+CPU part	: 0xd0d
+CPU revision	: 0
+
+processor	: 5
+BogoMIPS	: 38.40
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x1
+CPU part	: 0xd0d
+CPU revision	: 0
+
+processor	: 6
+BogoMIPS	: 38.40
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x1
+CPU part	: 0xd0d
+CPU revision	: 0
+
+processor	: 7
+BogoMIPS	: 38.40
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x1
+CPU part	: 0xd0d
+CPU revision	: 0
+
+Hardware	: Qualcomm Technologies, Inc SM8250
+$ cat /proc/meminfo
+MemTotal:        5716072 kB
+MemFree:         4369784 kB
+MemAvailable:    5355288 kB
+Buffers:            7856 kB
+Cached:            77856 kB
+SwapCached:            0 kB
+Active:            98340 kB
+Inactive:          42072 kB
+Active(anon):      55236 kB
+Inactive(anon):     1980 kB
+Active(file):      43104 kB
+Inactive(file):    40092 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+SwapTotal:             0 kB
+SwapFree:              0 kB
+Dirty:                64 kB
+Writeback:             0 kB
+AnonPages:         54100 kB
+Mapped:            28432 kB
+Shmem:              2516 kB
+KReclaimable:     953780 kB
+Slab:              93444 kB
+SReclaimable:      25712 kB
+SUnreclaim:        67732 kB
+KernelStack:        7452 kB
+PageTables:          740 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     2858036 kB
+Committed_AS:      79752 kB
+VmallocTotal:   262930368 kB
+VmallocUsed:       11892 kB
+VmallocChunk:          0 kB
+Percpu:             2048 kB
+CmaTotal:         356352 kB
+CmaFree:          269028 kB
+$ ls -l /sys/devices/system/cpu
+total 0
+-r--r--r--    1 root     root          4096 Nov 28 06:51 core_ctl_isolated
+drwxr-xr-x   10 root     root             0 Nov 28 06:43 cpu0
+drwxr-xr-x    8 root     root             0 Nov 28 06:43 cpu1
+drwxr-xr-x    8 root     root             0 Nov 28 06:43 cpu2
+drwxr-xr-x    8 root     root             0 Nov 28 06:43 cpu3
+drwxr-xr-x    9 root     root             0 Nov 28 06:43 cpu4
+drwxr-xr-x    8 root     root             0 Nov 28 06:43 cpu5
+drwxr-xr-x    8 root     root             0 Nov 28 06:43 cpu6
+drwxr-xr-x    9 root     root             0 Nov 28 06:43 cpu7
+drwxr-xr-x    2 root     root             0 Nov 28 06:51 cpu_boost
+drwxr-xr-x    5 root     root             0 Nov 28 06:51 cpufreq
+drwxr-xr-x    2 root     root             0 Nov 28 06:51 cpuidle
+drwxr-xr-x    2 root     root             0 Nov 28 06:51 hotplug
+-r--r--r--    1 root     root          4096 Nov 28 06:51 isolated
+-r--r--r--    1 root     root          4096 Nov 28 06:51 kernel_max
+-r--r--r--    1 root     root          4096 Nov 28 06:51 modalias
+-r--r--r--    1 root     root          4096 Nov 28 06:51 offline
+-r--r--r--    1 root     root          4096 Nov 28 06:45 online
+-r--r--r--    1 root     root          4096 Nov 28 06:51 possible
+drwxr-xr-x    2 root     root             0 Nov 28 06:51 power
+-r--r--r--    1 root     root          4096 Nov 28 06:51 present
+-rw-r--r--    1 root     root          4096 Nov 28 06:43 uevent
+drwxr-xr-x    2 root     root             0 Nov 28 06:51 vulnerabilities
+--- /sys/devices/system/cpu/cpu0
+online=1
+cpufreq/scaling_cur_freq=1804800
+cpufreq/scaling_available_frequencies=300000 403200 518400 614400 691200 787200 883200 979200 1075200 1171200 1248000 1344000 1420800 1516800 1612800 1708800 1804800 
+cpufreq/scaling_governor=performance
+--- /sys/devices/system/cpu/cpu1
+online=1
+cpufreq/scaling_cur_freq=1804800
+cpufreq/scaling_available_frequencies=300000 403200 518400 614400 691200 787200 883200 979200 1075200 1171200 1248000 1344000 1420800 1516800 1612800 1708800 1804800 
+cpufreq/scaling_governor=performance
+--- /sys/devices/system/cpu/cpu2
+online=1
+cpufreq/scaling_cur_freq=1804800
+cpufreq/scaling_available_frequencies=300000 403200 518400 614400 691200 787200 883200 979200 1075200 1171200 1248000 1344000 1420800 1516800 1612800 1708800 1804800 
+cpufreq/scaling_governor=performance
+--- /sys/devices/system/cpu/cpu3
+online=1
+cpufreq/scaling_cur_freq=1804800
+cpufreq/scaling_available_frequencies=300000 403200 518400 614400 691200 787200 883200 979200 1075200 1171200 1248000 1344000 1420800 1516800 1612800 1708800 1804800 
+cpufreq/scaling_governor=performance
+--- /sys/devices/system/cpu/cpu4
+online=1
+cpufreq/scaling_cur_freq=2419200
+cpufreq/scaling_available_frequencies=710400 825600 940800 1056000 1171200 1286400 1382400 1478400 1574400 1670400 1766400 1862400 1958400 2054400 2150400 2246400 2342400 2419200 
+cpufreq/scaling_governor=performance
+--- /sys/devices/system/cpu/cpu5
+online=1
+cpufreq/scaling_cur_freq=2419200
+cpufreq/scaling_available_frequencies=710400 825600 940800 1056000 1171200 1286400 1382400 1478400 1574400 1670400 1766400 1862400 1958400 2054400 2150400 2246400 2342400 2419200 
+cpufreq/scaling_governor=performance
+--- /sys/devices/system/cpu/cpu6
+online=1
+cpufreq/scaling_cur_freq=2419200
+cpufreq/scaling_available_frequencies=710400 825600 940800 1056000 1171200 1286400 1382400 1478400 1574400 1670400 1766400 1862400 1958400 2054400 2150400 2246400 2342400 2419200 
+cpufreq/scaling_governor=performance
+--- /sys/devices/system/cpu/cpu7
+online=1
+cpufreq/scaling_cur_freq=2841600
+cpufreq/scaling_available_frequencies=844800 960000 1075200 1190400 1305600 1401600 1516800 1632000 1747200 1862400 1977600 2073600 2169600 2265600 2361600 2457600 2553600 2649600 2745600 2841600 
+cpufreq/scaling_governor=performance
+
+=== pci and pcie ===
+$ ls -l /sys/bus/pci/devices
+total 0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 0000:00:00.0 -> ../../../devices/platform/soc/1c00000.qcom,pcie/pci0000:00/0000:00:00.0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 0000:01:00.0 -> ../../../devices/platform/soc/1c00000.qcom,pcie/pci0000:00/0000:00:00.0/0000:01:00.0
+--- /sys/bus/pci/devices/0000:00:00.0
+vendor=0x17cb
+device=0x010b
+class=0x060400
+subsystem_vendor=0x0000
+subsystem_device=0x0000
+modalias=pci:v000017CBd0000010Bsv00000000sd00000000bc06sc04i00
+current_link_speed=current_link_width=max_link_speed=Unknown speed
+max_link_width=255
+enable=1
+--- /sys/bus/pci/devices/0000:01:00.0
+vendor=0x17cb
+device=0x1101
+class=0xff0000
+subsystem_vendor=0x17cb
+subsystem_device=0x0108
+modalias=pci:v000017CBd00001101sv000017CBsd00000108bcFFsc00i00
+current_link_speed=current_link_width=max_link_speed=Unknown speed
+max_link_width=255
+enable=0
+
+=== major buses ===
+$ ls -l /sys/bus/i2c/devices
+total 0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 0-0028 -> ../../../devices/platform/soc/984000.i2c/i2c-0/0-0028
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1-0034 -> ../../../devices/platform/soc/98c000.i2c/i2c-1/1-0034
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 2-0064 -> ../../../devices/platform/soc/a84000.i2c/i2c-2/2-0064
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3-005a -> ../../../devices/platform/soc/a8c000.i2c/i2c-3/3-005a
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 4-0038 -> ../../../devices/platform/soc/a94000.i2c/i2c-4/4-0038
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 5-000d -> ../../../devices/platform/soc/884000.i2c/i2c-5/5-000d
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 5-0018 -> ../../../devices/platform/soc/884000.i2c/i2c-5/5-0018
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 5-0042 -> ../../../devices/platform/soc/884000.i2c/i2c-5/5-0042
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 5-0066 -> ../../../devices/platform/soc/884000.i2c/i2c-5/5-0066
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 6-0064 -> ../../../devices/platform/soc/888000.i2c/i2c-6/6-0064
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 i2c-0 -> ../../../devices/platform/soc/984000.i2c/i2c-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 i2c-1 -> ../../../devices/platform/soc/98c000.i2c/i2c-1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 i2c-2 -> ../../../devices/platform/soc/a84000.i2c/i2c-2
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 i2c-3 -> ../../../devices/platform/soc/a8c000.i2c/i2c-3
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 i2c-4 -> ../../../devices/platform/soc/a94000.i2c/i2c-4
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 i2c-5 -> ../../../devices/platform/soc/884000.i2c/i2c-5
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 i2c-6 -> ../../../devices/platform/soc/888000.i2c/i2c-6
+$ ls -l /sys/bus/spi/devices
+total 0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 spi0.0 -> ../../../devices/platform/soc/988000.spi/spi_master/spi0/spi0.0
+$ ls -l /sys/bus/platform/devices
+total 0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 0.gpio-regulator -> ../../../devices/platform/soc/0.gpio-regulator
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 0.ti,drv8846 -> ../../../devices/platform/soc/0.ti,drv8846
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1.gpio-regulator -> ../../../devices/platform/soc/1.gpio-regulator
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 100000.qcom,gcc -> ../../../devices/platform/soc/100000.qcom,gcc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1023000.dcc_v2 -> ../../../devices/platform/soc/1023000.dcc_v2
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 106004.qcom,gdsc -> ../../../devices/platform/soc/106004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 10f004.qcom,gdsc -> ../../../devices/platform/soc/10f004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 110004.qcom,gdsc -> ../../../devices/platform/soc/110004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 146bf000.qcom,msm-imem -> ../../../devices/platform/soc/146bf000.qcom,msm-imem
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 146bf720.tz-log -> ../../../devices/platform/soc/146bf720.tz-log
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 15000000.apps-smmu -> ../../../devices/platform/soc/15000000.apps-smmu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 15185000.anoc_1_tbu -> ../../../devices/platform/soc/15000000.apps-smmu/15185000.anoc_1_tbu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 15189000.anoc_2_tbu -> ../../../devices/platform/soc/15000000.apps-smmu/15189000.anoc_2_tbu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1518d000.mnoc_hf_0_tbu -> ../../../devices/platform/soc/15000000.apps-smmu/1518d000.mnoc_hf_0_tbu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 15191000.mnoc_hf_1_tbu -> ../../../devices/platform/soc/15000000.apps-smmu/15191000.mnoc_hf_1_tbu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 15195000.compute_dsp_1_tbu -> ../../../devices/platform/soc/15000000.apps-smmu/15195000.compute_dsp_1_tbu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 15199000.compute_dsp_0_tbu -> ../../../devices/platform/soc/15000000.apps-smmu/15199000.compute_dsp_0_tbu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1519d000.adsp_tbu -> ../../../devices/platform/soc/15000000.apps-smmu/1519d000.adsp_tbu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 151a1000.anoc_1_pcie_tbu -> ../../../devices/platform/soc/15000000.apps-smmu/151a1000.anoc_1_pcie_tbu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 151a5000.mnoc_sf_0_tbu -> ../../../devices/platform/soc/15000000.apps-smmu/151a5000.mnoc_sf_0_tbu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 151a9000.mnoc_sf_1_tbu -> ../../../devices/platform/soc/15000000.apps-smmu/151a9000.mnoc_sf_1_tbu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 16b004.qcom,gdsc -> ../../../devices/platform/soc/16b004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 16e0000.ad-hoc-bus -> ../../../devices/platform/soc/16e0000.ad-hoc-bus
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 17300000.qcom,lpass -> ../../../devices/platform/soc/17300000.qcom,lpass
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 175004.qcom,gdsc -> ../../../devices/platform/soc/175004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 177004.qcom,gdsc -> ../../../devices/platform/soc/177004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 17a10040.qcom,pcie0_msi -> ../../../devices/platform/soc/17a10040.qcom,pcie0_msi
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 17a10040.qcom,pcie2_msi -> ../../../devices/platform/soc/17a10040.qcom,pcie2_msi
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 17c10000.qcom,wdt -> ../../../devices/platform/soc/17c10000.qcom,wdt
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 17c20000.timer -> ../../../devices/platform/soc/17c20000.timer
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 17d050.qcom,gdsc -> ../../../devices/platform/soc/17d050.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 17d054.qcom,gdsc -> ../../../devices/platform/soc/17d054.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 17d058.qcom,gdsc -> ../../../devices/platform/soc/17d058.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 17d06c.qcom,gdsc -> ../../../devices/platform/soc/17d06c.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc -> ../../../devices/platform/soc/18200000.rsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:msm_bus_apps_rsc -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:msm_bus_apps_rsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:qcom,rpmhclk -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:qcom,rpmhclk
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-bobc1 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-bobc1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-cxlvl -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-cxlvl
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ebilvl -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ebilvl
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-gfxlvl -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-gfxlvl
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-lcxlvl -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-lcxlvl
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa10 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa10
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa12 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa12
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa13 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa13
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa14 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa14
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa15 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa15
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa16 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa16
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa17 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa17
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa18 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa18
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa2 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa2
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa3 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa3
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa5 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa5
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa6 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa6
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa7 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa7
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoa9 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoa9
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoc1 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoc1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoc10 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoc10
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoc11 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoc11
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoc2 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoc2
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoc3 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoc3
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoc4 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoc4
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoc5 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoc5
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoc6 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoc6
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoc7 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoc7
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoc8 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoc8
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldoc9 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldoc9
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldof1 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldof1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldof2 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldof2
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldof3 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldof3
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldof4 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldof4
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldof5 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldof5
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldof6 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldof6
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-ldof7 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-ldof7
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-lmxlvl -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-lmxlvl
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-mmcxlvl -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-mmcxlvl
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-mxlvl -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-mxlvl
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-smpa4 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-smpa4
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-smpa5 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-smpa5
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-smpa6 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-smpa6
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-smpc7 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-smpc7
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-smpc8 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-smpc8
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-smpf1 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-smpf1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:rpmh-regulator-smpf2 -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:rpmh-regulator-smpf2
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18200000.rsc:system_pm -> ../../../devices/platform/soc/18200000.rsc/18200000.rsc:system_pm
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 182a0000.syscon -> ../../../devices/platform/soc/182a0000.syscon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18590000.qcom,devfreq-l3 -> ../../../devices/platform/soc/18590000.qcom,devfreq-l3
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18590000.qcom,devfreq-l3:qcom,cdsp-cdsp-l3-lat -> ../../../devices/platform/soc/18590000.qcom,devfreq-l3/18590000.qcom,devfreq-l3:qcom,cdsp-cdsp-l3-lat
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18590000.qcom,devfreq-l3:qcom,cpu0-cpu-l3-lat -> ../../../devices/platform/soc/18590000.qcom,devfreq-l3/18590000.qcom,devfreq-l3:qcom,cpu0-cpu-l3-lat
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18590000.qcom,devfreq-l3:qcom,cpu4-cpu-l3-lat -> ../../../devices/platform/soc/18590000.qcom,devfreq-l3/18590000.qcom,devfreq-l3:qcom,cpu4-cpu-l3-lat
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18590000.qcom,devfreq-l3:qcom,cpu7-cpu-l3-lat -> ../../../devices/platform/soc/18590000.qcom,devfreq-l3/18590000.qcom,devfreq-l3:qcom,cpu7-cpu-l3-lat
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18591000.qcom,cpufreq-hw -> ../../../devices/platform/soc/18591000.qcom,cpufreq-hw
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18591000.qcom,cpufreq-hw:qcom,cpu-isolation -> ../../../devices/platform/soc/18591000.qcom,cpufreq-hw/18591000.qcom,cpufreq-hw:qcom,cpu-isolation
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18591000.qcom,cpufreq-hw:qcom,limits-dcvs -> ../../../devices/platform/soc/18591000.qcom,cpufreq-hw/18591000.qcom,cpufreq-hw:qcom,limits-dcvs
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1880000.syscon -> ../../../devices/platform/soc/1880000.syscon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 188101c.qcom,spss -> ../../../devices/platform/soc/188101c.qcom,spss
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 188501c.mailbox -> ../../../devices/platform/soc/188501c.mailbox
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 18d004.qcom,gdsc -> ../../../devices/platform/soc/18d004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1c00000.qcom,pcie -> ../../../devices/platform/soc/1c00000.qcom,pcie
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1c10000.qcom,pcie -> ../../../devices/platform/soc/1c10000.qcom,pcie
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1d84000.ufshc -> ../../../devices/platform/soc/1d84000.ufshc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1d87000.ufsphy_mem -> ../../../devices/platform/soc/1d87000.ufsphy_mem
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1d90000.ufsice -> ../../../devices/platform/soc/1d90000.ufsice
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1db0000.ufscardice -> ../../../devices/platform/soc/1db0000.ufscardice
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1de0000.qcedev -> ../../../devices/platform/soc/1de0000.qcedev
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1de0000.qcedev:qcom_cedev_ns_cb -> ../../../devices/platform/soc/1de0000.qcedev/1de0000.qcedev:qcom_cedev_ns_cb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1de0000.qcedev:qcom_cedev_s_cb -> ../../../devices/platform/soc/1de0000.qcedev/1de0000.qcedev:qcom_cedev_s_cb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1de0000.qcrypto -> ../../../devices/platform/soc/1de0000.qcrypto
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1e00000.qcom,ipa -> ../../../devices/platform/soc/1e00000.qcom,ipa
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1e00000.qcom,ipa:ipa_smmu_11ad -> ../../../devices/platform/soc/1e00000.qcom,ipa/1e00000.qcom,ipa:ipa_smmu_11ad
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1e00000.qcom,ipa:ipa_smmu_ap -> ../../../devices/platform/soc/1e00000.qcom,ipa/1e00000.qcom,ipa:ipa_smmu_ap
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1e00000.qcom,ipa:ipa_smmu_uc -> ../../../devices/platform/soc/1e00000.qcom,ipa/1e00000.qcom,ipa:ipa_smmu_uc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1e00000.qcom,ipa:ipa_smmu_wlan -> ../../../devices/platform/soc/1e00000.qcom,ipa/1e00000.qcom,ipa:ipa_smmu_wlan
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 1f40000.syscon -> ../../../devices/platform/soc/1f40000.syscon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 2.gpio-regulator -> ../../../devices/platform/soc/2.gpio-regulator
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3.gpio-regulator -> ../../../devices/platform/soc/3.gpio-regulator
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 39f000c.qcom,avtimer -> ../../../devices/platform/soc/39f000c.qcom,avtimer
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3ac0000.slim -> ../../../devices/platform/soc/3ac0000.slim
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3ac0000.slim:qca6390 -> ../../../devices/platform/soc/3ac0000.slim/3ac0000.slim:qca6390
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3d00000.qcom,kgsl-3d0 -> ../../../devices/platform/soc/3d00000.qcom,kgsl-3d0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3d6a000.qcom,gmu -> ../../../devices/platform/soc/3d6a000.qcom,gmu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3d6a000.qcom,gmu:gmu_kernel -> ../../../devices/platform/soc/3d6a000.qcom,gmu/3d6a000.qcom,gmu:gmu_kernel
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3d6a000.qcom,gmu:gmu_user -> ../../../devices/platform/soc/3d6a000.qcom,gmu/3d6a000.qcom,gmu:gmu_user
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3d90000.qcom,gpucc -> ../../../devices/platform/soc/3d90000.qcom,gpucc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3d91008.syscon -> ../../../devices/platform/soc/3d91008.syscon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3d9100c.qcom,gdsc -> ../../../devices/platform/soc/3d9100c.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3d9106c.qcom,gdsc -> ../../../devices/platform/soc/3d9106c.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3d91508.syscon -> ../../../devices/platform/soc/3d91508.syscon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3d91540.syscon -> ../../../devices/platform/soc/3d91540.syscon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3da0000.kgsl-smmu -> ../../../devices/platform/soc/3da0000.kgsl-smmu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3da0000.qcom,kgsl-iommu -> ../../../devices/platform/soc/3da0000.qcom,kgsl-iommu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3da0000.qcom,kgsl-iommu:gfx3d_secure -> ../../../devices/platform/soc/3da0000.qcom,kgsl-iommu/3da0000.qcom,kgsl-iommu:gfx3d_secure
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3da0000.qcom,kgsl-iommu:gfx3d_user -> ../../../devices/platform/soc/3da0000.qcom,kgsl-iommu/3da0000.qcom,kgsl-iommu:gfx3d_user
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3dc5000.gfx_0_tbu -> ../../../devices/platform/soc/3da0000.kgsl-smmu/3dc5000.gfx_0_tbu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 3dc9000.gfx_1_tbu -> ../../../devices/platform/soc/3da0000.kgsl-smmu/3dc9000.gfx_1_tbu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 4.gpio-regulator -> ../../../devices/platform/soc/4.gpio-regulator
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 408000.qcom,ipcc -> ../../../devices/platform/soc/408000.qcom,ipcc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 5.gpio-regulator -> ../../../devices/platform/soc/5.gpio-regulator
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 5c00000.qcom,ssc -> ../../../devices/platform/soc/5c00000.qcom,ssc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 60400.qcom,npu-npu-llcc-bwmon -> ../../../devices/platform/soc/60400.qcom,npu-npu-llcc-bwmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 6b0f000.qcom,spmi-debug -> ../../../devices/platform/soc/6b0f000.qcom,spmi-debug
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 70300.qcom,npudsp-npu-ddr-bwmon -> ../../../devices/platform/soc/70300.qcom,npudsp-npu-ddr-bwmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 780000.qfprom -> ../../../devices/platform/soc/780000.qfprom
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 793000.qrng -> ../../../devices/platform/soc/793000.qrng
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 800000.qcom,gpi-dma -> ../../../devices/platform/soc/800000.qcom,gpi-dma
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 80860000.reserved-memory -> ../../../devices/platform/80860000.reserved-memory
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 82400000.qseecom -> ../../../devices/platform/soc/82400000.qseecom
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 8300000.qcom,turing -> ../../../devices/platform/soc/8300000.qcom,turing
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 87900000.smcinvoke -> ../../../devices/platform/soc/87900000.smcinvoke
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 8804000.sdhci -> ../../../devices/platform/soc/8804000.sdhci
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 884000.i2c -> ../../../devices/platform/soc/884000.i2c
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 884000.i2c:qcom,smb1390_slave@18:qcom,charge_pump_slave -> ../../../devices/platform/soc/884000.i2c/i2c-5/5-0018/884000.i2c:qcom,smb1390_slave@18:qcom,charge_pump_slave
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 888000.i2c -> ../../../devices/platform/soc/888000.i2c
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 88a7000.msm_tspp -> ../../../devices/platform/soc/88a7000.msm_tspp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 88e0000.qcom,msm-eud -> ../../../devices/platform/soc/88e0000.qcom,msm-eud
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 88e3000.hsphy -> ../../../devices/platform/soc/88e3000.hsphy
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 88e7000.refgen-regulator -> ../../../devices/platform/soc/88e7000.refgen-regulator
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 88ea000.qcom,mdss_dp_pll -> ../../../devices/platform/soc/88ea000.qcom,mdss_dp_pll
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 8c0000.qcom,qupv3_2_geni_se -> ../../../devices/platform/soc/8c0000.qcom,qupv3_2_geni_se
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 900000.qcom,gpi-dma -> ../../../devices/platform/soc/900000.qcom,gpi-dma
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 9091000.qcom,cpu-llcc-ddr-bwmon -> ../../../devices/platform/soc/9091000.qcom,cpu-llcc-ddr-bwmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 9093000.qcom,npu-llcc-ddr-bwmon -> ../../../devices/platform/soc/9093000.qcom,npu-llcc-ddr-bwmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 9095000.llcc-pmu -> ../../../devices/platform/soc/9095000.llcc-pmu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 90b6400.qcom,cpu-cpu-llcc-bwmon -> ../../../devices/platform/soc/90b6400.qcom,cpu-cpu-llcc-bwmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 90ba000.syscon -> ../../../devices/platform/soc/90ba000.syscon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 9200000.cache-controller -> ../../../devices/platform/soc/9200000.cache-controller
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 9800000.qcom,npu -> ../../../devices/platform/soc/9800000.qcom,npu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 984000.i2c -> ../../../devices/platform/soc/984000.i2c
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 988000.spi -> ../../../devices/platform/soc/988000.spi
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 98c000.i2c -> ../../../devices/platform/soc/98c000.i2c
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 9900000.qcom,msm_npu -> ../../../devices/platform/soc/9900000.qcom,msm_npu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 998000.qcom,qup_uart -> ../../../devices/platform/soc/998000.qcom,qup_uart
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 9980000.qcom,npucc -> ../../../devices/platform/soc/9980000.qcom,npucc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 9981004.qcom,gdsc -> ../../../devices/platform/soc/9981004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 9c0000.qcom,qupv3_0_geni_se -> ../../../devices/platform/soc/9c0000.qcom,qupv3_0_geni_se
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 Fixed MDIO bus.0 -> ../../../devices/platform/Fixed MDIO bus.0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 a00000.qcom,gpi-dma -> ../../../devices/platform/soc/a00000.qcom,gpi-dma
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 a600000.dwc3 -> ../../../devices/platform/soc/a600000.ssusb/a600000.dwc3
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 a600000.ssusb -> ../../../devices/platform/soc/a600000.ssusb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 a704000.qcom,usbbam -> ../../../devices/platform/soc/a600000.ssusb/a704000.qcom,usbbam
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 a84000.i2c -> ../../../devices/platform/soc/a84000.i2c
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 a8c000.i2c -> ../../../devices/platform/soc/a8c000.i2c
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 a90000.qcom,qup_uart -> ../../../devices/platform/soc/a90000.qcom,qup_uart
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 a94000.i2c -> ../../../devices/platform/soc/a94000.i2c
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 aa00000.qcom,vidc -> ../../../devices/platform/soc/aa00000.qcom,vidc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 aa00000.qcom,vidc:bus_cnoc -> ../../../devices/platform/soc/aa00000.qcom,vidc/aa00000.qcom,vidc:bus_cnoc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 aa00000.qcom,vidc:non_secure_cb -> ../../../devices/platform/soc/aa00000.qcom,vidc/aa00000.qcom,vidc:non_secure_cb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 aa00000.qcom,vidc:secure_bitstream_cb -> ../../../devices/platform/soc/aa00000.qcom,vidc/aa00000.qcom,vidc:secure_bitstream_cb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 aa00000.qcom,vidc:secure_non_pixel_cb -> ../../../devices/platform/soc/aa00000.qcom,vidc/aa00000.qcom,vidc:secure_non_pixel_cb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 aa00000.qcom,vidc:secure_pixel_cb -> ../../../devices/platform/soc/aa00000.qcom,vidc/aa00000.qcom,vidc:secure_pixel_cb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 aa00000.qcom,vidc:venus_bus_ddr -> ../../../devices/platform/soc/aa00000.qcom,vidc/aa00000.qcom,vidc:venus_bus_ddr
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 aa00000.qcom,vidc:venus_bus_llcc -> ../../../devices/platform/soc/aa00000.qcom,vidc/aa00000.qcom,vidc:venus_bus_llcc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 aab0000.qcom,venus -> ../../../devices/platform/soc/aab0000.qcom,venus
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ab00000.qcom,cvp -> ../../../devices/platform/soc/ab00000.qcom,cvp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ab00000.qcom,cvp:cvp_bus_ddr -> ../../../devices/platform/soc/ab00000.qcom,cvp/ab00000.qcom,cvp:cvp_bus_ddr
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ab00000.qcom,cvp:cvp_cnoc -> ../../../devices/platform/soc/ab00000.qcom,cvp/ab00000.qcom,cvp:cvp_cnoc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ab00000.qcom,cvp:cvp_non_secure_cb -> ../../../devices/platform/soc/ab00000.qcom,cvp/ab00000.qcom,cvp:cvp_non_secure_cb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ab00000.qcom,cvp:cvp_secure_nonpixel_cb -> ../../../devices/platform/soc/ab00000.qcom,cvp/ab00000.qcom,cvp:cvp_secure_nonpixel_cb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ab00000.qcom,cvp:cvp_secure_pixel_cb -> ../../../devices/platform/soc/ab00000.qcom,cvp/ab00000.qcom,cvp:cvp_secure_pixel_cb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ab00000.qcom,cvp:qcom,msm-cvp,mem_cdsp -> ../../../devices/platform/soc/ab00000.qcom,cvp/ab00000.qcom,cvp:qcom,msm-cvp,mem_cdsp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 abb0000.qcom,cvpss -> ../../../devices/platform/soc/abb0000.qcom,cvpss
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 abf0000.qcom,videocc -> ../../../devices/platform/soc/abf0000.qcom,videocc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 abf0bf8.qcom,gdsc -> ../../../devices/platform/soc/abf0bf8.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 abf0c98.qcom,gdsc -> ../../../devices/platform/soc/abf0c98.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 abf0d18.qcom,gdsc -> ../../../devices/platform/soc/abf0d18.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 abf0d98.qcom,gdsc -> ../../../devices/platform/soc/abf0d98.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac0000.qcom,qupv3_1_geni_se -> ../../../devices/platform/soc/ac0000.qcom,qupv3_1_geni_se
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac00000.qcom,a5 -> ../../../devices/platform/soc/ac00000.qcom,a5
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac40000.qcom,cam-cpas -> ../../../devices/platform/soc/ac40000.qcom,cam-cpas
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac4d000.qcom,cpas-cdm0 -> ../../../devices/platform/soc/ac4d000.qcom,cpas-cdm0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac4f000.qcom,cci -> ../../../devices/platform/soc/ac4f000.qcom,cci
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac4f000.qcom,cci:qcom,actuator@0 -> ../../../devices/platform/soc/ac4f000.qcom,cci/ac4f000.qcom,cci:qcom,actuator@0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac4f000.qcom,cci:qcom,cam-sensor@0 -> ../../../devices/platform/soc/ac4f000.qcom,cci/ac4f000.qcom,cci:qcom,cam-sensor@0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac4f000.qcom,cci:qcom,cam-sensor@2 -> ../../../devices/platform/soc/ac4f000.qcom,cci/ac4f000.qcom,cci:qcom,cam-sensor@2
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac4f000.qcom,cci:qcom,cam-sensor@3 -> ../../../devices/platform/soc/ac4f000.qcom,cci/ac4f000.qcom,cci:qcom,cam-sensor@3
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac4f000.qcom,cci:qcom,eeprom@0 -> ../../../devices/platform/soc/ac4f000.qcom,cci/ac4f000.qcom,cci:qcom,eeprom@0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac4f000.qcom,cci:qcom,eeprom@2 -> ../../../devices/platform/soc/ac4f000.qcom,cci/ac4f000.qcom,cci:qcom,eeprom@2
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac4f000.qcom,cci:qcom,eeprom@3 -> ../../../devices/platform/soc/ac4f000.qcom,cci/ac4f000.qcom,cci:qcom,eeprom@3
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac4f000.qcom,cci:qcom,ois@0 -> ../../../devices/platform/soc/ac4f000.qcom,cci/ac4f000.qcom,cci:qcom,ois@0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac50000.qcom,cci -> ../../../devices/platform/soc/ac50000.qcom,cci
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac50000.qcom,cci:qcom,actuator@1 -> ../../../devices/platform/soc/ac50000.qcom,cci/ac50000.qcom,cci:qcom,actuator@1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac50000.qcom,cci:qcom,cam-sensor@1 -> ../../../devices/platform/soc/ac50000.qcom,cci/ac50000.qcom,cci:qcom,cam-sensor@1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac50000.qcom,cci:qcom,cam-sensor@4 -> ../../../devices/platform/soc/ac50000.qcom,cci/ac50000.qcom,cci:qcom,cam-sensor@4
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac50000.qcom,cci:qcom,cam-sensor@5 -> ../../../devices/platform/soc/ac50000.qcom,cci/ac50000.qcom,cci:qcom,cam-sensor@5
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac50000.qcom,cci:qcom,eeprom@1 -> ../../../devices/platform/soc/ac50000.qcom,cci/ac50000.qcom,cci:qcom,eeprom@1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac50000.qcom,cci:qcom,eeprom@4 -> ../../../devices/platform/soc/ac50000.qcom,cci/ac50000.qcom,cci:qcom,eeprom@4
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac50000.qcom,cci:qcom,eeprom@5 -> ../../../devices/platform/soc/ac50000.qcom,cci/ac50000.qcom,cci:qcom,eeprom@5
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac50000.qcom,cci:qcom,ois@1 -> ../../../devices/platform/soc/ac50000.qcom,cci/ac50000.qcom,cci:qcom,ois@1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac53000.qcom,jpegenc -> ../../../devices/platform/soc/ac53000.qcom,jpegenc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac57000.qcom,jpegdma -> ../../../devices/platform/soc/ac57000.qcom,jpegdma
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac5f000.qcom,fd -> ../../../devices/platform/soc/ac5f000.qcom,fd
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac6a000.qcom,csiphy -> ../../../devices/platform/soc/ac6a000.qcom,csiphy
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac6c000.qcom,csiphy -> ../../../devices/platform/soc/ac6c000.qcom,csiphy
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac6e000.qcom,csiphy -> ../../../devices/platform/soc/ac6e000.qcom,csiphy
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac70000.qcom,csiphy -> ../../../devices/platform/soc/ac70000.qcom,csiphy
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac72000.qcom,csiphy -> ../../../devices/platform/soc/ac72000.qcom,csiphy
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac74000.qcom,csiphy -> ../../../devices/platform/soc/ac74000.qcom,csiphy
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac7a000.qcom,bps -> ../../../devices/platform/soc/ac7a000.qcom,bps
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ac9a000.qcom,ipe0 -> ../../../devices/platform/soc/ac9a000.qcom,ipe0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 acb4000.qcom,ife0 -> ../../../devices/platform/soc/acb4000.qcom,ife0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 acb5200.qcom,csid0 -> ../../../devices/platform/soc/acb5200.qcom,csid0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 acc3000.qcom,ife1 -> ../../../devices/platform/soc/acc3000.qcom,ife1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 acc4200.qcom,csid1 -> ../../../devices/platform/soc/acc4200.qcom,csid1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 acd9000.qcom,ife-lite0 -> ../../../devices/platform/soc/acd9000.qcom,ife-lite0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 acd9200.qcom,csid-lite0 -> ../../../devices/platform/soc/acd9200.qcom,csid-lite0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 acdb200.qcom,ife-lite1 -> ../../../devices/platform/soc/acdb200.qcom,ife-lite1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 acdb400.qcom,csid-lite1 -> ../../../devices/platform/soc/acdb400.qcom,csid-lite1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ad00000.qcom,camcc -> ../../../devices/platform/soc/ad00000.qcom,camcc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ad07004.qcom,gdsc -> ../../../devices/platform/soc/ad07004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ad08004.qcom,gdsc -> ../../../devices/platform/soc/ad08004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ad09004.qcom,gdsc -> ../../../devices/platform/soc/ad09004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ad0a004.qcom,gdsc -> ../../../devices/platform/soc/ad0a004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ad0b004.qcom,gdsc -> ../../../devices/platform/soc/ad0b004.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ad0c144.qcom,gdsc -> ../../../devices/platform/soc/ad0c144.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ae00000.qcom,mdss_mdp -> ../../../devices/platform/soc/ae00000.qcom,mdss_mdp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ae00000.qcom,mdss_mdp:qcom,smmu_sde_sec_cb -> ../../../devices/platform/soc/ae00000.qcom,mdss_mdp/ae00000.qcom,mdss_mdp:qcom,smmu_sde_sec_cb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ae00000.qcom,mdss_mdp:qcom,smmu_sde_unsec_cb -> ../../../devices/platform/soc/ae00000.qcom,mdss_mdp/ae00000.qcom,mdss_mdp:qcom,smmu_sde_unsec_cb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ae94000.qcom,mdss_dsi_ctrl0 -> ../../../devices/platform/soc/ae94000.qcom,mdss_dsi_ctrl0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ae94400.qcom,mdss_dsi_phy0 -> ../../../devices/platform/soc/ae94400.qcom,mdss_dsi_phy0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ae94900.qcom,mdss_dsi_pll -> ../../../devices/platform/soc/ae94900.qcom,mdss_dsi_pll
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ae96000.qcom,mdss_dsi_ctrl1 -> ../../../devices/platform/soc/ae96000.qcom,mdss_dsi_ctrl1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ae96400.qcom,mdss_dsi_phy1 -> ../../../devices/platform/soc/ae96400.qcom,mdss_dsi_phy1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ae96900.qcom,mdss_dsi_pll -> ../../../devices/platform/soc/ae96900.qcom,mdss_dsi_pll
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 af00000.qcom,dispcc -> ../../../devices/platform/soc/af00000.qcom,dispcc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 af03000.qcom,gdsc -> ../../../devices/platform/soc/af03000.qcom,gdsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 af20000.qcom,sde_rscc -> ../../../devices/platform/soc/af20000.qcom,sde_rscc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 af20000.rsc -> ../../../devices/platform/soc/af20000.rsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 af20000.rsc:msm_bus_disp_rsc -> ../../../devices/platform/soc/af20000.rsc/af20000.rsc:msm_bus_disp_rsc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 af20000.rsc:sde_rsc_rpmh -> ../../../devices/platform/soc/af20000.rsc/af20000.rsc:sde_rsc_rpmh
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 alarmtimer.0.auto -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-00/c440000.qcom,spmi:qcom,pm8150@0:qcom,pm8150_rtc/rtc/rtc0/alarmtimer.0.auto
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 b0000000.qcom,cnss-qca6390 -> ../../../devices/platform/soc/b0000000.qcom,cnss-qca6390
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 b221200.qcom,rpmh-master-stats -> ../../../devices/platform/soc/b221200.qcom,rpmh-master-stats
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c221000.qcom,mpm2-sleep-counter -> ../../../devices/platform/soc/c221000.qcom,mpm2-sleep-counter
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c222000.tsens -> ../../../devices/platform/soc/c222000.tsens
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c223000.tsens -> ../../../devices/platform/soc/c223000.tsens
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c264000.restart -> ../../../devices/platform/soc/c264000.restart
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c300000.qcom,ddr-stats -> ../../../devices/platform/soc/c300000.qcom,ddr-stats
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c300000.qcom,qmp-aop -> ../../../devices/platform/soc/c300000.qcom,qmp-aop
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c300000.qcom,rpm-stats -> ../../../devices/platform/soc/c300000.qcom,rpm-stats
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi -> ../../../devices/platform/soc/c440000.qcom,spmi
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8009@a:pinctrl@c000 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-0a/c440000.qcom,spmi:qcom,pm8009@a:pinctrl@c000
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8009@a:qcom,power-on@800 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-0a/c440000.qcom,spmi:qcom,pm8009@a:qcom,power-on@800
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8009@a:qcom,revid@100 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-0a/c440000.qcom,spmi:qcom,pm8009@a:qcom,revid@100
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150@0:adc_tm@3500 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-00/c440000.qcom,spmi:qcom,pm8150@0:adc_tm@3500
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150@0:clock-controller@5b00 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-00/c440000.qcom,spmi:qcom,pm8150@0:clock-controller@5b00
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150@0:pinctrl@c000 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-00/c440000.qcom,spmi:qcom,pm8150@0:pinctrl@c000
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150@0:qcom,pm8150_rtc -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-00/c440000.qcom,spmi:qcom,pm8150@0:qcom,pm8150_rtc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150@0:qcom,power-on@800 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-00/c440000.qcom,spmi:qcom,pm8150@0:qcom,power-on@800
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150@0:qcom,temp-alarm@2400 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-00/c440000.qcom,spmi:qcom,pm8150@0:qcom,temp-alarm@2400
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150@0:sdam@b100 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-00/c440000.qcom,spmi:qcom,pm8150@0:sdam@b100
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150@0:vadc@3100 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-00/c440000.qcom,spmi:qcom,pm8150@0:vadc@3100
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:adc_tm@3500 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:adc_tm@3500
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:bcl@1d00 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:bcl@1d00
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:clock-controller@6000 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:clock-controller@6000
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:pinctrl@c000 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:pinctrl@c000
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:qcom,pbs@7200 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qcom,pbs@7200
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:qcom,power-on@800 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qcom,power-on@800
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:qcom,qpnp-smb5 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qcom,qpnp-smb5
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:qcom,revid@100 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qcom,revid@100
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:qcom,sdam-qnovo@b000 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qcom,sdam-qnovo@b000
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:qcom,temp-alarm@2400 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qcom,temp-alarm@2400
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:qcom,usb-pdphy@1700 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qcom,usb-pdphy@1700
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:qpnp,fg -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:qpnp,fg
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@2:vadc@3100 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-02/c440000.qcom,spmi:qcom,pm8150b@2:vadc@3100
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@3:qcom,haptics@c000 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-03/c440000.qcom,spmi:qcom,pm8150b@3:qcom,haptics@c000
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@3:qcom,leds@d000 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-03/c440000.qcom,spmi:qcom,pm8150b@3:qcom,leds@d000
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150b@3:qcom,pwms@b100 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-03/c440000.qcom,spmi:qcom,pm8150b@3:qcom,pwms@b100
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150l@4:adc_tm@3500 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-04/c440000.qcom,spmi:qcom,pm8150l@4:adc_tm@3500
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150l@4:bcl@3d00 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-04/c440000.qcom,spmi:qcom,pm8150l@4:bcl@3d00
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150l@4:clock-controller@5b00 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-04/c440000.qcom,spmi:qcom,pm8150l@4:clock-controller@5b00
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150l@4:pinctrl@c000 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-04/c440000.qcom,spmi:qcom,pm8150l@4:pinctrl@c000
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150l@4:qcom,power-on@800 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-04/c440000.qcom,spmi:qcom,pm8150l@4:qcom,power-on@800
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150l@4:qcom,revid@100 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-04/c440000.qcom,spmi:qcom,pm8150l@4:qcom,revid@100
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150l@4:qcom,temp-alarm@2400 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-04/c440000.qcom,spmi:qcom,pm8150l@4:qcom,temp-alarm@2400
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150l@4:vadc@3100 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-04/c440000.qcom,spmi:qcom,pm8150l@4:vadc@3100
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150l@5:qcom,amoled -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-05/c440000.qcom,spmi:qcom,pm8150l@5:qcom,amoled
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150l@5:qcom,leds@d300 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-05/c440000.qcom,spmi:qcom,pm8150l@5:qcom,leds@d300
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150l@5:qcom,pwms@b100 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-05/c440000.qcom,spmi:qcom,pm8150l@5:qcom,pwms@b100
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pm8150l@5:qcom,pwms@bc00 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-05/c440000.qcom,spmi:qcom,pm8150l@5:qcom,pwms@bc00
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 c440000.qcom,spmi:qcom,pmxprairie@8:qcom,power-on@800 -> ../../../devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-08/c440000.qcom,spmi:qcom,pmxprairie@8:qcom,power-on@800
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 cam_sync -> ../../../devices/platform/cam_sync
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 cpu-pmu -> ../../../devices/platform/cpu-pmu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 f000000.pinctrl -> ../../../devices/platform/soc/f000000.pinctrl
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 firmware:android -> ../../../devices/platform/firmware:android
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 psci -> ../../../devices/platform/psci
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 qcom_llcc_edac -> ../../../devices/platform/soc/9200000.cache-controller/qcom_llcc_edac
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 qcom_llcc_perfmon -> ../../../devices/platform/soc/9200000.cache-controller/qcom_llcc_perfmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 ramoops.0 -> ../../../devices/platform/ramoops.0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 reg-dummy -> ../../../devices/platform/reg-dummy
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 regulatory.0 -> ../../../devices/platform/regulatory.0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 snd-soc-dummy -> ../../../devices/platform/snd-soc-dummy
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc -> ../../../devices/platform/soc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:aop-msg-client -> ../../../devices/platform/soc/soc:aop-msg-client
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:apps_iommu_coherent_test_device -> ../../../devices/platform/soc/soc:apps_iommu_coherent_test_device
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:apps_iommu_test_device -> ../../../devices/platform/soc/soc:apps_iommu_test_device
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:cp_qc30 -> ../../../devices/platform/soc/soc:cp_qc30
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:demux -> ../../../devices/platform/soc/soc:demux
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:display_gpio_regulator_vci -> ../../../devices/platform/soc/soc:display_gpio_regulator_vci
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:dsu_pmu@0 -> ../../../devices/platform/soc/soc:dsu_pmu@0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:fingerprint_goodix -> ../../../devices/platform/soc/soc:fingerprint_goodix
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:gpio_keys -> ../../../devices/platform/soc/soc:gpio_keys
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:hwlock -> ../../../devices/platform/soc/soc:hwlock
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:ipcc-self-ping-adsp -> ../../../devices/platform/soc/soc:ipcc-self-ping-adsp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:ipcc-self-ping-apss -> ../../../devices/platform/soc/soc:ipcc-self-ping-apss
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:ipcc-self-ping-cdsp -> ../../../devices/platform/soc/soc:ipcc-self-ping-cdsp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:ipcc-self-ping-npu -> ../../../devices/platform/soc/soc:ipcc-self-ping-npu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:ipcc-self-ping-slpi -> ../../../devices/platform/soc/soc:ipcc-self-ping-slpi
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:irda-regulator -> ../../../devices/platform/soc/soc:irda-regulator
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:kgsl_iommu_test_device -> ../../../devices/platform/soc/soc:kgsl_iommu_test_device
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:kryo-erp -> ../../../devices/platform/soc/soc:kryo-erp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:lmh_isense_cdsp -> ../../../devices/platform/soc/soc:lmh_isense_cdsp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:maxim_ds28e16 -> ../../../devices/platform/soc/soc:maxim_ds28e16
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:mem_dump -> ../../../devices/platform/soc/soc:mem_dump
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:msm_cdc_pinctrl@32 -> ../../../devices/platform/soc/soc:msm_cdc_pinctrl@32
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:onewire_gpio -> ../../../devices/platform/soc/soc:onewire_gpio
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,aopclk -> ../../../devices/platform/soc/soc:qcom,aopclk
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,audio-pkt-core-platform -> ../../../devices/platform/soc/soc:qcom,audio-pkt-core-platform
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,bus_proxy_client -> ../../../devices/platform/soc/soc:qcom,bus_proxy_client
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam-cdm-intf -> ../../../devices/platform/soc/soc:qcom,cam-cdm-intf
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam-fd -> ../../../devices/platform/soc/soc:qcom,cam-fd
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam-icp -> ../../../devices/platform/soc/soc:qcom,cam-icp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam-isp -> ../../../devices/platform/soc/soc:qcom,cam-isp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam-jpeg -> ../../../devices/platform/soc/soc:qcom,cam-jpeg
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam-req-mgr -> ../../../devices/platform/soc/soc:qcom,cam-req-mgr
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam-res-mgr -> ../../../devices/platform/soc/soc:qcom,cam-res-mgr
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam_smmu -> ../../../devices/platform/soc/soc:qcom,cam_smmu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam_smmu:msm_cam_icp_fw -> ../../../devices/platform/soc/soc:qcom,cam_smmu/soc:qcom,cam_smmu:msm_cam_icp_fw
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam_smmu:msm_cam_smmu_cpas_cdm -> ../../../devices/platform/soc/soc:qcom,cam_smmu/soc:qcom,cam_smmu:msm_cam_smmu_cpas_cdm
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam_smmu:msm_cam_smmu_fd -> ../../../devices/platform/soc/soc:qcom,cam_smmu/soc:qcom,cam_smmu:msm_cam_smmu_fd
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam_smmu:msm_cam_smmu_icp -> ../../../devices/platform/soc/soc:qcom,cam_smmu/soc:qcom,cam_smmu:msm_cam_smmu_icp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam_smmu:msm_cam_smmu_ife -> ../../../devices/platform/soc/soc:qcom,cam_smmu/soc:qcom,cam_smmu:msm_cam_smmu_ife
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam_smmu:msm_cam_smmu_jpeg -> ../../../devices/platform/soc/soc:qcom,cam_smmu/soc:qcom,cam_smmu:msm_cam_smmu_jpeg
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cam_smmu:msm_cam_smmu_secure -> ../../../devices/platform/soc/soc:qcom,cam_smmu/soc:qcom,cam_smmu:msm_cam_smmu_secure
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,camera-flash@0 -> ../../../devices/platform/soc/soc:qcom,camera-flash@0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,camera-flash@1 -> ../../../devices/platform/soc/soc:qcom,camera-flash@1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,camera-flash@2 -> ../../../devices/platform/soc/soc:qcom,camera-flash@2
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,camera-flash@3 -> ../../../devices/platform/soc/soc:qcom,camera-flash@3
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cc-debug -> ../../../devices/platform/soc/soc:qcom,cc-debug
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,chd_gold -> ../../../devices/platform/soc/soc:qcom,chd_gold
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,chd_silver -> ../../../devices/platform/soc/soc:qcom,chd_silver
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu-cpu-llcc-bw -> ../../../devices/platform/soc/soc:qcom,cpu-cpu-llcc-bw
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu-llcc-ddr-bw -> ../../../devices/platform/soc/soc:qcom,cpu-llcc-ddr-bw
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu0-cpu-llcc-lat -> ../../../devices/platform/soc/soc:qcom,cpu0-cpu-llcc-lat
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu0-cpugrp -> ../../../devices/platform/soc/soc:qcom,cpu0-cpugrp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu0-cpugrp:qcom,cpu0-cpu-l3-latmon -> ../../../devices/platform/soc/soc:qcom,cpu0-cpugrp/soc:qcom,cpu0-cpugrp:qcom,cpu0-cpu-l3-latmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu0-cpugrp:qcom,cpu0-cpu-llcc-latmon -> ../../../devices/platform/soc/soc:qcom,cpu0-cpugrp/soc:qcom,cpu0-cpugrp:qcom,cpu0-cpu-llcc-latmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu0-cpugrp:qcom,cpu0-llcc-ddr-latmon -> ../../../devices/platform/soc/soc:qcom,cpu0-cpugrp/soc:qcom,cpu0-cpugrp:qcom,cpu0-llcc-ddr-latmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu0-llcc-ddr-lat -> ../../../devices/platform/soc/soc:qcom,cpu0-llcc-ddr-lat
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu4-cpu-ddr-latfloor -> ../../../devices/platform/soc/soc:qcom,cpu4-cpu-ddr-latfloor
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu4-cpu-ddr-qoslat -> ../../../devices/platform/soc/soc:qcom,cpu4-cpu-ddr-qoslat
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu4-cpu-llcc-lat -> ../../../devices/platform/soc/soc:qcom,cpu4-cpu-llcc-lat
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu4-cpugrp -> ../../../devices/platform/soc/soc:qcom,cpu4-cpugrp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu4-cpugrp:qcom,cpu4-computemon -> ../../../devices/platform/soc/soc:qcom,cpu4-cpugrp/soc:qcom,cpu4-cpugrp:qcom,cpu4-computemon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu4-cpugrp:qcom,cpu4-cpu-l3-latmon -> ../../../devices/platform/soc/soc:qcom,cpu4-cpugrp/soc:qcom,cpu4-cpugrp:qcom,cpu4-cpu-l3-latmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu4-cpugrp:qcom,cpu4-cpu-llcc-latmon -> ../../../devices/platform/soc/soc:qcom,cpu4-cpugrp/soc:qcom,cpu4-cpugrp:qcom,cpu4-cpu-llcc-latmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu4-cpugrp:qcom,cpu4-llcc-ddr-latmon -> ../../../devices/platform/soc/soc:qcom,cpu4-cpugrp/soc:qcom,cpu4-cpugrp:qcom,cpu4-llcc-ddr-latmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu4-cpugrp:qcom,cpu4-qoslatmon -> ../../../devices/platform/soc/soc:qcom,cpu4-cpugrp/soc:qcom,cpu4-cpugrp:qcom,cpu4-qoslatmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu4-cpugrp:qcom,cpu7-cpu-l3-latmon -> ../../../devices/platform/soc/soc:qcom,cpu4-cpugrp/soc:qcom,cpu4-cpugrp:qcom,cpu7-cpu-l3-latmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,cpu4-llcc-ddr-lat -> ../../../devices/platform/soc/soc:qcom,cpu4-llcc-ddr-lat
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,dsi-display-primary -> ../../../devices/platform/soc/soc:qcom,dsi-display-primary
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,dsi-display-secondary -> ../../../devices/platform/soc/soc:qcom,dsi-display-secondary
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,glink -> ../../../devices/platform/soc/soc:qcom,glink
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,gpubw -> ../../../devices/platform/soc/soc:qcom,gpubw
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ion -> ../../../devices/platform/soc/soc:qcom,ion
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ion:qcom,ion-heap@10 -> ../../../devices/platform/soc/soc:qcom,ion/soc:qcom,ion:qcom,ion-heap@10
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ion:qcom,ion-heap@13 -> ../../../devices/platform/soc/soc:qcom,ion/soc:qcom,ion:qcom,ion-heap@13
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ion:qcom,ion-heap@14 -> ../../../devices/platform/soc/soc:qcom,ion/soc:qcom,ion:qcom,ion-heap@14
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ion:qcom,ion-heap@19 -> ../../../devices/platform/soc/soc:qcom,ion/soc:qcom,ion:qcom,ion-heap@19
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ion:qcom,ion-heap@20 -> ../../../devices/platform/soc/soc:qcom,ion/soc:qcom,ion:qcom,ion-heap@20
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ion:qcom,ion-heap@22 -> ../../../devices/platform/soc/soc:qcom,ion/soc:qcom,ion:qcom,ion-heap@22
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ion:qcom,ion-heap@25 -> ../../../devices/platform/soc/soc:qcom,ion/soc:qcom,ion:qcom,ion-heap@25
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ion:qcom,ion-heap@26 -> ../../../devices/platform/soc/soc:qcom,ion/soc:qcom,ion:qcom,ion-heap@26
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ion:qcom,ion-heap@27 -> ../../../devices/platform/soc/soc:qcom,ion/soc:qcom,ion:qcom,ion-heap@27
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ion:qcom,ion-heap@9 -> ../../../devices/platform/soc/soc:qcom,ion/soc:qcom,ion:qcom,ion-heap@9
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ipa-mpm -> ../../../devices/platform/soc/soc:qcom,ipa-mpm
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ipa_fws -> ../../../devices/platform/soc/soc:qcom,ipa_fws
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,ipa_uc -> ../../../devices/platform/soc/soc:qcom,ipa_uc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,kgsl-busmon -> ../../../devices/platform/soc/soc:qcom,kgsl-busmon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,kgsl-hyp -> ../../../devices/platform/soc/soc:qcom,kgsl-hyp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,lpm-levels -> ../../../devices/platform/soc/soc:qcom,lpm-levels
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,mdm0 -> ../../../devices/platform/soc/soc:qcom,mdm0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-adsp-loader -> ../../../devices/platform/soc/soc:qcom,msm-adsp-loader
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-adsprpc-mem -> ../../../devices/platform/soc/soc:qcom,msm-adsprpc-mem
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-audio-apr -> ../../../devices/platform/soc/soc:qcom,msm-audio-apr
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-cdsp-loader -> ../../../devices/platform/soc/soc:qcom,msm-cdsp-loader
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-compr-dsp -> ../../../devices/platform/soc/soc:qcom,msm-compr-dsp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-compress-dsp -> ../../../devices/platform/soc/soc:qcom,msm-compress-dsp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-0-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-0-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-1-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-1-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-2-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-2-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-3-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-3-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-4-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-4-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-5-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-5-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-6-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-6-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-7-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-7-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-0-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-0-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-1-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-1-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-2-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-2-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-3-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-3-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-4-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-4-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-5-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-5-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-va-cdc-dma-0-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-va-cdc-dma-0-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-va-cdc-dma-1-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-va-cdc-dma-1-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-va-cdc-dma-2-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-va-cdc-dma-2-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-0-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-0-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-0-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-0-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-1-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-1-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-1-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-1-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-2-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-cdc-dma/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-2-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-fe -> ../../../devices/platform/soc/soc:qcom,msm-dai-fe
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-mi2s -> ../../../devices/platform/soc/soc:qcom,msm-dai-mi2s
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-prim -> ../../../devices/platform/soc/soc:qcom,msm-dai-mi2s/soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-prim
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-quat -> ../../../devices/platform/soc/soc:qcom,msm-dai-mi2s/soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-quat
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-quin -> ../../../devices/platform/soc/soc:qcom,msm-dai-mi2s/soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-quin
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-sec -> ../../../devices/platform/soc/soc:qcom,msm-dai-mi2s/soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-sec
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-senary -> ../../../devices/platform/soc/soc:qcom,msm-dai-mi2s/soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-senary
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-tert -> ../../../devices/platform/soc/soc:qcom,msm-dai-mi2s/soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-tert
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6 -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6-afe-loopback-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6-afe-loopback-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6-dp -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6-dp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6-dp1 -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6-dp1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6-hdmi -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6-hdmi
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6-spdif-pri-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6-spdif-pri-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6-spdif-pri-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6-spdif-pri-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6-spdif-sec-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6-spdif-sec-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6-spdif-sec-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6-spdif-sec-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-afe-proxy-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-afe-proxy-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-afe-proxy-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-afe-proxy-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-be-afe-pcm-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-be-afe-pcm-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-be-afe-pcm-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-be-afe-pcm-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-bt-sco-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-bt-sco-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-bt-sco-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-bt-sco-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-incall-music-2-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-incall-music-2-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-incall-music-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-incall-music-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-incall-record-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-incall-record-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-incall-record-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-incall-record-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-int-fm-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-int-fm-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-int-fm-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-int-fm-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-proxy-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-proxy-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-proxy-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-proxy-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-0-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-0-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-0-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-0-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-1-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-1-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-1-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-1-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-2-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-2-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-2-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-2-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-3-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-3-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-3-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-3-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-4-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-4-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-4-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-4-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-5-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-5-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-5-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-5-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-6-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-6-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-7-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-7-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-7-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-7-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-8-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-8-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-8-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-8-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-usb-audio-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-usb-audio-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-q6:qcom,msm-dai-q6-usb-audio-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-q6/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-usb-audio-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-pri-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-pri-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-pri-rx:qcom,msm-dai-q6-tdm-pri-rx-0 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-pri-rx/soc:qcom,msm-dai-tdm-pri-rx:qcom,msm-dai-q6-tdm-pri-rx-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-pri-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-pri-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-pri-tx:qcom,msm-dai-q6-tdm-pri-tx-0 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-pri-tx/soc:qcom,msm-dai-tdm-pri-tx:qcom,msm-dai-q6-tdm-pri-tx-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-quat-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-quat-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-quat-rx:qcom,msm-dai-q6-tdm-quat-rx-0 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-quat-rx/soc:qcom,msm-dai-tdm-quat-rx:qcom,msm-dai-q6-tdm-quat-rx-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-quat-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-quat-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-quat-tx:qcom,msm-dai-q6-tdm-quat-tx-0 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-quat-tx/soc:qcom,msm-dai-tdm-quat-tx:qcom,msm-dai-q6-tdm-quat-tx-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-quin-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-quin-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-quin-rx:qcom,msm-dai-q6-tdm-quin-rx-0 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-quin-rx/soc:qcom,msm-dai-tdm-quin-rx:qcom,msm-dai-q6-tdm-quin-rx-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-quin-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-quin-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-quin-tx:qcom,msm-dai-q6-tdm-quin-tx-0 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-quin-tx/soc:qcom,msm-dai-tdm-quin-tx:qcom,msm-dai-q6-tdm-quin-tx-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-sec-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-sec-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-sec-rx:qcom,msm-dai-q6-tdm-sec-rx-0 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-sec-rx/soc:qcom,msm-dai-tdm-sec-rx:qcom,msm-dai-q6-tdm-sec-rx-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-sec-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-sec-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-sec-tx:qcom,msm-dai-q6-tdm-sec-tx-0 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-sec-tx/soc:qcom,msm-dai-tdm-sec-tx:qcom,msm-dai-q6-tdm-sec-tx-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-sen-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-sen-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-sen-rx:qcom,msm-dai-q6-tdm-sen-rx-0 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-sen-rx/soc:qcom,msm-dai-tdm-sen-rx:qcom,msm-dai-q6-tdm-sen-rx-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-sen-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-sen-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-sen-tx:qcom,msm-dai-q6-tdm-sen-tx-0 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-sen-tx/soc:qcom,msm-dai-tdm-sen-tx:qcom,msm-dai-q6-tdm-sen-tx-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-tert-rx -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-tert-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-tert-rx:qcom,msm-dai-q6-tdm-tert-rx-0 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-tert-rx/soc:qcom,msm-dai-tdm-tert-rx:qcom,msm-dai-q6-tdm-tert-rx-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-tert-rx:qcom,msm-dai-q6-tdm-tert-rx-1 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-tert-rx/soc:qcom,msm-dai-tdm-tert-rx:qcom,msm-dai-q6-tdm-tert-rx-1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-tert-tx -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-tert-tx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-tert-tx:qcom,msm-dai-q6-tdm-tert-tx-0 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-tert-tx/soc:qcom,msm-dai-tdm-tert-tx:qcom,msm-dai-q6-tdm-tert-tx-0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-dai-tdm-tert-tx:qcom,msm-dai-q6-tdm-tert-tx-1 -> ../../../devices/platform/soc/soc:qcom,msm-dai-tdm-tert-tx/soc:qcom,msm-dai-tdm-tert-tx:qcom,msm-dai-q6-tdm-tert-tx-1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-ext-disp -> ../../../devices/platform/soc/soc:qcom,msm-ext-disp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-ext-disp:qcom,msm-ext-disp-audio-codec-rx -> ../../../devices/platform/soc/soc:qcom,msm-ext-disp/soc:qcom,msm-ext-disp:qcom,msm-ext-disp-audio-codec-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-hdmi-dba-codec-rx -> ../../../devices/platform/soc/soc:qcom,msm-hdmi-dba-codec-rx
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-lsm-client -> ../../../devices/platform/soc/soc:qcom,msm-lsm-client
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-pcm -> ../../../devices/platform/soc/soc:qcom,msm-pcm
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-pcm-afe -> ../../../devices/platform/soc/soc:qcom,msm-pcm-afe
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-pcm-dsp-noirq -> ../../../devices/platform/soc/soc:qcom,msm-pcm-dsp-noirq
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-pcm-dtmf -> ../../../devices/platform/soc/soc:qcom,msm-pcm-dtmf
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-pcm-hostless -> ../../../devices/platform/soc/soc:qcom,msm-pcm-hostless
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-pcm-loopback -> ../../../devices/platform/soc/soc:qcom,msm-pcm-loopback
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-pcm-loopback-low-latency -> ../../../devices/platform/soc/soc:qcom,msm-pcm-loopback-low-latency
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-pcm-low-latency -> ../../../devices/platform/soc/soc:qcom,msm-pcm-low-latency
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-pcm-routing -> ../../../devices/platform/soc/soc:qcom,msm-pcm-routing
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-pcm-voice -> ../../../devices/platform/soc/soc:qcom,msm-pcm-voice
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-pri-auxpcm -> ../../../devices/platform/soc/soc:qcom,msm-pri-auxpcm
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-quat-auxpcm -> ../../../devices/platform/soc/soc:qcom,msm-quat-auxpcm
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-quin-auxpcm -> ../../../devices/platform/soc/soc:qcom,msm-quin-auxpcm
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-rtb -> ../../../devices/platform/soc/soc:qcom,msm-rtb
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-sec-auxpcm -> ../../../devices/platform/soc/soc:qcom,msm-sec-auxpcm
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-sen-auxpcm -> ../../../devices/platform/soc/soc:qcom,msm-sen-auxpcm
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-ssc-sensors -> ../../../devices/platform/soc/soc:qcom,msm-ssc-sensors
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-stub-codec -> ../../../devices/platform/soc/soc:qcom,msm-stub-codec
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-tert-auxpcm -> ../../../devices/platform/soc/soc:qcom,msm-tert-auxpcm
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-transcode-loopback -> ../../../devices/platform/soc/soc:qcom,msm-transcode-loopback
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-ultra-low-latency -> ../../../devices/platform/soc/soc:qcom,msm-ultra-low-latency
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm-voip-dsp -> ../../../devices/platform/soc/soc:qcom,msm-voip-dsp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb1 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb10 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb10
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb11 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb11
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb12 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb12
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb13 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb13
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb14 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb14
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb15 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb15
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb2 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb2
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb3 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb3
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb4 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb4
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb5 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb5
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb6 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb6
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb7 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb7
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb8 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb8
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb9 -> ../../../devices/platform/soc/soc:qcom,msm_fastrpc/soc:qcom,msm_fastrpc:qcom,msm_fastrpc_compute_cb9
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_gsi -> ../../../devices/platform/soc/soc:qcom,msm_gsi
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_hdcp -> ../../../devices/platform/soc/soc:qcom,msm_hdcp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,msm_notifier@0 -> ../../../devices/platform/soc/soc:qcom,msm_notifier@0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,npu-llcc-ddr-bw -> ../../../devices/platform/soc/soc:qcom,npu-llcc-ddr-bw
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,npu-npu-ddr-latfloor -> ../../../devices/platform/soc/soc:qcom,npu-npu-ddr-latfloor
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,npu-npu-llcc-bw -> ../../../devices/platform/soc/soc:qcom,npu-npu-llcc-bw
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,npu-staticmap-mon -> ../../../devices/platform/soc/soc:qcom,npu-staticmap-mon
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,npudsp-npu-ddr-bw -> ../../../devices/platform/soc/soc:qcom,npudsp-npu-ddr-bw
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,qsee_irq -> ../../../devices/platform/soc/soc:qcom,qsee_irq
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,qsee_irq_bridge -> ../../../devices/platform/soc/soc:qcom,qsee_irq_bridge
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,rmnet-ipa -> ../../../devices/platform/soc/soc:qcom,rmnet-ipa
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,smem -> ../../../devices/platform/soc/soc:qcom,smem
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,smp2p-adsp -> ../../../devices/platform/soc/soc:qcom,smp2p-adsp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,smp2p-cdsp -> ../../../devices/platform/soc/soc:qcom,smp2p-cdsp
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,smp2p-dsps -> ../../../devices/platform/soc/soc:qcom,smp2p-dsps
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,smp2p-npu -> ../../../devices/platform/soc/soc:qcom,smp2p-npu
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,smp2p_interrupt_qvrexternal_5_out -> ../../../devices/platform/soc/soc:qcom,smp2p_interrupt_qvrexternal_5_out
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,smp2p_interrupt_rdbg_2_in -> ../../../devices/platform/soc/soc:qcom,smp2p_interrupt_rdbg_2_in
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,smp2p_interrupt_rdbg_2_out -> ../../../devices/platform/soc/soc:qcom,smp2p_interrupt_rdbg_2_out
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,smp2p_interrupt_rdbg_5_in -> ../../../devices/platform/soc/soc:qcom,smp2p_interrupt_rdbg_5_in
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,smp2p_interrupt_rdbg_5_out -> ../../../devices/platform/soc/soc:qcom,smp2p_interrupt_rdbg_5_out
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,smp2p_sleepstate -> ../../../devices/platform/soc/soc:qcom,smp2p_sleepstate
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,snoc_cnoc_keepalive -> ../../../devices/platform/soc/soc:qcom,snoc_cnoc_keepalive
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,spcom -> ../../../devices/platform/soc/soc:qcom,spcom
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,sps -> ../../../devices/platform/soc/soc:qcom,sps
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,spss_utils -> ../../../devices/platform/soc/soc:qcom,spss_utils
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,wb-display@0 -> ../../../devices/platform/soc/soc:qcom,wb-display@0
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qcom,wil6210 -> ../../../devices/platform/soc/soc:qcom,wil6210
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qmi-tmd-devices -> ../../../devices/platform/soc/soc:qmi-tmd-devices
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:qmi-ts-sensors -> ../../../devices/platform/soc/soc:qmi-ts-sensors
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:regulator-dbb1 -> ../../../devices/platform/soc/soc:regulator-dbb1
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:regulator-haptics-boost -> ../../../devices/platform/soc/soc:regulator-haptics-boost
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:rx_core_clk -> ../../../devices/platform/soc/soc:rx_core_clk
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:rx_npl_clk -> ../../../devices/platform/soc/soc:rx_npl_clk
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:spf_core_platform -> ../../../devices/platform/soc/soc:spf_core_platform
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:timer -> ../../../devices/platform/soc/soc:timer
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:touch_vddio_vreg -> ../../../devices/platform/soc/soc:touch_vddio_vreg
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:tx_core_clk -> ../../../devices/platform/soc/soc:tx_core_clk
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:tx_npl_clk -> ../../../devices/platform/soc/soc:tx_npl_clk
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:usb_audio_qmi_dev -> ../../../devices/platform/soc/soc:usb_audio_qmi_dev
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:usb_nop_phy -> ../../../devices/platform/soc/soc:usb_nop_phy
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:usbpd_pm -> ../../../devices/platform/soc/soc:usbpd_pm
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:va_core_clk -> ../../../devices/platform/soc/soc:va_core_clk
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:va_npl_clk -> ../../../devices/platform/soc/soc:va_npl_clk
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:vdd_boost_vreg -> ../../../devices/platform/soc/soc:vdd_boost_vreg
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:wsa_core_clk -> ../../../devices/platform/soc/soc:wsa_core_clk
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:wsa_npl_clk -> ../../../devices/platform/soc/soc:wsa_npl_clk
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 soc:xiaomi_touch -> ../../../devices/platform/soc/soc:xiaomi_touch
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 vendor -> ../../../devices/platform/vendor
+lrwxrwxrwx    1 root     root             0 Nov 28 06:43 vendor:bt_qca6390 -> ../../../devices/platform/vendor/vendor:bt_qca6390
+
+=== firmware files ===
+$ find /lib/firmware -maxdepth 4 -type f
+/lib/firmware/regulatory.db
+/lib/firmware/regulatory.db.p7s
+
+=== services ===
+$ rc-status -a
+Runlevel: shutdown
+ savecache                                                         [  stopped  ]
+ killprocs                                                         [  stopped  ]
+ mount-ro                                                          [  stopped  ]
+Runlevel: nonetwork
+Runlevel: boot
+ modules                                                           [  started  ]
+ hwclock                                                           [  started  ]
+ tmpfs                                                             [  started  ]
+ hostname                                                          [  started  ]
+ sysctl                                                            [  started  ]
+ bootmisc                                                          [  started  ]
+ logbookd                                                          [  started  ]
+Runlevel: sysinit
+ dmesg                                                             [  started  ]
+ devfs                                                             [  started  ]
+ udev                                                              [  started  ]
+ udev-trigger                                                      [  started  ]
+ udev-settle                                                       [  started  ]
+Runlevel: default
+ postmarketos-zram-swap                                            [  stopped  ]
+ swapfile                                                          [  started  ]
+ cgroups                                                           [  started  ]
+ dbus                                                              [  started  ]
+ nftables                                                          [  stopped  ]
+ haveged                                                           [  started  ]
+ wpa_supplicant                                        [  started 00:05:50 (0) ]
+ networkmanager                                        [  started 00:05:50 (0) ]
+ chronyd                                                           [  started  ]
+ powerkey                                                          [  crashed  ]
+ calld                                                             [  started  ]
+ rfkill                                                            [  started  ]
+ udev-postmount                                                    [  started  ]
+ shelli                                                            [  started  ]
+ smsd                                                              [  started  ]
+ ofono                                                 [  started 00:05:49 (0) ]
+ largefont                                                         [  stopped  ]
+ sshd                                                              [  started  ]
+ openrc-settingsd                                                  [  started  ]
+ sleep-inhibitor                                       [  started 00:05:49 (0) ]
+ local                                                             [  started  ]
+Dynamic Runlevel: hotplugged
+Dynamic Runlevel: needed/wanted
+ sysfs                                                             [  started  ]
+ fsck                                                              [  started  ]
+ root                                                              [  started  ]
+ localmount                                                        [  started  ]
+Dynamic Runlevel: manual
+$ ps aux
+PID   USER     TIME  COMMAND
+    1 root      0:01 /sbin/init
+    2 root      0:00 [kthreadd]
+    3 root      0:00 [rcu_gp]
+    4 root      0:00 [rcu_par_gp]
+    5 root      0:00 [kworker/0:0-eve]
+    6 root      0:00 [kworker/0:0H-ev]
+    7 root      0:00 [kworker/u16:0+M]
+    8 root      0:00 [mm_percpu_wq]
+    9 root      0:00 [ksoftirqd/0]
+   10 root      0:00 [rcu_preempt]
+   11 root      0:00 [rcu_sched]
+   12 root      0:00 [rcu_bh]
+   13 root      0:00 [rcuop/0]
+   14 root      0:00 [rcuos/0]
+   15 root      0:00 [rcuob/0]
+   16 root      0:00 [migration/0]
+   17 root      0:00 [cpuhp/0]
+   18 root      0:00 [kworker/0:1-eve]
+   19 root      0:00 [cpuhp/1]
+   20 root      0:00 [migration/1]
+   21 root      0:00 [ksoftirqd/1]
+   22 root      0:00 [kworker/1:0+eve]
+   23 root      0:00 [kworker/1:0H-ev]
+   24 root      0:00 [rcuop/1]
+   25 root      0:00 [rcuos/1]
+   26 root      0:00 [rcuob/1]
+   27 root      0:00 [cpuhp/2]
+   28 root      0:00 [migration/2]
+   29 root      0:00 [ksoftirqd/2]
+   31 root      0:00 [kworker/2:0H-ev]
+   32 root      0:00 [rcuop/2]
+   33 root      0:00 [rcuos/2]
+   34 root      0:00 [rcuob/2]
+   35 root      0:00 [cpuhp/3]
+   36 root      0:00 [migration/3]
+   37 root      0:00 [ksoftirqd/3]
+   38 root      0:00 [kworker/3:0+eve]
+   39 root      0:00 [kworker/3:0H-ev]
+   40 root      0:00 [rcuop/3]
+   41 root      0:00 [rcuos/3]
+   42 root      0:00 [rcuob/3]
+   43 root      0:00 [cpuhp/4]
+   44 root      0:00 [migration/4]
+   45 root      0:00 [ksoftirqd/4]
+   46 root      0:00 [kworker/4:0-mm_]
+   47 root      0:00 [kworker/4:0H-ev]
+   48 root      0:00 [rcuop/4]
+   49 root      0:00 [rcuos/4]
+   50 root      0:00 [rcuob/4]
+   51 root      0:00 [cpuhp/5]
+   52 root      0:00 [migration/5]
+   53 root      0:00 [ksoftirqd/5]
+   54 root      0:00 [kworker/5:0-rcu]
+   55 root      0:00 [kworker/5:0H-ev]
+   56 root      0:00 [rcuop/5]
+   57 root      0:00 [rcuos/5]
+   58 root      0:00 [rcuob/5]
+   59 root      0:00 [cpuhp/6]
+   60 root      0:00 [migration/6]
+   61 root      0:00 [ksoftirqd/6]
+   63 root      0:00 [kworker/6:0H-ev]
+   64 root      0:00 [rcuop/6]
+   65 root      0:00 [rcuos/6]
+   66 root      0:00 [rcuob/6]
+   67 root      0:00 [cpuhp/7]
+   68 root      0:00 [migration/7]
+   69 root      0:00 [ksoftirqd/7]
+   71 root      0:00 [kworker/7:0H-ev]
+   72 root      0:00 [rcuop/7]
+   73 root      0:00 [rcuos/7]
+   74 root      0:00 [rcuob/7]
+   75 root      0:00 [kdevtmpfs]
+   76 root      0:00 [netns]
+   77 root      0:00 [rcu_tasks_kthre]
+   78 root      0:00 [kauditd]
+   79 root      0:00 [kworker/5:1-mm_]
+   80 root      0:00 [kworker/u16:1+L]
+   81 root      0:00 [kworker/6:1-eve]
+   82 root      0:00 [kworker/1:1-pm]
+   83 root      0:00 [kworker/2:1-cgr]
+   84 root      0:00 [kworker/7:1-pm]
+   85 root      0:00 [kworker/3:1+eve]
+   87 root      0:00 [ipa_usb_wq]
+   88 root      0:00 [msm_watchdog]
+   89 root      0:00 [qmp_aop]
+   90 root      0:00 [kworker/4:1-mm_]
+   91 root      0:00 [oom_reaper]
+   92 root      0:00 [writeback]
+   93 root      0:00 [kcompactd0]
+   94 root      0:00 [crypto]
+   95 root      0:00 [kblockd]
+   96 root      0:00 [blk_crypto_wq]
+   97 root      0:00 [irq/156-arm-smm]
+   98 root      0:00 [irq/157-arm-smm]
+   99 root      0:00 [irq/166-arm-smm]
+  100 root      0:00 [irq/167-arm-smm]
+  101 root      0:00 [irq/41-tsens-up]
+  102 root      0:00 [irq/42-tsens-cr]
+  103 root      0:00 [irq/43-tsens-up]
+  104 root      0:00 [irq/44-tsens-cr]
+  105 root      0:00 [edac-poller]
+  106 root      0:00 [irq/8-dcvsh-irq]
+  107 root      0:00 [irq/9-dcvsh-irq]
+  108 root      0:00 [irq/10-dcvsh-ir]
+  109 root      0:00 [ion-pool-uncach]
+  110 root      0:00 [ion-pool-cached]
+  111 root      0:00 [system]
+  112 root      0:00 [ion-pool-uncach]
+  113 root      0:00 [ion-pool-cached]
+  114 root      0:00 [camera]
+  115 root      0:00 [ipa_power_mgmt]
+  116 root      0:00 [transport_power]
+  117 root      0:00 [ipa_pm_activate]
+  118 root      0:00 [irq/173-arm-smm]
+  119 root      0:00 [irq/174-arm-smm]
+  120 root      0:00 [irq/175-arm-smm]
+  121 root      0:00 [irq/176-arm-smm]
+  122 root      0:00 [devfreq_wq]
+  123 root      0:00 [governor_msm_ad]
+  124 root      0:00 [irq/177-arm-smm]
+  125 root      0:00 [kworker/7:2-mm_]
+  126 root      0:00 [irq/178-arm-smm]
+  127 root      0:00 [irq/179-arm-smm]
+  128 root      0:00 [cfg80211]
+  169 root      0:00 [kswapd0:0]
+  228 root      0:00 [irq/180-arm-smm]
+  229 root      0:00 [irq/181-arm-smm]
+  230 root      0:00 [irq/182-arm-smm]
+  231 root      0:00 [irq/377-smp2p]
+  232 root      0:00 [irq/378-smp2p]
+  233 root      0:00 [irq/379-smp2p]
+  234 root      0:00 [geni_serial_dum]
+  235 root      0:00 [okl4vtty]
+  236 root      0:00 [hwrng]
+  238 root      0:00 [diag_real_time_]
+  239 root      0:00 [diag_wq]
+  240 root      0:00 [DIAG_USB_diag]
+  241 root      0:00 [diag_cntl_wq]
+  242 root      0:00 [diag_dci_wq]
+  243 root      0:00 [MODEM_CNTL]
+  244 root      0:00 [MODEM_DATA]
+  245 root      0:00 [MODEM_CMD]
+  246 root      0:00 [MODEM_DCI]
+  247 root      0:00 [MODEM_DCI_CMD]
+  248 root      0:00 [LPASS_CNTL]
+  249 root      0:00 [LPASS_DATA]
+  250 root      0:00 [LPASS_CMD]
+  251 root      0:00 [LPASS_DCI]
+  252 root      0:00 [LPASS_DCI_CMD]
+  253 root      0:00 [WCNSS_CNTL]
+  254 root      0:00 [WCNSS_DATA]
+  255 root      0:00 [WCNSS_CMD]
+  256 root      0:00 [WCNSS_DCI]
+  257 root      0:00 [WCNSS_DCI_CMD]
+  258 root      0:00 [SENSORS_CNTL]
+  259 root      0:00 [SENSORS_DATA]
+  260 root      0:00 [SENSORS_CMD]
+  261 root      0:00 [SENSORS_DCI]
+  262 root      0:00 [SENSORS_DCI_CMD]
+  263 root      0:00 [DIAG_CTRL]
+  264 root      0:00 [DIAG_DATA]
+  265 root      0:00 [DIAG_CMD]
+  266 root      0:00 [DIAG_DCI_DATA]
+  267 root      0:00 [DIAG_DCI_CMD]
+  268 root      0:00 [CDSP_CNTL]
+  269 root      0:00 [CDSP_DATA]
+  270 root      0:00 [CDSP_CMD]
+  271 root      0:00 [CDSP_DCI]
+  272 root      0:00 [CDSP_DCI_CMD]
+  273 root      0:00 [NPU_CNTL]
+  274 root      0:00 [NPU_DATA]
+  275 root      0:00 [NPU_CMD]
+  276 root      0:00 [NPU_DCI]
+  277 root      0:00 [NPU_DCI_CMD]
+  278 root      0:00 [DIAG_RPMSG_DIAG]
+  279 root      0:00 [DIAG_RPMSG_DIAG]
+  280 root      0:00 [DIAG_RPMSG_DIAG]
+  281 root      0:00 [DIAG_RPMSG_DIAG]
+  282 root      0:00 [DIAG_RPMSG_DIAG]
+  283 root      0:00 [DIAG_RPMSG_DIAG]
+  284 root      0:00 [DIAG_RPMSG_DIAG]
+  285 root      0:00 [DIAG_RPMSG_DIAG]
+  286 root      0:00 [DIAG_RPMSG_DIAG]
+  287 root      0:00 [DIAG_RPMSG_DIAG]
+  288 root      0:00 [DIAG_RPMSG_APPS]
+  289 root      0:00 [DIAG_RPMSG_APPS]
+  290 root      0:00 [DIAG_RPMSG_DIAG]
+  291 root      0:00 [DIAG_RPMSG_DIAG]
+  292 root      0:00 [DIAG_RPMSG_DIAG]
+  293 root      0:00 [DIAG_RPMSG_DIAG]
+  294 root      0:00 [DIAG_RPMSG_DIAG]
+  295 root      0:00 [DIAG_RPMSG_DIAG]
+  296 root      0:00 [DIAG_RPMSG_DIAG]
+  297 root      0:00 [DIAG_RPMSG_DIAG]
+  298 root      0:00 [kworker/u16:2+W]
+  299 root      0:00 [kworker/u16:3+S]
+  300 root      0:00 [diag_mhi_MDM]
+  301 root      0:00 [kworker/u16:4+D]
+  302 root      0:00 [DIAG_USB_diag_m]
+  303 root      0:00 [diag_mhi_MDM_DC]
+  304 root      0:00 [kworker/u16:5+C]
+  305 root      0:00 [diag_dci_MDM_DC]
+  306 root      0:00 [kworker/u16:6+N]
+  307 root      0:00 [diag_mhi_MDM_2]
+  308 root      0:00 [kworker/u16:7-f]
+  309 root      0:00 [DIAG_USB_diag_m]
+  310 root      0:00 [diag_mhi_MDM_DC]
+  311 root      0:00 [diag_dci_MDM_DC]
+  312 root      0:00 [kgsl-workqueue]
+  313 root      0:00 [kgsl-mementry]
+  314 root      0:00 [kgsl_worker_thr]
+  315 root      0:00 [qseecom-unreg-l]
+  316 root      0:00 [qseecom-unload-]
+  317 root      0:00 [kworker/u16:8-f]
+  318 root      0:00 [irq/183-arm-smm]
+  319 root      0:00 [irq/184-arm-smm]
+  320 root      0:00 [irq/185-arm-smm]
+  321 root      0:00 [qcrypto_seq_res]
+  322 root      0:00 [irq/186-arm-smm]
+  343 root      0:00 [scsi_eh_0]
+  344 root      0:00 [scsi_tmf_0]
+  345 root      0:00 [ufs_pm_qos_0]
+  346 root      0:00 [ufs_recovery_wq]
+  347 root      0:00 [ufs_clk_gating_]
+  348 root      0:00 [spi0]
+  349 root      0:00 [bond0]
+  351 root      0:00 [atlantic-fwd]
+  352 root      0:00 [irq/187-arm-smm]
+  357 root      0:00 [k_ipa_usb]
+  361 root      0:00 [irq/400-aw8697]
+  362 root      0:00 [aw8976_vibrator]
+  363 root      0:00 [fts_wq]
+  364 root      0:00 [kworker/u16:11-]
+  368 root      0:00 [kworker/u16:14-]
+  369 root      0:00 [kworker/u16:15-]
+  370 root      0:00 [irq/188-arm-smm]
+  371 root      0:00 [irq/189-arm-smm]
+  372 root      0:00 [kworker/u17:1-d]
+  373 root      0:00 [irq/401-focal]
+  374 root      0:00 [irq/434-akm0997]
+  375 root      0:00 [akm09970_poll_w]
+  376 root      0:00 [msm_cvp_workerq]
+  377 root      0:00 [pm_workerq_iris]
+  378 root      0:00 [irq/190-arm-smm]
+  379 root      0:00 [irq/191-arm-smm]
+  380 root      0:00 [irq/192-arm-smm]
+  381 root      0:00 [irq/193-arm-smm]
+  382 root      0:00 [npu_general_wq]
+  383 root      0:00 [irq/357-ptrain-]
+  384 root      0:00 [irq/435-ima-rdy]
+  385 root      0:00 [irq/436-ima-xcp]
+  386 root      0:00 [irq/437-dma-xcp]
+  387 root      0:00 [irq/438-dma-gra]
+  388 root      0:00 [irq/439-mem-att]
+  389 root      0:00 [irq/440-batt-mi]
+  390 root      0:00 [irq/441-batt-id]
+  391 root      0:00 [irq/442-batt-te]
+  392 root      0:00 [irq/443-batt-te]
+  393 root      0:00 [irq/444-batt-te]
+  394 root      0:00 [irq/445-vbatt-l]
+  395 root      0:00 [irq/446-vbatt-p]
+  396 root      0:00 [irq/447-esr-del]
+  397 root      0:00 [irq/448-soc-upd]
+  398 root      0:00 [irq/449-soc-rea]
+  399 root      0:00 [irq/450-bsoc-de]
+  400 root      0:00 [irq/451-msoc-de]
+  401 root      0:00 [irq/452-msoc-lo]
+  402 root      0:00 [irq/453-msoc-em]
+  403 root      0:00 [irq/454-msoc-hi]
+  404 root      0:00 [irq/455-msoc-fu]
+  405 root      0:00 [kworker/1:2+eve]
+  406 root      0:00 [irq/456-bq2597x]
+  407 root      0:00 [irq/319-bcl-lvl]
+  408 root      0:00 [irq/320-bcl-lvl]
+  409 root      0:00 [irq/321-bcl-lvl]
+  410 root      0:00 [irq/337-bcl-lvl]
+  411 root      0:00 [irq/338-bcl-lvl]
+  412 root      0:00 [irq/339-bcl-lvl]
+  413 root      0:00 [kworker/0:1H-kb]
+  414 root      0:00 [kworker/1:1H-kb]
+  415 root      0:00 [kworker/2:1H-kb]
+  416 root      0:00 [kworker/3:1H-kb]
+  417 root      0:00 [kworker/4:1H-kb]
+  418 root      0:00 [kworker/5:1H-kb]
+  419 root      0:00 [kworker/6:1H-kb]
+  420 root      0:00 [kworker/7:1H-kb]
+  421 root      0:00 [dm_bufio_cache]
+  422 root      0:00 [irq/30-KRYO L3-]
+  423 root      0:00 [irq/23-8804000.]
+  424 root      0:00 [memlat_wq]
+  425 root      0:00 [irq/458-mdm sta]
+  426 root      0:00 [irq/194-arm-smm]
+  427 root      0:00 [uaudio_svc]
+  428 root      0:00 [apr_driver]
+  429 root      0:00 [irq/459-tfa98xx]
+  430 root      0:00 [dsi_dma_cmd_wor]
+  431 root      0:00 [dsi_dma_cmd_wor]
+  432 root      0:00 [disp_fod:0]
+  433 root      0:00 [irq/172-arm-smm]
+  434 root      0:00 [irq/195-arm-smm]
+  435 root      0:00 [irq/460-esd_err]
+  436 root      0:00 [crtc_commit:129]
+  437 root      0:00 [crtc_event:129]
+  438 root      0:00 [crtc_commit:184]
+  439 root      0:00 [crtc_event:184]
+  440 root      0:00 [pp_event]
+  441 root      0:00 [msm_vidc_worker]
+  442 root      0:00 [pm_workerq_venu]
+  443 root      0:00 [vidc_core_workq]
+  444 root      0:00 [irq/196-arm-smm]
+  445 root      0:00 [irq/197-arm-smm]
+  446 root      0:00 [irq/198-arm-smm]
+  447 root      0:00 [irq/199-arm-smm]
+  448 root      0:00 [irq/200-arm-smm]
+  449 root      0:00 [irq/201-arm-smm]
+  450 root      0:00 [irq/202-arm-smm]
+  451 root      0:00 [irq/203-arm-smm]
+  452 root      0:00 [irq/204-arm-smm]
+  453 root      0:00 [cam-cpas]
+  454 root      0:00 [qcom,cam_virtua]
+  455 root      0:00 [qcom,cam170-cpa]
+  456 root      0:00 [cam_cci_wq]
+  457 root      0:00 [cam_cci_wq]
+  458 root      0:00 [cam_cci_wq]
+  459 root      0:00 [cam_cci_wq]
+  460 root      0:00 [ipv6_addrconf]
+  462 root      0:00 [irq/380-smp2p]
+  463 root      0:00 [irq/158-arm-smm]
+  464 root      0:00 [irq/159-arm-smm]
+  466 root      0:00 [irq/160-arm-smm]
+  467 root      0:00 [irq/22-mmc0]
+  468 root      0:00 [irq/161-arm-smm]
+  469 root      0:00 [kgsl-events]
+  470 root      0:00 [irq/463-8804000]
+  471 root      0:00 [kgsl_devfreq_wq]
+  479 root      0:00 [irq/464-wdog-sn]
+  480 root      0:00 [irq/465-wdog-ba]
+  481 root      0:00 [irq/467-aicl-do]
+  482 root      0:00 [irq/468-smb-en]
+  483 root      0:00 [irq/469-temp-ch]
+  484 root      0:00 [irq/471-typec-o]
+  485 root      0:00 [irq/473-typec-c]
+  486 root      0:00 [irq/474-typec-v]
+  487 root      0:00 [irq/476-typec-a]
+  488 root      0:00 [irq/477-typec-l]
+  489 root      0:00 [irq/480-dcin-uv]
+  490 root      0:00 [irq/481-dcin-ov]
+  491 root      0:00 [irq/482-dcin-pl]
+  492 root      0:00 [irq/484-dcin-po]
+  493 root      0:00 [irq/485-dcin-en]
+  494 root      0:00 [irq/486-usbin-c]
+  495 root      0:00 [irq/487-usbin-v]
+  496 root      0:00 [irq/488-usbin-u]
+  497 root      0:00 [irq/489-usbin-o]
+  498 root      0:00 [irq/490-usbin-p]
+  499 root      0:00 [irq/492-usbin-s]
+  500 root      0:00 [irq/493-usbin-i]
+  501 root      0:00 [irq/494-bat-tem]
+  502 root      0:00 [irq/495-bat-ov]
+  503 root      0:00 [irq/496-bat-low]
+  504 root      0:00 [irq/497-bat-the]
+  505 root      0:00 [irq/498-bat-ter]
+  506 root      0:00 [irq/501-otg-fai]
+  507 root      0:00 [irq/504-high-du]
+  508 root      0:00 [irq/505-input-c]
+  509 root      0:00 [irq/507-switche]
+  510 root      0:00 [irq/508-chgr-er]
+  511 root      0:00 [irq/509-chg-sta]
+  512 root      0:00 [irq/332-qcom,te]
+  513 root      0:00 [irq/358-qcom,te]
+  514 root      0:00 [irq/368-qcom,te]
+  515 root      0:00 [irq/318-thr-int]
+  516 root      0:00 [irq/335-thr-int]
+  517 root      0:00 [irq/359-thr-int]
+  525 root      0:00 [kworker/6:5-eve]
+  529 root      0:00 [irq/340-sig-tx]
+  530 root      0:00 [irq/341-sig-rx]
+  531 root      0:00 [irq/266-pwr_eve]
+  532 root      0:00 [irq/265-dp_hs_p]
+  533 root      0:00 [irq/268-dm_hs_p]
+  534 root      0:00 [irq/267-ss_phy_]
+  535 root      0:00 [usb_bam_wq]
+  536 root      0:00 [core_ctl/0]
+  537 root      0:00 [core_ctl/4]
+  538 root      0:00 [core_ctl/7]
+  539 root      0:00 [rq_stats]
+  540 root      0:00 [msm_perf:events]
+  541 root      0:00 [cdsprm-wq]
+  542 root      0:00 [cdsprm-wq-delay]
+  543 root      0:00 [irq/205-arm-smm]
+  544 root      0:00 [irq/206-arm-smm]
+  545 root      0:00 [irq/207-arm-smm]
+  546 root      0:00 [irq/208-arm-smm]
+  547 root      0:00 [kworker/u17:2+d]
+  548 root      0:00 [kworker/0:3-eve]
+  549 root      0:00 [irq/209-arm-smm]
+  550 root      0:00 [irq/210-arm-smm]
+  551 root      0:00 [irq/211-arm-smm]
+  552 root      0:00 [irq/212-arm-smm]
+  553 root      0:00 [irq/213-arm-smm]
+  554 root      0:00 [irq/214-arm-smm]
+  555 root      0:00 [kworker/1:3-eve]
+  556 root      0:00 [irq/215-arm-smm]
+  557 root      0:00 [kworker/0:4-eve]
+  558 root      0:00 [irq/216-arm-smm]
+  559 root      0:00 [irq/217-arm-smm]
+  560 root      0:00 [irq/218-arm-smm]
+  561 root      0:00 [irq/219-arm-smm]
+  562 root      0:00 [irq/220-arm-smm]
+  563 root      0:00 [sb-1]
+  564 root      0:00 [ngd_rx_thread1]
+  565 root      0:00 [ngd_notify_sl1]
+  567 root      0:00 [irq/317-qpnp_fl]
+  568 root      0:00 [irq/316-qpnp_fl]
+  569 root      0:00 [irq/315-qpnp_fl]
+ 1663 root      0:00 [loop0]
+ 2569 root      0:00 [jbd2/loop0p2-8]
+ 2570 root      0:00 [ext4-rsv-conver]
+ 2937 root      0:00 /sbin/udevd
+ 3126 root      0:00 [kworker/3:4-eve]
+ 3127 root      0:00 [kworker/3:5-eve]
+ 3129 root      0:00 [kworker/0:5-eve]
+ 3130 root      0:00 [kworker/2:3-eve]
+ 3302 root      0:00 [ext4-rsv-conver]
+ 3461 root      0:00 /usr/bin/logbookd -p /run/logbookd.pid -r -g 8192 -d /var/log/logbookd.db
+ 3492 root      0:00 {shelli-calld} /usr/bin/python3 /usr/share/shelli/bin/shelli-calld
+ 3619 messageb  0:00 /usr/bin/dbus-daemon --system --nofork --nopidfile --syslog-only
+ 3675 root      0:00 /usr/sbin/haveged --Foreground
+ 3709 root      0:00 supervise-daemon wpa_supplicant --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /sbin/wpa_supplicant -- -u -Dnl80211,wext
+ 3710 root      0:00 /sbin/wpa_supplicant -u -Dnl80211,wext
+ 3739 root      0:00 supervise-daemon networkmanager --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/sbin/NetworkManager -- -n
+ 3741 root      0:00 /usr/sbin/NetworkManager -n
+ 3777 chrony    0:00 /usr/sbin/chronyd -f /etc/chrony/chrony.conf -F 1
+ 3778 chrony    0:00 /usr/sbin/chronyd -f /etc/chrony/chrony.conf -F 1
+ 3864 root      0:00 supervise-daemon ofono --start --pidfile /run/ofono.pid --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/sbin/ofonod -- -n
+ 3865 root      0:00 /usr/sbin/ofonod -n
+ 3895 root      0:00 /usr/libexec/openrc-settingsd --ntp-service=chronyd --syslog
+ 4044 root      0:00 supervise-daemon sleep-inhibitor --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/bin/sleep-inhibitor --
+ 4045 root      0:00 {sleep-inhibitor} /usr/bin/python3 /usr/bin/sleep-inhibitor
+ 4074 root      0:00 {shelli-smsd} /usr/bin/python3 /usr/share/shelli/bin/shelli-smsd
+ 4119 root      0:00 sshd.pam: /usr/sbin/sshd.pam [listener] 0 of 10-100 startups
+ 4554 root      0:00 elogind-daemon
+ 4557 root      0:00 [psimon]
+ 5363 root      0:00 [kworker/3:2-eve]
+ 5389 root      0:00 [kworker/0:2-eve]
+ 5406 root      0:00 [kworker/1:4-eve]
+ 5612 root      0:00 [kworker/6:0-eve]
+ 5813 root      0:00 [kworker/u17:0]
+ 6907 root      0:00 [init]
+ 6908 root      0:00 sshd-session.pam: lmi [priv]
+ 6931 root      0:00 supervise-daemon user.lmi --start --respawn-delay 500ms --respawn-max 3 --respawn-period 5 --notify fd:3 /usr/libexec/rc/bin/openrc-user -- lmi
+ 6939 lmi       0:00 sshd-session.pam: lmi@notty
+ 6940 lmi       0:00 sh -s
+ 7004 lmi       0:00 ps aux
+

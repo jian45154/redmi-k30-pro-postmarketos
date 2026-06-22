@@ -12,9 +12,14 @@ LineageOS 4.19 vendor kernel with **Clang/LLVM** under **WSL2 + pmbootstrap**.
 - ✅ **Normal userspace + SSH works** with a RAM-only `fastboot boot` kernel.
 - ✅ **USB networking works on Windows** as RNDIS gadget
   (`0525:a4a2 POSTMARKETOS`, host `172.16.42.2`, device `172.16.42.1`).
-- ⏳ Persistent kernel/boot partition install — not done. Current kernel tests
-  still use temporary `fastboot boot`.
-- ⏳ Display / modem / Wi-Fi — not yet validated (headless-server focus).
+- ✅ **Persistent v27 boot is installed**: `boot` and `userdata` now boot into
+  postmarketOS without `fastboot boot`.
+- ⏳ **Display userspace takeover** — kernel DRM/KGSL and the DSI panel are
+  present, but the screen remains on the Redmi logo because no compositor takes
+  over the continuous splash.
+- ⏳ **Audio / mic, Wi-Fi, and Bluetooth** — next hardware focus. ALSA has no
+  soundcard, Wi-Fi has no exposed wireless interface, and Bluetooth is rfkill
+  soft-blocked.
 
 ## Read this first
 
@@ -62,13 +67,31 @@ fastboot boot /tmp/postmarketOS-export/boot.img # RAM only; writes nothing
 - `scripts/` — Windows/WSL helper scripts for env checks, image inspection,
   config generation, and pmaports sync. Output goes to `logs/` (gitignored).
 
+## Current hardware focus
+
+The v27 baseline is stable enough to move from boot/rootfs repair into hardware
+enablement. The immediate targets are:
+
+- display: start a minimal compositor or DRM/KMS test so userspace visibly takes
+  over the panel;
+- sound and microphone: restore ADSP/audio firmware/service bring-up until ALSA
+  exposes real cards instead of `auto_null`;
+- networking: make WLAN expose a usable interface; keep USB/RNDIS as the debug
+  fallback;
+- Bluetooth: unblock and initialize BT after WLAN/firmware service dependencies
+  are understood.
+
+The latest evidence is recorded in
+[`notes/repair-phase43-v27-full-hardware-check-2026-06-23.md`](notes/repair-phase43-v27-full-hardware-check-2026-06-23.md).
+
 ## Safety
 
 This project never flashes the phone without an explicit decision and a
 confirmed recovery path. `userdata` rootfs writes were performed only after
-explicit confirmation. Kernel tests still use temporary, RAM-only `fastboot boot`;
-`boot`, `dtbo`, `vbmeta`, `super`, modem/EFS, and calibration partitions have
-not been written. The install plan and rollback notes are in
+explicit confirmation. The v27 `boot` partition write was also performed only
+after explicit confirmation. `dtbo`, `vbmeta`, `super`, modem/EFS, and
+calibration partitions have not been written. The install plan and rollback
+notes are in
 [notes/flash-plan-2026-06-17.md](notes/flash-plan-2026-06-17.md) and the dated
 repair notes under [`notes/`](notes/).
 
