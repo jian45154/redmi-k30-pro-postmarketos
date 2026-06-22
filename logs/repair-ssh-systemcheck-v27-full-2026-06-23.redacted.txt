@@ -1,0 +1,393 @@
+=== date ===
+Sat Nov 28 06:34:44 AEST 1970
+=== uname ===
+Linux xiaomi-lmi 4.19.325-cip128-st12-perf #7-postmarketOS SMP PREEMPT Mon Jun 22 18:40:33 UTC 2026 aarch64 Linux
+=== id ===
+uid=10000(lmi) gid=10000(lmi) groups=10(wheel),18(audio),23(input),27(video),28(netdev),102(plugdev),10000(lmi)
+=== cmdline ===
+cgroup_disable=pressure ramoops_memreserve=4M rcupdate.rcu_expedited=1 rcu_nocbs=0-7 kpti=off androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery  pmos_boot_uuid=3c14f75f-450e-4457-b109-6fc5d9f7c54c pmos_root_uuid=b50c1119-2cd9-4675-a9be-3201c98d54ec pmos_rootfsopts=defaults androidboot.verifiedbootstate=orange androidboot.keymaster=1  androidboot.bootdevice=1d84000.ufshc androidboot.fstab_suffix=default androidboot.boot_devices=soc/1d84000.ufshc androidboot.serialno=<redacted> androidboot.secureboot=1 androidboot.hwversion=3.9.0 androidboot.cpuid=<redacted> androidboot.camera.config=1 androidboot.network.mode=1 androidboot.hwc=CN androidboot.hwlevel=MP androidboot.product.hardware.sku=std androidboot.baseband=mdm msm_drm.dsi_display0=qcom,mdss_dsi_j11_38_08_0a_fhd_cmd: androidboot.dtbo_idx=7 androidboot.dtb_idx=0 androidboot.ramdump=disable block2mtd.block2mtd=/dev/block/sda15,2097152 mtdoops.mtddev=0 mtdoops.record_size=2097152 mtdoops.dump_oops=0 printk.always_kmsg_dump=1 androidboot.dp=0x0 androidboot.cert=M2001J11E
+=== pmOS_init.log ===
+cat: can't open '/pmOS_init.log': No such file or directory
+=== mounts ===
+proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
+dev on /dev type devtmpfs (rw,nosuid,noexec,relatime,size=2674028k,nr_inodes=668507)
+run on /run type tmpfs (rw,nosuid,nodev,relatime)
+configfs on /sys/kernel/config type configfs (rw,nosuid,nodev,noexec,relatime)
+devpts on /dev/pts type devpts (rw,relatime,mode=600,ptmxmode=000)
+/dev/loop0p2 on / type ext4 (rw,relatime)
+shm on /dev/shm type tmpfs (rw,nosuid,nodev,noexec,relatime)
+tracefs on /sys/kernel/tracing type tracefs (rw,nosuid,nodev,noexec,relatime)
+fusectl on /sys/fs/fuse/connections type fusectl (rw,nosuid,nodev,noexec,relatime)
+pstore on /sys/fs/pstore type pstore (rw,nosuid,nodev,noexec,relatime)
+bpf on /sys/fs/bpf type bpf (rw,nosuid,nodev,noexec,relatime)
+/dev/loop0p1 on /boot type ext2 (rw,nosuid,nodev,noexec,relatime)
+tmpfs on /tmp type tmpfs (rw,nosuid,nodev)
+cgroup2 on /sys/fs/cgroup type cgroup2 (rw,nosuid,nodev,noexec,relatime,nsdelegate)
+tmpfs on /run/user/10000 type tmpfs (rw,nosuid,nodev,relatime)
+=== findmnt ===
+TARGET                       SOURCE       FSTYPE   OPTIONS
+/                            /dev/loop0p2 ext4     rw,relatime
+├─/proc                      proc         proc     rw,nosuid,nodev,noexec,relatime
+├─/sys                       sysfs        sysfs    rw,nosuid,nodev,noexec,relatime
+│ ├─/sys/kernel/config       configfs     configfs rw,nosuid,nodev,noexec,relatime
+│ ├─/sys/kernel/tracing      tracefs      tracefs  rw,nosuid,nodev,noexec,relatime
+│ ├─/sys/fs/fuse/connections fusectl      fusectl  rw,nosuid,nodev,noexec,relatime
+│ ├─/sys/fs/pstore           pstore       pstore   rw,nosuid,nodev,noexec,relatime
+│ ├─/sys/fs/bpf              bpf          bpf      rw,nosuid,nodev,noexec,relatime
+│ └─/sys/fs/cgroup           cgroup2      cgroup2  rw,nosuid,nodev,noexec,relatime,nsdelegate
+├─/dev                       dev          devtmpfs rw,nosuid,noexec,relatime,size=2674028k,nr_inodes=668507
+│ ├─/dev/pts                 devpts       devpts   rw,relatime,mode=600,ptmxmode=000
+│ └─/dev/shm                 shm          tmpfs    rw,nosuid,nodev,noexec,relatime
+├─/run                       run          tmpfs    rw,nosuid,nodev,relatime
+│ └─/run/user/10000          tmpfs        tmpfs    rw,nosuid,nodev,relatime
+├─/boot                      /dev/loop0p1 ext2     rw,nosuid,nodev,noexec,relatime
+└─/tmp                       tmpfs        tmpfs    rw,nosuid,nodev
+=== lsblk ===
+NAME      MAJ:MIN   SIZE TYPE FSTYPE LABEL PARTLABEL PARTUUID MOUNTPOINTS
+loop0       7:0     107G loop                                 
+├─loop0p1   7:1     480M part                                 /boot
+└─loop0p2   7:2   106.5G part                                 /
+sda         8:0     118G disk                                 
+├─sda1      8:1       8K part                                 
+├─sda2      8:2      32K part                                 
+├─sda3      8:3      32K part                                 
+├─sda4      8:4      32K part                                 
+├─sda5      8:5     128K part                                 
+├─sda6      8:6     256K part                                 
+├─sda7      8:7     512K part                                 
+├─sda8      8:8     512K part                                 
+├─sda9      8:9     512K part                                 
+├─sda10     8:10      2M part                                 
+├─sda11     8:11      4M part                                 
+├─sda12     8:12      8M part                                 
+├─sda13     8:13      8M part                                 
+├─sda14     8:14      8M part                                 
+├─sda15     8:15     16M part                                 
+├─sda16   259:0      16M part                                 
+├─sda17   259:1       1M part                                 
+├─sda18   259:2      16M part                                 
+├─sda19   259:3      15M part                                 
+├─sda20   259:4      32M part                                 
+├─sda21   259:5      32M part                                 
+├─sda22   259:6      64M part                                 
+├─sda23   259:7      64M part                                 
+├─sda24   259:8      64M part                                 
+├─sda25   259:9     128M part                                 
+├─sda26   259:10     96M part                                 
+├─sda27   259:11     32M part                                 
+├─sda28   259:12    128M part                                 
+├─sda29   259:13    384M part                                 
+├─sda30   259:14    384M part                                 
+├─sda31   259:15      1G part                                 
+├─sda32   259:16    8.5G part                                 
+├─sda33   259:17     32M part                                 
+└─sda34   259:18    107G part                                 
+sdb         8:16     16M disk                                 
+├─sdb1      8:17      7M part                                 
+├─sdb2      8:18      7M part                                 
+├─sdb3      8:19    512K part                                 
+└─sdb4      8:20    1.5M part                                 
+sdc         8:32     16M disk                                 
+├─sdc1      8:33      7M part                                 
+├─sdc2      8:34      7M part                                 
+├─sdc3      8:35    512K part                                 
+└─sdc4      8:36    1.5M part                                 
+sdd         8:48     32M disk                                 
+├─sdd1      8:49    104K part                                 
+├─sdd2      8:50    128K part                                 
+├─sdd3      8:51      1M part                                 
+├─sdd4      8:52      2M part                                 
+├─sdd5      8:53      2M part                                 
+└─sdd6      8:54      1M part                                 
+sde         8:64      1G disk                                 
+├─sde1      8:65    104K part                                 
+├─sde2      8:66     32K part                                 
+├─sde3      8:67     32K part                                 
+├─sde4      8:68     32K part                                 
+├─sde5      8:69     32K part                                 
+├─sde6      8:70    128K part                                 
+├─sde7      8:71    128K part                                 
+├─sde8      8:72    256K part                                 
+├─sde9      8:73    256K part                                 
+├─sde10     8:74     32K part                                 
+├─sde11     8:75     32K part                                 
+├─sde12     8:76     32K part                                 
+├─sde13     8:77     32K part                                 
+├─sde14     8:78    128K part                                 
+├─sde15     8:79    128K part                                 
+├─sde16   259:19    128K part                                 
+├─sde17   259:20    128K part                                 
+├─sde18   259:21    128K part                                 
+├─sde19   259:22    256K part                                 
+├─sde20   259:23    256K part                                 
+├─sde21   259:24    256K part                                 
+├─sde22   259:25    512K part                                 
+├─sde23   259:26    512K part                                 
+├─sde24   259:27    512K part                                 
+├─sde25   259:28    128K part                                 
+├─sde26   259:29    128K part                                 
+├─sde27   259:30    128K part                                 
+├─sde28   259:31    3.6M part                                 
+├─sde29   259:32      1M part                                 
+├─sde30   259:33      1M part                                 
+├─sde31   259:34      1M part                                 
+├─sde32   259:35      1M part                                 
+├─sde33   259:36      1M part                                 
+├─sde34   259:37      1M part                                 
+├─sde35   259:38      1M part                                 
+├─sde36   259:39      1M part                                 
+├─sde37   259:40      2M part                                 
+├─sde38   259:41      2M part                                 
+├─sde39   259:42      2M part                                 
+├─sde40   259:43      2M part                                 
+├─sde41   259:44      4M part                                 
+├─sde42   259:45      4M part                                 
+├─sde43   259:46     32M part                                 
+├─sde44   259:47      8M part                                 
+├─sde45   259:48      8M part                                 
+├─sde46   259:49     16M part                                 
+├─sde47   259:50     32M part                                 
+├─sde48   259:51     64M part                                 
+├─sde49   259:52     64M part                                 
+├─sde50   259:53    128M part                                 
+├─sde51   259:54    448M part                                 
+├─sde52   259:55     32M part                                 
+├─sde53   259:56     32M part                                 
+├─sde54   259:57     52M part                                 
+├─sde55   259:58      4M part                                 
+├─sde56   259:59      4M part                                 
+├─sde57   259:60      2M part                                 
+└─sde58   259:61      2M part                                 
+sdf         8:80     64M disk                                 
+├─sdf1      8:81    104K part                                 
+├─sdf2      8:82      2M part                                 
+├─sdf3      8:83      2M part                                 
+├─sdf4      8:84      2M part                                 
+├─sdf5      8:85    128K part                                 
+├─sdf6      8:86    768K part                                 
+├─sdf7      8:87      8M part                                 
+├─sdf8      8:88      8M part                                 
+├─sdf9      8:89      8M part                                 
+└─sdf10     8:90      1M part                                 
+mtdblock0  31:0      16M disk                                 
+zram0     254:0       0B disk                                 
+=== blkid ===
+/dev/sde49: LABEL="dsp" UUID="af32c008-2a39-7e5b-a5dc-201456d93103" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="dsp" PARTUUID="68598f18-f618-7bcd-49f3-f235d5c9752d"
+/dev/sde35: SEC_TYPE="msdos" UUID="00BC-614E" BLOCK_SIZE="4096" TYPE="vfat" PARTLABEL="bluetooth" PARTUUID="4bced19d-3854-3efe-4daf-5f3d7f5191b2"
+/dev/sde43: SEC_TYPE="msdos" UUID="00BC-614E" BLOCK_SIZE="4096" TYPE="vfat" PARTLABEL="spunvm" PARTUUID="2328f35f-b2c0-21c0-2a01-94be99d5ca2d"
+/dev/sde51: SEC_TYPE="msdos" UUID="00BC-614E" BLOCK_SIZE="4096" TYPE="vfat" PARTLABEL="modem" PARTUUID="4a51bc57-fcda-25b5-86d9-aaa83642d754"
+/dev/sda22: UUID="1afe0991-2ced-4adf-bea0-33ea3f766795" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="persist" PARTUUID="bd28d03f-4d13-6601-4318-70445157e14f"
+/dev/sda29: UUID="9df2a083-1806-4af0-8e8f-8af08c705b23" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="cache" PARTUUID="d83b8741-c2ca-811b-e01a-6d274d810d15"
+/dev/sda23: UUID="1afe0991-2ced-4adf-bea0-33ea3f766795" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="persistbak" PARTUUID="98a9d4ea-edd0-9f4c-2407-e08378a6c89a"
+/dev/sda13: SEC_TYPE="msdos" LABEL="LOGFS" UUID="D273-55EA" BLOCK_SIZE="4096" TYPE="vfat" PARTLABEL="logfs" PARTUUID="b5009c7f-bb5c-2e57-600b-2e27efdbd7d3"
+/dev/sda31: LABEL="cust" UUID="49dd35d1-5e62-42e5-9d52-62b0d602bcd1" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="cust" PARTUUID="ac143c6a-7469-6151-b0c9-57995a967bc4"
+/dev/sda18: UUID="b21d5c43-1a6f-4976-a12e-446ebed22e6c" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="metadata" PARTUUID="3b1166b2-4bc3-bb23-7a97-8696cdf56d40"
+/dev/loop0p1: LABEL="pmOS_boot" UUID="3c14f75f-450e-4457-b109-6fc5d9f7c54c" BLOCK_SIZE="4096" TYPE="ext2" PARTLABEL="primary" PARTUUID="c9d18210-9f5e-4c59-999c-fd8f8fa44cb1"
+/dev/loop0p2: LABEL="pmOS_root" UUID="b50c1119-2cd9-4675-a9be-3201c98d54ec" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="primary" PARTUUID="ddf246fe-118d-48cb-86ef-c2753ec2821e"
+=== proc_partitions ===
+major minor  #blocks  name
+
+   1        0       8192 ram0
+   1        1       8192 ram1
+   1        2       8192 ram2
+   1        3       8192 ram3
+   1        4       8192 ram4
+   1        5       8192 ram5
+   1        6       8192 ram6
+   1        7       8192 ram7
+   1        8       8192 ram8
+   1        9       8192 ram9
+   1       10       8192 ram10
+   1       11       8192 ram11
+   1       12       8192 ram12
+   1       13       8192 ram13
+   1       14       8192 ram14
+   1       15       8192 ram15
+   7        0  112205804 loop0
+   7        1     491520 loop0p1
+   7        2  111706072 loop0p2
+   8        0  123740160 sda
+   8        1          8 sda1
+   8        2         32 sda2
+   8        3         32 sda3
+   8        4         32 sda4
+   8        5        128 sda5
+   8        6        256 sda6
+   8        7        512 sda7
+   8        8        512 sda8
+   8        9        512 sda9
+   8       10       2048 sda10
+   8       11       4096 sda11
+   8       12       8192 sda12
+   8       13       8192 sda13
+   8       14       8192 sda14
+   8       15      16384 sda15
+ 259        0      16384 sda16
+ 259        1       1024 sda17
+ 259        2      16384 sda18
+ 259        3      15360 sda19
+ 259        4      32768 sda20
+ 259        5      32768 sda21
+ 259        6      65536 sda22
+ 259        7      65536 sda23
+ 259        8      65536 sda24
+ 259        9     131072 sda25
+ 259       10      98304 sda26
+ 259       11      32768 sda27
+ 259       12     131072 sda28
+ 259       13     393216 sda29
+ 259       14     393216 sda30
+ 259       15    1048576 sda31
+ 259       16    8912896 sda32
+ 259       17      32768 sda33
+ 259       18  112205804 sda34
+   8       16      16384 sdb
+   8       17       7168 sdb1
+   8       18       7168 sdb2
+   8       19        512 sdb3
+   8       20       1492 sdb4
+   8       32      16384 sdc
+   8       33       7168 sdc1
+   8       34       7168 sdc2
+   8       35        512 sdc3
+   8       36       1492 sdc4
+   8       64    1048576 sde
+   8       65        104 sde1
+   8       66         32 sde2
+   8       67         32 sde3
+   8       68         32 sde4
+   8       69         32 sde5
+   8       70        128 sde6
+   8       71        128 sde7
+   8       72        256 sde8
+   8       73        256 sde9
+   8       74         32 sde10
+   8       75         32 sde11
+   8       76         32 sde12
+   8       77         32 sde13
+   8       78        128 sde14
+   8       79        128 sde15
+ 259       19        128 sde16
+ 259       20        128 sde17
+ 259       21        128 sde18
+ 259       22        256 sde19
+ 259       23        256 sde20
+ 259       24        256 sde21
+ 259       25        512 sde22
+ 259       26        512 sde23
+ 259       27        512 sde24
+ 259       28        128 sde25
+ 259       29        128 sde26
+ 259       30        128 sde27
+ 259       31       3712 sde28
+ 259       32       1024 sde29
+ 259       33       1024 sde30
+ 259       34       1024 sde31
+ 259       35       1024 sde32
+ 259       36       1024 sde33
+ 259       37       1024 sde34
+ 259       38       1024 sde35
+ 259       39       1024 sde36
+ 259       40       2048 sde37
+ 259       41       2048 sde38
+ 259       42       2048 sde39
+ 259       43       2048 sde40
+ 259       44       4096 sde41
+ 259       45       4096 sde42
+ 259       46      32768 sde43
+ 259       47       8192 sde44
+ 259       48       8192 sde45
+ 259       49      16384 sde46
+ 259       50      32768 sde47
+ 259       51      65536 sde48
+ 259       52      65536 sde49
+ 259       53     131072 sde50
+ 259       54     458752 sde51
+ 259       55      32768 sde52
+ 259       56      32768 sde53
+ 259       57      53248 sde54
+ 259       58       4096 sde55
+ 259       59       4096 sde56
+ 259       60       2048 sde57
+ 259       61       2048 sde58
+   8       80      65536 sdf
+   8       81        104 sdf1
+   8       82       2048 sdf2
+   8       83       2048 sdf3
+   8       84       2048 sdf4
+   8       85        128 sdf5
+   8       86        768 sdf6
+   8       87       8192 sdf7
+   8       88       8192 sdf8
+   8       89       8192 sdf9
+   8       90       1024 sdf10
+   8       48      32768 sdd
+   8       49        104 sdd1
+   8       50        128 sdd2
+   8       51       1024 sdd3
+   8       52       2048 sdd4
+   8       53       2048 sdd5
+   8       54       1024 sdd6
+  31        0      16384 mtdblock0
+=== ip_addr ===
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1000
+    link/loopback <redacted-mac> brd <redacted-mac>
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: bond0: <BROADCAST,MULTICAST400> mtu 1500 qdisc noop state DOWN qlen 1000
+    link/ether <redacted-mac> brd <redacted-mac>
+3: dummy0: <BROADCAST,NOARP> mtu 1500 qdisc noop state DOWN qlen 1000
+    link/ether <redacted-mac> brd <redacted-mac>
+4: ip_vti0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN qlen 1000
+    link/ipip 0.0.0.0 brd 0.0.0.0
+5: ip6_vti0@NONE: <NOARP> mtu 1364 qdisc noop state DOWN qlen 1000
+    link/tunnel6 <redacted-mac>:<redacted-mac>:00:00:00:00 brd <redacted-mac>:<redacted-mac>:00:00:00:00
+6: sit0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN qlen 1000
+    link/sit 0.0.0.0 brd 0.0.0.0
+7: ip6tnl0@NONE: <NOARP> mtu 1452 qdisc noop state DOWN qlen 1000
+    link/tunnel6 <redacted-mac>:<redacted-mac>:00:00:00:00 brd <redacted-mac>:<redacted-mac>:00:00:00:00
+8: usb0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether <redacted-mac> brd <redacted-mac>
+    inet 172.16.42.1/16 brd 172.16.255.255 scope global usb0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::5898:a5ff:fefa:52fe/64 scope link 
+       valid_lft forever preferred_lft forever
+=== routes ===
+172.16.0.0/16 dev usb0 scope link  src 172.16.42.1 
+=== sshd ===
+ 4126 root      0:00 sshd.pam: /usr/sbin/sshd.pam [listener] 0 of 10-100 startups
+ 4324 root      0:00 sshd-session.pam: lmi [priv]
+ 4363 lmi       0:00 sshd-session.pam: lmi@notty
+=== systemctl ===
+sh: line 29: systemctl: not found
+sh: line 30: systemctl: not found
+=== usb_configfs ===
+/sys/kernel/config/usb_gadget/g1/UDC=a600000.dwc3 
+/sys/kernel/config/usb_gadget/g1/bDeviceClass=0x00 
+/sys/kernel/config/usb_gadget/g1/bDeviceProtocol=0x00 
+/sys/kernel/config/usb_gadget/g1/bDeviceSubClass=0x00 
+/sys/kernel/config/usb_gadget/g1/bMaxPacketSize0=0x40 
+/sys/kernel/config/usb_gadget/g1/bcdDevice=0x0419 
+/sys/kernel/config/usb_gadget/g1/bcdUSB=0x0200 
+/sys/kernel/config/usb_gadget/g1/configs/c.1/MaxPower=900 
+/sys/kernel/config/usb_gadget/g1/configs/c.1/bmAttributes=0x80 
+/sys/kernel/config/usb_gadget/g1/functions/rndis.usb0/class=02 
+/sys/kernel/config/usb_gadget/g1/functions/rndis.usb0/dev_addr= <redacted-mac> 
+/sys/kernel/config/usb_gadget/g1/functions/rndis.usb0/host_addr= <redacted-mac> 
+/sys/kernel/config/usb_gadget/g1/functions/rndis.usb0/ifname=usb0 
+/sys/kernel/config/usb_gadget/g1/functions/rndis.usb0/protocol=00 
+/sys/kernel/config/usb_gadget/g1/functions/rndis.usb0/qmult=5 
+/sys/kernel/config/usb_gadget/g1/functions/rndis.usb0/subclass=06 
+/sys/kernel/config/usb_gadget/g1/functions/rndis.usb0/ul_max_pkt_per_xfer=3 
+/sys/kernel/config/usb_gadget/g1/functions/rndis.usb0/wceis=1
+/sys/kernel/config/usb_gadget/g1/idProduct=0xa4a2 
+/sys/kernel/config/usb_gadget/g1/idVendor=0x0525 
+/sys/kernel/config/usb_gadget/g1/os_desc/b_vendor_code=0x00 
+/sys/kernel/config/usb_gadget/g1/os_desc/qw_sign= 
+/sys/kernel/config/usb_gadget/g1/os_desc/use=0 
+/sys/kernel/config/usb_gadget/g1/strings/0x409/manufacturer=xiaomi 
+/sys/kernel/config/usb_gadget/g1/strings/0x409/product=xiaomi lmi 
+/sys/kernel/config/usb_gadget/g1/strings/0x409/serialnumber=<redacted> 

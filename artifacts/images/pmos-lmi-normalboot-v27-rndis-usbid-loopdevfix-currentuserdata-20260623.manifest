@@ -1,0 +1,13 @@
+artifact=pmos-lmi-normalboot-v27-rndis-usbid-loopdevfix-currentuserdata-20260623.img
+source_boot=/mnt/c/Users/microstar/Documents/lmi_linx/artifacts/images/pmos-lmi-normalboot-v27-rndis-usbid-loopdevfix-20260623.img
+source_boot_sha256=e6e6a20bee87ca21e5cc4fdcc295dbaaf6faaeaa697672a542943e6afbc9d26e
+artifact_sha256=40ed61c2eaf8bd4c732ffa42e961cfd5d3f70a0959efe012d070959ea1c12bef
+artifact_size=52920320
+userdata_pairing=current-v22-v26-userdata
+pmos_boot_uuid=2c2600b1-700f-4bdd-a22c-bb12cc589baa
+pmos_root_uuid=8646c5cd-6298-46b4-8465-47c4a0fbb370
+deviceinfo_usb_network_function=rndis.usb0
+deviceinfo_usb_idVendor=0x0525
+deviceinfo_usb_idProduct=0xA4A2
+loopdevfix=present
+cmdline=androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery pmos_boot_uuid=2c2600b1-700f-4bdd-a22c-bb12cc589baa pmos_root_uuid=8646c5cd-6298-46b4-8465-47c4a0fbb370 pmos_rootfsopts=defaults
