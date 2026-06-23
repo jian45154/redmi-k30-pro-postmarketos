@@ -526,6 +526,22 @@ plan: WAITING_FOR_RECOVERY_FASTBOOTD
 No reboot, boot, flash, erase, format, or partition write was executed.
 ```
 
+## Release Archive Manifest
+
+The large images stay in the local `/tmp` release bundle, but their hashes and
+route status are archived in git with:
+
+```sh
+LMI_ROLLBACK_BOOT_IMG="/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img" \
+scripts/57_archive_lmi_release_manifest.sh
+```
+
+Output:
+
+```text
+docs/release/lmi-r6-bootmem-release-manifest-20260624.md
+```
+
 Current command sheet status after regenerating with `LMI_ROLLBACK_BOOT_IMG`:
 
 - r6 boot image hash recorded:
