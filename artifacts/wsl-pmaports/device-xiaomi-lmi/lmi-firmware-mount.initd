@@ -3,8 +3,7 @@
 description="Expose xiaomi-lmi stock firmware partitions"
 
 depend() {
-	need udev
-	before rmtfs tqftpserv wpa_supplicant bluetooth
+	before udev udev-trigger rmtfs tqftpserv wpa_supplicant bluetooth
 }
 
 start() {
@@ -15,6 +14,23 @@ start() {
 
 	ebegin "Mounting xiaomi-lmi firmware partition"
 	mkdir -p "$fw_mnt" /lib/firmware
+	mkdir -p /dev/disk/by-partlabel /dev/block/by-name
+
+	if [ ! -e /dev/disk/by-partlabel/modem ]; then
+		for uevent in /sys/class/block/*/uevent; do
+			[ -r "$uevent" ] || continue
+			grep -q '^PARTNAME=modem$' "$uevent" || continue
+			block="${uevent%/uevent}"
+			name="${block##*/}"
+			[ -r "/sys/class/block/$name/dev" ] || continue
+			major_minor="$(cat "/sys/class/block/$name/dev")"
+			[ -b "/dev/$name" ] || mknod "/dev/$name" b \
+				"${major_minor%:*}" "${major_minor#*:}" 2>/dev/null || true
+			ln -sfn "../../$name" /dev/disk/by-partlabel/modem
+			ln -sfn "../../$name" /dev/block/by-name/modem
+			break
+		done
+	fi
 
 	if ! mountpoint -q "$fw_mnt"; then
 		mount -o ro -t vfat /dev/disk/by-partlabel/modem "$fw_mnt" || {
