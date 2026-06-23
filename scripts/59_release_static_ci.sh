@@ -50,6 +50,10 @@ grep -q 'scripts/66_wait_and_audit_lmi_fastbootd.sh' "$checklist"
 grep -q 'scripts/66_wait_and_audit_lmi_fastbootd.sh' "$handoff"
 grep -q 'scripts/67_summarize_lmi_post_boot_evidence.sh' "$manifest"
 grep -q 'fastbootd audit gate: OK' "$handoff"
+grep -q 'scripts/64_audit_lmi_persistent_readiness.sh' scripts/49_generate_lmi_flash_command_sheet.sh
+grep -q 'scripts/66_wait_and_audit_lmi_fastbootd.sh' scripts/49_generate_lmi_flash_command_sheet.sh
+grep -q 'scripts/67_summarize_lmi_post_boot_evidence.sh' scripts/49_generate_lmi_flash_command_sheet.sh
+grep -q 'fastbootd audit gate: OK' scripts/49_generate_lmi_flash_command_sheet.sh
 grep -q 'RAM-only boot is no longer a prerequisite' "$handoff"
 grep -q 'guarded recovery-fastbootd persistent test' "$handoff"
 grep -q 'RAM-only boot is optional' "$readme"
