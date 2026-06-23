@@ -13,6 +13,7 @@ disabled_device_pkg=$backup_root/device-downstream-device-xiaomi-lmi
 debug_shell=false
 android_cmdline=false
 no_zboot=false
+no_efi_stub=false
 
 update_sha512_sum() {
 	local apkbuild=$1
@@ -23,6 +24,17 @@ update_sha512_sum() {
 	sum=$(sha512sum "$source_file")
 	sum=${sum%% *}
 	sed -i "s|^[0-9a-f]\\{128\\}  $source_name\$|$sum  $source_name|" "$apkbuild"
+}
+
+disable_kernel_config() {
+	local config=$1
+	local symbol=$2
+
+	if grep -q "^$symbol=y$" "$config"; then
+		sed -i "s/^$symbol=y$/# $symbol is not set/" "$config"
+	elif ! grep -q "^# $symbol is not set$" "$config"; then
+		echo "# $symbol is not set" >> "$config"
+	fi
 }
 
 case "${1:-}" in
@@ -37,6 +49,12 @@ case "${1:-}" in
 	debug_shell=true
 	android_cmdline=true
 	no_zboot=true
+	;;
+--debug-shell-android-cmdline-no-efi-stub)
+	debug_shell=true
+	android_cmdline=true
+	no_zboot=true
+	no_efi_stub=true
 	;;
 --restore-downstream)
 	rm -rf "$dst_root/device-xiaomi-lmi" \
@@ -55,7 +73,7 @@ case "${1:-}" in
 "")
 	;;
 *)
-	echo "usage: $0 [--debug-shell|--debug-shell-android-cmdline|--debug-shell-android-cmdline-no-zboot|--restore-downstream]" >&2
+	echo "usage: $0 [--debug-shell|--debug-shell-android-cmdline|--debug-shell-android-cmdline-no-zboot|--debug-shell-android-cmdline-no-efi-stub|--restore-downstream]" >&2
 	exit 1
 	;;
 esac
@@ -117,13 +135,29 @@ kernel_apkbuild="$dst_root/linux-postmarketos-qcom-sm8250-lmi/APKBUILD"
 kernel_config="$dst_root/linux-postmarketos-qcom-sm8250-lmi/config-postmarketos-qcom-sm8250-lmi.aarch64"
 if [ "$no_zboot" = true ]; then
 	sed -i 's/^pkgrel=.*/pkgrel=3/' "$kernel_apkbuild"
-	if grep -q '^CONFIG_EFI_ZBOOT=y$' "$kernel_config"; then
-		sed -i 's/^CONFIG_EFI_ZBOOT=y$/# CONFIG_EFI_ZBOOT is not set/' "$kernel_config"
-	elif ! grep -q '^# CONFIG_EFI_ZBOOT is not set$' "$kernel_config"; then
-		echo "# CONFIG_EFI_ZBOOT is not set" >> "$kernel_config"
-	fi
-	update_sha512_sum "$kernel_apkbuild" "$kernel_config" config-postmarketos-qcom-sm8250-lmi.aarch64
+	disable_kernel_config "$kernel_config" CONFIG_EFI_ZBOOT
 fi
+if [ "$no_efi_stub" = true ]; then
+	sed -i 's/^pkgrel=.*/pkgrel=4/' "$kernel_apkbuild"
+	for symbol in \
+		CONFIG_EFI_STUB \
+		CONFIG_EFI \
+		CONFIG_EFI_ESRT \
+		CONFIG_EFI_VARS_PSTORE \
+		CONFIG_EFI_SOFT_RESERVE \
+		CONFIG_EFI_PARAMS_FROM_FDT \
+		CONFIG_EFI_RUNTIME_WRAPPERS \
+		CONFIG_EFI_GENERIC_STUB \
+		CONFIG_EFI_ARMSTUB_DTB_LOADER \
+		CONFIG_EFI_CAPSULE_LOADER \
+		CONFIG_EFI_EARLYCON \
+		CONFIG_EFI_CUSTOM_SSDT_OVERLAYS \
+		CONFIG_EFIVAR_FS
+	do
+		disable_kernel_config "$kernel_config" "$symbol"
+	done
+fi
+update_sha512_sum "$kernel_apkbuild" "$kernel_config" config-postmarketos-qcom-sm8250-lmi.aarch64
 perl -0pi -e 's/make zinstall modules_install dtbs_install \\\n\t\tARCH="\$_carch" \\\n\t\tINSTALL_PATH="\$pkgdir"\/boot\/ \\\n\t\tINSTALL_MOD_PATH="\$pkgdir" \\\n\t\tINSTALL_MOD_STRIP=1 \\\n\t\tINSTALL_DTBS_PATH="\$pkgdir\/boot\/dtbs"/make Image modules_install dtbs_install \\\n\t\tARCH="\$_carch" \\\n\t\tINSTALL_MOD_PATH="\$pkgdir" \\\n\t\tINSTALL_MOD_STRIP=1 \\\n\t\tINSTALL_DTBS_PATH="\$pkgdir\/boot\/dtbs"\n\tinstall -Dm755 "\$builddir"\/arch\/arm64\/boot\/Image "\$pkgdir"\/boot\/vmlinuz/s' \
 	"$kernel_apkbuild"
 
