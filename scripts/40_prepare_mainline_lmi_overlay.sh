@@ -91,6 +91,10 @@ fi
 
 sed -i 's/^pkgrel=.*/pkgrel=90/' "$dst_root/device-xiaomi-lmi/APKBUILD"
 sed -i 's/^pkgrel=.*/pkgrel=2/' "$dst_root/linux-postmarketos-qcom-sm8250-lmi/APKBUILD"
+if ! grep -q '^deviceinfo_flash_fastboot_partition_rootfs=' "$dst_root/device-xiaomi-lmi/deviceinfo"; then
+	sed -i '/^deviceinfo_flash_method="fastboot"$/a deviceinfo_flash_fastboot_partition_rootfs="userdata"' \
+		"$dst_root/device-xiaomi-lmi/deviceinfo"
+fi
 if [ "$debug_shell" = true ]; then
 	sed -i 's/^pkgrel=.*/pkgrel=91/' "$dst_root/device-xiaomi-lmi/APKBUILD"
 	sed -i 's/^deviceinfo_kernel_cmdline="\(.*\)"/deviceinfo_kernel_cmdline="\1 pmos.debug-shell"/' \

@@ -96,6 +96,8 @@ applies these temporary cache-only changes:
 
 - bumps `device-xiaomi-lmi` to `pkgrel=92`;
 - uses the Android downstream USB/kernel cmdline plus `pmos.debug-shell`;
+- adds `deviceinfo_flash_fastboot_partition_rootfs="userdata"` to make the
+  rootfs flash target explicit in the temporary cache copy;
 - bumps `linux-postmarketos-qcom-sm8250-lmi` to `pkgrel=2`;
 - builds `make Image` and installs `arch/arm64/boot/Image` as `/boot/vmlinuz`;
 - updates the temporary `deviceinfo` checksum after cmdline edits.
@@ -103,9 +105,9 @@ applies these temporary cache-only changes:
 Verified regenerated artifacts:
 
 ```text
-1a6be1dd99861a00552fe9dc066d0685e926462a9d5418a61606a669b9a73793  boot.img
+f4c8fc6cce9ffba36ee5f862c7f2e259d68339fbee0319624b358fe2e8167fb0  boot.img
 9207f50ae28739407c832a79018d22ada26df9c8e3e85c9259910a46fceddc30  vmlinuz
-56bd133dca8689d3a1694f91c1c89215a4c0f5306d738f35d949c045c9c8532e  xiaomi-lmi.img
+ace8417d8b61c907c6b325fdc990e3c8e4db247fad4a714a82f15d785acc8b0f  xiaomi-lmi.img
 ```
 
 Static boot image inspection:
@@ -115,6 +117,15 @@ Static boot image inspection:
 - ramdisk size: 9565839 bytes.
 - ARM64 Image magic `ARMd` is present at kernel offset 56.
 - lmi DTB is still appended at kernel offset 31463936 with a 134826-byte tail.
+
+Installed rootfs `deviceinfo` verification:
+
+```text
+deviceinfo_flash_method="fastboot"
+deviceinfo_flash_fastboot_partition_rootfs="userdata"
+deviceinfo_kernel_cmdline="androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery pmos.debug-shell"
+deviceinfo_rootfs_image_sector_size="4096"
+```
 
 ## Rootfs flash feasibility boundary
 
@@ -143,6 +154,10 @@ Assessment:
   107.01 GiB `userdata` partition.
 - `pmbootstrap flasher flash_rootfs --partition userdata` should only target
   `userdata`, not `boot`, `super`, or a `fastboot` partition.
+- After the overlay script update, the temporary mainline `deviceinfo` also
+  sets `deviceinfo_flash_fastboot_partition_rootfs="userdata"` so the default
+  `flash_rootfs` target is explicit; still prefer passing `--partition userdata`
+  at execution time to keep the command self-documenting.
 - This would overwrite Android userdata and is destructive to user data.
 - It would not make the kernel persistent; kernel boot remains a separate
   RAM-only `fastboot boot /tmp/postmarketOS-export/boot.img` step unless a
