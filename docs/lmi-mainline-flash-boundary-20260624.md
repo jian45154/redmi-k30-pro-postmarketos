@@ -121,7 +121,7 @@ candidate is now:
    using the historical `sm8250-xiaomi-lmi-boot` script into a temporary output
    directory;
 3. verify its manifest, hashes, boot header, boot partition size, and rollback
-   image;
+   image, including a successful `scripts/46_verify_lmi_copydown_boot.sh` run;
 4. only then consider an explicitly approved recovery fastbootd
    `fastboot flash boot ...`.
 
@@ -140,3 +140,43 @@ historical lmi early-boot path.
 - Prefer a boot image whose outer handoff matches the historical copydown
   manifest before attempting persistent `boot` writes.
 - Keep RAM-only boot optional, not mandatory.
+
+## Current host-side gate
+
+The r5 copydown candidate passes machine verification:
+
+```text
+copydown boot verification: OK
+boot_img_sha256=8101b73283a9314a7554dacb3565822e7141396e8951a1cc67e331f2e99f8a4d
+boot_img_size=15892480
+boot_partition_size=134217728
+outer_text_offset=0x80000
+runtime_dtb_sha256=e5623c9c0e7704c48f7d1de3a09b423ffd2425648c5ebbb4c5c575e25863f6ea
+```
+
+The current strongest host-side candidate is r6:
+
+```sh
+scripts/40_prepare_mainline_lmi_overlay.sh --debug-shell-android-cmdline-no-efi-stub-48bit-bootmem
+pmbootstrap build linux-postmarketos-qcom-sm8250-lmi --force
+pmbootstrap build device-xiaomi-lmi --force
+pmbootstrap install --password <temporary-test-password> --zap
+pmbootstrap export
+OUT_DIR=/tmp/lmi-copydown-r6-bootmem-20260624 scripts/45_build_lmi_copydown_boot.sh
+OUT_DIR=/tmp/lmi-copydown-r6-bootmem-20260624 scripts/46_verify_lmi_copydown_boot.sh
+```
+
+r6 adds only boot-critical DTS memory metadata on top of r5. It has been built,
+exported, packaged through copydown, and verified:
+
+```text
+copydown boot verification: OK
+boot_img_sha256=cfc5748035bccb9a4c5b3c1683ef887aa3ce7ce802d6d19fc69d4141b28f6570
+boot_img_size=15892480
+boot_partition_size=134217728
+outer_text_offset=0x80000
+runtime_dtb_sha256=b9e390e417fe89a1e60549286ab7f1df2ec77eab2a56a6fc0d6d6a7456733b32
+```
+
+Evaluate r6 as a copydown boot image, not as a plain pmbootstrap direct boot
+image.

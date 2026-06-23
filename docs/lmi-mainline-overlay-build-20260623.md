@@ -457,6 +457,7 @@ Host-side candidate generated on 2026-06-24:
 
 ```sh
 scripts/45_build_lmi_copydown_boot.sh
+scripts/46_verify_lmi_copydown_boot.sh
 ```
 
 This script normalizes the CRLF historical scripts/lock files into the
@@ -509,6 +510,145 @@ Assessment:
 - It has not been RAM-booted or flashed.
 - Any persistent test requires fresh exact approval and should use recovery
   fastbootd with `fastboot getvar is-userspace` returning `yes`.
+
+Machine verification added on 2026-06-24:
+
+```text
+copydown boot verification: OK
+boot_img=/tmp/lmi-copydown-r5-20260624/boot-linux-copydown-lmi.img
+boot_img_sha256=8101b73283a9314a7554dacb3565822e7141396e8951a1cc67e331f2e99f8a4d
+boot_img_size=15892480
+boot_partition_size=134217728
+outer_text_offset=0x80000
+runtime_dtb_sha256=e5623c9c0e7704c48f7d1de3a09b423ffd2425648c5ebbb4c5c575e25863f6ea
+```
+
+`scripts/46_verify_lmi_copydown_boot.sh` checks the copydown manifest, boot
+image hash, boot image size, Android boot magic, page size, gzip copydown
+payload, outer `text_offset=0x80000`, embedded runtime DTB mode, and copy
+overlap safety fields.
+
+## r6 boot-critical DTS experiment
+
+Prepared and built on 2026-06-24:
+
+```sh
+scripts/40_prepare_mainline_lmi_overlay.sh --debug-shell-android-cmdline-no-efi-stub-48bit-bootmem
+pmbootstrap checksum linux-postmarketos-qcom-sm8250-lmi
+pmbootstrap build linux-postmarketos-qcom-sm8250-lmi --force
+pmbootstrap build device-xiaomi-lmi --force
+pmbootstrap install --password <temporary-test-password> --zap
+pmbootstrap export
+OUT_DIR=/tmp/lmi-copydown-r6-bootmem-20260624 scripts/45_build_lmi_copydown_boot.sh
+OUT_DIR=/tmp/lmi-copydown-r6-bootmem-20260624 scripts/46_verify_lmi_copydown_boot.sh
+```
+
+Temporary cache changes on top of r5:
+
+- `linux-postmarketos-qcom-sm8250-lmi 6.19.7-r6`;
+- adds cache-only patch
+  `0002-sm8250-xiaomi-lmi-boot-critical-memory.patch`;
+- keeps EFI stub disabled;
+- keeps 48-bit VA/PA and no LPA2;
+- preserves Android downstream USB cmdline plus `pmos.debug-shell`.
+
+The patch aligns the v6.19 lmi DTS with local boot-baseline evidence:
+
+- simple-framebuffer stride changed from `<(1080 * 4)>` to `<4352>`;
+- explicit `memory@80000000` DRAM ranges added:
+  - `0x80000000` size `0x3bb00000`;
+  - `0xc0000000` size `0xc0000000`;
+  - `0x1_80000000` size `0x1_00000000`;
+- reserved-memory additions:
+  - `reserved_xbl_uefi_log` at `0x80880000`;
+  - `cont_splash_memory` at `0x9c000000`;
+  - `dfps_data_memory` at `0x9e300000`;
+  - `ramoops` at `0xb0000000`;
+  - `disp_rdump_memory` at `0xb0400000`.
+
+Verification completed:
+
+- patch dry-run against `/tmp/yuweiyuan8-linux-v6.19` succeeded;
+- temporary APKBUILD source includes the new patch;
+- temporary APKBUILD sha512 entry uses the source filename, not a host path;
+- `pmbootstrap checksum linux-postmarketos-qcom-sm8250-lmi` succeeded.
+- `pmbootstrap build linux-postmarketos-qcom-sm8250-lmi --force` succeeded.
+- `pmbootstrap build device-xiaomi-lmi --force` succeeded.
+- `pmbootstrap install --password <temporary-test-password> --zap` succeeded.
+- `pmbootstrap export` succeeded.
+
+Verified regenerated artifacts:
+
+```text
+bdccac69e54cab35044f24d3ce4914e2fced548879af47ae1d88038024d9cf5e  boot.img
+91e17b132e95c48a86e3fe910075344162fd8e5082ba0f36e9441cb0675bc49c  vmlinuz
+24918896b43c962f1a54da44d53ad7fb722e9324a96dd6f1d1d3c93d832d73a7  xiaomi-lmi.img
+b9e390e417fe89a1e60549286ab7f1df2ec77eab2a56a6fc0d6d6a7456733b32  sm8250-xiaomi-lmi.dtb
+c3f6fe0b58c6ad1a8329deff8ac35305dd5868bac71ddeca55708ad259fd4a85  initramfs
+```
+
+Static boot image inspection:
+
+- direct pmbootstrap `boot.img` remains an Android boot image with page size
+  4096;
+- kernel size: 30431633 bytes;
+- ramdisk size: 9551148 bytes;
+- direct kernel remains non-PE/non-MZ:
+  - `code0_le=0xd503201f`;
+  - `text_offset=0x0`;
+  - `image_size=0x1d60000`;
+  - `flags=0xa`;
+  - ARM64 Image magic `ARMd` at offset 56;
+  - PE header offset `0x0`.
+- The exported DTB contains the boot-critical markers:
+  - `memory@80000000`;
+  - `cont_splash_region`;
+  - `ramoops`;
+  - `disp_rdump_region`.
+
+Rootfs sparse image validation:
+
+- The exported rootfs remains an Android sparse image.
+- Parsed as a 4096-byte-sector GPT, it contains:
+  - partition 1, `primary`: 503316480 bytes, EFI system type;
+  - partition 2, `primary`: 1637875712 bytes, Linux root type.
+
+r6 copydown candidate:
+
+```text
+/tmp/lmi-copydown-r6-bootmem-20260624/boot-linux-copydown-lmi.img
+/tmp/lmi-copydown-r6-bootmem-20260624/boot-linux-copydown-lmi.manifest
+```
+
+Machine verification:
+
+```text
+copydown boot verification: OK
+boot_img_sha256=cfc5748035bccb9a4c5b3c1683ef887aa3ce7ce802d6d19fc69d4141b28f6570
+boot_img_size=15892480
+boot_partition_size=134217728
+outer_text_offset=0x80000
+runtime_dtb_sha256=b9e390e417fe89a1e60549286ab7f1df2ec77eab2a56a6fc0d6d6a7456733b32
+embedded_linux_image_sha256=91e17b132e95c48a86e3fe910075344162fd8e5082ba0f36e9441cb0675bc49c
+linux_text_offset=0x0
+boot_size_ok=True
+```
+
+Copydown hashes:
+
+```text
+cfc5748035bccb9a4c5b3c1683ef887aa3ce7ce802d6d19fc69d4141b28f6570  boot-linux-copydown-lmi.img
+facabcaac7745be9e5bf1c94338ffd974d6ca6fa8982513edac69b721af0cf0b  boot-linux-copydown-lmi.manifest
+```
+
+Assessment:
+
+- r6 is now the strongest host-side candidate after the r5 copydown image.
+- It targets the two DTS risks identified by read-only research: explicit
+  memory layout and reserved splash/ramoops/display memory.
+- It is packaged through copydown and passes the verifier.
+- It has not been RAM-booted or flashed. Any hardware action still requires
+  fresh exact approval and recovery/rollback preflight.
 
 ## Subagent research summary
 

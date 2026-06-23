@@ -1,0 +1,78 @@
+Align lmi early memory metadata with the local boot baseline
+
+The local lmi mainline bring-up tree carries explicit DRAM ranges and reserves
+the splash/ramoops/display dump regions around the simple-framebuffer area.
+Keep this as a boot-critical experiment separate from the imported reference
+overlay so it can be enabled only for early-boot tests.
+
+---
+--- a/arch/arm64/boot/dts/qcom/sm8250-xiaomi-lmi.dts
++++ b/arch/arm64/boot/dts/qcom/sm8250-xiaomi-lmi.dts
+@@ -56,7 +56,7 @@
+ 			reg = <0x0 0x9c000000 0x0 0x2300000>;
+ 			width = <1080>;
+ 			height = <2400>;
+-			stride = <(1080 * 4)>;
++			stride = <4352>;
+ 			format = "a8r8g8b8";
+ 		};
+ 	};
+@@ -99,6 +99,13 @@
+ 			wakeup-source;
+ 		};
+ 	};
++
++	memory@80000000 {
++		device_type = "memory";
++		reg = <0x0 0x80000000 0x0 0x3bb00000>,
++		      <0x0 0xc0000000 0x0 0xc0000000>,
++		      <0x1 0x80000000 0x1 0x00000000>;
++	};
+   
+   vdd_boost_vreg: vdd_boost_vreg {
+ 		compatible = "regulator-fixed";
+@@ -263,6 +270,44 @@
+ 			reg = <0x0 0x8e100000 0x0 0x4600000>;
+ 			no-map;
+ 		};
++
++		reserved_xbl_uefi_log: memory@80880000 {
++			compatible = "removed-dma-pool";
++			no-map;
++			reg = <0x0 0x80880000 0x0 0x00014000>;
++		};
++
++		cont_splash_memory: memory@9c000000 {
++			compatible = "removed-dma-pool";
++			no-map;
++			reg = <0x0 0x9c000000 0x0 0x02300000>;
++			label = "cont_splash_region";
++		};
++
++		dfps_data_memory: memory@9e300000 {
++			compatible = "removed-dma-pool";
++			no-map;
++			reg = <0x0 0x9e300000 0x0 0x00100000>;
++			label = "dfps_data_region";
++		};
++
++		ramoops: ramoops@b0000000 {
++			compatible = "ramoops";
++			no-map;
++			reg = <0x0 0xb0000000 0x0 0x00400000>;
++			record-size = <0x0>;
++			console-size = <0x00200000>;
++			pmsg-size = <0x00200000>;
++			ecc-size = <0x0>;
++			max-reason = <3>;
++		};
++
++		disp_rdump_memory: memory@b0400000 {
++			compatible = "removed-dma-pool";
++			no-map;
++			reg = <0x0 0xb0400000 0x0 0x01000000>;
++			label = "disp_rdump_region";
++		};
+ 	};
+ };
+ 
