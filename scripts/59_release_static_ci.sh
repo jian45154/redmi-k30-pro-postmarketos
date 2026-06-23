@@ -62,6 +62,7 @@ grep -q 'fastboot reboot fastboot' "$checklist"
 grep -q 'scripts/60_stage_lmi_enter_fastbootd.sh --dry-run' "$checklist"
 grep -q 'scripts/60_stage_lmi_enter_fastbootd.sh --execute' "$handoff"
 grep -q 'scripts/61_stage_lmi_reboot_after_flash.sh --execute' "$checklist"
+grep -q 'scripts/67_summarize_lmi_post_boot_evidence.sh' "$checklist"
 grep -q 'Do not touch `super`' "$manifest"
 grep -q 'Do not write `super`' "$checklist"
 

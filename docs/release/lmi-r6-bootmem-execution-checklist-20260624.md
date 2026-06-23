@@ -116,6 +116,7 @@ before use.
 
    ```sh
    scripts/54_monitor_lmi_post_boot.sh --timeout 180
+   scripts/67_summarize_lmi_post_boot_evidence.sh
    ```
 
 ## Rollback Boundary
