@@ -34,6 +34,10 @@ cmdline="$(printf '%s' "$cmdline" \
 	| sed -E "s/pmos_boot_uuid=[^ ]+/pmos_boot_uuid=$current_boot_uuid/" \
 	| sed -E "s/pmos_root_uuid=[^ ]+/pmos_root_uuid=$current_root_uuid/")"
 
+if [ -n "${EXTRA_CMDLINE:-}" ]; then
+	cmdline="$cmdline $EXTRA_CMDLINE"
+fi
+
 python3 "$mkbootimg" \
 	--header_version 2 \
 	--kernel "$work/unpack/kernel" \
@@ -60,6 +64,7 @@ python3 "$mkbootimg" \
 	echo "artifact_boot_size=$(stat -c %s "$out_boot")"
 	echo "current_boot_uuid=$current_boot_uuid"
 	echo "current_root_uuid=$current_root_uuid"
+	echo "extra_cmdline=${EXTRA_CMDLINE:-}"
 	echo "purpose=v28 kernel and ramdisk against current v27 rootfs for RAM-only rmtfs_mem test"
 	echo "cmdline=$cmdline"
 } > "$out_manifest"
