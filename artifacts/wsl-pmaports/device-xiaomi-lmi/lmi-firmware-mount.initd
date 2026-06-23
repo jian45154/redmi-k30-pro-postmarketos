@@ -21,8 +21,15 @@ start() {
 		}
 	fi
 
-	if [ -d "$wlan_fw" ] && [ ! -d /lib/firmware/qca6390 ]; then
-		ln -sfn "$wlan_fw" /lib/firmware/qca6390
+	if [ -d "$wlan_fw" ]; then
+		if [ -L /lib/firmware/qca6390 ]; then
+			ln -sfn "$wlan_fw" /lib/firmware/qca6390
+		elif [ -d /lib/firmware/qca6390 ]; then
+			mountpoint -q /lib/firmware/qca6390 ||
+				mount --bind "$wlan_fw" /lib/firmware/qca6390
+		else
+			ln -sfn "$wlan_fw" /lib/firmware/qca6390
+		fi
 	fi
 
 	[ -r /lib/firmware/qca6390/amss20.bin ]

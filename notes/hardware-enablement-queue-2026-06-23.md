@@ -25,6 +25,9 @@ Observed:
 - `/lib/firmware` only contains `regulatory.db` and its signature.
 - `venus.mdt` is missing and Venus firmware download fails.
 - WLAN/CNSS expects `qca6390/amss20.bin` or `amss20.bin`.
+- RAM-only v29 confirmed the RMTFS DT fix creates `/dev/qcom_rmtfs_mem1`;
+  read-only stock firmware plus `/sys/kernel/cnss/fs_ready=1` advances QCA6390
+  to MHI `MISSION_MODE`, but no wireless netdev is created yet.
 - `pd-mapper`, `rmtfs`, and `tqftpserv` are package dependencies. Runtime
   evidence shows them installed but stopped on v27; `device-xiaomi-lmi`
   `pkgrel=5` enables them in the OpenRC default runlevel for the next rootfs.
@@ -213,8 +216,8 @@ Do not commit extracted firmware files or raw images.
 ## Task 3B: Enable Qualcomm Services in Rootfs
 
 Owner: Firmware Services Agent
-Status: built and statically verified in v28 rootfs, pending device boot
-verification.
+Status: advanced through `device-xiaomi-lmi` `pkgrel=9`, pending full rootfs
+boot verification.
 
 Current live v27 finding:
 

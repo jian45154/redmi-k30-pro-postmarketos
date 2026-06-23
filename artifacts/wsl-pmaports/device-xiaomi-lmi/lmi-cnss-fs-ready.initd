@@ -1,0 +1,22 @@
+#!/sbin/openrc-run
+
+description="Notify CNSS that firmware files are ready"
+
+depend() {
+	need lmi-firmware-mount
+	after rmtfs tqftpserv pd-mapper
+	before wpa_supplicant networkmanager
+}
+
+start() {
+	local fs_ready="/sys/kernel/cnss/fs_ready"
+
+	ebegin "Notifying xiaomi-lmi CNSS firmware readiness"
+	if [ ! -w "$fs_ready" ]; then
+		eend 1 "$fs_ready is not writable"
+		return 1
+	fi
+
+	printf 1 > "$fs_ready"
+	eend $?
+}

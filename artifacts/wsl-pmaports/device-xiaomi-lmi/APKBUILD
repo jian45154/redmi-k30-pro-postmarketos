@@ -3,7 +3,7 @@ maintainer=""
 pkgname=device-xiaomi-lmi
 pkgdesc="xiaomi lmi"
 pkgver=1
-pkgrel=8
+pkgrel=9
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
@@ -32,6 +32,7 @@ depends="
 makedepends="devicepkg-dev"
 source="
 	deviceinfo
+	lmi-cnss-fs-ready.initd
 	lmi-firmware-mount.initd
 	modules-initfs
 "
@@ -44,10 +45,14 @@ package() {
 	devicepkg_package $startdir $pkgname
 	install -Dm755 "$srcdir"/lmi-firmware-mount.initd \
 		"$pkgdir"/etc/init.d/lmi-firmware-mount
+	install -Dm755 "$srcdir"/lmi-cnss-fs-ready.initd \
+		"$pkgdir"/etc/init.d/lmi-cnss-fs-ready
 	install -dm755 "$pkgdir"/etc/runlevels/boot
 	install -dm755 "$pkgdir"/etc/runlevels/default
 	ln -s /etc/init.d/lmi-firmware-mount \
 		"$pkgdir"/etc/runlevels/boot/lmi-firmware-mount
+	ln -s /etc/init.d/lmi-cnss-fs-ready \
+		"$pkgdir"/etc/runlevels/default/lmi-cnss-fs-ready
 	ln -s /etc/init.d/pd-mapper "$pkgdir"/etc/runlevels/default/pd-mapper
 	ln -s /etc/init.d/rmtfs "$pkgdir"/etc/runlevels/default/rmtfs
 	ln -s /etc/init.d/tqftpserv "$pkgdir"/etc/runlevels/default/tqftpserv
@@ -55,6 +60,7 @@ package() {
 
 sha512sums="
 d13a77a36c203ebee46b20cec08578053b524864c48c11469e0a9bbe9ea908000d1007f291cb49087d43c9cf44816c889007f132b47e6d8f4e1287ca320e19da  deviceinfo
+SKIP  lmi-cnss-fs-ready.initd
 SKIP  lmi-firmware-mount.initd
 e70bae17df23dcaaaea0e2d3616556f04baa23f8ee1357785c0f539bf97282d8ddff53953e155b72689bb73beb38c2da3d08de2a61e866684edfa10a6593885d  modules-initfs
 "
