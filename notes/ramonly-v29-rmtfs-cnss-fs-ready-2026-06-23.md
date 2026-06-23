@@ -82,12 +82,40 @@ iw dev: no output
 ```
 
 `rmtfs` and `pd-mapper` do not remain running under OpenRC in the current v27
-rootfs, while `tqftpserv` and `wpa_supplicant` do. The next investigation should
-focus on the downstream QCA CLD userspace/control path after MHI mission mode:
+rootfs, while `tqftpserv` and `wpa_supplicant` do. Follow-up testing on the
+older `#7` kernel/rootfs showed another required userspace step: Android's Wi-Fi
+HAL writes `ON` to `/dev/wlan`, which calls `hdd_driver_load()` in qcacld. pmOS
+was not doing this.
 
-- whether a proprietary `cnss-daemon` or equivalent vendor service is required;
-- whether QCA CLD expects a userspace ioctl/netlink trigger through
-  `/sys/class/wlan/wlan`;
+On the old `#7` kernel, the sequence below proved that `/dev/wlan` reaches the
+qcacld driver-load path:
+
+```sh
+mount -o ro /dev/disk/by-partlabel/modem /mnt/vendor/firmware_mnt
+mount --bind /mnt/vendor/firmware_mnt/image/qca6390 /usr/lib/firmware/qca6390
+rc-service tqftpserv start
+rc-service pd-mapper start
+rc-service rmtfs start
+printf 1 > /sys/kernel/cnss/fs_ready
+printf ON > /dev/wlan
+```
+
+That old kernel still has
+`pil_wlan_fw_region@86700000 compatible = "removed-dma-pool"` and no
+`/dev/qcom_rmtfs_mem1`, so its calibration timeout is not valid evidence against
+the rmtfs DT fix:
+
+```text
+cnss: Start to wait for calibration to complete
+cnss: Timeout (80000ms) waiting for calibration to complete
+cnss: Calibration timed out, force shutdown
+cnss: fatal: Timeout waiting for FW ready indication
+```
+
+The next investigation should retest the complete sequence on the v29 or later
+RAM-only kernel where `/dev/qcom_rmtfs_mem1` exists:
+
+- whether `lmi-wlan-on` creates `wlan0` after `lmi-cnss-fs-ready`;
 - whether the driver needs a different board data/NV file selection after
   `amss20.bin` boots;
 - whether moving to the mainline `ath11k_pci` path is lower risk than completing
@@ -102,6 +130,12 @@ focus on the downstream QCA CLD userspace/control path after MHI mission mode:
 - `lmi-cnss-fs-ready`, an OpenRC service that writes `1` to
   `/sys/kernel/cnss/fs_ready` after firmware and Qualcomm services are started.
 
+`device-xiaomi-lmi` `pkgrel=10` adds:
+
+- `lmi-wlan-on`, an OpenRC service that writes `ON` to `/dev/wlan` after
+  `lmi-cnss-fs-ready`;
+- a default runlevel symlink for `lmi-wlan-on`.
+
 The `device-xiaomi-lmi-1-r9.apk` build was verified to contain:
 
 ```text
@@ -109,6 +143,20 @@ etc/init.d/lmi-cnss-fs-ready
 etc/init.d/lmi-firmware-mount
 etc/runlevels/boot/lmi-firmware-mount
 etc/runlevels/default/lmi-cnss-fs-ready
+etc/runlevels/default/pd-mapper
+etc/runlevels/default/rmtfs
+etc/runlevels/default/tqftpserv
+```
+
+The `device-xiaomi-lmi-1-r10.apk` build was verified to contain:
+
+```text
+etc/init.d/lmi-cnss-fs-ready
+etc/init.d/lmi-firmware-mount
+etc/init.d/lmi-wlan-on
+etc/runlevels/boot/lmi-firmware-mount
+etc/runlevels/default/lmi-cnss-fs-ready
+etc/runlevels/default/lmi-wlan-on
 etc/runlevels/default/pd-mapper
 etc/runlevels/default/rmtfs
 etc/runlevels/default/tqftpserv
