@@ -38,10 +38,12 @@ LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi scripts/60_stage_lmi_ent
 After that, run:
 
 ```sh
-scripts/52_wait_lmi_fastbootd.sh
+scripts/66_wait_and_audit_lmi_fastbootd.sh
 ```
 
-Do not flash unless the wait/preflight result reports `is-userspace=yes`.
+This combined read-only gate waits for `is-userspace=yes`, runs fastbootd
+preflight, and reruns the persistent readiness audit. Do not flash unless it
+finishes with `fastbootd audit gate: OK`.
 
 ## Artifact Hashes
 
