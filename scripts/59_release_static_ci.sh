@@ -25,8 +25,9 @@ done < <(git ls-files 'scripts/*.py' | sort)
 echo "release static CI: release docs"
 manifest=docs/release/lmi-r6-bootmem-release-manifest-20260624.md
 checklist=docs/release/lmi-r6-bootmem-execution-checklist-20260624.md
+handoff=docs/release/lmi-r6-current-handoff-20260624.md
 
-for path in "$manifest" "$checklist"; do
+for path in "$manifest" "$checklist" "$handoff"; do
 	[ -f "$path" ] || {
 		echo "missing release doc: $path" >&2
 		exit 1
@@ -35,11 +36,15 @@ done
 
 grep -q 'WAITING_FOR_RECOVERY_FASTBOOTD' "$manifest"
 grep -q 'WAITING_FOR_RECOVERY_FASTBOOTD' "$checklist"
+grep -q 'WAITING_FOR_RECOVERY_FASTBOOTD' "$handoff"
 grep -q 'is-userspace: `no`' "$manifest"
 grep -q 'is-userspace: `no`' "$checklist"
+grep -q 'is-userspace: `no`' "$handoff"
 grep -q 'scripts/62_refresh_lmi_release_docs.sh --quick' "$manifest"
+grep -q 'scripts/62_refresh_lmi_release_docs.sh --quick' "$handoff"
 grep -q 'fastboot reboot fastboot' "$checklist"
 grep -q 'scripts/60_stage_lmi_enter_fastbootd.sh --dry-run' "$checklist"
+grep -q 'scripts/60_stage_lmi_enter_fastbootd.sh --execute' "$handoff"
 grep -q 'scripts/61_stage_lmi_reboot_after_flash.sh --execute' "$checklist"
 grep -q 'Do not touch `super`' "$manifest"
 grep -q 'Do not write `super`' "$checklist"
