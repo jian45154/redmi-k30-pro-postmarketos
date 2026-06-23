@@ -65,6 +65,16 @@ Additional local search result:
   `qwlan` firmware payload.
 - The only `NON-HLOS.bin` found locally is for `capricorn`, which is a different
   device and must not be used for lmi.
+- Targeted search under the user-provided path
+  `/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi` found no publishable or
+  directly stageable QCA6390/QCA6391 WLAN/BT firmware payloads. Matches were
+  source/docs/tools plus `device-backup/lmi-gpt.bin`, not firmware blobs to
+  package.
+- That path does contain an independent mainline-oriented lmi kernel tree:
+  `/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/linux-sm8250-xiaomi-lmi`.
+  Its notes say QCA6391 Wi-Fi was validated through `ath11k_pci`, and Bluetooth
+  through UART6 `qcom,qca6390-bt`. Treat this as path evidence, not as firmware
+  payload evidence.
 
 ## Required Firmware Candidates
 
@@ -78,6 +88,60 @@ Additional local search result:
 | IPA | `ipa_fws.*`, `ipa_uc.*` | found in LineageOS `vendor` | no |
 | GPU zap | `a650_zap.*` | found in LineageOS `vendor` | no |
 | Bluetooth | QCA6390 BT `*.tlv`, `*.bin`, `*.hcd`, `bt_*` | not found in inspected dynamic partitions | no |
+
+## QCA WLAN/BT Path Split
+
+Keep these paths separate when making fixes:
+
+1. Current pmOS downstream kernel path:
+   - Config: `CONFIG_CNSS2=y`, `CONFIG_QCA_CLD_WLAN=y`,
+     `CONFIG_QCA_CLD_WLAN_PROFILE="qca6390"`,
+     `CONFIG_BT_SLIM_QCA6390=y`, and `CONFIG_BT_HCIUART` disabled.
+   - Runtime evidence: CNSS2 probes `b0000000.qcom,cnss-qca6390`, logs
+     `FW name is qca6390/amss20.bin, FW fallback name is amss20.bin`, and
+     exposes only `bt_power` rfkill for Bluetooth.
+   - Firmware targets for this path:
+     - `/lib/firmware/qca6390/amss20.bin`
+     - `/lib/firmware/amss20.bin` fallback
+   - This is the path the current v27/v28 postmarketOS images are using. Do not
+     mix it with mainline `ath11k_pci` packaging unless the kernel path changes.
+
+2. Mainline Wi-Fi path from the external lmi tree:
+   - DTS evidence: PCI endpoint `pci17cb,1101` below `&pcieport0`.
+   - Driver evidence: `ath11k_pci` declares firmware under
+     `ath11k/QCA6390/hw2.0/*`.
+   - Firmware targets for this path:
+     - `/lib/firmware/ath11k/QCA6390/hw2.0/firmware-*.bin`
+     - `/lib/firmware/ath11k/QCA6390/hw2.0/board-2.bin`
+     - `/lib/firmware/ath11k/QCA6390/hw2.0/regdb.bin` if required by the
+       selected firmware set.
+   - This does not satisfy downstream CNSS2 `amss20.bin`.
+
+3. Mainline Bluetooth UART path from the external lmi tree:
+   - DTS evidence: `&uart6` contains `bluetooth { compatible =
+     "qcom,qca6390-bt"; ... }`, powered by the shared QCA6390 PMU rails and
+     BT enable GPIO.
+   - Driver evidence: `hci_qca` matches `qcom,qca6390-bt`; `btqca` requests
+     Qualcomm rampatch/NVM files from the `qca/` firmware directory unless DTS
+     pins explicit `firmware-name` values.
+   - Firmware targets for this path:
+     - `/lib/firmware/qca/*.tlv` rampatch files selected by detected ROM/SOC
+       revision.
+     - `/lib/firmware/qca/*.bin` NVM/config files selected by detected
+       ROM/SOC/board revision.
+   - The exact file names must come from a real mainline boot log or known-good
+     local firmware source. The current downstream v27 boot does not enumerate
+     HCI UART, so it cannot yet prove the final QCA UART firmware names.
+
+## v27/v28 Rootfs Firmware Gap
+
+- v27 live rootfs evidence: `/lib/firmware` contains only `regulatory.db` and
+  `regulatory.db.p7s`.
+- v28 hardware-tools manifest adds userland tools (`iw`, `wpa_supplicant`,
+  `bluez`, `bluez-deprecated`, etc.) but no proprietary firmware payloads.
+- Therefore v28 can improve probing/diagnostics after boot, but it should still
+  be treated as firmware-empty for WLAN/BT until a runtime `find /lib/firmware`
+  proves otherwise.
 
 ## LineageOS Vendor File Inventory
 

@@ -31,6 +31,9 @@ otherwise.
   - `scripts/29_display_userspace_probe.sh`
   - `scripts/31_post_reboot_stability_check.sh`
   - `scripts/32_firmware_service_probe.sh`
+  - `scripts/36_display_takeover_probe.sh`
+  - `scripts/37_audio_probe.sh`
+  - `scripts/38_power_sensors_probe.sh`
 - Firmware inventory tools:
   - `scripts/33_firmware_inventory.sh`
   - `scripts/34_extract_android_dat_partition.sh`

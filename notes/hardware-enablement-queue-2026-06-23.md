@@ -116,6 +116,7 @@ Read-only baseline:
 
 ```sh
 ssh lmi@172.16.42.1 'sh -s' < scripts/29_display_userspace_probe.sh
+ssh lmi@172.16.42.1 'sh -s' < scripts/36_display_takeover_probe.sh
 ```
 
 Tool probes:
@@ -421,9 +422,17 @@ Owner: Audio Agent
 
 Prerequisite: ADSP/audio firmware and service state is understood.
 
+Reference:
+
+```text
+notes/audio-bringup-analysis-2026-06-23.md
+scripts/37_audio_probe.sh
+```
+
 Probe:
 
 ```sh
+ssh lmi@172.16.42.1 'sh -s' < scripts/37_audio_probe.sh
 cat /proc/asound/cards
 cat /proc/asound/devices
 ls -l /dev/snd
@@ -447,11 +456,44 @@ Exit criteria:
 - At least one real ALSA card appears.
 - Playback and capture device nodes enumerate.
 
+## Task 8: Power, Charging, and Sensors
+
+Owner: Power/Sensors Agent
+Status: read-only analysis and probe prepared.
+
+Reference:
+
+```text
+notes/power-sensors-status-2026-06-23.md
+scripts/38_power_sensors_probe.sh
+```
+
+Current finding:
+
+- Battery capacity, voltage, current, temperature, health, and presence are
+  readable in v27.
+- Charger and Type-C nodes are present but not functionally validated.
+- Current sensor evidence only proves PMIC VADC IIO. Motion/environment sensors
+  are not yet supported by evidence.
+- `CONFIG_REMOTEPROC` remains disabled, which likely blocks the external
+  SDSP/sensor route.
+
+Read-only probe:
+
+```sh
+ssh lmi@172.16.42.1 'sh -s' < scripts/38_power_sensors_probe.sh
+```
+
+Exit criteria:
+
+- Charge-control sysfs availability, Type-C/USB-PD state, IIO channels,
+  thermal zones, and real sensor enumeration are known from a fresh v27/v28
+  capture.
+
 ## Deferred
 
 - camera/media graph;
 - Venus video codec functional testing beyond firmware-load validation;
 - modem-adjacent service testing;
 - suspend/resume;
-- charging beyond current battery reporting;
-- sensors beyond current IIO enumeration.
+- charging behavior changes beyond read-only reporting.
