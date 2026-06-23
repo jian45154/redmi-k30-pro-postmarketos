@@ -3,7 +3,7 @@ maintainer=""
 pkgname=device-xiaomi-lmi
 pkgdesc="xiaomi lmi"
 pkgver=1
-pkgrel=17
+pkgrel=18
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
@@ -32,6 +32,7 @@ depends="
 makedepends="devicepkg-dev"
 source="
 	deviceinfo
+	initramfs_mount_firmware.sh
 	lmi-cnss-fs-ready.initd
 	lmi-firmware-mount.initd
 	lmi-wlan-on.initd
@@ -50,6 +51,8 @@ package() {
 		"$pkgdir"/etc/init.d/lmi-cnss-fs-ready
 	install -Dm755 "$srcdir"/lmi-wlan-on.initd \
 		"$pkgdir"/etc/init.d/lmi-wlan-on
+	install -Dm755 "$srcdir"/initramfs_mount_firmware.sh \
+		-t "$pkgdir"/usr/share/mkinitfs/hooks-cleanup/
 	install -dm755 "$pkgdir"/etc/runlevels/boot
 	install -dm755 "$pkgdir"/etc/runlevels/default
 	ln -s /etc/init.d/lmi-firmware-mount \
@@ -61,8 +64,9 @@ package() {
 
 sha512sums="
 d13a77a36c203ebee46b20cec08578053b524864c48c11469e0a9bbe9ea908000d1007f291cb49087d43c9cf44816c889007f132b47e6d8f4e1287ca320e19da  deviceinfo
+937a71dc8eecc6c7a2504f561ffa072b5e8991173788638cd8c173c9923e25fff9a0df497e2710cd1207120c834742b54495ea73f593dfa102a6ed7a26b3469c  initramfs_mount_firmware.sh
 98442f7efcbb0ce4bba8df8d875ec198824cba5b1b5d58fa695c33523b0cca28c65d5720a8f5a9b2dac5b48b42f1256e2814940511fe4d8af0b8edd7955878e3  lmi-cnss-fs-ready.initd
-c6355dc9bac4e9a4e8fbf9316b72a8705396b52c8a6f19cce1e577adbc253d818e848501dd0377b9391b211ce96a7a1f5d6fc77903e871b8fa603c2a6b7f4d19  lmi-firmware-mount.initd
+50e48eabb7030c84c85c99896e7b25efdef351f5d07f57bb5c4ae890c4438458396cd02d47f6dabc818b1734d94ded3bdb0599134ac4235c7f76fb38326705b1  lmi-firmware-mount.initd
 bb5982ab84295ce5303d6113bcdf6eb7ec6eead67152dd10fb9c86241a397be504cca5bc7a5e712025f8942052d80073f26426d65da3f2dce5309c8ab3b19aed  lmi-wlan-on.initd
 e70bae17df23dcaaaea0e2d3616556f04baa23f8ee1357785c0f539bf97282d8ddff53953e155b72689bb73beb38c2da3d08de2a61e866684edfa10a6593885d  modules-initfs
 "
