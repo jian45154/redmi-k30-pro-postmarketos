@@ -305,6 +305,39 @@ hardware state-changing command such as `fastboot reboot fastboot`. That command
 has not been executed by the wait/preflight helpers and still requires fresh
 exact approval before use.
 
+## Guarded staged write helper
+
+The persistent route is split into two independently approved stages. The helper
+below defaults to dry-run and never writes more than one partition per
+invocation:
+
+```sh
+scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --dry-run
+scripts/53_stage_lmi_fastbootd_flash.sh --stage boot --dry-run
+```
+
+Execute mode is refused unless all of these are true:
+
+- the user has just approved the exact selected stage and command;
+- the environment contains the exact `LMI_FLASH_CONFIRM=...` token printed by
+  the dry-run;
+- read-only fastbootd preflight passes with `product=lmi`, `unlocked=yes`, and
+  `is-userspace=yes`;
+- for the rootfs stage, `/tmp/postmarketOS-export/xiaomi-lmi.img` has the same
+  SHA256 as the release-bundle rootfs, because `pmbootstrap flasher
+  flash_rootfs --partition userdata` flashes the current pmbootstrap export.
+
+Stage commands selected by the helper:
+
+```sh
+pmbootstrap flasher flash_rootfs --partition userdata
+fastboot flash boot /tmp/lmi-release-r6-bootmem-20260624/boot-linux-copydown-lmi-r6-bootmem.img
+```
+
+The helper intentionally does not write `super`, `dtbo`, `vbmeta`, `persist`,
+modem/EFS/calibration partitions, `vendor_boot`, `init_boot`, or bootloader lock
+state.
+
 ## Approval command sheet
 
 Generated on 2026-06-24:

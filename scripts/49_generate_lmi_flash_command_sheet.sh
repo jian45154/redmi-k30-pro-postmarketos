@@ -106,6 +106,14 @@ Persistent write commands that require separate fresh exact approvals:
   fastboot flash boot $boot_img
   pmbootstrap flasher flash_rootfs --partition userdata
 
+Guarded staged helper commands:
+  scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --dry-run
+  scripts/53_stage_lmi_fastbootd_flash.sh --stage boot --dry-run
+
+The guarded helper refuses execute mode unless read-only fastbootd preflight
+passes and LMI_FLASH_CONFIRM exactly matches the token printed by the helper.
+It never flashes more than one partition per invocation.
+
 Suggested order if explicitly approved after preflight passes:
 1. Flash rootfs to userdata if the user accepts userdata destruction.
 2. Flash boot to boot using the copydown boot image.
