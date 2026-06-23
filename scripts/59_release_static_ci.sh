@@ -26,8 +26,9 @@ echo "release static CI: release docs"
 manifest=docs/release/lmi-r6-bootmem-release-manifest-20260624.md
 checklist=docs/release/lmi-r6-bootmem-execution-checklist-20260624.md
 handoff=docs/release/lmi-r6-current-handoff-20260624.md
+readme=README.md
 
-for path in "$manifest" "$checklist" "$handoff"; do
+for path in "$manifest" "$checklist" "$handoff" "$readme"; do
 	[ -f "$path" ] || {
 		echo "missing release doc: $path" >&2
 		exit 1
@@ -44,6 +45,9 @@ grep -q 'scripts/62_refresh_lmi_release_docs.sh --quick' "$manifest"
 grep -q 'scripts/62_refresh_lmi_release_docs.sh --quick' "$handoff"
 grep -q 'RAM-only boot is no longer a prerequisite' "$handoff"
 grep -q 'guarded recovery-fastbootd persistent test' "$handoff"
+grep -q 'RAM-only boot is optional' "$readme"
+grep -q 'Mainline/copydown r6 persistent test is staged, not flashed' "$readme"
+grep -q 'downstream v27 xiaomi-lmi baseline' "$readme"
 if grep -q '^- HEAD:' "$handoff"; then
 	echo "handoff should not archive a self-referential commit hash" >&2
 	exit 1
