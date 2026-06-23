@@ -160,6 +160,11 @@ if ! run_gate "fastbootd wait/preflight current state" env LMI_FASTBOOTD_WAIT_TI
 	log
 fi
 
+if ! run_gate "post-flash reboot dry-run" scripts/61_stage_lmi_reboot_after_flash.sh --dry-run; then
+	log "note: post-flash reboot dry-run is expected to fail until the device is in recovery fastbootd after approved flash stages."
+	log
+fi
+
 if ! run_gate "post-boot monitor current state" scripts/54_monitor_lmi_post_boot.sh --timeout "$post_timeout" --interval "$post_interval"; then
 	log "note: post-boot monitor is expected to report only fastboot before a successful rebooted test."
 	log
@@ -170,7 +175,7 @@ log "  LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi scripts/60_stage_
 log "  scripts/52_wait_lmi_fastbootd.sh"
 log "  scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute"
 log "  scripts/53_stage_lmi_fastbootd_flash.sh --stage boot --execute"
-log "  fastboot reboot"
+log "  LMI_TEST_REBOOT_CONFIRM=reboot-flashed-xiaomi-lmi scripts/61_stage_lmi_reboot_after_flash.sh --execute"
 log "  scripts/54_monitor_lmi_post_boot.sh --timeout 180"
 log
 log "rollback command if needed, also requiring fresh exact approval:"

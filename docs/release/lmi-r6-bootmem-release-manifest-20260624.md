@@ -73,7 +73,7 @@ fastboot reboot fastboot
 scripts/60_stage_lmi_enter_fastbootd.sh --dry-run
 scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute
 scripts/53_stage_lmi_fastbootd_flash.sh --stage boot --execute
-fastboot reboot
+scripts/61_stage_lmi_reboot_after_flash.sh --dry-run
 scripts/55_stage_lmi_rollback_boot.sh --execute
 ```
 
