@@ -133,6 +133,11 @@ log "  partition-size:userdata=${userdata_size:-}"
 log
 
 failures=0
+if ! run_gate "fastbootd entry dry-run" scripts/60_stage_lmi_enter_fastbootd.sh --dry-run; then
+	log "note: fastbootd entry dry-run should pass while the device is in bootloader fastboot."
+	log
+fi
+
 if ! run_gate "copydown boot verifier" env OUT_DIR="$(dirname "$boot_img")" LMI_COPYDOWN_BOOT_IMG="$boot_img" LMI_COPYDOWN_MANIFEST="$manifest" scripts/46_verify_lmi_copydown_boot.sh; then
 	failures=$((failures + 1))
 fi
@@ -161,7 +166,7 @@ if ! run_gate "post-boot monitor current state" scripts/54_monitor_lmi_post_boot
 fi
 
 log "approval-required next commands:"
-log "  fastboot reboot fastboot"
+log "  LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi scripts/60_stage_lmi_enter_fastbootd.sh --execute"
 log "  scripts/52_wait_lmi_fastbootd.sh"
 log "  scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute"
 log "  scripts/53_stage_lmi_fastbootd_flash.sh --stage boot --execute"
