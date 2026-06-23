@@ -9,6 +9,7 @@ depend() {
 
 start() {
 	local fw_mnt="/mnt/vendor/firmware_mnt"
+	local fw_image="$fw_mnt/image"
 	local wlan_fw="$fw_mnt/image/qca6390"
 	local rmtfs_conf="/etc/conf.d/rmtfs"
 
@@ -39,6 +40,12 @@ start() {
 			ln -sfn "qca6390/${fw_file##*/}" "/lib/firmware/${fw_file##*/}"
 		done
 	fi
+
+	for fw_file in "$fw_image"/*.mdt "$fw_image"/*.b[0-9][0-9] \
+		"$fw_image"/*.jsn "$fw_image"/*.sig; do
+		[ -e "$fw_file" ] || continue
+		ln -sfn "$fw_file" "/lib/firmware/${fw_file##*/}"
+	done
 
 	if [ -f "$rmtfs_conf" ] && ! grep -q '^command_args=' "$rmtfs_conf"; then
 		cat >> "$rmtfs_conf" <<'EOF'
