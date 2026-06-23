@@ -70,6 +70,7 @@ run_step "persistent flash route plan" env LMI_ROLLBACK_BOOT_IMG="$rollback_boot
 run_step "approval command sheet" env LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/49_generate_lmi_flash_command_sheet.sh
 run_step "release archive manifest" env LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/57_archive_lmi_release_manifest.sh
 run_step "execution checklist" env LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/58_generate_lmi_execution_checklist.sh
+run_step "handoff status" env LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/63_generate_lmi_handoff_status.sh
 run_step "release static CI" scripts/59_release_static_ci.sh
 
 log "refresh: OK"

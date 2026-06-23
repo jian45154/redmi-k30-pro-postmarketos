@@ -29,6 +29,7 @@ hardware gate are documented in:
 
 - [`docs/release/lmi-r6-bootmem-release-manifest-20260624.md`](docs/release/lmi-r6-bootmem-release-manifest-20260624.md)
 - [`docs/release/lmi-r6-bootmem-execution-checklist-20260624.md`](docs/release/lmi-r6-bootmem-execution-checklist-20260624.md)
+- [`docs/release/lmi-r6-current-handoff-20260624.md`](docs/release/lmi-r6-current-handoff-20260624.md)
 
 Current gate: `WAITING_FOR_RECOVERY_FASTBOOTD`. Do not flash while
 `is-userspace=no`. The next hardware-state command still requires fresh exact
