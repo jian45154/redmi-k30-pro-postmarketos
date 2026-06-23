@@ -14,6 +14,7 @@ debug_shell=false
 android_cmdline=false
 no_zboot=false
 no_efi_stub=false
+arm64_48bit=false
 
 update_sha512_sum() {
 	local apkbuild=$1
@@ -37,6 +38,29 @@ disable_kernel_config() {
 	fi
 }
 
+enable_kernel_config() {
+	local config=$1
+	local symbol=$2
+
+	if grep -q "^# $symbol is not set$" "$config"; then
+		sed -i "s/^# $symbol is not set$/$symbol=y/" "$config"
+	elif ! grep -q "^$symbol=y$" "$config"; then
+		echo "$symbol=y" >> "$config"
+	fi
+}
+
+set_kernel_config_value() {
+	local config=$1
+	local symbol=$2
+	local value=$3
+
+	if grep -q "^$symbol=" "$config"; then
+		sed -i "s/^$symbol=.*/$symbol=$value/" "$config"
+	else
+		echo "$symbol=$value" >> "$config"
+	fi
+}
+
 case "${1:-}" in
 --debug-shell)
 	debug_shell=true
@@ -56,6 +80,13 @@ case "${1:-}" in
 	no_zboot=true
 	no_efi_stub=true
 	;;
+--debug-shell-android-cmdline-no-efi-stub-48bit)
+	debug_shell=true
+	android_cmdline=true
+	no_zboot=true
+	no_efi_stub=true
+	arm64_48bit=true
+	;;
 --restore-downstream)
 	rm -rf "$dst_root/device-xiaomi-lmi" \
 		"$dst_root/firmware-xiaomi-lmi" \
@@ -73,7 +104,7 @@ case "${1:-}" in
 "")
 	;;
 *)
-	echo "usage: $0 [--debug-shell|--debug-shell-android-cmdline|--debug-shell-android-cmdline-no-zboot|--debug-shell-android-cmdline-no-efi-stub|--restore-downstream]" >&2
+	echo "usage: $0 [--debug-shell|--debug-shell-android-cmdline|--debug-shell-android-cmdline-no-zboot|--debug-shell-android-cmdline-no-efi-stub|--debug-shell-android-cmdline-no-efi-stub-48bit|--restore-downstream]" >&2
 	exit 1
 	;;
 esac
@@ -156,6 +187,17 @@ if [ "$no_efi_stub" = true ]; then
 	do
 		disable_kernel_config "$kernel_config" "$symbol"
 	done
+fi
+if [ "$arm64_48bit" = true ]; then
+	sed -i 's/^pkgrel=.*/pkgrel=5/' "$kernel_apkbuild"
+	disable_kernel_config "$kernel_config" CONFIG_ARM64_VA_BITS_39
+	enable_kernel_config "$kernel_config" CONFIG_ARM64_VA_BITS_48
+	disable_kernel_config "$kernel_config" CONFIG_ARM64_VA_BITS_52
+	set_kernel_config_value "$kernel_config" CONFIG_ARM64_VA_BITS 48
+	enable_kernel_config "$kernel_config" CONFIG_ARM64_PA_BITS_48
+	disable_kernel_config "$kernel_config" CONFIG_ARM64_PA_BITS_52
+	set_kernel_config_value "$kernel_config" CONFIG_ARM64_PA_BITS 48
+	disable_kernel_config "$kernel_config" CONFIG_ARM64_LPA2
 fi
 update_sha512_sum "$kernel_apkbuild" "$kernel_config" config-postmarketos-qcom-sm8250-lmi.aarch64
 perl -0pi -e 's/make zinstall modules_install dtbs_install \\\n\t\tARCH="\$_carch" \\\n\t\tINSTALL_PATH="\$pkgdir"\/boot\/ \\\n\t\tINSTALL_MOD_PATH="\$pkgdir" \\\n\t\tINSTALL_MOD_STRIP=1 \\\n\t\tINSTALL_DTBS_PATH="\$pkgdir\/boot\/dtbs"/make Image modules_install dtbs_install \\\n\t\tARCH="\$_carch" \\\n\t\tINSTALL_MOD_PATH="\$pkgdir" \\\n\t\tINSTALL_MOD_STRIP=1 \\\n\t\tINSTALL_DTBS_PATH="\$pkgdir\/boot\/dtbs"\n\tinstall -Dm755 "\$builddir"\/arch\/arm64\/boot\/Image "\$pkgdir"\/boot\/vmlinuz/s' \
