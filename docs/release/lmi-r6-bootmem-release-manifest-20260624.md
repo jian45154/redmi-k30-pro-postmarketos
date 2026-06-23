@@ -61,6 +61,13 @@ exact ROM/device state and tested as part of recovery.
 LMI_ROLLBACK_BOOT_IMG="/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img" scripts/56_lmi_persistent_flash_plan.sh --quick
 LMI_ROLLBACK_BOOT_IMG="/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img" scripts/49_generate_lmi_flash_command_sheet.sh
 LMI_ROLLBACK_BOOT_IMG="/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img" scripts/57_archive_lmi_release_manifest.sh
+LMI_ROLLBACK_BOOT_IMG="/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img" scripts/58_generate_lmi_execution_checklist.sh
+```
+
+Execution checklist:
+
+```text
+docs/release/lmi-r6-bootmem-execution-checklist-20260624.md
 ```
 
 ## Approval-Required Hardware Commands
