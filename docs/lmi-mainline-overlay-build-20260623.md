@@ -682,9 +682,25 @@ Generated output:
 ```
 
 The sheet records exact candidate paths and hashes, but it does not execute any
-write. It currently records that no rollback boot image was provided. Regenerate
-it with `LMI_ROLLBACK_BOOT_IMG=/path/to/stock-or-known-good-boot.img` before
-approving any boot partition write.
+write.
+
+Rollback scan:
+
+```sh
+scripts/50_scan_lmi_rollback_boots.sh
+```
+
+Best local rollback candidate found:
+
+```text
+/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img
+sha256=0c06ad2aca2ab0d510e9d9c97ba31d35a514b9a3d15850b1c4a2121e55fa5cbf
+size=134217728
+```
+
+The command sheet has been regenerated with that rollback path. Persistent
+flashing remains blocked until the phone is in recovery fastbootd
+(`is-userspace=yes`) and the user gives fresh exact approval for each write.
 
 Assessment:
 
