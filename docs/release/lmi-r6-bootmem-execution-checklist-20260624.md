@@ -87,6 +87,13 @@ before use.
    scripts/52_wait_lmi_fastbootd.sh
    ```
 
+   Or use the combined read-only gate, which waits, preflights, and reruns the
+   persistent readiness audit:
+
+   ```sh
+   scripts/66_wait_and_audit_lmi_fastbootd.sh
+   ```
+
 3. Flash rootfs to `userdata` only if userdata destruction is accepted:
 
    ```sh
