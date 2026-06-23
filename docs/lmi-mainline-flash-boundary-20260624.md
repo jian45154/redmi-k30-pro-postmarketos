@@ -279,7 +279,48 @@ fastboot flash boot /tmp/lmi-release-r6-bootmem-20260624/boot-linux-copydown-lmi
 pmbootstrap flasher flash_rootfs --partition userdata
 ```
 
-Current command sheet status:
+Rollback candidate scan:
+
+```sh
+scripts/50_scan_lmi_rollback_boots.sh
+```
+
+Report:
+
+```text
+/tmp/lmi-release-r6-bootmem-20260624/ROLLBACK_BOOT_CANDIDATES.txt
+```
+
+The scan found 17 Android boot-image candidates. Most are experiment images,
+but it also found a full current boot partition backup:
+
+```text
+/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img
+sha256=0c06ad2aca2ab0d510e9d9c97ba31d35a514b9a3d15850b1c4a2121e55fa5cbf
+size=134217728
+page_size=4096
+kernel_size=47454232
+ramdisk_size=1460277
+```
+
+Static header inspection of this backup:
+
+```text
+magic=ANDROID!
+code0_le=0x149e0000
+text_offset=0x80000
+image_size=0x3805000
+flags=0xa
+magic56=ARMd
+peoff=0x0
+```
+
+Assessment: this is the best local rollback boot candidate found so far,
+because it is a full-size boot partition backup under `device-backup`. It still
+must be treated as a candidate, not a proven guarantee, until matched to the
+exact device/ROM state.
+
+Current command sheet status after regenerating with `LMI_ROLLBACK_BOOT_IMG`:
 
 - r6 boot image hash recorded:
   `cfc5748035bccb9a4c5b3c1683ef887aa3ce7ce802d6d19fc69d4141b28f6570`;
@@ -287,12 +328,16 @@ Current command sheet status:
   `24918896b43c962f1a54da44d53ad7fb722e9324a96dd6f1d1d3c93d832d73a7`;
 - rootfs sparse file size: `1256602620` bytes;
 - rootfs expanded size: `2150629376` bytes;
-- rollback boot image: not provided.
+- rollback boot image:
+  `/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img`;
+- rollback boot hash:
+  `0c06ad2aca2ab0d510e9d9c97ba31d35a514b9a3d15850b1c4a2121e55fa5cbf`.
 
-Do not proceed to a boot partition write until a known-good rollback boot image
-is supplied and the sheet is regenerated with:
+The current read-only preflight still fails because the phone is not in recovery
+fastbootd:
 
-```sh
-LMI_ROLLBACK_BOOT_IMG=/path/to/stock-or-known-good-boot.img \
-scripts/49_generate_lmi_flash_command_sheet.sh
+```text
+is-userspace=no
 ```
+
+Do not proceed to a boot partition write while `is-userspace=no`.
