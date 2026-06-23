@@ -372,3 +372,157 @@ Assessment:
   EFI stub disabled.
 - This no-EFI-stub image has not been RAM-booted. Do not run `fastboot boot`
   without fresh exact approval for the newly exported image.
+
+## No-EFI-stub 48-bit mainline build
+
+Follow-up build on 2026-06-24:
+
+```sh
+scripts/40_prepare_mainline_lmi_overlay.sh --debug-shell-android-cmdline-no-efi-stub-48bit
+pmbootstrap checksum linux-postmarketos-qcom-sm8250-lmi
+pmbootstrap build linux-postmarketos-qcom-sm8250-lmi --force
+pmbootstrap build device-xiaomi-lmi --force
+pmbootstrap install --password <temporary-test-password> --zap
+pmbootstrap export
+```
+
+Temporary cache changes:
+
+- `device-xiaomi-lmi 1-r92`;
+- `linux-postmarketos-qcom-sm8250-lmi 6.19.7-r5`;
+- EFI stub and EFI wrapper options remain disabled;
+- `CONFIG_ARM64_VA_BITS=48`;
+- `CONFIG_ARM64_PA_BITS=48`;
+- `CONFIG_ARM64_LPA2` disabled;
+- Android downstream USB cmdline plus `pmos.debug-shell` preserved;
+- `deviceinfo_flash_fastboot_partition_rootfs="userdata"` preserved.
+
+Verified regenerated artifacts:
+
+```text
+0ab3d383c3bbf7138b95d717d1d7ab80c91f8500a2023fab087092746b0113ae  boot.img
+2951f51817fba40ab6d21291b4840d5dd7c4dfd77d3b96318e4e480818970710  vmlinuz
+69092dde63a088b3988c6e02f6513f4c86401b361d0d67c5ea416bf338036173  xiaomi-lmi.img
+e5623c9c0e7704c48f7d1de3a09b423ffd2425648c5ebbb4c5c575e25863f6ea  sm8250-xiaomi-lmi.dtb
+c3f6fe0b58c6ad1a8329deff8ac35305dd5868bac71ddeca55708ad259fd4a85  initramfs
+```
+
+Static boot image inspection:
+
+- `boot.img` is an Android boot image with page size 4096.
+- `vmlinuz` is an ARM64 boot executable Image.
+- Kernel size: 30430898 bytes.
+- Ramdisk size: 9551148 bytes.
+- Kernel first bytes remain non-PE/non-MZ:
+  - `code0_le=0xd503201f`;
+  - `text_offset=0x0`;
+  - `image_size=0x1d60000`;
+  - `flags=0xa`;
+  - ARM64 Image magic `ARMd` at offset 56;
+  - PE header offset `0x0`.
+- The known-working downstream debug image still differs:
+  - `code0_le=0x148e0000`;
+  - `text_offset=0x80000`;
+  - `image_size=0x33fa000`;
+  - PE header offset `0x0`.
+
+Rootfs sparse image validation:
+
+- The exported rootfs remains an Android sparse image with 525056
+  4096-byte output blocks.
+- Parsed as a 4096-byte-sector GPT, it contains:
+  - partition 1, `primary`: 503316480 bytes, EFI system type;
+  - partition 2, `primary`: 1637875712 bytes, Linux root type.
+
+Assessment:
+
+- The 48-bit VA/PA and no-LPA2 change builds cleanly.
+- It does not change the remaining static bootloader handoff mismatch:
+  the direct mainline kernel still reports `text_offset=0x0`.
+- r5 is useful as a config exclusion experiment, but it is not the closest
+  match to the historical lmi early-boot path.
+- RAM-only boot remains optional evidence, not a mandatory gate.
+- The next host-side step should be generating a copydown boot image from the
+  current no-EFI mainline kernel and `sm8250-xiaomi-lmi.dtb`, following the
+  historical `sm8250-xiaomi-lmi-boot` flow:
+  - outer shim presented to ABL with `outer_text_offset=0x80000`;
+  - embedded runtime mainline DTB passed in `x0`;
+  - stock DTB kept in the Android boot image `--dtb` field;
+  - manifest checks for source alignment, copy overlap, hashes, and
+    `boot_size_ok=True`.
+
+## r5 copydown boot image
+
+Host-side candidate generated on 2026-06-24:
+
+```sh
+scripts/45_build_lmi_copydown_boot.sh
+```
+
+This script normalizes the CRLF historical scripts/lock files into the
+temporary output directory, then calls the historical
+`sm8250-xiaomi-lmi-boot/scripts/mkboot-linux-copydown-lmi.sh` without modifying
+the Windows-side source tree.
+
+Generated files:
+
+- `/tmp/lmi-copydown-r5-20260624/boot-linux-copydown-lmi.img`
+- `/tmp/lmi-copydown-r5-20260624/boot-linux-copydown-lmi.manifest`
+
+Hashes:
+
+```text
+8101b73283a9314a7554dacb3565822e7141396e8951a1cc67e331f2e99f8a4d  boot-linux-copydown-lmi.img
+85ec30c88d47b450746dd915ff0467995ed07b373fcc52927cc4759cfa9a0d1c  boot-linux-copydown-lmi.manifest
+2951f51817fba40ab6d21291b4840d5dd7c4dfd77d3b96318e4e480818970710  embedded Linux Image
+```
+
+Manifest summary:
+
+```text
+stage=M2j
+payload=linux-copydown-shim-embedded-runtime-dtb
+x0=embedded_runtime_dtb
+outer_text_offset=0x80000
+outer_magic=b'ARMd'
+outer_pe_offset_res5=0x0
+linux_source_offset=0x200000
+linux_source_alignment_ok=True
+copy_entry_outside_destination=True
+copy_overlap_safe=True
+linux_text_offset=0x0
+linux_magic=b'ARMd'
+linux_pe_offset_res5=0x0
+boot_img_size=15892480
+boot_img_sha256=8101b73283a9314a7554dacb3565822e7141396e8951a1cc67e331f2e99f8a4d
+runtime_dtb_sha256=e5623c9c0e7704c48f7d1de3a09b423ffd2425648c5ebbb4c5c575e25863f6ea
+stock_header_dtb_sha256=dc0dabd0671edb7a5e5b5db494f2471e1ba547255323c9afd9f3599ebe9ba5fd
+boot_partition_size=134217728
+boot_size_ok=True
+```
+
+Assessment:
+
+- This is the closest host-side artifact so far to the historical lmi
+  early-boot model.
+- It should not be treated as a normal pmbootstrap direct `boot.img`.
+- It has not been RAM-booted or flashed.
+- Any persistent test requires fresh exact approval and should use recovery
+  fastbootd with `fastboot getvar is-userspace` returning `yes`.
+
+## Subagent research summary
+
+Three read-only subagents reviewed the early-boot evidence on 2026-06-24.
+
+- Bootshim/copydown review: the historical release image is not equivalent to a
+  plain pmbootstrap `boot.img`. It deliberately separates the outer image seen
+  by ABL from the inner mainline Linux image.
+- DTS review: the highest-priority DTS risks are DTB delivery, explicit memory
+  layout, and reserved framebuffer/splash/ramoops carveouts. USB differences
+  can affect debug visibility but are less likely than handoff or memory
+  metadata to explain no initramfs signs.
+- Flash-boundary review: RAM boot is not required as a hard gate, but any
+  persistent test must use recovery fastbootd, manifest/hash checks, partition
+  size checks, and rollback preparation. Do not touch `super`, `dtbo`,
+  `vbmeta`, `persist`, modem/EFS/calibration partitions, `vendor_boot`,
+  `init_boot`, or bootloader relock paths.
