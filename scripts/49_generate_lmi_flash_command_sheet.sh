@@ -115,11 +115,22 @@ Read-only preflight command:
   LMI_ROOTFS_IMG=$rootfs_img \\
   scripts/48_preflight_lmi_fastbootd.sh
 
+Read-only readiness audit:
+  LMI_ROLLBACK_BOOT_IMG="${stock_boot:-/path/to/stock-or-known-good-boot.img}" \\
+  scripts/64_audit_lmi_persistent_readiness.sh
+
 Guarded fastbootd entry helper:
   scripts/60_stage_lmi_enter_fastbootd.sh --dry-run
 
 Fastbootd entry command that requires fresh exact approval and confirmation:
   LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi scripts/60_stage_lmi_enter_fastbootd.sh --execute
+
+Combined read-only gate after entering recovery fastbootd:
+  LMI_ROLLBACK_BOOT_IMG="${stock_boot:-/path/to/stock-or-known-good-boot.img}" \\
+  scripts/66_wait_and_audit_lmi_fastbootd.sh
+
+Do not request persistent write approval unless the combined gate finishes with:
+  fastbootd audit gate: OK
 
 $route_plan_section
 
@@ -147,6 +158,7 @@ Suggested order if explicitly approved after preflight passes:
 3. Reboot only after separate exact approval through the guarded reboot helper.
 4. Collect evidence by milestone:
    scripts/54_monitor_lmi_post_boot.sh --timeout 180
+   scripts/67_summarize_lmi_post_boot_evidence.sh
 
 No command in this sheet was executed by this script.
 EOF
