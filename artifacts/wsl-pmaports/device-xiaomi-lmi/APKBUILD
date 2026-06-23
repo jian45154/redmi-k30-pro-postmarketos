@@ -3,7 +3,7 @@ maintainer=""
 pkgname=device-xiaomi-lmi
 pkgdesc="xiaomi lmi"
 pkgver=1
-pkgrel=4
+pkgrel=5
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
@@ -40,6 +40,10 @@ build() {
 
 package() {
 	devicepkg_package $startdir $pkgname
+	install -dm755 "$pkgdir"/etc/runlevels/default
+	ln -s /etc/init.d/pd-mapper "$pkgdir"/etc/runlevels/default/pd-mapper
+	ln -s /etc/init.d/rmtfs "$pkgdir"/etc/runlevels/default/rmtfs
+	ln -s /etc/init.d/tqftpserv "$pkgdir"/etc/runlevels/default/tqftpserv
 }
 
 sha512sums="

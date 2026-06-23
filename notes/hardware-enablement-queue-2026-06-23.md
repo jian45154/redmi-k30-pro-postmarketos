@@ -25,8 +25,9 @@ Observed:
 - `/lib/firmware` only contains `regulatory.db` and its signature.
 - `venus.mdt` is missing and Venus firmware download fails.
 - WLAN/CNSS expects `qca6390/amss20.bin` or `amss20.bin`.
-- `pd-mapper`, `rmtfs`, and `tqftpserv` are package dependencies, but runtime
-  evidence does not show them running.
+- `pd-mapper`, `rmtfs`, and `tqftpserv` are package dependencies. Runtime
+  evidence shows them installed but stopped on v27; `device-xiaomi-lmi`
+  `pkgrel=5` enables them in the OpenRC default runlevel for the next rootfs.
 - `/dev/rmtfs*` and `/dev/qrtr*` are absent.
 - `/sys/class/remoteproc` is absent, while downstream `/dev/subsys_*` nodes are
   present.
@@ -164,10 +165,10 @@ Exit criteria:
 - `notes/firmware-inventory-YYYY-MM-DD.md` exists.
 - No proprietary binary is committed.
 
-## Task 3A: Extract LineageOS Vendor Image
+## Task 3A: Extract LineageOS Dynamic Partitions
 
 Owner: Firmware Services Agent
-Status: ready.
+Status: completed for `vendor`, `odm`, `product`, and `system_ext`.
 
 Known local source:
 
@@ -185,13 +186,48 @@ scripts/34_extract_android_dat_partition.sh \
   /tmp/lmi-lineage-vendor
 ```
 
-Then generate a publishable inventory:
+Generate a publishable inventory:
 
 ```sh
 scripts/33_firmware_inventory.sh /tmp/lmi-lineage-vendor/vendor.files > notes/firmware-inventory-2026-06-23.md
 ```
 
+Result:
+
+- `vendor` contains IPA and Adreno GPU zap firmware.
+- `vendor`, `odm`, `product`, and `system_ext` do not contain the expected
+  QCA6390 Wi-Fi firmware names, Bluetooth payloads, or full DSP/Venus firmware
+  groups.
+- The next firmware source must be an lmi-specific firmware package or
+  read-only stock firmware-bearing partition dump. Do not use the unrelated
+  local `capricorn` NON-HLOS image.
+
 Do not commit extracted firmware files or raw images.
+
+## Task 3B: Enable Qualcomm Services in Rootfs
+
+Owner: Firmware Services Agent
+Status: staged in package metadata, pending rebuild and device verification.
+
+Change:
+
+- `device-xiaomi-lmi` `pkgrel=5`
+- OpenRC default runlevel symlinks for `pd-mapper`, `rmtfs`, and `tqftpserv`
+
+Verification after next rootfs boot:
+
+```sh
+rc-status default
+ls -l /etc/runlevels/default/pd-mapper /etc/runlevels/default/rmtfs /etc/runlevels/default/tqftpserv
+ls -l /dev/rmtfs* /dev/qrtr* 2>&1
+dmesg | grep -Ei 'rmtfs|qrtr|pdr|pd-mapper|tqftp|subsys|wlan|cnss' | tail -240
+```
+
+Exit criteria:
+
+- The three services are enabled and either running or failing with a concrete
+  device-node/firmware error.
+- QRTR/RMTFS visibility is rechecked before changing Wi-Fi driver assumptions.
 
 ## Task 4: Qualcomm Service Visibility Probe
 
