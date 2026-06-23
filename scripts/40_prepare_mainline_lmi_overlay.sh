@@ -12,6 +12,7 @@ package_root=${PMB_PACKAGE_ROOT:-/home/microstar/.local/var/pmbootstrap/packages
 disabled_device_pkg=$backup_root/device-downstream-device-xiaomi-lmi
 debug_shell=false
 android_cmdline=false
+no_zboot=false
 
 update_sha512_sum() {
 	local apkbuild=$1
@@ -32,6 +33,11 @@ case "${1:-}" in
 	debug_shell=true
 	android_cmdline=true
 	;;
+--debug-shell-android-cmdline-no-zboot)
+	debug_shell=true
+	android_cmdline=true
+	no_zboot=true
+	;;
 --restore-downstream)
 	rm -rf "$dst_root/device-xiaomi-lmi" \
 		"$dst_root/firmware-xiaomi-lmi" \
@@ -49,7 +55,7 @@ case "${1:-}" in
 "")
 	;;
 *)
-	echo "usage: $0 [--debug-shell|--debug-shell-android-cmdline|--restore-downstream]" >&2
+	echo "usage: $0 [--debug-shell|--debug-shell-android-cmdline|--debug-shell-android-cmdline-no-zboot|--restore-downstream]" >&2
 	exit 1
 	;;
 esac
@@ -108,6 +114,16 @@ fi
 update_sha512_sum "$dst_root/device-xiaomi-lmi/APKBUILD" "$dst_root/device-xiaomi-lmi/deviceinfo" deviceinfo
 
 kernel_apkbuild="$dst_root/linux-postmarketos-qcom-sm8250-lmi/APKBUILD"
+kernel_config="$dst_root/linux-postmarketos-qcom-sm8250-lmi/config-postmarketos-qcom-sm8250-lmi.aarch64"
+if [ "$no_zboot" = true ]; then
+	sed -i 's/^pkgrel=.*/pkgrel=3/' "$kernel_apkbuild"
+	if grep -q '^CONFIG_EFI_ZBOOT=y$' "$kernel_config"; then
+		sed -i 's/^CONFIG_EFI_ZBOOT=y$/# CONFIG_EFI_ZBOOT is not set/' "$kernel_config"
+	elif ! grep -q '^# CONFIG_EFI_ZBOOT is not set$' "$kernel_config"; then
+		echo "# CONFIG_EFI_ZBOOT is not set" >> "$kernel_config"
+	fi
+	update_sha512_sum "$kernel_apkbuild" "$kernel_config" config-postmarketos-qcom-sm8250-lmi.aarch64
+fi
 perl -0pi -e 's/make zinstall modules_install dtbs_install \\\n\t\tARCH="\$_carch" \\\n\t\tINSTALL_PATH="\$pkgdir"\/boot\/ \\\n\t\tINSTALL_MOD_PATH="\$pkgdir" \\\n\t\tINSTALL_MOD_STRIP=1 \\\n\t\tINSTALL_DTBS_PATH="\$pkgdir\/boot\/dtbs"/make Image modules_install dtbs_install \\\n\t\tARCH="\$_carch" \\\n\t\tINSTALL_MOD_PATH="\$pkgdir" \\\n\t\tINSTALL_MOD_STRIP=1 \\\n\t\tINSTALL_DTBS_PATH="\$pkgdir\/boot\/dtbs"\n\tinstall -Dm755 "\$builddir"\/arch\/arm64\/boot\/Image "\$pkgdir"\/boot\/vmlinuz/s' \
 	"$kernel_apkbuild"
 

@@ -218,3 +218,75 @@ Assessment:
 - The remaining failure is likely before initramfs: kernel early boot, DTB
   compatibility, or bootloader handoff expectations for this mainline kernel.
 - Do not diagnose this as a rootfs, SSH, or firewall problem.
+
+## No-zboot mainline build
+
+Follow-up build on 2026-06-24:
+
+```sh
+scripts/40_prepare_mainline_lmi_overlay.sh --debug-shell-android-cmdline-no-zboot
+pmbootstrap checksum linux-postmarketos-qcom-sm8250-lmi
+pmbootstrap build linux-postmarketos-qcom-sm8250-lmi --force
+pmbootstrap build device-xiaomi-lmi --force
+pmbootstrap install --password <temporary-test-password> --zap
+pmbootstrap export
+```
+
+Temporary cache changes:
+
+- `device-xiaomi-lmi 1-r92`;
+- `linux-postmarketos-qcom-sm8250-lmi 6.19.7-r3`;
+- `CONFIG_EFI_ZBOOT=y` changed to
+  `# CONFIG_EFI_ZBOOT is not set` in the temporary kernel config;
+- Android downstream USB cmdline plus `pmos.debug-shell` preserved;
+- `deviceinfo_flash_fastboot_partition_rootfs="userdata"` preserved.
+
+Verified regenerated artifacts:
+
+```text
+25d1d5496f6f36d62842a75227a1794eb2ac0a5488f0e1c66674ee7ca9fdf532  boot.img
+bda4d054bcd1f4a6c8173c8c591943b15e01e05525fc7903e76b98ed06812995  vmlinuz
+697c3de7a9b55e1b413b906856326f5ba32d75e49da7ae174ba9383bf43c1436  xiaomi-lmi.img
+```
+
+Static inspection:
+
+- `boot.img` is an Android boot image with page size 4096.
+- `vmlinuz` is an ARM64 boot executable Image.
+- Kernel size remains 31598762 bytes.
+- Ramdisk size remains 9565855 bytes.
+- Kernel first bytes still start with `4d5a` (`MZ`), with:
+  - `text_offset=0x0`;
+  - `image_size=0x1e80000`;
+  - `flags=0xa`;
+  - ARM64 Image magic `ARMd` at offset 56;
+  - PE header offset `0x40`.
+- The known-working downstream debug image starts with a branch instruction,
+  uses `text_offset=0x80000`, and has PE header offset `0x0`.
+
+Rootfs sparse image validation:
+
+- The exported rootfs remains an Android sparse image.
+- Parsed as a 4096-byte-sector GPT, it contains:
+  - partition 1, `primary`: 503316480 bytes, EFI system type;
+  - partition 2, `primary`: 1642070016 bytes, Linux root type.
+
+Device state check after this build was read-only only:
+
+```text
+fastboot devices: 8336ded7 fastboot
+lsusb: 18d1:d00d Google Inc. Xiaomi Mi/Redmi 2 (fastboot)
+```
+
+Assessment:
+
+- The no-zboot variant builds cleanly and produces a valid export.
+- Disabling `CONFIG_EFI_ZBOOT` does not change the kernel entry/header shape
+  that differs from the known-working downstream image.
+- This result does not justify rootfs or SSH debugging; the failure boundary is
+  still before initramfs.
+- Next mainline variable to test is disabling EFI stub/EFI boot wrapping in the
+  temporary kernel config, or otherwise producing an ARM64 Image with
+  `text_offset=0x80000` and no PE-stub entry.
+- This no-zboot image has not been RAM-booted. Do not run `fastboot boot`
+  without fresh exact approval for the newly exported image.
