@@ -31,6 +31,13 @@ start() {
 		else
 			ln -sfn "$wlan_fw" /lib/firmware/qca6390
 		fi
+
+		for fw_file in /lib/firmware/qca6390/bdwlan* \
+			/lib/firmware/qca6390/regdb.bin \
+			/lib/firmware/qca6390/regdb_j11.bin; do
+			[ -e "$fw_file" ] || continue
+			ln -sfn "qca6390/${fw_file##*/}" "/lib/firmware/${fw_file##*/}"
+		done
 	fi
 
 	if [ -f "$rmtfs_conf" ] && ! grep -q '^command_args=' "$rmtfs_conf"; then
