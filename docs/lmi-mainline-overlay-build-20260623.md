@@ -80,8 +80,19 @@ Static inspection:
 
 ## Next hardware step
 
-The next reversible hardware test is RAM-only boot of the exported `boot.img`.
-Do not run it without explicit approval immediately before the command.
+The original next reversible hardware test was RAM-only boot of the exported
+`boot.img`. Later lmi-specific evidence shows the external and historical
+mainline path can instead go through recovery fastbootd persistent flashing, so
+RAM-only boot is no longer a mandatory gate. The current non-writing gate for
+that path is:
+
+```sh
+LMI_FASTBOOTD_WAIT_TIMEOUT=120 scripts/52_wait_lmi_fastbootd.sh
+```
+
+This waits for `is-userspace=yes` and then runs the read-only fastbootd
+preflight against the r6 copydown release bundle. It does not execute any
+reboot, boot, flash, erase, format, or partition write.
 
 ## Debug boot image update
 
