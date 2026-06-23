@@ -256,6 +256,55 @@ Assessment:
 - The device is currently in bootloader fastboot, not recovery fastbootd.
 - Do not flash while `is-userspace=no`.
 
+## Fastbootd wait gate
+
+Because the persistent route does not require a successful RAM-only boot, the
+next operational gate is entering recovery fastbootd and re-running read-only
+checks there. The helper below only polls `fastboot devices` and
+`fastboot getvar is-userspace`; it does not reboot, boot, flash, erase, format,
+or write any partition:
+
+```sh
+LMI_FASTBOOTD_WAIT_TIMEOUT=120 scripts/52_wait_lmi_fastbootd.sh
+```
+
+If `is-userspace` becomes `yes`, the helper automatically runs:
+
+```sh
+LMI_COPYDOWN_BOOT_IMG=/tmp/lmi-release-r6-bootmem-20260624/boot-linux-copydown-lmi-r6-bootmem.img \
+LMI_COPYDOWN_MANIFEST=/tmp/lmi-release-r6-bootmem-20260624/boot-linux-copydown-lmi-r6-bootmem.manifest \
+LMI_ROOTFS_IMG=/tmp/lmi-release-r6-bootmem-20260624/xiaomi-lmi-r6-bootmem.img \
+scripts/48_preflight_lmi_fastbootd.sh
+```
+
+The report is written to:
+
+```text
+/tmp/lmi-release-r6-bootmem-20260624/FASTBOOTD_WAIT_RESULT.txt
+```
+
+Short validation run:
+
+```sh
+LMI_FASTBOOTD_WAIT_TIMEOUT=5 LMI_FASTBOOTD_WAIT_INTERVAL=1 scripts/52_wait_lmi_fastbootd.sh
+```
+
+Result:
+
+```text
+product=lmi
+unlocked=yes
+is-userspace=no
+fastbootd wait: FAIL
+Timed out before is-userspace became yes.
+No reboot, boot, flash, erase, format, or partition write was executed.
+```
+
+Entering recovery fastbootd may be done manually or with a separately approved
+hardware state-changing command such as `fastboot reboot fastboot`. That command
+has not been executed by the wait/preflight helpers and still requires fresh
+exact approval before use.
+
 ## Approval command sheet
 
 Generated on 2026-06-24:
