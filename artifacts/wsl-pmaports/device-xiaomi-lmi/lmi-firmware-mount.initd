@@ -10,6 +10,7 @@ depend() {
 start() {
 	local fw_mnt="/mnt/vendor/firmware_mnt"
 	local wlan_fw="$fw_mnt/image/qca6390"
+	local rmtfs_conf="/etc/conf.d/rmtfs"
 
 	ebegin "Mounting xiaomi-lmi firmware partition"
 	mkdir -p "$fw_mnt" /lib/firmware
@@ -30,6 +31,15 @@ start() {
 		else
 			ln -sfn "$wlan_fw" /lib/firmware/qca6390
 		fi
+	fi
+
+	if [ -f "$rmtfs_conf" ] && ! grep -q '^command_args=' "$rmtfs_conf"; then
+		cat >> "$rmtfs_conf" <<'EOF'
+
+# xiaomi-lmi downstream 4.19 exposes Qualcomm subsystems through /dev/subsys_*
+# rather than mainline remoteproc. Do not pass -s, which requires rprocfd.
+command_args="-P -r"
+EOF
 	fi
 
 	[ -r /lib/firmware/qca6390/amss20.bin ]

@@ -3,7 +3,7 @@ maintainer=""
 pkgname=device-xiaomi-lmi
 pkgdesc="xiaomi lmi"
 pkgver=1
-pkgrel=10
+pkgrel=12
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
@@ -66,7 +66,7 @@ package() {
 sha512sums="
 d13a77a36c203ebee46b20cec08578053b524864c48c11469e0a9bbe9ea908000d1007f291cb49087d43c9cf44816c889007f132b47e6d8f4e1287ca320e19da  deviceinfo
 98442f7efcbb0ce4bba8df8d875ec198824cba5b1b5d58fa695c33523b0cca28c65d5720a8f5a9b2dac5b48b42f1256e2814940511fe4d8af0b8edd7955878e3  lmi-cnss-fs-ready.initd
-8c5f1ddf6c6b238478f81340aeb7f1596dd1083b2d830cce942baff25a740df2c292edbf4dbd0eabea70dc16823bf49e46a4bbadaee9b482638278dcada55c29  lmi-firmware-mount.initd
+4eb82ae0ce299e50d56ef9168da1a3d91b8cf3c704775cb96249a4bd2784f0af1b997e6505623d60c94cebe388d9fa3da94352cb3686fcf860c8be78603eb909  lmi-firmware-mount.initd
 bb5982ab84295ce5303d6113bcdf6eb7ec6eead67152dd10fb9c86241a397be504cca5bc7a5e712025f8942052d80073f26426d65da3f2dce5309c8ab3b19aed  lmi-wlan-on.initd
 e70bae17df23dcaaaea0e2d3616556f04baa23f8ee1357785c0f539bf97282d8ddff53953e155b72689bb73beb38c2da3d08de2a61e866684edfa10a6593885d  modules-initfs
 "
