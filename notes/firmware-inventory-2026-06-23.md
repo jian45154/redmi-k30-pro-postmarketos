@@ -58,6 +58,14 @@ or read-only dumps of firmware-bearing partitions such as modem/bluetooth from a
 known-good stock image. Do not use the unrelated local `capricorn` NON-HLOS
 image.
 
+Additional local search result:
+
+- Targeted search under local `Downloads`, `Latest ADB Fastboot Tool`, and
+  `Documents` found no lmi `NON-HLOS.bin`, `amss20`, `qca6390`, `bdwlan`, or
+  `qwlan` firmware payload.
+- The only `NON-HLOS.bin` found locally is for `capricorn`, which is a different
+  device and must not be used for lmi.
+
 ## Required Firmware Candidates
 
 | subsystem | expected file or group | current status | publishable |

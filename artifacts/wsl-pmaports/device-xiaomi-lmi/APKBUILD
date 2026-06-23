@@ -3,11 +3,12 @@ maintainer=""
 pkgname=device-xiaomi-lmi
 pkgdesc="xiaomi lmi"
 pkgver=1
-pkgrel=5
+pkgrel=7
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
 options="!check !archcheck"
+install="$pkgname.post-install"
 depends="
 	alsa-utils
 	bluez

@@ -6,7 +6,7 @@
 maintainer=""
 pkgname=linux-xiaomi-lmi
 pkgver=4.19.325
-pkgrel=6
+pkgrel=7
 pkgdesc="xiaomi lmi kernel fork"
 arch="aarch64"
 _carch="arm64"
@@ -91,6 +91,6 @@ package() {
 
 sha512sums="
 b9d00e0efcb88d613bd65b1f2cd6b75e2b5f0d79b23def0b9c14eb397265e582a580e93cb365d81e7aa167b027920845ff8db798bbf781bbd9e7845e796bd923  linux-xiaomi-lmi-a5b3099017ae581aae8bf597b2f9c8c765026af1.tar.gz
-e4256534d2725f662199d10d0e652d6ff9c709548105463d42a54505cdf90808c19ecce104f71bbb809be3f2977ce33b6f968db91cb8a98039c9ea07fefd5139  config-xiaomi-lmi.aarch64
+77d20ff63c11cd412a8daae4d5cc8d633b5e6adea06d606a80e1d43034c54b9fc41b521cc3a81503f9063a986c914ef85cb413ae5ae0907f5353cf9323661521  config-xiaomi-lmi.aarch64
 SKIP  lmi-vfs-mount-diagnostic.patch
 "

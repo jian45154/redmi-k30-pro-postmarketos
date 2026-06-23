@@ -35,7 +35,7 @@ Observed:
 ## Task 1: Build v28 Hardware-Tools Image
 
 Owner: Coordinator
-Status: blocked locally until `PMOS_INSTALL_PASSWORD` is set in the shell.
+Status: completed locally on 2026-06-23; not flashed.
 
 Purpose: provide display, audio, Wi-Fi, and Bluetooth diagnostic tools in the
 rootfs without changing the proven v27 boot path unless required.
@@ -57,8 +57,13 @@ Expected tools in v28 rootfs:
 
 Exit criteria:
 
-- v28 boot/userdata manifest exists and records hashes.
+- v28 boot/userdata manifest exists and records hashes:
+  `artifacts/images/pmos-lmi-v28-hwtools-full-20260623.manifest`.
 - Static check confirms the loop-device fix remains present.
+- Read-only rootfs inspection confirms `device-xiaomi-lmi 1-r7`,
+  `linux-xiaomi-lmi 4.19.325-r7`, hardware tools, the rmtfs downstream
+  argument override, and OpenRC symlinks for `pd-mapper`, `rmtfs`, and
+  `tqftpserv`.
 - No partition write has occurred.
 
 ## Task 1A: Current v27 Service Probe
@@ -207,12 +212,38 @@ Do not commit extracted firmware files or raw images.
 ## Task 3B: Enable Qualcomm Services in Rootfs
 
 Owner: Firmware Services Agent
-Status: staged in package metadata, pending rebuild and device verification.
+Status: built and statically verified in v28 rootfs, pending device boot
+verification.
+
+Current live v27 finding:
+
+- Starting `pd-mapper`, `rmtfs`, and `tqftpserv` with sudo succeeds initially,
+  but `rmtfs` exits again.
+- Foreground `rmtfs -s -P -r` fails with `Failed to get rprocfd`.
+- Foreground `rmtfs -P -r` gets further, then fails because
+  `/dev/qcom_rmtfs_mem1`, `/dev/qcom_rmtfs_uio1`, and `/dev/mem` are absent.
+- Current kernel config has `# CONFIG_QCOM_RMTFS_MEM is not set`, no
+  `CONFIG_REMOTEPROC`, and no `/sys/class/remoteproc`.
 
 Change:
 
-- `device-xiaomi-lmi` `pkgrel=5`
+- `linux-xiaomi-lmi` `pkgrel=7`
+- `CONFIG_QCOM_RMTFS_MEM=y`
+- `device-xiaomi-lmi` `pkgrel=7`
+- `device-xiaomi-lmi.post-install` appends `command_args="-P -r"` to
+  `/etc/conf.d/rmtfs` without taking file ownership from `rmtfs-openrc`.
 - OpenRC default runlevel symlinks for `pd-mapper`, `rmtfs`, and `tqftpserv`
+
+Static verification:
+
+- `device-xiaomi-lmi` package version in v28 rootfs: `1-r7`
+- `linux-xiaomi-lmi` package version in v28 rootfs: `4.19.325-r7`
+- build log compiled `drivers/soc/qcom/rmtfs_mem.o`
+- `/etc/conf.d/rmtfs` contains `command_args="-P -r"`
+- `/etc/runlevels/default/pd-mapper -> /etc/init.d/pd-mapper`
+- `/etc/runlevels/default/rmtfs -> /etc/init.d/rmtfs`
+- `/etc/runlevels/default/tqftpserv -> /etc/init.d/tqftpserv`
+- `iw`, `wpa_supplicant`, `bluetoothctl`, and `kmscube` are present.
 
 Verification after next rootfs boot:
 
