@@ -115,6 +115,12 @@ Read-only preflight command:
   LMI_ROOTFS_IMG=$rootfs_img \\
   scripts/48_preflight_lmi_fastbootd.sh
 
+Guarded fastbootd entry helper:
+  scripts/60_stage_lmi_enter_fastbootd.sh --dry-run
+
+Fastbootd entry command that requires fresh exact approval and confirmation:
+  LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi scripts/60_stage_lmi_enter_fastbootd.sh --execute
+
 $route_plan_section
 
 Persistent write commands that require separate fresh exact approvals:
