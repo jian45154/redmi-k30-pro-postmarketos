@@ -164,3 +164,57 @@ Assessment:
   separately approved `flash_kernel` writes the boot partition.
 - Do not run `flash_rootfs` until the exact command and target partition are
   approved immediately before execution.
+
+## RAM-only boot attempt
+
+Command approved and run:
+
+```sh
+fastboot boot /tmp/postmarketOS-export/boot.img
+```
+
+Fastboot result:
+
+```text
+Sending 'boot.img' (40340 KB) OKAY
+Booting OKAY
+Finished. Total time: 4.031s
+```
+
+Observed result after boot:
+
+- Device remained in or returned to fastboot.
+- `fastboot devices` still showed the lmi bootloader.
+- `adb devices` showed no device.
+- WSL USB still showed `18d1:d00d` fastboot.
+- No postmarketOS USB network interface appeared.
+
+Read-only fastboot metadata after the attempt:
+
+```text
+product: lmi
+unlocked: yes
+```
+
+Comparison against the known-working downstream v32 debug image:
+
+- Header version, page size, load offsets, and Android boot image layout match
+  the downstream images.
+- Mainline boot image:
+  - file size: 41308160 bytes;
+  - kernel size: 31598762 bytes;
+  - ramdisk size: 9565855 bytes;
+  - appended DTB size: 134826 bytes.
+- Downstream v32 debug image:
+  - file size: 52924416 bytes;
+  - kernel size: 43233304 bytes;
+  - ramdisk size: 8802401 bytes;
+  - appended DTB size: 874445 bytes.
+
+Assessment:
+
+- The bootloader accepts the image transport and handoff request.
+- The device does not reach observable initramfs USB/debug-shell.
+- The remaining failure is likely before initramfs: kernel early boot, DTB
+  compatibility, or bootloader handoff expectations for this mainline kernel.
+- Do not diagnose this as a rootfs, SSH, or firewall problem.
