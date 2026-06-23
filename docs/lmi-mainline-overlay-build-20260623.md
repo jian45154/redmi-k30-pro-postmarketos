@@ -290,3 +290,85 @@ Assessment:
   `text_offset=0x80000` and no PE-stub entry.
 - This no-zboot image has not been RAM-booted. Do not run `fastboot boot`
   without fresh exact approval for the newly exported image.
+
+## No-EFI-stub mainline build
+
+Follow-up build on 2026-06-24:
+
+```sh
+scripts/40_prepare_mainline_lmi_overlay.sh --debug-shell-android-cmdline-no-efi-stub
+pmbootstrap checksum linux-postmarketos-qcom-sm8250-lmi
+pmbootstrap build linux-postmarketos-qcom-sm8250-lmi --force
+pmbootstrap build device-xiaomi-lmi --force
+pmbootstrap install --password <temporary-test-password> --zap
+pmbootstrap export
+```
+
+Temporary cache changes:
+
+- `device-xiaomi-lmi 1-r92`;
+- `linux-postmarketos-qcom-sm8250-lmi 6.19.7-r4`;
+- `CONFIG_EFI_STUB`, `CONFIG_EFI`, `CONFIG_EFI_GENERIC_STUB`,
+  `CONFIG_EFI_ZBOOT`, and related EFI wrapper options disabled in the
+  temporary kernel config;
+- Android downstream USB cmdline plus `pmos.debug-shell` preserved;
+- `deviceinfo_flash_fastboot_partition_rootfs="userdata"` preserved.
+
+Verified regenerated artifacts:
+
+```text
+fb77960db67b099db9cddc10e23d6a4f25093b6025b58b027448377c20db8a09  boot.img
+647523e5cf460beffd351df224b05ac9292a569ba41bd5b2b5a8517277045c1c  vmlinuz
+866778fda8b3486b05b0ee08836cb3cf7f0a9a19975ea8bff512a133f6e203df  xiaomi-lmi.img
+```
+
+Static boot image inspection:
+
+- `boot.img` is an Android boot image with page size 4096.
+- `vmlinuz` is an ARM64 boot executable Image.
+- Kernel size: 30496434 bytes.
+- Ramdisk size: 9551145 bytes.
+- Kernel first bytes are no longer `4d5a` (`MZ`):
+  - `code0_le=0xd503201f`;
+  - `text_offset=0x0`;
+  - `image_size=0x1d70000`;
+  - `flags=0xa`;
+  - ARM64 Image magic `ARMd` at offset 56;
+  - PE header offset `0x0`.
+- The known-working downstream debug image still differs:
+  - `code0_le=0x148e0000`;
+  - `text_offset=0x80000`;
+  - `image_size=0x33fa000`;
+  - PE header offset `0x0`.
+
+Rootfs sparse image validation:
+
+- The exported rootfs remains an Android sparse image.
+- Parsed as a 4096-byte-sector GPT, it contains:
+  - partition 1, `primary`: 503316480 bytes, EFI system type;
+  - partition 2, `primary`: 1637875712 bytes, Linux root type.
+
+Read-only device state check after this build:
+
+```text
+fastboot devices: 8336ded7 fastboot
+lsusb: 18d1:d00d Google Inc. Xiaomi Mi/Redmi 2 (fastboot)
+```
+
+Assessment:
+
+- Disabling EFI stub is a meaningful forward step: it removes the PE-stub
+  `MZ` entry that differed from the downstream known-working image.
+- The remaining static mismatch is ARM64 Image placement metadata:
+  the mainline image still reports `text_offset=0x0`, while the downstream
+  known-working image reports `text_offset=0x80000`.
+- The temporary r4 kernel config still uses 52-bit VA/PA and LPA2:
+  `CONFIG_ARM64_VA_BITS_52=y`, `CONFIG_ARM64_PA_BITS_52=y`,
+  `CONFIG_ARM64_LPA2=y`.
+- This result still does not justify rootfs, SSH, or firewall debugging; the
+  failure boundary remains before observable initramfs.
+- Next host-side variable to test is a mainline build with downstream-like
+  ARM64 address sizing, such as 48-bit VA/PA and no LPA2, while keeping
+  EFI stub disabled.
+- This no-EFI-stub image has not been RAM-booted. Do not run `fastboot boot`
+  without fresh exact approval for the newly exported image.
