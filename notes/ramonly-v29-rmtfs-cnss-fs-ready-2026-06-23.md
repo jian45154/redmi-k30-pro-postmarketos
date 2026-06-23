@@ -161,3 +161,23 @@ etc/runlevels/default/pd-mapper
 etc/runlevels/default/rmtfs
 etc/runlevels/default/tqftpserv
 ```
+
+## v31 artifact set
+
+Built after `device-xiaomi-lmi 1-r10`:
+
+- `artifacts/images/pmos-lmi-normalboot-v31-rmtfs-fw-fsready-wlanon-20260623.img`
+- `artifacts/images/xiaomi-lmi-v31-rmtfs-fw-fsready-wlanon-userdata-20260623.img`
+- manifest: `artifacts/images/pmos-lmi-v31-rmtfs-fw-fsready-wlanon-full-20260623.manifest`
+
+Static rootfs inspection of the v31 userdata image confirmed:
+
+```text
+/lib/apk/db/installed: device-xiaomi-lmi 1-r10
+/etc/init.d/lmi-wlan-on
+/etc/runlevels/default/lmi-wlan-on -> /etc/init.d/lmi-wlan-on
+```
+
+This artifact set is ready for the next hardware test. Full validation still
+requires booting the rmtfs DT fixed kernel and rootfs together, then checking
+whether `lmi-cnss-fs-ready` followed by `lmi-wlan-on` creates `wlan0`.
