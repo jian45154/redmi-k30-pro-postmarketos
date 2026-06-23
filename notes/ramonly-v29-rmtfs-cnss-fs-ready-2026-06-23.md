@@ -181,3 +181,35 @@ Static rootfs inspection of the v31 userdata image confirmed:
 This artifact set is ready for the next hardware test. Full validation still
 requires booting the rmtfs DT fixed kernel and rootfs together, then checking
 whether `lmi-cnss-fs-ready` followed by `lmi-wlan-on` creates `wlan0`.
+
+## Currentroot service staging
+
+The running v27 currentroot was also prepared for the next RAM-only kernel test
+without flashing partitions. Installing `device-xiaomi-lmi-1-r10.apk` through
+`apk add` failed because the device had no DNS/repository access, so the package
+payload was used to stage only the OpenRC service files and runlevel links:
+
+```text
+/etc/init.d/lmi-firmware-mount
+/etc/init.d/lmi-cnss-fs-ready
+/etc/init.d/lmi-wlan-on
+/etc/runlevels/boot/lmi-firmware-mount
+/etc/runlevels/default/lmi-cnss-fs-ready
+/etc/runlevels/default/lmi-wlan-on
+/etc/runlevels/default/pd-mapper
+/etc/runlevels/default/rmtfs
+/etc/runlevels/default/tqftpserv
+```
+
+Verified on-device hashes:
+
+```text
+689b6861a220d8a7ba450d317b4f106081e80555bd4499e3bb2a75ea81ceea4e  /etc/init.d/lmi-firmware-mount
+05e07fdb03d08e68e8acb824583822905e044c5c6be67895f922a0374d35046e  /etc/init.d/lmi-cnss-fs-ready
+ba87bde601a0dd781ecc8eaf1f4244da9cbf67a9df95da83d69a20b6a09d78eb  /etc/init.d/lmi-wlan-on
+```
+
+This means the next `fastboot boot
+artifacts/images/pmos-lmi-v29-rmtfs-currentroot-20260623.img` test should run
+the rmtfs fixed kernel against a currentroot that already has the firmware
+mount, `fs_ready`, and `/dev/wlan ON` service chain.
