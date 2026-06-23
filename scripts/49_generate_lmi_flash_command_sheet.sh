@@ -135,10 +135,16 @@ The guarded helper refuses execute mode unless read-only fastbootd preflight
 passes and LMI_FLASH_CONFIRM exactly matches the token printed by the helper.
 It never flashes more than one partition per invocation.
 
+Guarded post-flash reboot helper:
+  scripts/61_stage_lmi_reboot_after_flash.sh --dry-run
+
+Post-flash reboot command that requires fresh exact approval and confirmation:
+  LMI_TEST_REBOOT_CONFIRM=reboot-flashed-xiaomi-lmi scripts/61_stage_lmi_reboot_after_flash.sh --execute
+
 Suggested order if explicitly approved after preflight passes:
 1. Flash rootfs to userdata if the user accepts userdata destruction.
 2. Flash boot to boot using the copydown boot image.
-3. Reboot only after separate exact approval.
+3. Reboot only after separate exact approval through the guarded reboot helper.
 4. Collect evidence by milestone:
    scripts/54_monitor_lmi_post_boot.sh --timeout 180
 

@@ -54,6 +54,7 @@ rootfs:   LMI_FLASH_CONFIRM=flash-xiaomi-lmi-rootfs-cfc5748035bc-24918896b43c
 boot:     LMI_FLASH_CONFIRM=flash-xiaomi-lmi-boot-cfc5748035bc-24918896b43c
 rollback: LMI_ROLLBACK_CONFIRM=rollback-xiaomi-lmi-boot-0c06ad2aca2ab0d5-134217728
 fastbootd: LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi
+test reboot: LMI_TEST_REBOOT_CONFIRM=reboot-flashed-xiaomi-lmi
 ```
 
 ## Persistent Test Order
@@ -88,7 +89,7 @@ before use.
 5. Reboot only after separate approval:
 
    ```sh
-   fastboot reboot
+   LMI_TEST_REBOOT_CONFIRM=reboot-flashed-xiaomi-lmi scripts/61_stage_lmi_reboot_after_flash.sh --execute
    ```
 
 6. Collect post-boot evidence:
