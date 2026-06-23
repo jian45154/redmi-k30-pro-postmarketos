@@ -16,7 +16,6 @@ done
 
 mkdir -p "$(dirname "$output")"
 
-head_commit=$(git rev-parse --short HEAD)
 branch=$(git rev-parse --abbrev-ref HEAD)
 remote_url=$(git remote get-url origin 2>/dev/null || printf 'unknown')
 plan_status=$(sed -n 's/^plan: //p' "$plan_report" | tail -n 1)
@@ -36,8 +35,18 @@ is not an approval to execute hardware commands.
 ## Repository
 
 - Branch: \`$branch\`
-- HEAD: \`$head_commit\`
 - Remote: \`$remote_url\`
+
+This tracked handoff intentionally does not record a commit hash because the
+file is generated before the commit that archives it. Use \`git rev-parse HEAD\`
+or the GitHub \`edge\` branch tip for the authoritative revision.
+
+## Route Decision
+
+RAM-only boot is no longer a prerequisite for this route. The current path is a
+guarded recovery-fastbootd persistent test: enter fastbootd, verify
+\`is-userspace=yes\`, flash only \`userdata\` rootfs and \`boot\`, then reboot and
+collect evidence.
 
 ## Device Gate
 

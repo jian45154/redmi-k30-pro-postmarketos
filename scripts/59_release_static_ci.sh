@@ -42,6 +42,12 @@ grep -q 'is-userspace: `no`' "$checklist"
 grep -q 'is-userspace: `no`' "$handoff"
 grep -q 'scripts/62_refresh_lmi_release_docs.sh --quick' "$manifest"
 grep -q 'scripts/62_refresh_lmi_release_docs.sh --quick' "$handoff"
+grep -q 'RAM-only boot is no longer a prerequisite' "$handoff"
+grep -q 'guarded recovery-fastbootd persistent test' "$handoff"
+if grep -q '^- HEAD:' "$handoff"; then
+	echo "handoff should not archive a self-referential commit hash" >&2
+	exit 1
+fi
 grep -q 'fastboot reboot fastboot' "$checklist"
 grep -q 'scripts/60_stage_lmi_enter_fastbootd.sh --dry-run' "$checklist"
 grep -q 'scripts/60_stage_lmi_enter_fastbootd.sh --execute' "$handoff"
