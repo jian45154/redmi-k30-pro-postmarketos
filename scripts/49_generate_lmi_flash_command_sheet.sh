@@ -117,7 +117,9 @@ It never flashes more than one partition per invocation.
 Suggested order if explicitly approved after preflight passes:
 1. Flash rootfs to userdata if the user accepts userdata destruction.
 2. Flash boot to boot using the copydown boot image.
-3. Reboot and collect evidence by milestone.
+3. Reboot only after separate exact approval.
+4. Collect evidence by milestone:
+   scripts/54_monitor_lmi_post_boot.sh --timeout 180
 
 No command in this sheet was executed by this script.
 EOF
