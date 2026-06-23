@@ -1,0 +1,63 @@
+# Maintainer: Nikroks <nikroks@mainlining.org>
+_flavor="postmarketos-qcom-sm8250-lmi"
+pkgname=linux-$_flavor
+pkgver=6.19.7
+pkgrel=1
+pkgdesc="Mainline kernel fork for SM8250"
+arch="aarch64"
+_carch="arm64"
+url="https://github.com/yuweiyuan8/linux/tree/v6.19"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps
+	pmb:cross-native
+	pmb:kconfigcheck-nftables
+"
+makedepends="
+	bash
+	bison
+	findutils
+	flex
+	openssl-dev
+	perl
+	postmarketos-installkernel
+	python3
+"
+
+_tag="lmi"
+_config="config-$_flavor.$arch"
+source="
+	$pkgname-$_tag.tar.gz::https://github.com/yuweiyuan8/linux/archive/v6.19/linux-$_tag.tar.gz
+	$_config
+	0001-sm8250-xiaomi-lmi-enable-sdx55-modem.patch
+"
+builddir="$srcdir/linux-6.19"
+
+prepare() {
+	default_prepare
+	cp "$srcdir/config-$_flavor.$arch" .config
+}
+
+build() {
+	unset LDFLAGS
+	make ARCH="$_carch" CC="${CC:-gcc}" \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-$_flavor"
+}
+
+package() {
+	mkdir -p "$pkgdir"/boot
+	make zinstall modules_install dtbs_install \
+		ARCH="$_carch" \
+		INSTALL_PATH="$pkgdir"/boot/ \
+		INSTALL_MOD_PATH="$pkgdir" \
+		INSTALL_MOD_STRIP=1 \
+		INSTALL_DTBS_PATH="$pkgdir/boot/dtbs"
+	rm -f "$pkgdir"/lib/modules/*/build "$pkgdir"/lib/modules/*/source
+	install -D "$builddir"/include/config/kernel.release \
+		"$pkgdir"/usr/share/kernel/$_flavor/kernel.release
+}
+
+sha512sums="
+e8dc9453cf4ea12a6be31d34f287aa1bbe9fa2bf8ee3557eee6dc4140ca873d3233a9b771f3c0fd62a057f78932f5f43c0e6f59f7fd8d2f41f8980b14ad76ffc  linux-postmarketos-qcom-sm8250-lmi-lmi.tar.gz
+6ef602215801a725ae01898c4a69a60902850194b16f32aa8d49b30b2268db842e91135415deac37aa184fecab8d1a42f34258a511a5564e552c3ef4858e1c04  config-postmarketos-qcom-sm8250-lmi.aarch64
+adae699bc4d7133d76816b35c262591e7d10d1a29196e0af11edad9a73663575eed968ce5c3ecebff47cd9fa7dd557f42fb73f56f6d9366987c62f17c3ec4c5f  0001-sm8250-xiaomi-lmi-enable-sdx55-modem.patch
+"
