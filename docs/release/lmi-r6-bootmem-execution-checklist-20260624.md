@@ -45,6 +45,19 @@ scripts/52_wait_lmi_fastbootd.sh
 
 Do not flash unless the resulting preflight reports `is-userspace=yes`.
 
+## Readiness Audit
+
+Before requesting any execute approval, refresh and inspect the read-only
+readiness audit:
+
+```sh
+scripts/64_audit_lmi_persistent_readiness.sh
+```
+
+This audit checks artifact hashes, release docs, rollback candidate identity,
+dry-run stage guards, and the current fastbootd gate. It does not reboot, boot,
+flash, erase, format, or write partitions.
+
 ## Stage Tokens
 
 These tokens are derived from the current artifact hashes.
