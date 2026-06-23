@@ -258,6 +258,92 @@ Exit criteria:
 
 - The three services are enabled and either running or failing with a concrete
   device-node/firmware error.
+
+## Task 3C: RAM-Only rmtfs_mem Verification
+
+Owner: Coordinator
+Status: prepared locally; pending explicit hardware approval.
+
+Purpose: test the v28 kernel and initramfs against the current known-good v27
+rootfs without writing partitions. This isolates the `CONFIG_QCOM_RMTFS_MEM=y`
+change before any rootfs or boot partition update.
+
+Prepared artifact:
+
+```text
+artifacts/images/pmos-lmi-v28-kernel-currentroot-20260623.manifest
+```
+
+Local boot image, ignored by git:
+
+```text
+artifacts/images/pmos-lmi-v28-kernel-currentroot-20260623.img
+```
+
+Static verification:
+
+- cmdline points to the current v27 boot/root UUIDs:
+  `3c14f75f-450e-4457-b109-6fc5d9f7c54c` and
+  `b50c1119-2cd9-4675-a9be-3201c98d54ec`;
+- v27 loop-device fix markers remain present;
+- RNDIS USB IDs remain present.
+
+Runtime test, only after separate approval for the exact reboot and temporary
+boot command:
+
+```sh
+fastboot boot artifacts/images/pmos-lmi-v28-kernel-currentroot-20260623.img
+```
+
+Post-boot evidence to collect:
+
+```sh
+uname -a
+zcat /proc/config.gz | grep CONFIG_QCOM_RMTFS_MEM
+ls -l /dev/qcom_rmtfs* /dev/uio* /dev/mem 2>&1
+rc-status default
+dmesg | grep -Ei 'rmtfs|qcom_rmtfs|qrtr|pdr|pd-mapper|tqftp|subsys|wlan|cnss|firmware|failed|error' | tail -260
+```
+
+Exit criteria:
+
+- `/dev/qcom_rmtfs_mem*` either appears, or the kernel log gives the next
+  concrete DTB/driver reason it did not.
+- `rmtfs -P -r` no longer fails solely because all rmtfs memory access devices
+  are absent.
+
+## Task 4A: External lmi Mainline Wi-Fi Reference
+
+Owner: Wi-Fi and Bluetooth Agent
+Status: read-only reference captured on 2026-06-23.
+
+Local source provided by the user:
+
+```text
+/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/linux-sm8250-xiaomi-lmi
+```
+
+Useful findings:
+
+- `lmi/HARDWARE_SUPPORT.md` reports QCA6391 Wi-Fi working with `ath11k_pci`,
+  real WLAN MAC, auto-connect, and SSH.
+- `arch/arm64/boot/dts/qcom/sm8250-xiaomi-lmi.dts` models the combo chip with
+  `qcom,qca6390-pmu`, GPIO20 WLAN enable, GPIO21 BT enable, PCI endpoint
+  `pci17cb,1101`, and UART6 `qcom,qca6390-bt`.
+- `lmi/ADAPTATION_NOTES.md` warns that firmware import, wireless reprobe, and
+  Wi-Fi connect should not block `multi-user.target`.
+- `lmi/MODEM_BRINGUP.md` is modem-only SDX55M work. It is useful for safety
+  boundaries but not a direct WLAN fix.
+
+Current downstream contrast:
+
+- pmOS v27/v28 downstream 4.19 uses CNSS2/QCA CLD, with
+  `CONFIG_QCA_CLD_WLAN_PROFILE="qca6390"`.
+- The current live rootfs has no WLAN firmware beyond `regulatory.db`, and
+  `iw dev` returns no interface.
+- Treat the mainline tree as a topology and firmware reference first. Do not
+  mix `ath11k_pci` assumptions into the downstream CNSS2 bring-up without a
+  deliberate kernel strategy change.
 - QRTR/RMTFS visibility is rechecked before changing Wi-Fi driver assumptions.
 
 ## Task 4: Qualcomm Service Visibility Probe

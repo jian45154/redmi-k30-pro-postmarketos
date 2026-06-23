@@ -126,6 +126,21 @@ Exit criteria:
 
 Goal: expose a wireless interface and a Bluetooth HCI adapter.
 
+Local reference note:
+
+- The user-provided tree at
+  `/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/linux-sm8250-xiaomi-lmi`
+  documents a mainline path where QCA6391 Wi-Fi works through `ath11k_pci`
+  with a QCA6390 PMU, GPIO20/21 enable lines, PCI endpoint `17cb:1101`, and
+  matching device firmware.
+- The current pmOS downstream 4.19 build is still on the CNSS2/QCA CLD path
+  (`CONFIG_QCA_CLD_WLAN_PROFILE="qca6390"`), not the mainline `ath11k_pci`
+  path. Treat the mainline tree as evidence for power/reset topology and
+  firmware expectations, not as a drop-in driver model.
+- The same external tree contains SDX55M modem bring-up notes. Keep that
+  separate from WLAN: it is PCIe/MHI/Sahara modem work and must not introduce
+  EDL, firehose, NV, or modem partition writes into Wi-Fi debugging.
+
 Wi-Fi probes:
 
 - `ip link`
