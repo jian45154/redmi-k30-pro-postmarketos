@@ -1,0 +1,30 @@
+#!/sbin/openrc-run
+
+description="Expose xiaomi-lmi stock firmware partitions"
+
+depend() {
+	need udev
+	before rmtfs tqftpserv wpa_supplicant bluetooth
+}
+
+start() {
+	local fw_mnt="/mnt/vendor/firmware_mnt"
+	local wlan_fw="$fw_mnt/image/qca6390"
+
+	ebegin "Mounting xiaomi-lmi firmware partition"
+	mkdir -p "$fw_mnt" /lib/firmware
+
+	if ! mountpoint -q "$fw_mnt"; then
+		mount -o ro -t vfat /dev/disk/by-partlabel/modem "$fw_mnt" || {
+			eend 1
+			return 1
+		}
+	fi
+
+	if [ -d "$wlan_fw" ] && [ ! -d /lib/firmware/qca6390 ]; then
+		ln -sfn "$wlan_fw" /lib/firmware/qca6390
+	fi
+
+	[ -r /lib/firmware/qca6390/amss20.bin ]
+	eend $?
+}

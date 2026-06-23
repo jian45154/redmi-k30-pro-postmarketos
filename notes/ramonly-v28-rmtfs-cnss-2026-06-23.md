@@ -106,3 +106,41 @@ only regulatory database firmware:
 
 The kernel logs request `qca6390/amss20.bin` with fallback `amss20.bin`, so the
 next network bring-up stage also needs a vetted firmware package source for lmi.
+
+## Firmware source found
+
+The device's existing stock `modem` partition is vfat and can be mounted
+read-only. It contains the QCA6390 firmware requested by the downstream kernel:
+
+```text
+/tmp/fw-modem/image/qca6390/amss20.bin
+/tmp/fw-modem/image/qca6390/m3.bin
+/tmp/fw-modem/image/qca6390/regdb.bin
+/tmp/fw-modem/image/qca6390/regdb_j11.bin
+/tmp/fw-modem/image/qca6390/bdwlan.elf
+/tmp/fw-modem/image/qca6390/bdwlan.e01 ... bdwlan.e18, bdwlan.e25
+```
+
+Key hashes from the mounted stock partition:
+
+```text
+3c4c0c04df036db96a33fe322fb7f5b1294aa606c040ee506c7e904ddd5e9459  amss20.bin
+b2f804de850865a23905afe1b9b614f42f3af2951c927b8a144aed8e3b9c78ce  m3.bin
+8a96951dea7a5fef2846a8330e859c471b8a688a358cb2c379853ecec2578419  regdb.bin
+536859e4ebd5073ff32f56dd3dd06fae8177a564bd0492b079d7bc8b6fc5072f  regdb_j11.bin
+a3ee9de2c77edd268c023eaae55a79177df5619ba2f0be252232919dae549f4f  bdwlan.elf
+```
+
+The stock `bluetooth` partition also contains QCA Bluetooth payloads:
+
+```text
+c6ac59eaa877786f0c883ce087816d8882e06f4850afd36ec1fcc5c2e0b72c5c  htbtfw10.tlv
+008e83a926ccf9ddb18d788552cbbf0c107faf9c99d206baa39860fc619d1ea0  htbtfw20.tlv
+```
+
+`device-xiaomi-lmi` `pkgrel=8` adds `lmi-firmware-mount`, an OpenRC boot service
+that mounts `/dev/disk/by-partlabel/modem` read-only at
+`/mnt/vendor/firmware_mnt` and links `/lib/firmware/qca6390` to
+`/mnt/vendor/firmware_mnt/image/qca6390`. This avoids committing proprietary
+firmware blobs while satisfying the downstream firmware path
+`qca6390/amss20.bin`.
