@@ -641,6 +641,34 @@ cfc5748035bccb9a4c5b3c1683ef887aa3ce7ce802d6d19fc69d4141b28f6570  boot-linux-cop
 facabcaac7745be9e5bf1c94338ffd974d6ca6fa8982513edac69b721af0cf0b  boot-linux-copydown-lmi.manifest
 ```
 
+Release bundle:
+
+```sh
+scripts/47_make_lmi_release_bundle.sh
+```
+
+Generated bundle:
+
+```text
+/tmp/lmi-release-r6-bootmem-20260624
+```
+
+The bundle contains the r6 copydown boot image, copydown manifest, sparse
+rootfs image, direct pmbootstrap boot image for comparison, vmlinuz, runtime
+DTB, initramfs, `SHA256SUMS`, and a README that repeats the no-flash safety
+boundary.
+
+Read-only fastbootd preflight:
+
+```sh
+scripts/48_preflight_lmi_fastbootd.sh
+```
+
+The script verifies the local copydown image and reads fastboot variables only.
+It fails unless `product=lmi`, `unlocked=yes`, and `is-userspace=yes`. Current
+device state returned `is-userspace=no`, so persistent flashing remains blocked
+until the phone is in recovery fastbootd.
+
 Assessment:
 
 - r6 is now the strongest host-side candidate after the r5 copydown image.

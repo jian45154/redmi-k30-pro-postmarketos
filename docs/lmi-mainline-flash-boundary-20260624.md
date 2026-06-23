@@ -180,3 +180,78 @@ runtime_dtb_sha256=b9e390e417fe89a1e60549286ab7f1df2ec77eab2a56a6fc0d6d6a7456733
 
 Evaluate r6 as a copydown boot image, not as a plain pmbootstrap direct boot
 image.
+
+## Release bundle and preflight
+
+Host-side release bundle generated on 2026-06-24:
+
+```sh
+scripts/47_make_lmi_release_bundle.sh
+```
+
+Bundle path:
+
+```text
+/tmp/lmi-release-r6-bootmem-20260624
+```
+
+Bundle contents:
+
+```text
+boot-linux-copydown-lmi-r6-bootmem.img          15892480 bytes
+boot-linux-copydown-lmi-r6-bootmem.manifest        2613 bytes
+xiaomi-lmi-r6-bootmem.img                    1256602620 bytes
+pmbootstrap-direct-boot-r6-bootmem.img         40128512 bytes
+vmlinuz-r6-bootmem                             30296072 bytes
+sm8250-xiaomi-lmi-r6-bootmem.dtb                 135561 bytes
+initramfs-r6-bootmem                            9551148 bytes
+SHA256SUMS
+README.txt
+```
+
+Bundle hashes:
+
+```text
+cfc5748035bccb9a4c5b3c1683ef887aa3ce7ce802d6d19fc69d4141b28f6570  boot-linux-copydown-lmi-r6-bootmem.img
+facabcaac7745be9e5bf1c94338ffd974d6ca6fa8982513edac69b721af0cf0b  boot-linux-copydown-lmi-r6-bootmem.manifest
+24918896b43c962f1a54da44d53ad7fb722e9324a96dd6f1d1d3c93d832d73a7  xiaomi-lmi-r6-bootmem.img
+bdccac69e54cab35044f24d3ce4914e2fced548879af47ae1d88038024d9cf5e  pmbootstrap-direct-boot-r6-bootmem.img
+91e17b132e95c48a86e3fe910075344162fd8e5082ba0f36e9441cb0675bc49c  vmlinuz-r6-bootmem
+b9e390e417fe89a1e60549286ab7f1df2ec77eab2a56a6fc0d6d6a7456733b32  sm8250-xiaomi-lmi-r6-bootmem.dtb
+c3f6fe0b58c6ad1a8329deff8ac35305dd5868bac71ddeca55708ad259fd4a85  initramfs-r6-bootmem
+```
+
+Read-only preflight command:
+
+```sh
+LMI_COPYDOWN_BOOT_IMG=/tmp/lmi-release-r6-bootmem-20260624/boot-linux-copydown-lmi-r6-bootmem.img \
+LMI_COPYDOWN_MANIFEST=/tmp/lmi-release-r6-bootmem-20260624/boot-linux-copydown-lmi-r6-bootmem.manifest \
+LMI_ROOTFS_IMG=/tmp/lmi-release-r6-bootmem-20260624/xiaomi-lmi-r6-bootmem.img \
+scripts/48_preflight_lmi_fastbootd.sh
+```
+
+Current read-only preflight result:
+
+```text
+copydown boot verification: OK
+product=lmi
+unlocked=yes
+is-userspace=no
+partition-type:boot=raw
+partition-size:boot=0x8000000
+partition-type:userdata=f2fs
+partition-size:userdata=0x1AC07FB000
+boot_img_sha256=cfc5748035bccb9a4c5b3c1683ef887aa3ce7ce802d6d19fc69d4141b28f6570
+boot_img_size=15892480
+rootfs_img_sha256=24918896b43c962f1a54da44d53ad7fb722e9324a96dd6f1d1d3c93d832d73a7
+rootfs_img_size=1256602620
+rootfs_expanded_size=2150629376
+preflight: FAIL
+is-userspace must be yes for recovery fastbootd, got no
+```
+
+Assessment:
+
+- The r6 boot image and rootfs pass local verification and capacity checks.
+- The device is currently in bootloader fastboot, not recovery fastbootd.
+- Do not flash while `is-userspace=no`.
