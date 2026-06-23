@@ -338,6 +338,53 @@ The helper intentionally does not write `super`, `dtbo`, `vbmeta`, `persist`,
 modem/EFS/calibration partitions, `vendor_boot`, `init_boot`, or bootloader lock
 state.
 
+## Post-boot evidence monitor
+
+After an explicitly approved reboot from the flashed state, collect milestone
+evidence with:
+
+```sh
+scripts/54_monitor_lmi_post_boot.sh --timeout 180
+```
+
+The monitor is read-only from the host side. It records:
+
+- `fastboot devices`;
+- `adb devices`;
+- `ip -br addr`;
+- TCP reachability to `172.16.42.1:23` for the postmarketOS initramfs telnet
+  debug shell;
+- TCP reachability to `172.16.42.1:2222` for SSH.
+
+If telnet is reachable and log collection is desired, run:
+
+```sh
+scripts/54_monitor_lmi_post_boot.sh --timeout 180 --collect-telnet-log
+```
+
+That mode sends read-only debug-shell commands to collect `/pmOS_init.log`,
+`/proc/cmdline`, `/proc/partitions`, mounts, and network state. It does not run
+`pmos_continue_boot`.
+
+Short validation run in the current bootloader-fastboot state:
+
+```sh
+scripts/54_monitor_lmi_post_boot.sh --timeout 5 --interval 1
+```
+
+Result:
+
+```text
+seen_fastboot=1
+seen_adb=0
+seen_telnet_23=0
+seen_ssh_2222=0
+post-boot monitor: only fastboot observed
+```
+
+This matches the current known state and confirms the monitor does not mistake
+bootloader fastboot for postmarketOS initramfs progress.
+
 ## Approval command sheet
 
 Generated on 2026-06-24:
