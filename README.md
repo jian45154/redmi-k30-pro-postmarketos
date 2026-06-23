@@ -38,6 +38,8 @@ Static release checks can be run locally with
 `scripts/59_release_static_ci.sh`. A GitHub Actions workflow template is kept at
 [`docs/release/edge-release-checks.workflow.yml`](docs/release/edge-release-checks.workflow.yml);
 copy it to `.github/workflows/` only with a token that has workflow scope.
+To refresh all local r6 release reports and docs, run
+`scripts/62_refresh_lmi_release_docs.sh --quick`.
 
 ## Read this first
 

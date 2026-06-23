@@ -95,6 +95,13 @@ exact ROM/device state and tested as part of recovery.
 LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/56_lmi_persistent_flash_plan.sh --quick
 LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/49_generate_lmi_flash_command_sheet.sh
 LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/57_archive_lmi_release_manifest.sh
+LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/58_generate_lmi_execution_checklist.sh
+\`\`\`
+
+Single-command refresh:
+
+\`\`\`sh
+LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/62_refresh_lmi_release_docs.sh --quick
 \`\`\`
 
 ## Approval-Required Hardware Commands
