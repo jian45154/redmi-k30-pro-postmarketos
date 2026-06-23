@@ -1,19 +1,26 @@
 # Redmi K30 Pro (`lmi`) → postmarketOS / Linux
 
 Turning a **Redmi K30 Pro / POCO F2 Pro** (`lmi`, Qualcomm **SM8250 / Snapdragon 865**)
-into a native Linux device with **postmarketOS**, built from the downstream
-LineageOS 4.19 vendor kernel with **Clang/LLVM** under **WSL2 + pmbootstrap**.
+into a native Linux device with **postmarketOS**. The archived stable baseline
+uses the downstream LineageOS 4.19 vendor kernel with **Clang/LLVM** under
+**WSL2 + pmbootstrap**; the current `edge` work tracks the mainline/copydown r6
+route separately.
 
 ## Status
 
 - ✅ **Kernel + DTBs + full image build** (Clang/LLVM, pmbootstrap).
 - ✅ **Rootfs mounts on real hardware** from `userdata` using nested GPT loop
   partitions (`/dev/loop0p2` as `/`, `/dev/loop0p1` as `/boot`).
-- ✅ **Normal userspace + SSH works** with a RAM-only `fastboot boot` kernel.
+- ✅ **Normal userspace + SSH works** on the downstream v27 baseline, including
+  prior RAM-only `fastboot boot` validation.
 - ✅ **USB networking works on Windows** as RNDIS gadget
   (`0525:a4a2 POSTMARKETOS`, host `172.16.42.2`, device `172.16.42.1`).
-- ✅ **Persistent v27 boot is installed**: `boot` and `userdata` now boot into
+- ✅ **Persistent downstream v27 boot was installed**: `boot` and `userdata` boot into
   postmarketOS without `fastboot boot`.
+- ⏳ **Mainline/copydown r6 persistent test is staged, not flashed**. This route
+  no longer requires a successful RAM-only boot as a prerequisite; it is gated
+  on recovery fastbootd (`is-userspace=yes`) and fresh exact approval for each
+  write.
 - ⏳ **Display userspace takeover** — kernel DRM/KGSL and the DSI panel are
   present, but the screen remains on the Redmi logo because no compositor takes
   over the continuous splash.
@@ -31,7 +38,8 @@ hardware gate are documented in:
 - [`docs/release/lmi-r6-bootmem-execution-checklist-20260624.md`](docs/release/lmi-r6-bootmem-execution-checklist-20260624.md)
 - [`docs/release/lmi-r6-current-handoff-20260624.md`](docs/release/lmi-r6-current-handoff-20260624.md)
 
-Current gate: `WAITING_FOR_RECOVERY_FASTBOOTD`. Do not flash while
+Current gate: `WAITING_FOR_RECOVERY_FASTBOOTD`. RAM-only boot is optional
+evidence for this route, not a mandatory prerequisite. Do not flash while
 `is-userspace=no`. The next hardware-state command still requires fresh exact
 approval: `fastboot reboot fastboot`.
 
@@ -68,7 +76,7 @@ Kernel source: `LineageOS/android_kernel_xiaomi_sm8250` @ `a5b3099`
 ## Build it
 
 ```bash
-# in WSL, with pmbootstrap configured for device xiaomi-lmi (channel edge)
+# in WSL, with pmbootstrap configured for the downstream v27 xiaomi-lmi baseline
 pmbootstrap checksum linux-xiaomi-lmi
 pmbootstrap build    linux-xiaomi-lmi          # ~16 min cold
 pmbootstrap checksum device-xiaomi-lmi
@@ -77,6 +85,10 @@ pmbootstrap install  --no-fde
 pmbootstrap export                              # -> /tmp/postmarketOS-export/
 fastboot boot /tmp/postmarketOS-export/boot.img # RAM only; writes nothing
 ```
+
+For the mainline/copydown r6 route, use the release checklist instead of the
+downstream quick recipe. The staged persistent path is documented in
+[`docs/release/lmi-r6-bootmem-execution-checklist-20260624.md`](docs/release/lmi-r6-bootmem-execution-checklist-20260624.md).
 
 ## Repo layout
 
