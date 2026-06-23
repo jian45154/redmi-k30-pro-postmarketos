@@ -98,6 +98,7 @@ LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/57_archive_lmi_release_manifest.s
 LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/58_generate_lmi_execution_checklist.sh
 LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/64_audit_lmi_persistent_readiness.sh
 LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/66_wait_and_audit_lmi_fastbootd.sh --quick
+scripts/67_summarize_lmi_post_boot_evidence.sh
 \`\`\`
 
 Single-command refresh:
