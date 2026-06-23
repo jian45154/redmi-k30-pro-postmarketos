@@ -34,6 +34,7 @@ Observed:
 ## Task 1: Build v28 Hardware-Tools Image
 
 Owner: Coordinator
+Status: blocked locally until `PMOS_INSTALL_PASSWORD` is set in the shell.
 
 Purpose: provide display, audio, Wi-Fi, and Bluetooth diagnostic tools in the
 rootfs without changing the proven v27 boot path unless required.
@@ -58,6 +59,46 @@ Exit criteria:
 - v28 boot/userdata manifest exists and records hashes.
 - Static check confirms the loop-device fix remains present.
 - No partition write has occurred.
+
+## Task 1A: Current v27 Service Probe
+
+Owner: Coordinator
+Status: completed once on 2026-06-23.
+
+Command:
+
+```sh
+ssh -o BatchMode=yes -o ConnectTimeout=5 lmi@172.16.42.1 'sh -s' < scripts/32_firmware_service_probe.sh
+```
+
+Redacted evidence:
+
+- `logs/firmware-service-probe-v27-20260623.redacted.txt`
+
+Observed:
+
+- `/lib/firmware` still contains only `regulatory.db` and
+  `regulatory.db.p7s`.
+- `/dev/subsys_adsp`, `/dev/subsys_cdsp`, `/dev/subsys_slpi`,
+  `/dev/subsys_venus`, and `/dev/subsys_wlan` exist.
+- `/dev/rmtfs0`, `/dev/rmtfs1`, `/dev/qrtr`, and `/dev/qrtr*` do not exist.
+- `pd-mapper`, `rmtfs`, and `tqftpserv` services are installed but stopped.
+- `qrtr-ns` service does not exist.
+- `bluetooth` service does not exist.
+- WLAN PCI endpoint `0000:01:00.0` has `enable=0`.
+- `iw dev` returns no wireless interface.
+- Bluetooth has only `bt_power` rfkill and is soft-blocked.
+- `/proc/asound/cards` reports no soundcards; `/dev/snd` only has `timer`.
+- Qualcomm audio platform devices are present under `/sys/bus/platform`, so the
+  current blocker is below PulseAudio/PipeWire.
+
+Kernel config audit notes:
+
+- `CONFIG_QRTR=y`, `CONFIG_QRTR_SMD=y`, and `CONFIG_QRTR_MHI=y`, but no QRTR
+  device node is visible.
+- `CONFIG_SND_SOC_QCOM` and `CONFIG_QCOM_APR` are disabled, despite visible
+  Qualcomm Q6/LPASS/MSM audio platform devices.
+- `CONFIG_BT_SLIM_QCA6390=y`; `CONFIG_BT_HCIUART` is disabled.
 
 ## Task 2: Display Userspace Probe
 
@@ -122,6 +163,35 @@ Exit criteria:
 
 - `notes/firmware-inventory-YYYY-MM-DD.md` exists.
 - No proprietary binary is committed.
+
+## Task 3A: Extract LineageOS Vendor Image
+
+Owner: Firmware Services Agent
+Status: ready.
+
+Known local source:
+
+```text
+/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lineage-23.2-20260422-nightly-lmi-signed/vendor.new.dat.br
+/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lineage-23.2-20260422-nightly-lmi-signed/vendor.transfer.list
+```
+
+Tool:
+
+```sh
+scripts/34_extract_android_dat_partition.sh \
+  "/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lineage-23.2-20260422-nightly-lmi-signed/vendor.new.dat.br" \
+  "/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lineage-23.2-20260422-nightly-lmi-signed/vendor.transfer.list" \
+  /tmp/lmi-lineage-vendor
+```
+
+Then generate a publishable inventory:
+
+```sh
+scripts/33_firmware_inventory.sh /tmp/lmi-lineage-vendor/vendor.files > notes/firmware-inventory-2026-06-23.md
+```
+
+Do not commit extracted firmware files or raw images.
 
 ## Task 4: Qualcomm Service Visibility Probe
 

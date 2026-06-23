@@ -13,7 +13,7 @@ run() {
 
 grep_dmesg() {
 	pattern=$1
-	dmesg | grep -Ei "$pattern" | tail -240 || true
+	dmesg | grep -Ei "$pattern" | grep -Eiv 'FTS|TOUCH_UP|Points All Up' | tail -240 || true
 }
 
 section "identity"

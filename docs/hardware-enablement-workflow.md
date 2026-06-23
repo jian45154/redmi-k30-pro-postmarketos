@@ -30,11 +30,16 @@ otherwise.
   - `scripts/28_hardware_extra_check.sh`
   - `scripts/29_display_userspace_probe.sh`
   - `scripts/31_post_reboot_stability_check.sh`
+  - `scripts/32_firmware_service_probe.sh`
+- Firmware inventory tools:
+  - `scripts/33_firmware_inventory.sh`
+  - `scripts/34_extract_android_dat_partition.sh`
 - Evidence:
   - `logs/full-hardware-check-v27-persistent-20260623.redacted.txt`
   - `logs/full-hardware-check-v27-persistent-extra-20260623.redacted.txt`
   - `logs/display-userspace-probe-v27-before-v28-20260623.redacted.txt`
   - `logs/post-reboot-stability-v27-20260623.redacted.txt`
+  - `logs/firmware-service-probe-v27-20260623.redacted.txt`
 
 ## Phase 0: Reproducible Control Point
 

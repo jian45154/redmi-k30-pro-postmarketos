@@ -1,0 +1,711 @@
+
+=== identity ===
+$ id
+uid=10000(lmi) gid=10000(lmi) groups=10(wheel),18(audio),23(input),27(video),28(netdev),102(plugdev),10000(lmi)
+$ uname -a
+Linux xiaomi-lmi 4.19.325-cip128-st12-perf #7-postmarketOS SMP PREEMPT Mon Jun 22 18:40:33 UTC 2026 aarch64 Linux
+$ cat /proc/cmdline
+cgroup_disable=pressure ramoops_memreserve=4M rcupdate.rcu_expedited=1 rcu_nocbs=0-7 kpti=off androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery  pmos_boot_uuid=<redacted> pmos_root_uuid=<redacted> pmos_rootfsopts=defaults androidboot.verifiedbootstate=orange androidboot.keymaster=1  androidboot.bootdevice=1d84000.ufshc androidboot.fstab_suffix=default androidboot.boot_devices=soc/1d84000.ufshc androidboot.serialno=<redacted> androidboot.secureboot=1 androidboot.hwversion=3.9.0 androidboot.cpuid=<redacted> androidboot.camera.config=1 androidboot.network.mode=1 androidboot.hwc=CN androidboot.hwlevel=MP androidboot.product.hardware.sku=std androidboot.baseband=mdm msm_drm.dsi_display0=qcom,mdss_dsi_j11_38_08_0a_fhd_cmd: androidboot.dtbo_idx=7 androidboot.dtb_idx=0 androidboot.ramdump=disable block2mtd.block2mtd=/dev/block/sda15,2097152 mtdoops.mtddev=0 mtdoops.record_size=2097152 mtdoops.dump_oops=0 printk.always_kmsg_dump=1 androidboot.dp=0x0 androidboot.cert=M2001J11E
+
+=== firmware inventory ===
+$ find /lib/firmware -maxdepth 5 -type f
+/lib/firmware/regulatory.db
+/lib/firmware/regulatory.db.p7s
+
+=== qualcomm service nodes ===
+$ ls -l /dev/subsys_adsp /dev/subsys_cdsp /dev/subsys_slpi /dev/subsys_venus /dev/subsys_wlan /dev/rmtfs0 /dev/rmtfs1 /dev/qrtr /dev/qrtr*
+ls: /dev/rmtfs0: No such file or directory
+ls: /dev/rmtfs1: No such file or directory
+ls: /dev/qrtr: No such file or directory
+ls: /dev/qrtr*: No such file or directory
+crw-------    1 root     root      236,   2 Nov 28 07:11 /dev/subsys_adsp
+crw-------    1 root     root      236,   3 Nov 28 07:11 /dev/subsys_cdsp
+crw-------    1 root     root      236,   8 Nov 28 07:11 /dev/subsys_slpi
+crw-------    1 root     root      236,   4 Nov 28 07:11 /dev/subsys_venus
+crw-------    1 root     root      236,  10 Nov 28 07:11 /dev/subsys_wlan
+$ ls -l /sys/class/remoteproc
+ls: /sys/class/remoteproc: No such file or directory
+
+=== service state ===
+$ rc-status -a
+Runlevel: shutdown
+ savecache                                                         [  stopped  ]
+ killprocs                                                         [  stopped  ]
+ mount-ro                                                          [  stopped  ]
+Runlevel: nonetwork
+Runlevel: boot
+ modules                                                           [  started  ]
+ hwclock                                                           [  started  ]
+ tmpfs                                                             [  started  ]
+ hostname                                                          [  started  ]
+ sysctl                                                            [  started  ]
+ bootmisc                                                          [  started  ]
+ logbookd                                                          [  started  ]
+Runlevel: sysinit
+ dmesg                                                             [  started  ]
+ devfs                                                             [  started  ]
+ udev                                                              [  started  ]
+ udev-trigger                                                      [  started  ]
+ udev-settle                                                       [  started  ]
+Runlevel: default
+ postmarketos-zram-swap                                            [  stopped  ]
+ swapfile                                                          [  started  ]
+ cgroups                                                           [  started  ]
+ dbus                                                              [  started  ]
+ nftables                                                          [  stopped  ]
+ haveged                                                           [  started  ]
+ wpa_supplicant                                        [  started 06:06:30 (0) ]
+ networkmanager                                        [  started 06:06:30 (0) ]
+ chronyd                                                           [  started  ]
+ powerkey                                                          [  crashed  ]
+ calld                                                             [  started  ]
+ rfkill                                                            [  started  ]
+ udev-postmount                                                    [  started  ]
+ shelli                                                            [  started  ]
+ smsd                                                              [  started  ]
+ ofono                                                 [  started 06:06:29 (0) ]
+ largefont                                                         [  stopped  ]
+ sshd                                                              [  started  ]
+ openrc-settingsd                                                  [  started  ]
+ sleep-inhibitor                                       [  started 06:06:29 (0) ]
+ local                                                             [  started  ]
+Dynamic Runlevel: hotplugged
+Dynamic Runlevel: needed/wanted
+ sysfs                                                             [  started  ]
+ fsck                                                              [  started  ]
+ root                                                              [  started  ]
+ localmount                                                        [  started  ]
+Dynamic Runlevel: manual
+$ ps w
+PID   USER     TIME  COMMAND
+    1 root      0:12 /sbin/init
+    2 root      0:00 [kthreadd]
+    3 root      0:00 [rcu_gp]
+    4 root      0:00 [rcu_par_gp]
+    6 root      0:00 [kworker/0:0H-ev]
+    7 root      0:00 [kworker/u16:0+M]
+    8 root      0:00 [mm_percpu_wq]
+    9 root      0:00 [ksoftirqd/0]
+   10 root      0:01 [rcu_preempt]
+   11 root      0:00 [rcu_sched]
+   12 root      0:00 [rcu_bh]
+   13 root      0:02 [rcuop/0]
+   14 root      0:00 [rcuos/0]
+   15 root      0:00 [rcuob/0]
+   16 root      0:00 [migration/0]
+   17 root      0:00 [cpuhp/0]
+   19 root      0:00 [cpuhp/1]
+   20 root      0:00 [migration/1]
+   21 root      0:00 [ksoftirqd/1]
+   22 root      0:00 [kworker/1:0-eve]
+   23 root      0:00 [kworker/1:0H-ev]
+   24 root      0:01 [rcuop/1]
+   25 root      0:00 [rcuos/1]
+   26 root      0:00 [rcuob/1]
+   27 root      0:00 [cpuhp/2]
+   28 root      0:00 [migration/2]
+   29 root      0:00 [ksoftirqd/2]
+   31 root      0:00 [kworker/2:0H-ev]
+   32 root      0:01 [rcuop/2]
+   33 root      0:00 [rcuos/2]
+   34 root      0:00 [rcuob/2]
+   35 root      0:00 [cpuhp/3]
+   36 root      0:00 [migration/3]
+   37 root      0:00 [ksoftirqd/3]
+   39 root      0:00 [kworker/3:0H-ev]
+   40 root      0:00 [rcuop/3]
+   41 root      0:00 [rcuos/3]
+   42 root      0:00 [rcuob/3]
+   43 root      0:00 [cpuhp/4]
+   44 root      0:00 [migration/4]
+   45 root      0:00 [ksoftirqd/4]
+   46 root      0:00 [kworker/4:0-mm_]
+   47 root      0:00 [kworker/4:0H-ev]
+   48 root      0:00 [rcuop/4]
+   49 root      0:00 [rcuos/4]
+   50 root      0:00 [rcuob/4]
+   51 root      0:00 [cpuhp/5]
+   52 root      0:00 [migration/5]
+   53 root      0:00 [ksoftirqd/5]
+   54 root      0:00 [kworker/5:0-rcu]
+   55 root      0:00 [kworker/5:0H-ev]
+   56 root      0:00 [rcuop/5]
+   57 root      0:00 [rcuos/5]
+   58 root      0:00 [rcuob/5]
+   59 root      0:00 [cpuhp/6]
+   60 root      0:00 [migration/6]
+   61 root      0:00 [ksoftirqd/6]
+   63 root      0:00 [kworker/6:0H-ev]
+   64 root      0:00 [rcuop/6]
+   65 root      0:00 [rcuos/6]
+   66 root      0:00 [rcuob/6]
+   67 root      0:00 [cpuhp/7]
+   68 root      0:00 [migration/7]
+   69 root      0:00 [ksoftirqd/7]
+   71 root      0:00 [kworker/7:0H-ev]
+   72 root      0:00 [rcuop/7]
+   73 root      0:00 [rcuos/7]
+   74 root      0:00 [rcuob/7]
+   75 root      0:00 [kdevtmpfs]
+   76 root      0:00 [netns]
+   77 root      0:00 [rcu_tasks_kthre]
+   78 root      0:00 [kauditd]
+   79 root      0:00 [kworker/5:1-eve]
+   80 root      0:00 [kworker/u16:1+L]
+   81 root      0:00 [kworker/4:1-mm_]
+   84 root      0:00 [kworker/7:1-pm]
+   88 root      0:00 [ipa_usb_wq]
+   89 root      0:00 [msm_watchdog]
+   90 root      0:00 [qmp_aop]
+   91 root      0:00 [oom_reaper]
+   92 root      0:00 [writeback]
+   93 root      0:00 [kcompactd0]
+   94 root      0:00 [crypto]
+   95 root      0:00 [kblockd]
+   96 root      0:00 [blk_crypto_wq]
+   97 root      0:00 [irq/156-arm-smm]
+   98 root      0:00 [irq/157-arm-smm]
+   99 root      0:00 [irq/166-arm-smm]
+  100 root      0:00 [irq/167-arm-smm]
+  101 root      0:00 [irq/41-tsens-up]
+  102 root      0:00 [irq/42-tsens-cr]
+  103 root      0:00 [irq/43-tsens-up]
+  104 root      0:00 [irq/44-tsens-cr]
+  105 root      0:00 [edac-poller]
+  106 root      0:00 [irq/8-dcvsh-irq]
+  107 root      0:00 [irq/9-dcvsh-irq]
+  108 root      0:00 [irq/10-dcvsh-ir]
+  109 root      0:00 [ion-pool-uncach]
+  110 root      0:00 [ion-pool-cached]
+  111 root      0:00 [system]
+  112 root      0:00 [ion-pool-uncach]
+  113 root      0:00 [ion-pool-cached]
+  114 root      0:00 [camera]
+  115 root      0:00 [ipa_power_mgmt]
+  116 root      0:00 [transport_power]
+  117 root      0:00 [ipa_pm_activate]
+  118 root      0:00 [irq/173-arm-smm]
+  119 root      0:00 [irq/174-arm-smm]
+  120 root      0:00 [irq/175-arm-smm]
+  121 root      0:00 [irq/176-arm-smm]
+  122 root      0:00 [devfreq_wq]
+  123 root      0:00 [governor_msm_ad]
+  124 root      0:00 [irq/177-arm-smm]
+  125 root      0:00 [kworker/7:2-eve]
+  126 root      0:00 [irq/178-arm-smm]
+  127 root      0:00 [irq/179-arm-smm]
+  128 root      0:00 [cfg80211]
+  169 root      0:00 [kswapd0:0]
+  228 root      0:00 [irq/180-arm-smm]
+  229 root      0:00 [irq/181-arm-smm]
+  230 root      0:00 [irq/182-arm-smm]
+  231 root      0:00 [irq/377-smp2p]
+  232 root      0:00 [irq/378-smp2p]
+  233 root      0:00 [irq/379-smp2p]
+  234 root      0:00 [geni_serial_dum]
+  235 root      0:00 [okl4vtty]
+  236 root      0:00 [hwrng]
+  238 root      0:00 [diag_real_time_]
+  239 root      0:00 [diag_wq]
+  240 root      0:00 [DIAG_USB_diag]
+  241 root      0:00 [diag_cntl_wq]
+  242 root      0:00 [diag_dci_wq]
+  243 root      0:00 [MODEM_CNTL]
+  244 root      0:00 [MODEM_DATA]
+  245 root      0:00 [MODEM_CMD]
+  246 root      0:00 [MODEM_DCI]
+  247 root      0:00 [MODEM_DCI_CMD]
+  248 root      0:00 [LPASS_CNTL]
+  249 root      0:00 [LPASS_DATA]
+  250 root      0:00 [LPASS_CMD]
+  251 root      0:00 [LPASS_DCI]
+  252 root      0:00 [LPASS_DCI_CMD]
+  253 root      0:00 [WCNSS_CNTL]
+  254 root      0:00 [WCNSS_DATA]
+  255 root      0:00 [WCNSS_CMD]
+  256 root      0:00 [WCNSS_DCI]
+  257 root      0:00 [WCNSS_DCI_CMD]
+  258 root      0:00 [SENSORS_CNTL]
+  259 root      0:00 [SENSORS_DATA]
+  260 root      0:00 [SENSORS_CMD]
+  261 root      0:00 [SENSORS_DCI]
+  262 root      0:00 [SENSORS_DCI_CMD]
+  263 root      0:00 [DIAG_CTRL]
+  264 root      0:00 [DIAG_DATA]
+  265 root      0:00 [DIAG_CMD]
+  266 root      0:00 [DIAG_DCI_DATA]
+  267 root      0:00 [DIAG_DCI_CMD]
+  268 root      0:00 [CDSP_CNTL]
+  269 root      0:00 [CDSP_DATA]
+  270 root      0:00 [CDSP_CMD]
+  271 root      0:00 [CDSP_DCI]
+  272 root      0:00 [CDSP_DCI_CMD]
+  273 root      0:00 [NPU_CNTL]
+  274 root      0:00 [NPU_DATA]
+  275 root      0:00 [NPU_CMD]
+  276 root      0:00 [NPU_DCI]
+  277 root      0:00 [NPU_DCI_CMD]
+  278 root      0:00 [DIAG_RPMSG_DIAG]
+  279 root      0:00 [DIAG_RPMSG_DIAG]
+  280 root      0:00 [DIAG_RPMSG_DIAG]
+  281 root      0:00 [DIAG_RPMSG_DIAG]
+  282 root      0:00 [DIAG_RPMSG_DIAG]
+  283 root      0:00 [DIAG_RPMSG_DIAG]
+  284 root      0:00 [DIAG_RPMSG_DIAG]
+  285 root      0:00 [DIAG_RPMSG_DIAG]
+  286 root      0:00 [DIAG_RPMSG_DIAG]
+  287 root      0:00 [DIAG_RPMSG_DIAG]
+  288 root      0:00 [DIAG_RPMSG_APPS]
+  289 root      0:00 [DIAG_RPMSG_APPS]
+  290 root      0:00 [DIAG_RPMSG_DIAG]
+  291 root      0:00 [DIAG_RPMSG_DIAG]
+  292 root      0:00 [DIAG_RPMSG_DIAG]
+  293 root      0:00 [DIAG_RPMSG_DIAG]
+  294 root      0:00 [DIAG_RPMSG_DIAG]
+  295 root      0:00 [DIAG_RPMSG_DIAG]
+  296 root      0:00 [DIAG_RPMSG_DIAG]
+  297 root      0:00 [DIAG_RPMSG_DIAG]
+  298 root      0:00 [kworker/u16:2+W]
+  299 root      0:00 [kworker/u16:3+S]
+  300 root      0:00 [diag_mhi_MDM]
+  301 root      0:00 [DIAG_USB_diag_m]
+  302 root      0:00 [kworker/u16:4+D]
+  303 root      0:00 [diag_mhi_MDM_DC]
+  304 root      0:00 [kworker/u16:5+C]
+  305 root      0:00 [diag_dci_MDM_DC]
+  306 root      0:00 [kworker/u16:6+N]
+  307 root      0:00 [diag_mhi_MDM_2]
+  308 root      0:00 [kworker/u16:7-f]
+  309 root      0:00 [DIAG_USB_diag_m]
+  310 root      0:00 [diag_mhi_MDM_DC]
+  311 root      0:00 [diag_dci_MDM_DC]
+  312 root      0:00 [kgsl-workqueue]
+  313 root      0:00 [kgsl-mementry]
+  314 root      0:00 [kgsl_worker_thr]
+  315 root      0:00 [qseecom-unreg-l]
+  316 root      0:00 [qseecom-unload-]
+  317 root      0:01 [kworker/u16:8-r]
+  318 root      0:00 [irq/183-arm-smm]
+  319 root      0:00 [irq/184-arm-smm]
+  320 root      0:00 [irq/185-arm-smm]
+  321 root      0:00 [qcrypto_seq_res]
+  322 root      0:00 [irq/186-arm-smm]
+  343 root      0:00 [scsi_eh_0]
+  344 root      0:00 [scsi_tmf_0]
+  345 root      0:00 [ufs_pm_qos_0]
+  346 root      0:00 [ufs_recovery_wq]
+  347 root      0:00 [ufs_clk_gating_]
+  348 root      0:00 [spi0]
+  349 root      0:00 [bond0]
+  351 root      0:00 [atlantic-fwd]
+  352 root      0:00 [irq/187-arm-smm]
+  357 root      0:00 [k_ipa_usb]
+  361 root      0:00 [irq/400-aw8697]
+  362 root      0:00 [aw8976_vibrator]
+  363 root      0:00 [fts_wq]
+  369 root      0:00 [kworker/u16:15-]
+  371 root      0:00 [irq/188-arm-smm]
+  372 root      0:00 [irq/189-arm-smm]
+  374 root      0:00 [irq/401-focal]
+  375 root      0:00 [irq/434-akm0997]
+  376 root      0:00 [akm09970_poll_w]
+  377 root      0:00 [msm_cvp_workerq]
+  378 root      0:00 [pm_workerq_iris]
+  379 root      0:00 [irq/190-arm-smm]
+  380 root      0:00 [irq/191-arm-smm]
+  381 root      0:00 [irq/192-arm-smm]
+  382 root      0:00 [irq/193-arm-smm]
+  383 root      0:00 [npu_general_wq]
+  384 root      0:00 [irq/357-ptrain-]
+  385 root      0:00 [irq/435-ima-rdy]
+  386 root      0:00 [irq/436-ima-xcp]
+  387 root      0:00 [irq/437-dma-xcp]
+  388 root      0:00 [irq/438-dma-gra]
+  389 root      0:00 [irq/439-mem-att]
+  390 root      0:00 [irq/440-batt-mi]
+  391 root      0:00 [irq/441-batt-id]
+  392 root      0:00 [irq/442-batt-te]
+  393 root      0:00 [irq/443-batt-te]
+  394 root      0:00 [irq/444-batt-te]
+  395 root      0:00 [irq/445-vbatt-l]
+  396 root      0:00 [irq/446-vbatt-p]
+  397 root      0:00 [irq/447-esr-del]
+  398 root      0:00 [irq/448-soc-upd]
+  399 root      0:00 [irq/449-soc-rea]
+  400 root      0:00 [irq/450-bsoc-de]
+  401 root      0:00 [irq/451-msoc-de]
+  402 root      0:00 [irq/452-msoc-lo]
+  403 root      0:00 [irq/453-msoc-em]
+  404 root      0:00 [irq/454-msoc-hi]
+  405 root      0:00 [irq/455-msoc-fu]
+  407 root      0:00 [irq/456-bq2597x]
+  408 root      0:00 [irq/319-bcl-lvl]
+  409 root      0:00 [irq/320-bcl-lvl]
+  410 root      0:00 [irq/321-bcl-lvl]
+  411 root      0:00 [irq/337-bcl-lvl]
+  412 root      0:00 [irq/338-bcl-lvl]
+  413 root      0:00 [irq/339-bcl-lvl]
+  414 root      0:00 [kworker/0:1H-kb]
+  415 root      0:00 [kworker/1:1H-kb]
+  416 root      0:00 [kworker/2:1H-kb]
+  417 root      0:00 [kworker/3:1H-kb]
+  418 root      0:00 [kworker/4:1H-kb]
+  419 root      0:00 [kworker/5:1H-kb]
+  420 root      0:00 [kworker/6:1H-kb]
+  421 root      0:00 [kworker/7:1H-kb]
+  422 root      0:00 [dm_bufio_cache]
+  423 root      0:00 [irq/30-KRYO L3-]
+  424 root      0:00 [irq/23-8804000.]
+  425 root      0:00 [memlat_wq]
+  426 root      0:00 [irq/458-mdm sta]
+  427 root      0:00 [irq/194-arm-smm]
+  428 root      0:00 [uaudio_svc]
+  429 root      0:00 [apr_driver]
+  430 root      0:00 [irq/459-tfa98xx]
+  431 root      0:00 [dsi_dma_cmd_wor]
+  432 root      0:00 [dsi_dma_cmd_wor]
+  433 root      0:00 [disp_fod:0]
+  434 root      0:00 [irq/172-arm-smm]
+  435 root      0:00 [irq/195-arm-smm]
+  436 root      0:00 [irq/460-esd_err]
+  437 root      0:00 [crtc_commit:129]
+  438 root      0:00 [crtc_event:129]
+  439 root      0:00 [crtc_commit:184]
+  440 root      0:00 [crtc_event:184]
+  441 root      0:00 [pp_event]
+  442 root      0:00 [msm_vidc_worker]
+  443 root      0:00 [pm_workerq_venu]
+  444 root      0:00 [vidc_core_workq]
+  445 root      0:00 [irq/196-arm-smm]
+  446 root      0:00 [irq/197-arm-smm]
+  447 root      0:00 [irq/198-arm-smm]
+  448 root      0:00 [irq/199-arm-smm]
+  449 root      0:00 [irq/200-arm-smm]
+  450 root      0:00 [irq/201-arm-smm]
+  451 root      0:00 [irq/202-arm-smm]
+  452 root      0:00 [irq/203-arm-smm]
+  453 root      0:00 [irq/204-arm-smm]
+  454 root      0:00 [cam-cpas]
+  455 root      0:00 [qcom,cam_virtua]
+  456 root      0:00 [qcom,cam170-cpa]
+  457 root      0:00 [cam_cci_wq]
+  458 root      0:00 [cam_cci_wq]
+  459 root      0:00 [cam_cci_wq]
+  460 root      0:00 [cam_cci_wq]
+  461 root      0:00 [ipv6_addrconf]
+  463 root      0:00 [irq/380-smp2p]
+  464 root      0:00 [irq/158-arm-smm]
+  465 root      0:00 [irq/159-arm-smm]
+  466 root      0:00 [irq/160-arm-smm]
+  467 root      0:00 [irq/22-mmc0]
+  468 root      0:00 [irq/161-arm-smm]
+  469 root      0:00 [kgsl-events]
+  470 root      0:00 [irq/463-8804000]
+  471 root      0:00 [kgsl_devfreq_wq]
+  479 root      0:00 [irq/464-wdog-sn]
+  480 root      0:00 [irq/465-wdog-ba]
+  481 root      0:00 [irq/467-aicl-do]
+  482 root      0:00 [irq/468-smb-en]
+  483 root      0:00 [irq/469-temp-ch]
+  484 root      0:00 [irq/471-typec-o]
+  485 root      0:00 [irq/473-typec-c]
+  486 root      0:00 [irq/474-typec-v]
+  487 root      0:00 [irq/476-typec-a]
+  488 root      0:00 [irq/477-typec-l]
+  489 root      0:00 [irq/480-dcin-uv]
+  490 root      0:00 [irq/481-dcin-ov]
+  491 root      0:00 [irq/482-dcin-pl]
+  492 root      0:00 [irq/484-dcin-po]
+  493 root      0:00 [irq/485-dcin-en]
+  494 root      0:00 [irq/486-usbin-c]
+  495 root      0:00 [irq/487-usbin-v]
+  496 root      0:00 [irq/488-usbin-u]
+  497 root      0:00 [irq/489-usbin-o]
+  498 root      0:00 [irq/490-usbin-p]
+  499 root      0:00 [irq/492-usbin-s]
+  500 root      0:00 [irq/493-usbin-i]
+  501 root      0:00 [irq/494-bat-tem]
+  502 root      0:00 [irq/495-bat-ov]
+  503 root      0:00 [irq/496-bat-low]
+  504 root      0:00 [irq/497-bat-the]
+  505 root      0:00 [irq/498-bat-ter]
+  506 root      0:00 [irq/501-otg-fai]
+  507 root      0:00 [irq/504-high-du]
+  508 root      0:00 [irq/505-input-c]
+  509 root      0:00 [irq/507-switche]
+  510 root      0:00 [irq/508-chgr-er]
+  511 root      0:00 [irq/509-chg-sta]
+  512 root      0:00 [irq/332-qcom,te]
+  513 root      0:00 [irq/358-qcom,te]
+  514 root      0:00 [irq/368-qcom,te]
+  515 root      0:00 [irq/318-thr-int]
+  516 root      0:00 [irq/335-thr-int]
+  517 root      0:00 [irq/359-thr-int]
+  525 root      0:00 [kworker/6:5-eve]
+  529 root      0:00 [irq/340-sig-tx]
+  530 root      0:00 [irq/341-sig-rx]
+  531 root      0:00 [irq/266-pwr_eve]
+  532 root      0:00 [irq/265-dp_hs_p]
+  533 root      0:00 [irq/268-dm_hs_p]
+  534 root      0:00 [irq/267-ss_phy_]
+  535 root      0:00 [usb_bam_wq]
+  536 root      0:00 [core_ctl/0]
+  537 root      0:00 [core_ctl/4]
+  538 root      0:00 [core_ctl/7]
+  539 root      0:00 [rq_stats]
+  540 root      0:00 [msm_perf:events]
+  541 root      0:00 [cdsprm-wq]
+  542 root      0:00 [cdsprm-wq-delay]
+  544 root      0:00 [irq/205-arm-smm]
+  545 root      0:00 [irq/206-arm-smm]
+  546 root      0:00 [irq/207-arm-smm]
+  547 root      0:00 [irq/208-arm-smm]
+  548 root      0:00 [irq/209-arm-smm]
+  549 root      0:00 [irq/210-arm-smm]
+  550 root      0:00 [irq/211-arm-smm]
+  552 root      0:00 [irq/212-arm-smm]
+  555 root      0:02 [kworker/2:4-eve]
+  556 root      0:00 [irq/213-arm-smm]
+  557 root      0:00 [irq/214-arm-smm]
+  559 root      0:00 [irq/215-arm-smm]
+  560 root      0:00 [irq/216-arm-smm]
+  561 root      0:00 [irq/217-arm-smm]
+  562 root      0:00 [irq/218-arm-smm]
+  563 root      0:00 [irq/219-arm-smm]
+  564 root      0:00 [irq/220-arm-smm]
+  565 root      0:00 [sb-1]
+  566 root      0:00 [ngd_rx_thread1]
+  567 root      0:00 [ngd_notify_sl1]
+  568 root      0:00 [irq/317-qpnp_fl]
+  569 root      0:00 [irq/316-qpnp_fl]
+  570 root      0:00 [irq/315-qpnp_fl]
+ 1666 root      0:01 [loop0]
+ 2571 root      0:00 [jbd2/loop0p2-8]
+ 2572 root      0:00 [ext4-rsv-conver]
+ 2939 root      0:02 /sbin/udevd
+ 3300 root      0:00 [ext4-rsv-conver]
+ 3459 root      0:14 /usr/bin/logbookd -p /run/logbookd.pid -r -g 8192 -d /var/log/logbookd.db
+ 3490 root      0:00 {shelli-calld} /usr/bin/python3 /usr/share/shelli/bin/shelli-calld
+ 3617 messageb  0:00 /usr/bin/dbus-daemon --system --nofork --nopidfile --syslog-only
+ 3638 root      0:00 [kworker/0:5-cgr]
+ 3673 root      0:00 /usr/sbin/haveged --Foreground
+ 3707 root      0:00 supervise-daemon wpa_supplicant --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /sbin/wpa_supplicant -- -u -Dnl80211,wext
+ 3709 root      0:00 /sbin/wpa_supplicant -u -Dnl80211,wext
+ 3737 root      0:00 supervise-daemon networkmanager --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/sbin/NetworkManager -- -n
+ 3738 root      0:00 /usr/sbin/NetworkManager -n
+ 3775 chrony    0:00 /usr/sbin/chronyd -f /etc/chrony/chrony.conf -F 1
+ 3776 chrony    0:00 /usr/sbin/chronyd -f /etc/chrony/chrony.conf -F 1
+ 3862 root      0:00 supervise-daemon ofono --start --pidfile /run/ofono.pid --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/sbin/ofonod -- -n
+ 3863 root      0:00 /usr/sbin/ofonod -n
+ 3893 root      0:00 /usr/libexec/openrc-settingsd --ntp-service=chronyd --syslog
+ 3951 root      0:00 [kworker/0:1-eve]
+ 4042 root      0:00 supervise-daemon sleep-inhibitor --start --respawn-delay 2 --respawn-max 5 --respawn-period 1800 /usr/bin/sleep-inhibitor --
+ 4043 root      0:06 {sleep-inhibitor} /usr/bin/python3 /usr/bin/sleep-inhibitor
+ 4072 root      0:00 {shelli-smsd} /usr/bin/python3 /usr/share/shelli/bin/shelli-smsd
+ 4118 root      0:00 sshd.pam: /usr/sbin/sshd.pam [listener] 0 of 10-100 startups
+ 4210 root      0:00 elogind-daemon
+ 4213 root      0:00 [psimon]
+ 4262 root      0:00 [kworker/3:2-eve]
+ 4335 root      0:00 [kworker/2:2-eve]
+ 4501 root      0:01 [kworker/2:0-eve]
+ 5033 root      0:00 [kworker/6:0-eve]
+ 5467 root      0:00 [kworker/u17:1]
+ 5578 root      0:00 [kworker/u16:9-r]
+ 5963 root      0:00 [kworker/0:0-eve]
+ 6294 root      0:00 [kworker/3:5-eve]
+ 6592 root      0:00 [kworker/2:3-eve]
+ 6859 root      0:00 [kworker/2:1]
+ 7041 root      0:00 [kworker/6:1-eve]
+ 7123 root      0:00 sshd-session.pam: lmi [priv]
+ 7129 root      0:00 [init]
+ 7151 root      0:00 supervise-daemon user.lmi --start --respawn-delay 500ms --respawn-max 3 --respawn-period 5 --notify fd:3 /usr/libexec/rc/bin/openrc-user -- lmi
+ 7159 lmi       0:00 sshd-session.pam: lmi@notty
+ 7160 lmi       0:00 sh -s
+ 7168 lmi       0:00 ps w
+ 9622 root      0:00 [kworker/3:0-eve]
+10415 root      0:00 [kworker/3:3-eve]
+12227 root      0:00 [kworker/3:1-eve]
+12229 root      0:00 [kworker/3:4-eve]
+16513 root      0:01 [kworker/u17:2-d]
+27716 root      0:00 [kworker/1:2-mm_]
+29625 root      0:00 [kworker/u17:0-d]
+$ rc-service pd-mapper status
+ * status: stopped
+$ rc-service rmtfs status
+ * status: stopped
+$ rc-service tqftpserv status
+ * status: stopped
+$ rc-service qrtr-ns status
+ * rc-service: service `qrtr-ns' does not exist
+$ rc-service bluetooth status
+ * rc-service: service `bluetooth' does not exist
+$ rc-service wpa_supplicant status
+ * status: started
+
+=== wifi state ===
+$ ip link
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1000
+    link/loopback <mac-redacted> brd <mac-redacted>
+2: bond0: <BROADCAST,MULTICAST400> mtu 1500 qdisc noop state DOWN qlen 1000
+    link/ether <mac-redacted> brd <mac-redacted>
+3: dummy0: <BROADCAST,NOARP> mtu 1500 qdisc noop state DOWN qlen 1000
+    link/ether <mac-redacted> brd <mac-redacted>
+4: ip_vti0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN qlen 1000
+    link/ipip 0.0.0.0 brd 0.0.0.0
+5: ip6_vti0@NONE: <NOARP> mtu 1364 qdisc noop state DOWN qlen 1000
+    link/tunnel6 <mac-redacted>:<mac-redacted>:00:00:00:00 brd <mac-redacted>:<mac-redacted>:00:00:00:00
+6: sit0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN qlen 1000
+    link/sit 0.0.0.0 brd 0.0.0.0
+7: ip6tnl0@NONE: <NOARP> mtu 1452 qdisc noop state DOWN qlen 1000
+    link/tunnel6 <mac-redacted>:<mac-redacted>:00:00:00:00 brd <mac-redacted>:<mac-redacted>:00:00:00:00
+8: usb0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether <mac-redacted> brd <mac-redacted>
+$ iw dev
+$ cat /sys/bus/pci/devices/0000:01:00.0/enable
+0
+$ cat /sys/module/wlan/parameters/con_mode /sys/module/wlan/parameters/con_mode_epping /sys/module/wlan/parameters/con_mode_ftm /sys/module/wlan/parameters/country_code /sys/module/wlan/parameters/enable_11d /sys/module/wlan/parameters/enable_dfs_chan_scan /sys/module/wlan/parameters/fwpath /sys/module/wlan/parameters/prealloc_disabled /sys/module/wlan/parameters/qdf_log_dump_at_kernel_enable /sys/module/wlan/parameters/qdf_log_flush_timer_period /sys/module/wlan/parameters/timer_multiplier
+0
+0
+0
+(null)
+-1
+-1
+
+cat: can't open '/sys/module/wlan/parameters/prealloc_disabled': Permission denied
+cat: can't open '/sys/module/wlan/parameters/qdf_log_dump_at_kernel_enable': Permission denied
+cat: can't open '/sys/module/wlan/parameters/qdf_log_flush_timer_period': Permission denied
+1
+=== bluetooth state ===
+$ rfkill list
+0: bt_power: Bluetooth
+	Soft blocked: yes
+	Hard blocked: no
+$ ls -l /sys/class/bluetooth /sys/class/rfkill
+/sys/class/bluetooth:
+total 0
+
+/sys/class/rfkill:
+total 0
+lrwxrwxrwx    1 root     root             0 Nov 28 07:11 rfkill0 -> ../../devices/platform/vendor/vendor:bt_qca6390/rfkill/rfkill0
+
+=== audio state ===
+$ cat /proc/asound/cards
+--- no soundcards ---
+$ cat /proc/asound/devices
+ 33:        : timer
+$ ls -l /dev/snd
+total 0
+crw-rw----    1 root     audio     116,  33 Nov 28 07:11 timer
+$ aplay -l
+aplay: device_list:279: no soundcards found...
+$ arecord -l
+arecord: device_list:279: no soundcards found...
+$ find /sys/bus/platform/devices -maxdepth 1 -iname *audio* -o -iname *msm-dai* -o -iname *wcd* -o -iname *lpass*
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-be-afe-pcm-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-sen-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-va-cdc-dma-1-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-tert-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-7-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-incall-music-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-be-afe-pcm-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-3-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-4-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-tert-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-0-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-1-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-quin
+/sys/bus/platform/devices/soc:usb_audio_qmi_dev
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-tert-rx:qcom,msm-dai-q6-tdm-tert-rx-1
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-6-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-sen-rx:qcom,msm-dai-q6-tdm-sen-rx-0
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-3-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-0-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-sec-rx:qcom,msm-dai-q6-tdm-sec-rx-0
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-quat-tx:qcom,msm-dai-q6-tdm-quat-tx-0
+/sys/bus/platform/devices/17300000.qcom,lpass
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-1-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6-spdif-pri-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-3-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-1-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-sec
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-0-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6-spdif-pri-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-mi2s
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-tert-tx:qcom,msm-dai-q6-tdm-tert-tx-1
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-afe-proxy-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-fe
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-va-cdc-dma-0-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-8-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-senary
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-afe-proxy-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-5-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-6-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-usb-audio-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-2-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-3-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6-spdif-sec-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-8-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-0-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-quat
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-5-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-tert
+/sys/bus/platform/devices/soc:qcom,msm-audio-apr
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-quat-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-usb-audio-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-2-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6-spdif-sec-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6-dp
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-pri-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-quat-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-bt-sco-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-0-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-incall-record-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6-afe-loopback-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-5-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-pri-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-bt-sco-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-2-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-0-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-incall-record-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-tert-rx:qcom,msm-dai-q6-tdm-tert-rx-0
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-quin-rx:qcom,msm-dai-q6-tdm-quin-rx-0
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-int-fm-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-va-cdc-dma-2-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-sec-tx
+/sys/bus/platform/devices/soc:qcom,audio-pkt-core-platform
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6-dp1
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-7-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-int-fm-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-pri-tx:qcom,msm-dai-q6-tdm-pri-tx-0
+/sys/bus/platform/devices/soc:qcom,msm-ext-disp:qcom,msm-ext-disp-audio-codec-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-4-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-5-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6-hdmi
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-sec-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-1-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-rx-cdc-dma-2-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-7-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-4-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-proxy-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-sb-1-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-incall-music-2-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-quin-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-wsa-cdc-dma-2-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-tert-tx:qcom,msm-dai-q6-tdm-tert-tx-0
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-quin-tx:qcom,msm-dai-q6-tdm-quin-tx-0
+/sys/bus/platform/devices/soc:qcom,msm-dai-q6:qcom,msm-dai-q6-proxy-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-sen-tx:qcom,msm-dai-q6-tdm-sen-tx-0
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-quin-rx
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-4-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-mi2s:qcom,msm-dai-q6-mi2s-prim
+/sys/bus/platform/devices/soc:qcom,msm-dai-cdc-dma:qcom,msm-dai-tx-cdc-dma-1-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-sec-tx:qcom,msm-dai-q6-tdm-sec-tx-0
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-sen-tx
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-pri-rx:qcom,msm-dai-q6-tdm-pri-rx-0
+/sys/bus/platform/devices/soc:qcom,msm-dai-tdm-quat-rx:qcom,msm-dai-q6-tdm-quat-rx-0
+
+=== focused dmesg firmware services ===
+
+=== focused dmesg audio bluetooth ===
