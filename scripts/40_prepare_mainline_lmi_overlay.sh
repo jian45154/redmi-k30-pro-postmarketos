@@ -15,6 +15,7 @@ android_cmdline=false
 no_zboot=false
 no_efi_stub=false
 arm64_48bit=false
+boot_critical_dts=false
 
 update_sha512_sum() {
 	local apkbuild=$1
@@ -87,6 +88,14 @@ case "${1:-}" in
 	no_efi_stub=true
 	arm64_48bit=true
 	;;
+--debug-shell-android-cmdline-no-efi-stub-48bit-bootmem)
+	debug_shell=true
+	android_cmdline=true
+	no_zboot=true
+	no_efi_stub=true
+	arm64_48bit=true
+	boot_critical_dts=true
+	;;
 --restore-downstream)
 	rm -rf "$dst_root/device-xiaomi-lmi" \
 		"$dst_root/firmware-xiaomi-lmi" \
@@ -104,7 +113,7 @@ case "${1:-}" in
 "")
 	;;
 *)
-	echo "usage: $0 [--debug-shell|--debug-shell-android-cmdline|--debug-shell-android-cmdline-no-zboot|--debug-shell-android-cmdline-no-efi-stub|--debug-shell-android-cmdline-no-efi-stub-48bit|--restore-downstream]" >&2
+	echo "usage: $0 [--debug-shell|--debug-shell-android-cmdline|--debug-shell-android-cmdline-no-zboot|--debug-shell-android-cmdline-no-efi-stub|--debug-shell-android-cmdline-no-efi-stub-48bit|--debug-shell-android-cmdline-no-efi-stub-48bit-bootmem|--restore-downstream]" >&2
 	exit 1
 	;;
 esac
@@ -198,6 +207,17 @@ if [ "$arm64_48bit" = true ]; then
 	disable_kernel_config "$kernel_config" CONFIG_ARM64_PA_BITS_52
 	set_kernel_config_value "$kernel_config" CONFIG_ARM64_PA_BITS 48
 	disable_kernel_config "$kernel_config" CONFIG_ARM64_LPA2
+fi
+if [ "$boot_critical_dts" = true ]; then
+	sed -i 's/^pkgrel=.*/pkgrel=6/' "$kernel_apkbuild"
+	bootmem_patch="0002-sm8250-xiaomi-lmi-boot-critical-memory.patch"
+	cp "$repo/patches/lmi-mainline/$bootmem_patch" "$dst_root/linux-postmarketos-qcom-sm8250-lmi/$bootmem_patch"
+	if ! grep -q "$bootmem_patch" "$kernel_apkbuild"; then
+		perl -0pi -e 's/(0001-sm8250-xiaomi-lmi-enable-sdx55-modem\.patch\n)/$1\t0002-sm8250-xiaomi-lmi-boot-critical-memory.patch\n/' "$kernel_apkbuild"
+		patch_sum=$(sha512sum "$dst_root/linux-postmarketos-qcom-sm8250-lmi/$bootmem_patch")
+		patch_sum=${patch_sum%% *}
+		perl -0pi -e 's/("\n)$/'"$patch_sum"'  0002-sm8250-xiaomi-lmi-boot-critical-memory.patch\n$1/' "$kernel_apkbuild"
+	fi
 fi
 update_sha512_sum "$kernel_apkbuild" "$kernel_config" config-postmarketos-qcom-sm8250-lmi.aarch64
 perl -0pi -e 's/make zinstall modules_install dtbs_install \\\n\t\tARCH="\$_carch" \\\n\t\tINSTALL_PATH="\$pkgdir"\/boot\/ \\\n\t\tINSTALL_MOD_PATH="\$pkgdir" \\\n\t\tINSTALL_MOD_STRIP=1 \\\n\t\tINSTALL_DTBS_PATH="\$pkgdir\/boot\/dtbs"/make Image modules_install dtbs_install \\\n\t\tARCH="\$_carch" \\\n\t\tINSTALL_MOD_PATH="\$pkgdir" \\\n\t\tINSTALL_MOD_STRIP=1 \\\n\t\tINSTALL_DTBS_PATH="\$pkgdir\/boot\/dtbs"\n\tinstall -Dm755 "\$builddir"\/arch\/arm64\/boot\/Image "\$pkgdir"\/boot\/vmlinuz/s' \
