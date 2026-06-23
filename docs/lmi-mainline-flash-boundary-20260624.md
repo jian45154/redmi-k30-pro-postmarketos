@@ -305,6 +305,18 @@ hardware state-changing command such as `fastboot reboot fastboot`. That command
 has not been executed by the wait/preflight helpers and still requires fresh
 exact approval before use.
 
+Guarded dry-run for the next hardware-state command:
+
+```sh
+scripts/60_stage_lmi_enter_fastbootd.sh --dry-run
+```
+
+Execute mode still requires fresh exact approval and:
+
+```sh
+LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi scripts/60_stage_lmi_enter_fastbootd.sh --execute
+```
+
 ## Guarded staged write helper
 
 The persistent route is split into two independently approved stages. The helper
