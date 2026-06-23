@@ -255,3 +255,44 @@ Assessment:
 - The r6 boot image and rootfs pass local verification and capacity checks.
 - The device is currently in bootloader fastboot, not recovery fastbootd.
 - Do not flash while `is-userspace=no`.
+
+## Approval command sheet
+
+Generated on 2026-06-24:
+
+```sh
+scripts/49_generate_lmi_flash_command_sheet.sh
+```
+
+Output:
+
+```text
+/tmp/lmi-release-r6-bootmem-20260624/APPROVAL_REQUIRED_COMMANDS.txt
+```
+
+The sheet does not approve or execute anything. It records the exact candidate
+artifacts, hashes, preflight command, and persistent write commands that would
+require separate fresh exact approval:
+
+```text
+fastboot flash boot /tmp/lmi-release-r6-bootmem-20260624/boot-linux-copydown-lmi-r6-bootmem.img
+pmbootstrap flasher flash_rootfs --partition userdata
+```
+
+Current command sheet status:
+
+- r6 boot image hash recorded:
+  `cfc5748035bccb9a4c5b3c1683ef887aa3ce7ce802d6d19fc69d4141b28f6570`;
+- r6 rootfs hash recorded:
+  `24918896b43c962f1a54da44d53ad7fb722e9324a96dd6f1d1d3c93d832d73a7`;
+- rootfs sparse file size: `1256602620` bytes;
+- rootfs expanded size: `2150629376` bytes;
+- rollback boot image: not provided.
+
+Do not proceed to a boot partition write until a known-good rollback boot image
+is supplied and the sheet is regenerated with:
+
+```sh
+LMI_ROLLBACK_BOOT_IMG=/path/to/stock-or-known-good-boot.img \
+scripts/49_generate_lmi_flash_command_sheet.sh
+```

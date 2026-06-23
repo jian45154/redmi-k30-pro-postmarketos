@@ -669,6 +669,23 @@ It fails unless `product=lmi`, `unlocked=yes`, and `is-userspace=yes`. Current
 device state returned `is-userspace=no`, so persistent flashing remains blocked
 until the phone is in recovery fastbootd.
 
+Approval command sheet:
+
+```sh
+scripts/49_generate_lmi_flash_command_sheet.sh
+```
+
+Generated output:
+
+```text
+/tmp/lmi-release-r6-bootmem-20260624/APPROVAL_REQUIRED_COMMANDS.txt
+```
+
+The sheet records exact candidate paths and hashes, but it does not execute any
+write. It currently records that no rollback boot image was provided. Regenerate
+it with `LMI_ROLLBACK_BOOT_IMG=/path/to/stock-or-known-good-boot.img` before
+approving any boot partition write.
+
 Assessment:
 
 - r6 is now the strongest host-side candidate after the r5 copydown image.
