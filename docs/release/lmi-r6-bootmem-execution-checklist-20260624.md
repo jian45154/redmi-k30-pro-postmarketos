@@ -31,6 +31,12 @@ The next hardware-state command requiring fresh exact approval is:
 fastboot reboot fastboot
 ```
 
+Use the guarded stage helper for dry-run review:
+
+```sh
+scripts/60_stage_lmi_enter_fastbootd.sh --dry-run
+```
+
 After that command, run the read-only wait/preflight:
 
 ```sh
@@ -47,6 +53,7 @@ These tokens are derived from the current artifact hashes.
 rootfs:   LMI_FLASH_CONFIRM=flash-xiaomi-lmi-rootfs-cfc5748035bc-24918896b43c
 boot:     LMI_FLASH_CONFIRM=flash-xiaomi-lmi-boot-cfc5748035bc-24918896b43c
 rollback: LMI_ROLLBACK_CONFIRM=rollback-xiaomi-lmi-boot-0c06ad2aca2ab0d5-134217728
+fastbootd: LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi
 ```
 
 ## Persistent Test Order
@@ -57,7 +64,7 @@ before use.
 1. Enter recovery fastbootd:
 
    ```sh
-   fastboot reboot fastboot
+   LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi scripts/60_stage_lmi_enter_fastbootd.sh --execute
    ```
 
 2. Wait for fastbootd and run read-only preflight:

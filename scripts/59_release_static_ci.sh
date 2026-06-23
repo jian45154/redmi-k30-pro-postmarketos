@@ -38,6 +38,7 @@ grep -q 'WAITING_FOR_RECOVERY_FASTBOOTD' "$checklist"
 grep -q 'is-userspace: `no`' "$manifest"
 grep -q 'is-userspace: `no`' "$checklist"
 grep -q 'fastboot reboot fastboot' "$checklist"
+grep -q 'scripts/60_stage_lmi_enter_fastbootd.sh --dry-run' "$checklist"
 grep -q 'Do not touch `super`' "$manifest"
 grep -q 'Do not write `super`' "$checklist"
 
