@@ -49,6 +49,8 @@ PY
 rollback_section="Rollback boot image: not provided.
 Before any boot partition write, provide LMI_ROLLBACK_BOOT_IMG=/path/to/stock-or-known-good-boot.img and regenerate this sheet."
 rollback_helper_section="Guarded rollback helper: unavailable until LMI_ROLLBACK_BOOT_IMG is provided."
+route_plan_section="Read-only route plan:
+  Provide LMI_ROLLBACK_BOOT_IMG=/path/to/stock-or-known-good-boot.img before running scripts/56_lmi_persistent_flash_plan.sh."
 
 if [ -n "$stock_boot" ]; then
 	stock_boot_sha=$(sha256sum "$stock_boot" | awk '{print $1}')
@@ -66,6 +68,8 @@ Rollback command that would also require fresh exact approval:
 The rollback helper refuses execute mode unless its read-only fastboot preflight
 passes and LMI_ROLLBACK_CONFIRM exactly matches the token printed by the helper.
 It only targets the boot partition."
+	route_plan_section="Read-only route plan:
+  LMI_ROLLBACK_BOOT_IMG=\"$stock_boot\" scripts/56_lmi_persistent_flash_plan.sh --quick"
 fi
 
 cat > "$output" <<EOF
@@ -110,6 +114,8 @@ Read-only preflight command:
   LMI_COPYDOWN_MANIFEST=$manifest \\
   LMI_ROOTFS_IMG=$rootfs_img \\
   scripts/48_preflight_lmi_fastbootd.sh
+
+$route_plan_section
 
 Persistent write commands that require separate fresh exact approvals:
   fastboot flash boot $boot_img

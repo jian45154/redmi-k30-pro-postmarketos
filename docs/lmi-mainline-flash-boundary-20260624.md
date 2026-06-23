@@ -479,6 +479,53 @@ execute without LMI_ROLLBACK_CONFIRM: REFUSED
 No reboot, boot, flash, erase, format, or partition write was executed.
 ```
 
+## Persistent route plan
+
+The route can be rechecked from one read-only entry point:
+
+```sh
+LMI_ROLLBACK_BOOT_IMG="/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img" \
+scripts/56_lmi_persistent_flash_plan.sh --quick
+```
+
+The plan script runs local verifiers and dry-runs for:
+
+- copydown boot image verification;
+- rootfs staged flash dry-run;
+- boot staged flash dry-run;
+- rollback boot dry-run;
+- current fastbootd wait/preflight state;
+- current post-boot monitor state.
+
+It writes:
+
+```text
+/tmp/lmi-release-r6-bootmem-20260624/PERSISTENT_FLASH_PLAN.txt
+```
+
+It never executes reboot, boot, flash, erase, format, or partition writes. In
+the current bootloader-fastboot state, the expected route status is
+`WAITING_FOR_RECOVERY_FASTBOOTD`.
+
+Short validation run:
+
+```sh
+scripts/56_lmi_persistent_flash_plan.sh --quick
+```
+
+Result:
+
+```text
+copydown boot verification: OK
+rootfs staged dry-run: OK
+boot staged dry-run: OK
+rollback dry-run default policy: expected FAIL while is-userspace=no
+fastbootd wait/preflight current state: expected FAIL while is-userspace=no
+post-boot monitor current state: expected only fastboot
+plan: WAITING_FOR_RECOVERY_FASTBOOTD
+No reboot, boot, flash, erase, format, or partition write was executed.
+```
+
 Current command sheet status after regenerating with `LMI_ROLLBACK_BOOT_IMG`:
 
 - r6 boot image hash recorded:
