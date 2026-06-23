@@ -6,8 +6,18 @@ is not an approval to execute hardware commands.
 ## Repository
 
 - Branch: `edge`
-- HEAD: `8d629e1`
 - Remote: `https://github.com/jian45154/redmi-k30-pro-postmarketos.git`
+
+This tracked handoff intentionally does not record a commit hash because the
+file is generated before the commit that archives it. Use `git rev-parse HEAD`
+or the GitHub `edge` branch tip for the authoritative revision.
+
+## Route Decision
+
+RAM-only boot is no longer a prerequisite for this route. The current path is a
+guarded recovery-fastbootd persistent test: enter fastbootd, verify
+`is-userspace=yes`, flash only `userdata` rootfs and `boot`, then reboot and
+collect evidence.
 
 ## Device Gate
 
