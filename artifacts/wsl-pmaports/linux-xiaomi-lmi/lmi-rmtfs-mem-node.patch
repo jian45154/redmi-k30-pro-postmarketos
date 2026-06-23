@@ -1,0 +1,16 @@
+diff --git a/arch/arm64/boot/dts/vendor/qcom/kona.dtsi b/arch/arm64/boot/dts/vendor/qcom/kona.dtsi
+index 9b1a9bf..f5f43d8 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/kona.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/kona.dtsi
+@@ -410,9 +410,10 @@
+ 		};
+ 
+ 		pil_wlan_fw_mem: pil_wlan_fw_region@86700000 {
+-			compatible = "removed-dma-pool";
++			compatible = "qcom,rmtfs-mem";
+ 			no-map;
+ 			reg = <0x0 0x86700000 0x0 0x100000>;
++			qcom,client-id = <1>;
+ 		};
+ 
+ 		pil_ipa_fw_mem: pil_ipa_fw_region@86800000 {
