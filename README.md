@@ -21,6 +21,24 @@ LineageOS 4.19 vendor kernel with **Clang/LLVM** under **WSL2 + pmbootstrap**.
   soundcard, Wi-Fi has no exposed wireless interface, and Bluetooth is rfkill
   soft-blocked.
 
+## Edge mainline r6 route
+
+The `edge` branch also archives the current mainline/copydown r6 persistent
+fastbootd route. Large images are not committed; the release identity and next
+hardware gate are documented in:
+
+- [`docs/release/lmi-r6-bootmem-release-manifest-20260624.md`](docs/release/lmi-r6-bootmem-release-manifest-20260624.md)
+- [`docs/release/lmi-r6-bootmem-execution-checklist-20260624.md`](docs/release/lmi-r6-bootmem-execution-checklist-20260624.md)
+
+Current gate: `WAITING_FOR_RECOVERY_FASTBOOTD`. Do not flash while
+`is-userspace=no`. The next hardware-state command still requires fresh exact
+approval: `fastboot reboot fastboot`.
+
+Static release checks can be run locally with
+`scripts/59_release_static_ci.sh`. A GitHub Actions workflow template is kept at
+[`docs/release/edge-release-checks.workflow.yml`](docs/release/edge-release-checks.workflow.yml);
+copy it to `.github/workflows/` only with a token that has workflow scope.
+
 ## Read this first
 
 **[docs/porting-sm8250-downstream-to-postmarketos.md](docs/porting-sm8250-downstream-to-postmarketos.md)**
