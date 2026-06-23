@@ -702,6 +702,28 @@ The command sheet has been regenerated with that rollback path. Persistent
 flashing remains blocked until the phone is in recovery fastbootd
 (`is-userspace=yes`) and the user gives fresh exact approval for each write.
 
+Fastbootd entry sheet:
+
+```sh
+scripts/51_prepare_lmi_fastbootd_entry.sh
+```
+
+Generated output:
+
+```text
+/tmp/lmi-release-r6-bootmem-20260624/FASTBOOTD_ENTRY_REQUIRED.txt
+```
+
+Current read-only result:
+
+- `fastboot devices` sees the phone in bootloader fastboot;
+- `adb devices` sees no device;
+- `product=lmi`;
+- `unlocked=yes`;
+- `is-userspace=no`;
+- recommended command requiring fresh exact approval:
+  `fastboot reboot fastboot`.
+
 Assessment:
 
 - r6 is now the strongest host-side candidate after the r5 copydown image.

@@ -341,3 +341,47 @@ is-userspace=no
 ```
 
 Do not proceed to a boot partition write while `is-userspace=no`.
+
+## Fastbootd entry sheet
+
+Generated on 2026-06-24:
+
+```sh
+scripts/51_prepare_lmi_fastbootd_entry.sh
+```
+
+Output:
+
+```text
+/tmp/lmi-release-r6-bootmem-20260624/FASTBOOTD_ENTRY_REQUIRED.txt
+```
+
+Current read-only state:
+
+```text
+fastboot devices: 8336ded7 fastboot
+adb devices: no device
+product=lmi
+unlocked=yes
+is-userspace=no
+```
+
+Recommended command recorded by the sheet:
+
+```sh
+fastboot reboot fastboot
+```
+
+This command was not executed. It requires fresh exact approval immediately
+before use because it reboots the phone into recovery fastbootd. After it is
+run and the phone reconnects, the next required read-only check is:
+
+```sh
+fastboot getvar is-userspace
+```
+
+Only continue to `scripts/48_preflight_lmi_fastbootd.sh` if the result is:
+
+```text
+is-userspace: yes
+```
