@@ -449,6 +449,36 @@ because it is a full-size boot partition backup under `device-backup`. It still
 must be treated as a candidate, not a proven guarantee, until matched to the
 exact device/ROM state.
 
+Guarded rollback dry-run:
+
+```sh
+LMI_ROLLBACK_BOOT_IMG="/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img" \
+scripts/55_stage_lmi_rollback_boot.sh --dry-run
+```
+
+The helper validates Android boot magic, SHA256, image size versus the observed
+boot partition, `product=lmi`, and `unlocked=yes`. By default it requires
+recovery fastbootd (`is-userspace=yes`) before rollback flashing. If the device
+cannot reach fastbootd and bootloader fastboot rollback is chosen, that must be
+a separate explicitly approved decision using
+`LMI_ROLLBACK_ALLOW_BOOTLOADER_FASTBOOT=1`.
+
+Rollback execute mode would still require a fresh exact approval and the printed
+`LMI_ROLLBACK_CONFIRM=...` token. It only targets:
+
+```sh
+fastboot flash boot /mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img
+```
+
+Validation in the current bootloader-fastboot state:
+
+```text
+default dry-run: FAIL, because is-userspace=no and recovery fastbootd is required by default
+bootloader-fastboot dry-run with LMI_ROLLBACK_ALLOW_BOOTLOADER_FASTBOOT=1: OK
+execute without LMI_ROLLBACK_CONFIRM: REFUSED
+No reboot, boot, flash, erase, format, or partition write was executed.
+```
+
 Current command sheet status after regenerating with `LMI_ROLLBACK_BOOT_IMG`:
 
 - r6 boot image hash recorded:
