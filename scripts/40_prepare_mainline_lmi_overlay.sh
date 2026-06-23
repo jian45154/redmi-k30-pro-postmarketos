@@ -10,8 +10,29 @@ dst_root=${PMB_PMAPORTS_DEVICE_DIR:-$pmaports_root/device/testing}
 backup_root=${PMB_LMI_OVERLAY_BACKUP_DIR:-$pmaports_root/.lmi-overlay-disabled}
 package_root=${PMB_PACKAGE_ROOT:-/home/microstar/.local/var/pmbootstrap/packages/edge/aarch64}
 disabled_device_pkg=$backup_root/device-downstream-device-xiaomi-lmi
+debug_shell=false
+android_cmdline=false
 
-if [ "${1:-}" = "--restore-downstream" ]; then
+update_sha512_sum() {
+	local apkbuild=$1
+	local source_file=$2
+	local source_name=$3
+	local sum
+
+	sum=$(sha512sum "$source_file")
+	sum=${sum%% *}
+	sed -i "s|^[0-9a-f]\\{128\\}  $source_name\$|$sum  $source_name|" "$apkbuild"
+}
+
+case "${1:-}" in
+--debug-shell)
+	debug_shell=true
+	;;
+--debug-shell-android-cmdline)
+	debug_shell=true
+	android_cmdline=true
+	;;
+--restore-downstream)
 	rm -rf "$dst_root/device-xiaomi-lmi" \
 		"$dst_root/firmware-xiaomi-lmi" \
 		"$dst_root/linux-postmarketos-qcom-sm8250-lmi"
@@ -24,7 +45,14 @@ if [ "${1:-}" = "--restore-downstream" ]; then
 		echo "no disabled downstream device-xiaomi-lmi backup found"
 	fi
 	exit 0
-fi
+	;;
+"")
+	;;
+*)
+	echo "usage: $0 [--debug-shell|--debug-shell-android-cmdline|--restore-downstream]" >&2
+	exit 1
+	;;
+esac
 
 for pkg in device-xiaomi-lmi firmware-xiaomi-lmi linux-postmarketos-qcom-sm8250-lmi; do
 	[ -d "$src/$pkg" ] || {
@@ -62,6 +90,22 @@ if [ -d "$package_root" ]; then
 fi
 
 sed -i 's/^pkgrel=.*/pkgrel=90/' "$dst_root/device-xiaomi-lmi/APKBUILD"
+sed -i 's/^pkgrel=.*/pkgrel=2/' "$dst_root/linux-postmarketos-qcom-sm8250-lmi/APKBUILD"
+if [ "$debug_shell" = true ]; then
+	sed -i 's/^pkgrel=.*/pkgrel=91/' "$dst_root/device-xiaomi-lmi/APKBUILD"
+	sed -i 's/^deviceinfo_kernel_cmdline="\(.*\)"/deviceinfo_kernel_cmdline="\1 pmos.debug-shell"/' \
+		"$dst_root/device-xiaomi-lmi/deviceinfo"
+fi
+if [ "$android_cmdline" = true ]; then
+	sed -i 's/^pkgrel=.*/pkgrel=92/' "$dst_root/device-xiaomi-lmi/APKBUILD"
+	sed -i 's|^deviceinfo_kernel_cmdline=.*|deviceinfo_kernel_cmdline="androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery pmos.debug-shell"|' \
+		"$dst_root/device-xiaomi-lmi/deviceinfo"
+fi
+update_sha512_sum "$dst_root/device-xiaomi-lmi/APKBUILD" "$dst_root/device-xiaomi-lmi/deviceinfo" deviceinfo
+
+kernel_apkbuild="$dst_root/linux-postmarketos-qcom-sm8250-lmi/APKBUILD"
+perl -0pi -e 's/make zinstall modules_install dtbs_install \\\n\t\tARCH="\$_carch" \\\n\t\tINSTALL_PATH="\$pkgdir"\/boot\/ \\\n\t\tINSTALL_MOD_PATH="\$pkgdir" \\\n\t\tINSTALL_MOD_STRIP=1 \\\n\t\tINSTALL_DTBS_PATH="\$pkgdir\/boot\/dtbs"/make Image modules_install dtbs_install \\\n\t\tARCH="\$_carch" \\\n\t\tINSTALL_MOD_PATH="\$pkgdir" \\\n\t\tINSTALL_MOD_STRIP=1 \\\n\t\tINSTALL_DTBS_PATH="\$pkgdir\/boot\/dtbs"\n\tinstall -Dm755 "\$builddir"\/arch\/arm64\/boot\/Image "\$pkgdir"\/boot\/vmlinuz/s' \
+	"$kernel_apkbuild"
 
 device_apkbuild="$dst_root/device-xiaomi-lmi/APKBUILD"
 
