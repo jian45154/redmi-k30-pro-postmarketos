@@ -96,6 +96,7 @@ LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/56_lmi_persistent_flash_plan.sh -
 LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/49_generate_lmi_flash_command_sheet.sh
 LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/57_archive_lmi_release_manifest.sh
 LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/58_generate_lmi_execution_checklist.sh
+LMI_ROLLBACK_BOOT_IMG="$rollback_boot" scripts/64_audit_lmi_persistent_readiness.sh
 \`\`\`
 
 Single-command refresh:
