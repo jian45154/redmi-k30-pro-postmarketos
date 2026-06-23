@@ -48,6 +48,7 @@ PY
 
 rollback_section="Rollback boot image: not provided.
 Before any boot partition write, provide LMI_ROLLBACK_BOOT_IMG=/path/to/stock-or-known-good-boot.img and regenerate this sheet."
+rollback_helper_section="Guarded rollback helper: unavailable until LMI_ROLLBACK_BOOT_IMG is provided."
 
 if [ -n "$stock_boot" ]; then
 	stock_boot_sha=$(sha256sum "$stock_boot" | awk '{print $1}')
@@ -59,6 +60,12 @@ if [ -n "$stock_boot" ]; then
 
 Rollback command that would also require fresh exact approval:
   fastboot flash boot $stock_boot"
+	rollback_helper_section="Guarded rollback helper:
+  LMI_ROLLBACK_BOOT_IMG=\"$stock_boot\" scripts/55_stage_lmi_rollback_boot.sh --dry-run
+
+The rollback helper refuses execute mode unless its read-only fastboot preflight
+passes and LMI_ROLLBACK_CONFIRM exactly matches the token printed by the helper.
+It only targets the boot partition."
 fi
 
 cat > "$output" <<EOF
@@ -95,6 +102,8 @@ Candidate rootfs image:
   expanded size: $rootfs_expanded_size bytes
 
 $rollback_section
+
+$rollback_helper_section
 
 Read-only preflight command:
   LMI_COPYDOWN_BOOT_IMG=$boot_img \\
