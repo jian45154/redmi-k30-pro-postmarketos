@@ -61,6 +61,9 @@ grep -q 'scripts/61_stage_lmi_reboot_after_flash.sh --execute' "$checklist"
 grep -q 'Do not touch `super`' "$manifest"
 grep -q 'Do not write `super`' "$checklist"
 
+echo "release static CI: lmi release safety lint"
+scripts/65_lmi_release_safety_lint.sh
+
 echo "release static CI: tracked file size"
 oversized=0
 while IFS= read -r path; do
