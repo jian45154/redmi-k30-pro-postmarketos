@@ -3,7 +3,7 @@ maintainer=""
 pkgname=device-xiaomi-lmi
 pkgdesc="xiaomi lmi"
 pkgver=1
-pkgrel=14
+pkgrel=15
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
@@ -54,8 +54,6 @@ package() {
 	install -dm755 "$pkgdir"/etc/runlevels/default
 	ln -s /etc/init.d/lmi-firmware-mount \
 		"$pkgdir"/etc/runlevels/boot/lmi-firmware-mount
-	ln -s /etc/init.d/lmi-cnss-fs-ready \
-		"$pkgdir"/etc/runlevels/default/lmi-cnss-fs-ready
 	ln -s /etc/init.d/pd-mapper "$pkgdir"/etc/runlevels/default/pd-mapper
 	ln -s /etc/init.d/rmtfs "$pkgdir"/etc/runlevels/default/rmtfs
 	ln -s /etc/init.d/tqftpserv "$pkgdir"/etc/runlevels/default/tqftpserv
