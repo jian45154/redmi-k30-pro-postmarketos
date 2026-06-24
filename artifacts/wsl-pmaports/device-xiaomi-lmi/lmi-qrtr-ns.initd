@@ -1,0 +1,42 @@
+#!/sbin/openrc-run
+
+description="Run QRTR nameservice for xiaomi-lmi"
+command="/usr/sbin/lmi-qrtr-ns"
+
+depend() {
+	before lmi-cnss-daemon lmi-cnss-fs-ready wpa_supplicant networkmanager
+}
+
+is_running() {
+	pgrep -f "^$command\$" >/dev/null 2>&1
+}
+
+start() {
+	ebegin "Starting xiaomi-lmi QRTR nameservice"
+	if is_running; then
+		eend 0
+		return 0
+	fi
+
+	start-stop-daemon --start --background --exec "$command"
+	sleep 1
+	is_running
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping xiaomi-lmi QRTR nameservice"
+	start-stop-daemon --stop --exec "$command" >/dev/null 2>&1 || true
+	sleep 1
+	! is_running
+	eend $?
+}
+
+status() {
+	if is_running; then
+		einfo "status: started"
+		return 0
+	fi
+	einfo "status: stopped"
+	return 3
+}

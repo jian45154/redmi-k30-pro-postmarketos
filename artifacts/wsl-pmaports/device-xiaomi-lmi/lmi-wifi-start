@@ -1,0 +1,125 @@
+#!/bin/sh
+set -eu
+
+mode=start
+[ "${1:-}" = "--fs-ready-only" ] && mode=fs_ready
+
+conf=/etc/conf.d/lmi-wlan-firmware
+log=/var/log/lmi-wifi-start.log
+fw_mnt=/mnt/vendor/firmware_mnt
+wlan_fw="$fw_mnt/image/qca6390"
+fs_ready=/sys/kernel/cnss/fs_ready
+wlan_ctl=/dev/wlan
+
+[ -r "$conf" ] && . "$conf"
+LMI_WLAN_BOARDDATA=${LMI_WLAN_BOARDDATA:-bd_j11.elf}
+LMI_WLAN_PRE_ON_DELAY=${LMI_WLAN_PRE_ON_DELAY:-8}
+LMI_WLAN_POST_ON_DELAY=${LMI_WLAN_POST_ON_DELAY:-45}
+
+mkdir -p "${log%/*}"
+exec >>"$log" 2>&1
+
+stamp() {
+	date '+=== %Y-%m-%d %H:%M:%S %z ==='
+}
+
+run() {
+	echo "$ $*"
+	"$@" || true
+}
+
+diagnose_runtime() {
+	run sh -c "command -v cnss-daemon || true; command -v qrtr-lookup || true; command -v pd-mapper || true"
+	run sh -c "ls -ld /sys/class/remoteproc /proc/net/qrtr /sys/kernel/debug/qrtr /dev/qrtr* 2>&1"
+	run sh -c "zcat /proc/config.gz 2>/dev/null | grep -E 'CONFIG_(CNSS|QCA_CLD|QRTR|QCOM_QMI|QCOM_PDR)' | sort"
+	run sh -c "if command -v qrtr-lookup >/dev/null 2>&1 && command -v timeout >/dev/null 2>&1; then timeout 5 qrtr-lookup 2>&1 | head -100; fi"
+	run sh -c "cat /sys/kernel/cnss/subsys*/state /sys/kernel/cnss/subsys*/crash_count 2>/dev/null"
+}
+
+link_firmware() {
+	[ -d "$wlan_fw" ] || return 1
+
+	mkdir -p /mnt/vendor/persist
+	if [ -b /dev/disk/by-partlabel/persist ] &&
+		! mountpoint -q /mnt/vendor/persist; then
+		mount -o ro /dev/disk/by-partlabel/persist /mnt/vendor/persist || true
+	fi
+
+	rm -rf /lib/firmware/qca6390
+	mkdir -p /lib/firmware/qca6390
+	for file in "$wlan_fw"/*; do
+		[ -e "$file" ] || continue
+		ln -sfn "$file" "/lib/firmware/qca6390/${file##*/}"
+	done
+	if [ -n "${LMI_WLAN_BOARDDATA:-}" ] && [ -r "$wlan_fw/$LMI_WLAN_BOARDDATA" ]; then
+		ln -sfn "$wlan_fw/$LMI_WLAN_BOARDDATA" /lib/firmware/qca6390/bdwlan.elf
+	fi
+	for file in /lib/firmware/qca6390/bdwlan* \
+		/lib/firmware/qca6390/bd_*.elf \
+		/lib/firmware/qca6390/regdb.bin \
+		/lib/firmware/qca6390/regdb_j11.bin \
+		/lib/firmware/qca6390/amss20.bin \
+		/lib/firmware/qca6390/m3.bin; do
+		[ -e "$file" ] || continue
+		ln -sfn "qca6390/${file##*/}" "/lib/firmware/${file##*/}"
+	done
+	if [ -r /mnt/android-vendor/firmware/wlan/qca_cld/WCNSS_qcom_cfg.ini ]; then
+		mkdir -p /lib/firmware/wlan/qca_cld
+		ln -sfn /mnt/android-vendor/firmware/wlan/qca_cld/WCNSS_qcom_cfg.ini \
+			/lib/firmware/wlan/qca_cld/WCNSS_qcom_cfg.ini
+	elif [ -r /mnt/android-vendor/etc/wifi/WCNSS_qcom_cfg.ini ]; then
+		mkdir -p /lib/firmware/wlan/qca_cld
+		ln -sfn /mnt/android-vendor/etc/wifi/WCNSS_qcom_cfg.ini \
+			/lib/firmware/wlan/qca_cld/WCNSS_qcom_cfg.ini
+	fi
+	if [ -r /mnt/android-vendor/firmware/wlan/qca_cld/wlan_mac.bin ]; then
+		mkdir -p /lib/firmware/wlan/qca_cld
+		ln -sfn /mnt/android-vendor/firmware/wlan/qca_cld/wlan_mac.bin \
+			/lib/firmware/wlan/qca_cld/wlan_mac.bin
+	elif [ -r /mnt/vendor/persist/wlan_mac.bin ]; then
+		mkdir -p /lib/firmware/wlan/qca_cld
+		ln -sfn /mnt/vendor/persist/wlan_mac.bin \
+			/lib/firmware/wlan/qca_cld/wlan_mac.bin
+	fi
+}
+
+stamp
+echo "mode=$mode boarddata=${LMI_WLAN_BOARDDATA:-} pre_delay=$LMI_WLAN_PRE_ON_DELAY post_delay=$LMI_WLAN_POST_ON_DELAY"
+
+run rc-service lmi-firmware-mount start
+run rc-service rmtfs start
+run rc-service tqftpserv start
+run rc-service lmi-qrtr-ns start
+run rc-service lmi-cnss-daemon start
+echo "$ link_firmware"
+link_firmware || true
+run ls -l /lib/firmware/qca6390/bdwlan.elf /lib/firmware/bdwlan.elf /lib/firmware/qca6390/amss20.bin
+run sh -c "cat /proc/cmdline"
+run sh -c "find /sys/kernel/cnss -maxdepth 2 -type f -print -exec sh -c 'for f; do echo ---\$f; cat \"\$f\" 2>/dev/null | head -20; done' sh {} +"
+diagnose_runtime
+
+if [ ! -w "$fs_ready" ]; then
+	echo "$fs_ready is not writable"
+	exit 1
+fi
+
+echo "write 1 > $fs_ready"
+printf 1 > "$fs_ready"
+
+[ "$mode" = fs_ready ] && exit 0
+
+sleep "$LMI_WLAN_PRE_ON_DELAY"
+
+if [ ! -w "$wlan_ctl" ]; then
+	echo "$wlan_ctl is not writable"
+	exit 1
+fi
+
+echo "write ON > $wlan_ctl"
+printf ON > "$wlan_ctl"
+
+sleep "$LMI_WLAN_POST_ON_DELAY"
+
+run ip link
+run iw dev
+run sh -c "dmesg | grep -Ei 'wlan|cnss|qca|mhi|wlfw|firmware|bdwlan|regdb|timeout|failed|error' | tail -220"

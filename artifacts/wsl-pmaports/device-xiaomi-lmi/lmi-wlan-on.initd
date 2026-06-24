@@ -4,19 +4,12 @@ description="Trigger xiaomi-lmi WLAN driver load"
 
 depend() {
 	need lmi-cnss-fs-ready
-	after rmtfs tqftpserv pd-mapper
+	after rmtfs tqftpserv lmi-qrtr-ns lmi-cnss-daemon
 	before wpa_supplicant networkmanager
 }
 
 start() {
-	local wlan_ctl="/dev/wlan"
-
 	ebegin "Requesting xiaomi-lmi WLAN driver startup"
-	if [ ! -w "$wlan_ctl" ]; then
-		eend 1 "$wlan_ctl is not writable"
-		return 1
-	fi
-
-	printf ON > "$wlan_ctl"
+	lmi-wifi-start
 	eend $?
 }
