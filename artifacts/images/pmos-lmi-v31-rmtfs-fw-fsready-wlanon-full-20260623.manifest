@@ -1,0 +1,22 @@
+artifact_boot=pmos-lmi-normalboot-v31-rmtfs-fw-fsready-wlanon-20260623.img
+artifact_userdata=xiaomi-lmi-v31-rmtfs-fw-fsready-wlanon-userdata-20260623.img
+source_boot=/tmp/postmarketOS-export-v31-rmtfs-fw-fsready-wlanon/boot.img
+source_userdata=/home/microstar/.local/var/pmbootstrap/chroot_native/home/pmos/rootfs/xiaomi-lmi.img
+source_boot_sha256=38e20deb750d8042733247ffffcf3dffae691a480d7bfb46551b6d87b703b4bb
+source_userdata_sha256=3db53c909a4535e566b14a3c4560ec33c916cb66831bcf591be7dcb75c26da84
+kernel_sha256=c5f1489f709d34c8e5febacb4c6b8fb8d6f093d3c3b19c21e481aec4ef5f2624
+dtb_sha256=aee89cc172734de955a11ec335b16d3a1b5da51667083b919271c2b6902d57a6
+source_ramdisk_sha256=7f60c4c479e0bf701b2db09a33bee01858c92dc0d8e42fce138b7b3d2fd0fd73
+v27_ramdisk_sha256=39d7ea4e99e7fcaa510462bb7254ea094a8bd1889364b7c46566960f457f7c01
+artifact_boot_sha256=43aad0595b8a69a468d33c28eab68b89a766b0390d7da706e635074dd1d44855
+artifact_userdata_sha256=3db53c909a4535e566b14a3c4560ec33c916cb66831bcf591be7dcb75c26da84
+artifact_boot_size=52920320
+artifact_userdata_size=1817182208
+deviceinfo_rootfs_image_sector_size=4096
+deviceinfo_usb_network_function=rndis.usb0
+deviceinfo_usb_idVendor=0x0525
+deviceinfo_usb_idProduct=0xA4A2
+loopdevfix=post-export init_functions.sh patch
+cmdline=androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery  pmos_boot_uuid=29889078-ff64-4138-8b15-ddcb0bc6e1d2 pmos_root_uuid=94996c34-2856-40d3-a00e-57b12c7f2bfa pmos_rootfsopts=defaults
+device_xiaomi_lmi=1-r10
+purpose=rmtfs firmware fs_ready plus /dev/wlan ON OpenRC bringup test

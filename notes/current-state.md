@@ -1,5 +1,9 @@
 # Current State
 
+> Current project organization is tracked in `docs/tracks/README.md`.
+> This file preserves earlier state snapshots and should not be treated as the
+> sole current handoff after downstream `D-v43`/`D-v46` and mainline `M-r7`.
+
 ## Update: 2026-06-23
 
 - v27 persistent boot is installed and verified.

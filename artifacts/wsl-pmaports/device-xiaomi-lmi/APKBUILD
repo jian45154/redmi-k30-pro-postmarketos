@@ -3,11 +3,12 @@ maintainer=""
 pkgname=device-xiaomi-lmi
 pkgdesc="xiaomi lmi"
 pkgver=1
-pkgrel=4
+pkgrel=107
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
 options="!check !archcheck"
+install="$pkgname.post-install"
 depends="
 	alsa-utils
 	bluez
@@ -21,7 +22,7 @@ depends="
 	mkbootimg
 	postmarketos-base
 	postmarketos-base-downstream
-	pd-mapper
+	qrtr
 	rmtfs
 	tinydm
 	tqftpserv
@@ -31,18 +32,76 @@ depends="
 makedepends="devicepkg-dev"
 source="
 	deviceinfo
+	initramfs_mount_firmware.sh
+	lmi-android-prop-shim.c
+	lmi-cnss-daemon.initd
+	lmi-cnss-daemon-wrapper
+	lmi-cnss-fs-ready.initd
+	lmi-firmware-mount.initd
+	lmi-qrtr-ns
+	lmi-qrtr-ns.initd
+	lmi-wifi-start
+	lmi-wlan-firmware.confd
+	lmi-wlan-on.initd
 	modules-initfs
 "
 
 build() {
 	devicepkg_build $startdir $pkgname
+	${CC:-gcc} -shared -fPIC -nostdlib \
+		-Wl,-soname,liblmi_android_prop_shim.so \
+		-o "$srcdir"/liblmi_android_prop_shim.so \
+		"$srcdir"/lmi-android-prop-shim.c
 }
 
 package() {
 	devicepkg_package $startdir $pkgname
+	install -Dm755 "$srcdir"/lmi-firmware-mount.initd \
+		"$pkgdir"/etc/init.d/lmi-firmware-mount
+	install -Dm755 "$srcdir"/lmi-cnss-daemon.initd \
+		"$pkgdir"/etc/init.d/lmi-cnss-daemon
+	install -Dm755 "$srcdir"/lmi-cnss-daemon-wrapper \
+		"$pkgdir"/usr/sbin/lmi-cnss-daemon-wrapper
+	install -Dm755 "$srcdir"/liblmi_android_prop_shim.so \
+		"$pkgdir"/usr/lib/lmi/liblmi_android_prop_shim.so
+	install -Dm755 "$srcdir"/lmi-qrtr-ns \
+		"$pkgdir"/usr/sbin/lmi-qrtr-ns
+	install -Dm755 "$srcdir"/lmi-qrtr-ns.initd \
+		"$pkgdir"/etc/init.d/lmi-qrtr-ns
+	install -Dm755 "$srcdir"/lmi-cnss-fs-ready.initd \
+		"$pkgdir"/etc/init.d/lmi-cnss-fs-ready
+	install -Dm755 "$srcdir"/lmi-wlan-on.initd \
+		"$pkgdir"/etc/init.d/lmi-wlan-on
+	install -Dm755 "$srcdir"/lmi-wifi-start \
+		"$pkgdir"/usr/sbin/lmi-wifi-start
+	install -Dm644 "$srcdir"/lmi-wlan-firmware.confd \
+		"$pkgdir"/etc/conf.d/lmi-wlan-firmware
+	install -Dm755 "$srcdir"/initramfs_mount_firmware.sh \
+		-t "$pkgdir"/usr/share/mkinitfs/hooks-cleanup/
+	install -dm755 "$pkgdir"/etc/runlevels/boot
+	install -dm755 "$pkgdir"/etc/runlevels/default
+	ln -s /etc/init.d/lmi-firmware-mount \
+		"$pkgdir"/etc/runlevels/boot/lmi-firmware-mount
+	ln -s /etc/init.d/lmi-qrtr-ns \
+		"$pkgdir"/etc/runlevels/default/lmi-qrtr-ns
+	ln -s /etc/init.d/lmi-cnss-daemon \
+		"$pkgdir"/etc/runlevels/default/lmi-cnss-daemon
+	ln -s /etc/init.d/rmtfs "$pkgdir"/etc/runlevels/default/rmtfs
+	ln -s /etc/init.d/tqftpserv "$pkgdir"/etc/runlevels/default/tqftpserv
 }
 
 sha512sums="
 d13a77a36c203ebee46b20cec08578053b524864c48c11469e0a9bbe9ea908000d1007f291cb49087d43c9cf44816c889007f132b47e6d8f4e1287ca320e19da  deviceinfo
+937a71dc8eecc6c7a2504f561ffa072b5e8991173788638cd8c173c9923e25fff9a0df497e2710cd1207120c834742b54495ea73f593dfa102a6ed7a26b3469c  initramfs_mount_firmware.sh
+37e56f21f96a167700f2a86914be2312eb6630e302f8428d6861f63882dcf945b56b38518f89304a123040d0470badf45cc94a3949304336372c6bdb9be47e84  lmi-android-prop-shim.c
+e325afef49506b9a51629ae1856ebbf75d84251524c93a94e6c856f57e12f86e2a1c5ae085fe0538e2eca2064e8e0b5b5c908859037b9c18fbeb00f991cc56bb  lmi-cnss-daemon.initd
+dd15ef8052ad6d796cd3c596a2f826fc047e0e083b10a4433b320abf806382fb54022d3face7c0ddd2c76e4a2d671412f84aed0587b7bfe3f4e1d72311c71731  lmi-cnss-daemon-wrapper
+3c614f6516997d73f417d20a8805b2dd2fb6e3de2ce3b60e7c81dfcfb8bf5536de560e3bf663120116b8e1c2aa55293baa5987b1f224271588e2fa8893c0edb7  lmi-cnss-fs-ready.initd
+22f0944a564c5ce0086be59e945f1d05580fc51664d4bbc3b1ed3e5cfe9e48cb33ddb22c94cf3ac7b247634bac5186f05e0af8a6cdd7934305e66ad5a7b2d29d  lmi-firmware-mount.initd
+3683811361c6ce13ffc4e252073073d9e76004e05700f356685ae63aafdb13fc8819db72f319f9d6f3f98c0959ec1677e85a670acbc87c3ddbd0194cc26bb950  lmi-qrtr-ns
+2d330625bf4f3d3858fd7e0b0115f445369f043be240541e680dc5ab529ec8e7e0ffb5d40102a222960e90a7da39db471ca47dbbb5933026fe842aa057c59e8a  lmi-qrtr-ns.initd
+4e008fb4aaa834579a82f4b534655c8a6d22b14e6d5db42ebefaa2317453e102206b5d5ba4356f693b585289292487b2114eed767defa84f73650ddd922d9357  lmi-wifi-start
+9269c2bf1541993444bc0df8d833bcaa0943746e20454f4e28b38b7629d262492f70b702efedb4813595052449528ed7e0d50def4d0c80dabc0d1db468acca00  lmi-wlan-firmware.confd
+ff9a774d962e69a72bd819f26c4f1a33d0bcd696b71029007b6cbe04a6154f2838901ca3883d2adcde979e11385763bc4b2d5908b3d27e4e1264ae32b14309e0  lmi-wlan-on.initd
 e70bae17df23dcaaaea0e2d3616556f04baa23f8ee1357785c0f539bf97282d8ddff53953e155b72689bb73beb38c2da3d08de2a61e866684edfa10a6593885d  modules-initfs
 "

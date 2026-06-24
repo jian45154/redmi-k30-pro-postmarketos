@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo=${REPO:-/mnt/c/Users/microstar/Documents/lmi_linx}
+script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+repo=${REPO:-$(dirname "$script_dir")}
 aports_src=${APORTS_SRC:-$repo/artifacts/wsl-pmaports}
 aports_dst=${APORTS_DST:-/home/microstar/.local/var/pmbootstrap/cache_git/pmaports/device/downstream}
 unpack_bootimg=${UNPACK_BOOTIMG:-/mnt/c/Users/microstar/Latest\ ADB\ Fastboot\ Tool/lmi/sm8250-xiaomi-lmi-boot/tools/ubuntu-mkbootimg/unpack_bootimg}

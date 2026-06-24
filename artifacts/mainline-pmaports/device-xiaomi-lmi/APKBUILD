@@ -1,0 +1,107 @@
+# Reference: <https://postmarketos.org/devicepkg>
+# Maintainer: Nikroks <nikroksm@mail.ru>
+pkgname=device-xiaomi-lmi
+pkgdesc="Xiaomi POCO F2 Pro"
+pkgver=1
+pkgrel=1
+url="https://postmarketos.org"
+license="MIT"
+arch="aarch64"
+options="!check !archcheck"
+depends="
+	alsa-ucm-conf
+	bootmac
+	hexagonrpcd
+	make-dynpart-mappings
+	mesa-vulkan-freedreno
+	mkbootimg
+	swclock-offset
+	linux-postmarketos-qcom-sm8250-lmi
+	postmarketos-base
+	qbootctl
+"
+makedepends="devicepkg-dev"
+source="
+	81-libssc-xiaomi-lmi.rules
+	alsa-ucm-conf/lmi.conf
+	alsa-ucm-conf/HiFi.conf
+	deviceinfo
+	hexagonrpcd.confd
+	modules-initfs
+	firmware-xiaomi-lmi-Tag.zip
+"
+subpackages="
+	$pkgname-nonfree-firmware:nonfree_firmware
+	$pkgname-nonfree-firmware-openrc:nonfree_firmware_openrc
+"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+
+	# device-specific alsa ucm conf
+	install -Dm644 "$srcdir/lmi.conf" \
+		"$pkgdir/usr/share/alsa/ucm2/Xiaomi/lmi/lmi.conf"
+
+	install -Dm644 "$srcdir/HiFi.conf" \
+		"$pkgdir/usr/share/alsa/ucm2/Xiaomi/lmi/HiFi.conf"
+
+	mkdir -p "$pkgdir/usr/share/alsa/ucm2/conf.d/sm8250"
+	ln -s ../../Xiaomi/lmi/lmi.conf \
+		"$pkgdir/usr/share/alsa/ucm2/conf.d/sm8250/xiaomi-lmi.conf"
+}
+
+nonfree_firmware() {
+	pkgdesc="GPU, venus, modem and sensor firmware"
+	depends="
+		firmware-xiaomi-lmi
+		firmware-qcom-adreno-a650
+		linux-firmware-qcom
+		linux-firmware-qca
+		linux-firmware-ath11k
+		tqftpserv
+	"
+	mkdir "$subpkgdir"
+
+	install -Dm644 "$srcdir"/81-libssc-xiaomi-lmi.rules \
+		"$subpkgdir"/etc/udev/rules.d/81-libssc-xiaomi-lmi.rules
+
+	install -Dm644 "$srcdir"/hexagonrpcd.confd \
+		"$subpkgdir"/usr/share/hexagonrpcd/hexagonrpcd-sdsp.conf
+
+	# Cirrus Logic audio DSP firmware (del zip local)
+	mkdir -p "$subpkgdir/lib/firmware/cirrus"
+	unzip -j -o "$srcdir/firmware-xiaomi-lmi-Tag.zip" \
+		"firmware-xiaomi-lmi-Tag/lib/firmware/cirrus/*" \
+		-d "$subpkgdir/lib/firmware/cirrus"
+
+	# Focaltech touch panel firmware (del zip local)
+	mkdir -p "$subpkgdir/lib/firmware/focaltech"
+	unzip -j -o "$srcdir/firmware-xiaomi-lmi-Tag.zip" \
+		"firmware-xiaomi-lmi-Tag/lib/firmware/focaltech/*" \
+		-d "$subpkgdir/lib/firmware/focaltech"
+
+	find "$subpkgdir" -type f -exec chmod 0644 {} \;
+}
+
+nonfree_firmware_openrc() {
+	install_if="$pkgname-nonfree-firmware=$pkgver-r$pkgrel openrc"
+	install="$subpkgname.post-install $subpkgname.post-upgrade"
+	depends="
+		hexagonrpcd-openrc
+		tqftpserv-openrc
+	"
+	mkdir -p "$subpkgdir"
+}
+sha512sums="
+2c16ba75e0077b2b1eaefa4c73b287475505a1aeb291ec29316d41cc094277320f9d2aaabfd91eb1dc0f488ab2d61a94faef16e7afe0f1e226779113761b9a37  81-libssc-xiaomi-lmi.rules
+81930541fe99f87fdebe25eb9b6298ee3ce2ff6447fe373a1d8c7e743646c3443c013e2c307d0332813ea0262d0f857e368da59e870e9de05dac9e25c2b63bf4  lmi.conf
+ee79892868fcec9c2392440c1829d8b8e847d180727ed9d41c765df065ed85e2b49abbe1bbe5ac142414b71c8ac2729997639a632ec8841709b98b830f39d6ee  HiFi.conf
+1fad617e80139df5de28d64ca8c86b43ef021e42501cea2428e01984df6f1f9e2de1aec6c5251f26cd3839c38b8ade4edea262e36329f6f896335153c0c1b9ac  deviceinfo
+403a231545cd3ba8919d4d071308e44139b77485280c3444335aa13be1c8010eff4756086adfaf88bf133c436988361b054bc51beae0f4b81dc2d54404ea6f48  hexagonrpcd.confd
+9e71742c34ddb01188d11910edf1fab3127bf976c7a5847777b9cf12c3e051974e41f8cc471a4b8bafab4e844ff1ea79e01fdfdcab02aca0fe1d060bc9bc894c  modules-initfs
+159939d72d5ac22b9e81e3d1dba8bfb937eb563622feaf961b5cea5a23bb4eb96923a0d395c17f87643ea8fd15041046e6bf229f5265206d767d4fd1653486bf  firmware-xiaomi-lmi-Tag.zip
+"

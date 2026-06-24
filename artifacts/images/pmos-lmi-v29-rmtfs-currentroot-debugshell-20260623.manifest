@@ -1,0 +1,13 @@
+artifact_boot=pmos-lmi-v29-rmtfs-currentroot-debugshell-20260623.img
+source_boot=/home/microstar/lmi_linx/artifacts/images/pmos-lmi-v29-rmtfs-currentroot-20260623.img
+source_boot_sha256=771cce74e14cac225c3b2a5512f0170dd0317751876e3fbb27e861bb4cd73653
+source_kernel_sha256=c5f1489f709d34c8e5febacb4c6b8fb8d6f093d3c3b19c21e481aec4ef5f2624
+source_dtb_sha256=aee89cc172734de955a11ec335b16d3a1b5da51667083b919271c2b6902d57a6
+source_ramdisk_sha256=39d7ea4e99e7fcaa510462bb7254ea094a8bd1889364b7c46566960f457f7c01
+artifact_boot_sha256=1f338e3153419e6f7d8e7e3dd4101ad9b887730e2c63263fa9c1417b450d03cd
+artifact_boot_size=52920320
+current_boot_uuid=3c14f75f-450e-4457-b109-6fc5d9f7c54c
+current_root_uuid=b50c1119-2cd9-4675-a9be-3201c98d54ec
+extra_cmdline=pmos.debug-shell
+purpose=v28 kernel and ramdisk against current v27 rootfs for RAM-only rmtfs_mem test
+cmdline=androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery  pmos_boot_uuid=3c14f75f-450e-4457-b109-6fc5d9f7c54c pmos_root_uuid=b50c1119-2cd9-4675-a9be-3201c98d54ec pmos_rootfsopts=defaults pmos.debug-shell

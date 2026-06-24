@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+conf=/etc/conf.d/rmtfs
+
+if [ -f "$conf" ] && ! grep -q '^command_args=' "$conf"; then
+	cat >> "$conf" <<'EOF'
+
+# xiaomi-lmi downstream 4.19 exposes Qualcomm subsystems through /dev/subsys_*
+# rather than mainline remoteproc. Do not pass -s, which requires rprocfd.
+command_args="-P -r"
+EOF
+fi

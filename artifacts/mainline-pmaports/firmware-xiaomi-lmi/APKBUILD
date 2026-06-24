@@ -1,0 +1,48 @@
+# Maintainer: Nikroks <nikroks@mainlining.org>
+pkgname=firmware-xiaomi-lmi
+pkgver=1
+pkgrel=0
+pkgdesc="Firmware for lmi"
+url="https://github.com/yuweiyuan8/firmware-xiaomi-lmi"
+arch="aarch64"
+license="proprietary"
+options="!strip !check !archcheck !tracedeps textrels pmb:cross-native"
+
+_commit="dde156380b2ac372619ed332dbe60640b838b7fe"
+
+source="
+	$pkgname.tar.gz::https://github.com/yuweiyuan8/firmware-xiaomi-lmi/archive/dde156380b2ac372619ed332dbe60640b838b7fe/firmware-xiaomi-lmi-dde156380b2ac372619ed332dbe60640b838b7fe.tar.gz
+	30-initramfs-firmware.files
+	firmware.files
+	sensor.files
+"
+
+subpackages="$pkgname-sensors:firmware_sensors"
+
+package() {
+	while IFS="" read -r _i || [ -n "$_i" ]; do
+		[ ! -d $(dirname $_i) ] && mkdir -p $(dirname $_i)
+		install -Dm644 "$srcdir/$pkgname-$_commit/$_i" "$pkgdir/$_i"
+	done < "$srcdir/firmware.files"
+
+	install -Dm644 "$srcdir/30-initramfs-firmware.files" -t \
+		"$pkgdir"/usr/share/mkinitfs/files
+}
+
+firmware_sensors() {
+	pkgdesc="Files to be included to add sensor support"
+	depends="$pkgname"
+	install_if="$pkgname-nonfree-firmware"
+	mkdir "$subpkgdir"
+
+	while IFS="" read -r _i || [ -n "$_i" ]; do
+		[ ! -d $(dirname $_i) ] && mkdir -p $(dirname $_i)
+		install -Dm644 "$srcdir/$pkgname-$_commit/$_i" "$pkgdir/$_i"
+	done < "$srcdir/sensor.files"
+}
+sha512sums="
+a13753ac371e2ab158f9ebf9779841cf305c2721eeed0739e82cdef3a18164cf95b14699d9e9d560c93036c612c95f0aa394db8b8bd7ac8b08f9dd7c84700d15  firmware-xiaomi-lmi.tar.gz
+b03ad4c39635e81731065d8b83c91a0afc047fe6d7492ce19329b7338d30d12562040353bb390bcaf9307a38185b9bbf7a99d5f6b203b51a43222afbdc2eeb09  30-initramfs-firmware.files
+06d8e866cf1fa33a46be51afb1ee32bedb0c5a01756969d4883dba2f8c7314bad1281c04409b45836fbab96893cf973bf88bb8d98f3fe81c5f26e865c57d0595  firmware.files
+2953175623679a7c8b9160134664705993a446c26a632ad34e5b0ba6cef7c67207894aa280288cc84b484f44d8ef9f78f19060467cf386cb6657f95b53a0ae2d  sensor.files
+"

@@ -1,0 +1,11 @@
+./lib/firmware/qcom/sm8250/xiaomi/lmi/a650_zap.mbn
+./lib/firmware/qcom/sm8250/xiaomi/lmi/adsp.mbn
+./lib/firmware/qcom/sm8250/xiaomi/lmi/adspr.jsn
+./lib/firmware/qcom/sm8250/xiaomi/lmi/adspua.jsn
+./lib/firmware/qcom/sm8250/xiaomi/lmi/cdsp.mbn
+./lib/firmware/qcom/sm8250/xiaomi/lmi/cdspr.jsn
+./lib/firmware/qcom/sm8250/xiaomi/lmi/ipa_fws.mbn
+./lib/firmware/qcom/sm8250/xiaomi/lmi/slpi.mbn
+./lib/firmware/qcom/sm8250/xiaomi/lmi/slpir.jsn
+./lib/firmware/qcom/sm8250/xiaomi/lmi/slpius.jsn
+./lib/firmware/qcom/sm8250/xiaomi/lmi/venus.mbn

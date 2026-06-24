@@ -1,0 +1,40 @@
+Enable PCIe bus 1 + modem PHY for the SDX55 5G modem
+
+The Xiaomi POCO F2 Pro (xiaomi-lmi) uses an external Qualcomm SDX55
+modem connected over PCIe bus 1 (pcie@1c08000) with a dedicated
+modem PCIe PHY (pcie1_phy). Both nodes are 'disabled' in sm8250.dtsi.
+
+Enabling them lets the generic MHI PCI driver (mhi_pci_generic)
+auto-probe the modem via its PCI ID 17cb:0306. The modem then exposes
+QMI/QRTR interfaces usable by ModemManager.
+
+Requires the modem firmware blobs qcom/sdx55m/sbl1.mbn and edl.mbn.
+
+Signed-off-by: macosmojave2 <macosmojave2@gmail.com>
+---
+--- a/arch/arm64/boot/dts/qcom/sm8250-xiaomi-lmi.dts
++++ b/arch/arm64/boot/dts/qcom/sm8250-xiaomi-lmi.dts
+@@ -869,6 +869,23 @@
+ 	};
+ };
+ 
++/*
++ * PCIe bus 1 connects the external SDX55 5G modem (Snapdragon X55).
++ * The modem itself is auto-probed by the mhi_pci_generic driver via its
++ * PCI ID (17cb:0306), so only the host bridge + modem PHY need enabling here.
++ */
++&pcie1 {
++	vdda-supply = <&vreg_l9a_1p2>;
++	vddpe-3v3-supply = <&vreg_l11c_3p3>;
++	status = "okay";
++};
++
++&pcie1_phy {
++	vdda-phy-supply = <&vreg_s6c_0p88>;
++	vdda-pll-supply = <&vreg_l9a_1p2>;
++	status = "okay";
++};
++
+ &pcie2 {
+ 	vdda-supply = <&vreg_l9a_1p2>;
+ 	vddpe-3v3-supply = <&vreg_l11c_3p3>;

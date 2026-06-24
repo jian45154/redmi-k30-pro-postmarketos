@@ -1,0 +1,15 @@
+#!/sbin/openrc-run
+
+description="Trigger xiaomi-lmi WLAN driver load"
+
+depend() {
+	need lmi-cnss-fs-ready
+	after rmtfs tqftpserv lmi-qrtr-ns lmi-cnss-daemon
+	before wpa_supplicant networkmanager
+}
+
+start() {
+	ebegin "Requesting xiaomi-lmi WLAN driver startup"
+	lmi-wifi-start
+	eend $?
+}
