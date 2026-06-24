@@ -3,20 +3,13 @@
 description="Notify CNSS that firmware files are ready"
 
 depend() {
-	need lmi-firmware-mount
-	after rmtfs tqftpserv pd-mapper
+	need lmi-firmware-mount lmi-qrtr-ns lmi-cnss-daemon
+	after rmtfs tqftpserv lmi-qrtr-ns lmi-cnss-daemon
 	before wpa_supplicant networkmanager
 }
 
 start() {
-	local fs_ready="/sys/kernel/cnss/fs_ready"
-
-	ebegin "Notifying xiaomi-lmi CNSS firmware readiness"
-	if [ ! -w "$fs_ready" ]; then
-		eend 1 "$fs_ready is not writable"
-		return 1
-	fi
-
-	printf 1 > "$fs_ready"
+	ebegin "Preparing xiaomi-lmi WLAN firmware and CNSS fs_ready"
+	lmi-wifi-start --fs-ready-only
 	eend $?
 }

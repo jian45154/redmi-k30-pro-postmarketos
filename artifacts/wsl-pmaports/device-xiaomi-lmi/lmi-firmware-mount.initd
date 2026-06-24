@@ -11,6 +11,8 @@ start() {
 	local fw_image="$fw_mnt/image"
 	local wlan_fw="$fw_mnt/image/qca6390"
 	local rmtfs_conf="/etc/conf.d/rmtfs"
+	local wlan_conf="/etc/conf.d/lmi-wlan-firmware"
+	local boarddata="bd_j11.elf"
 
 	ebegin "Mounting xiaomi-lmi firmware partition"
 	mkdir -p "$fw_mnt" /lib/firmware
@@ -39,19 +41,27 @@ start() {
 		}
 	fi
 
+	[ -r "$wlan_conf" ] && . "$wlan_conf"
+	boarddata=${LMI_WLAN_BOARDDATA:-$boarddata}
+
 	if [ -d "$wlan_fw" ]; then
-		if [ -L /lib/firmware/qca6390 ]; then
-			ln -sfn "$wlan_fw" /lib/firmware/qca6390
-		elif [ -d /lib/firmware/qca6390 ]; then
-			mountpoint -q /lib/firmware/qca6390 ||
-				mount --bind "$wlan_fw" /lib/firmware/qca6390
-		else
-			ln -sfn "$wlan_fw" /lib/firmware/qca6390
+		rm -rf /lib/firmware/qca6390
+		mkdir -p /lib/firmware/qca6390
+		for fw_file in "$wlan_fw"/*; do
+			[ -e "$fw_file" ] || continue
+			ln -sfn "$fw_file" "/lib/firmware/qca6390/${fw_file##*/}"
+		done
+
+		if [ -n "$boarddata" ] && [ -r "$wlan_fw/$boarddata" ]; then
+			ln -sfn "$wlan_fw/$boarddata" /lib/firmware/qca6390/bdwlan.elf
 		fi
 
 		for fw_file in /lib/firmware/qca6390/bdwlan* \
+			/lib/firmware/qca6390/bd_*.elf \
 			/lib/firmware/qca6390/regdb.bin \
-			/lib/firmware/qca6390/regdb_j11.bin; do
+			/lib/firmware/qca6390/regdb_j11.bin \
+			/lib/firmware/qca6390/amss20.bin \
+			/lib/firmware/qca6390/m3.bin; do
 			[ -e "$fw_file" ] || continue
 			ln -sfn "qca6390/${fw_file##*/}" "/lib/firmware/${fw_file##*/}"
 		done

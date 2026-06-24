@@ -1,0 +1,136 @@
+#!/sbin/openrc-run
+
+description="Run stock xiaomi-lmi CNSS daemon from read-only Android partitions"
+command="/vendor/bin/cnss-daemon"
+
+super_dev="/dev/disk/by-partlabel/super"
+system_mnt="/mnt/android-system"
+vendor_mnt="/mnt/android-vendor"
+runtime_mnt="/apex/com.android.runtime"
+runtime_img="/run/lmi-cnss-daemon/com.android.runtime.apex_payload.img"
+data_wifi="/data/vendor/wifi"
+
+system_offset=1048576
+system_size=1144766464
+vendor_offset=1146093568
+vendor_size=817250304
+
+depend() {
+	need lmi-firmware-mount lmi-qrtr-ns
+	after lmi-qrtr-ns
+	before lmi-cnss-fs-ready wpa_supplicant networkmanager
+}
+
+ensure_partlabel() {
+	local partname=$1
+	local uevent block name major_minor
+
+	[ -e "/dev/disk/by-partlabel/$partname" ] && return 0
+
+	mkdir -p /dev/disk/by-partlabel /dev/block/by-name
+	for uevent in /sys/class/block/*/uevent; do
+		[ -r "$uevent" ] || continue
+		grep -q "^PARTNAME=$partname$" "$uevent" || continue
+		block="${uevent%/uevent}"
+		name="${block##*/}"
+		[ -r "/sys/class/block/$name/dev" ] || continue
+		major_minor="$(cat "/sys/class/block/$name/dev")"
+		[ -b "/dev/$name" ] || mknod "/dev/$name" b \
+			"${major_minor%:*}" "${major_minor#*:}" 2>/dev/null || true
+		ln -sfn "../../$name" "/dev/disk/by-partlabel/$partname"
+		ln -sfn "../../$name" "/dev/block/by-name/$partname"
+		break
+	done
+}
+
+mount_logical() {
+	local name=$1
+	local mountpoint=$2
+	local offset=$3
+	local size=$4
+
+	mkdir -p "$mountpoint"
+	if ! mountpoint -q "$mountpoint"; then
+		mount -o "ro,loop,offset=$offset,sizelimit=$size" \
+			"$super_dev" "$mountpoint" || {
+			eerror "failed to mount Android $name logical partition"
+			return 1
+		}
+	fi
+}
+
+start_pre() {
+	ensure_partlabel super
+	[ -b "$super_dev" ] || {
+		eerror "$super_dev is not available"
+		return 1
+	}
+
+	mount_logical system "$system_mnt" "$system_offset" "$system_size" || return 1
+	mount_logical vendor "$vendor_mnt" "$vendor_offset" "$vendor_size" || return 1
+
+	mkdir -p "${runtime_img%/*}" "$runtime_mnt" /apex
+	if [ ! -s "$runtime_img" ]; then
+		unzip -p "$system_mnt/system/apex/com.android.runtime.apex" \
+			apex_payload.img > "$runtime_img" || {
+			eerror "failed to extract Android runtime APEX payload"
+			return 1
+		}
+	fi
+	if ! mountpoint -q "$runtime_mnt"; then
+		mount -o ro,loop "$runtime_img" "$runtime_mnt" || {
+			eerror "failed to mount Android runtime APEX"
+			return 1
+		}
+	fi
+
+	ln -sfn "$system_mnt/system" /system
+	ln -sfn "$vendor_mnt" /vendor
+	mkdir -p "$data_wifi/sockets"
+	chmod 0770 /data /data/vendor "$data_wifi" "$data_wifi/sockets" 2>/dev/null || true
+	: > "$data_wifi/iotap_ps.bin"
+
+	[ -x /vendor/bin/cnss-daemon ] || {
+		eerror "/vendor/bin/cnss-daemon is not executable"
+		return 1
+	}
+	[ -x "$command" ] || {
+		eerror "$command is not executable"
+		return 1
+	}
+}
+
+is_running() {
+	pgrep -f "^$command\$" >/dev/null 2>&1
+}
+
+start() {
+	ebegin "Starting xiaomi-lmi CNSS daemon"
+	if is_running; then
+		eend 0
+		return 0
+	fi
+
+	LD_PRELOAD=/usr/lib/lmi/liblmi_android_prop_shim.so \
+		/usr/sbin/lmi-cnss-daemon-wrapper >/dev/null 2>&1 &
+	sleep 2
+	is_running
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping xiaomi-lmi CNSS daemon"
+	start-stop-daemon --stop --exec "$command" >/dev/null 2>&1 || true
+	sleep 1
+	! is_running
+	eend $?
+}
+
+status() {
+	if is_running; then
+		einfo "status: started"
+		return 0
+	fi
+	einfo "status: stopped"
+	return 3
+}
