@@ -35,6 +35,7 @@ checklist=${LMI_EXECUTION_CHECKLIST:-docs/release/lmi-r6-bootmem-execution-check
 handoff=${LMI_HANDOFF_STATUS:-docs/release/lmi-r6-current-handoff-20260624.md}
 report=${LMI_PERSISTENT_READINESS_REPORT:-$bundle_dir/PERSISTENT_READINESS_AUDIT.txt}
 fastboot_bin=${FASTBOOT:-fastboot}
+fastboot_timeout=${LMI_FASTBOOT_TIMEOUT:-5}
 
 mkdir -p "$(dirname "$report")"
 : > "$report"
@@ -73,7 +74,7 @@ getvar() {
 	local key=$1
 	local output
 	set +e
-	output=$("$fastboot_bin" getvar "$key" 2>&1)
+	output=$(timeout "$fastboot_timeout" "$fastboot_bin" getvar "$key" 2>&1)
 	local status=$?
 	set -e
 	printf '%s\n' "$output" | sed -n "s/^$key: //p" | tail -n 1
@@ -163,7 +164,7 @@ if [ "$failures" -eq 0 ]; then
 	run_check "boot stage dry-run" env LMI_COPYDOWN_BOOT_IMG="$boot_img" LMI_COPYDOWN_MANIFEST="$manifest" LMI_ROOTFS_IMG="$rootfs_img" scripts/53_stage_lmi_fastbootd_flash.sh --stage boot --dry-run
 fi
 
-devices=$("$fastboot_bin" devices 2>&1 || true)
+devices=$(timeout "$fastboot_timeout" "$fastboot_bin" devices 2>&1 || true)
 product=$(getvar product || true)
 unlocked=$(getvar unlocked || true)
 is_userspace=$(getvar is-userspace || true)

@@ -37,6 +37,15 @@ is_userspace=$(sed -n 's/^  is-userspace=//p' "$bundle_dir/PERSISTENT_FLASH_PLAN
 product=$(sed -n 's/^  product=//p' "$bundle_dir/PERSISTENT_FLASH_PLAN.txt" | head -n 1)
 unlocked=$(sed -n 's/^  unlocked=//p' "$bundle_dir/PERSISTENT_FLASH_PLAN.txt" | head -n 1)
 
+case "${plan_status:-}" in
+	READY_FOR_FASTBOOTD_PREFLIGHT)
+		gate_note="The expected current state is \`READY_FOR_FASTBOOTD_PREFLIGHT\`. The fastbootd read-only gate has passed, but no flash should be attempted without fresh exact approval for the selected stage."
+		;;
+	*)
+		gate_note="The expected current state is \`WAITING_FOR_RECOVERY_FASTBOOTD\`. No flash should be attempted while \`is-userspace=no\` unless a separately approved rollback decision explicitly chooses bootloader fastboot."
+		;;
+esac
+
 cat > "$output" <<EOF
 # Xiaomi lmi r6 bootmem release manifest - 2026-06-24
 
@@ -58,9 +67,7 @@ identify the exact artifacts in the local release bundle.
 - is-userspace: \`${is_userspace:-unknown}\`
 - Persistent route plan: \`${plan_status:-unknown}\`
 
-The expected current state is \`WAITING_FOR_RECOVERY_FASTBOOTD\`. No flash should
-be attempted while \`is-userspace=no\` unless a separately approved rollback
-decision explicitly chooses bootloader fastboot.
+$gate_note
 
 ## Bundle SHA256SUMS
 

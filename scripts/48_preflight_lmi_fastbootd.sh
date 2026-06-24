@@ -6,6 +6,7 @@ boot_img=${LMI_COPYDOWN_BOOT_IMG:-$copydown_dir/boot-linux-copydown-lmi.img}
 manifest=${LMI_COPYDOWN_MANIFEST:-$copydown_dir/boot-linux-copydown-lmi.manifest}
 rootfs_img=${LMI_ROOTFS_IMG:-/tmp/postmarketOS-export/xiaomi-lmi.img}
 fastboot_bin=${FASTBOOT:-fastboot}
+fastboot_timeout=${LMI_FASTBOOT_TIMEOUT:-5}
 
 for path in "$boot_img" "$manifest" "$rootfs_img"; do
 	[ -f "$path" ] || {
@@ -22,7 +23,7 @@ getvar() {
 	local key=$1
 	local output
 	set +e
-	output=$("$fastboot_bin" getvar "$key" 2>&1)
+	output=$(timeout "$fastboot_timeout" "$fastboot_bin" getvar "$key" 2>&1)
 	local status=$?
 	set -e
 	printf '%s\n' "$output" | sed -n "s/^$key: //p" | tail -n 1
@@ -30,7 +31,7 @@ getvar() {
 }
 
 echo "fastboot device list:"
-"$fastboot_bin" devices
+timeout "$fastboot_timeout" "$fastboot_bin" devices || true
 
 product=$(getvar product || true)
 unlocked=$(getvar unlocked || true)

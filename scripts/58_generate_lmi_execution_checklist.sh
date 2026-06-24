@@ -32,6 +32,19 @@ product=$(sed -n 's/^  product=//p' "$plan_report" | head -n 1)
 unlocked=$(sed -n 's/^  unlocked=//p' "$plan_report" | head -n 1)
 is_userspace=$(sed -n 's/^  is-userspace=//p' "$plan_report" | head -n 1)
 
+case "${plan_status:-}" in
+	READY_FOR_FASTBOOTD_PREFLIGHT)
+		current_gate_note="Current blocker: fastbootd preflight is ready. The next step is a separately approved rootfs write to userdata."
+		next_boundary_heading="The next persistent-write command requiring fresh exact approval is:"
+		next_boundary_command="LMI_FLASH_CONFIRM=$rootfs_token scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute"
+		;;
+	*)
+		current_gate_note="Current blocker: the phone is not yet confirmed in recovery fastbootd."
+		next_boundary_heading="The next hardware-state command requiring fresh exact approval is:"
+		next_boundary_command="LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi scripts/60_stage_lmi_enter_fastbootd.sh --execute"
+		;;
+esac
+
 cat > "$output" <<EOF
 # Xiaomi lmi r6 bootmem execution checklist - 2026-06-24
 
@@ -46,7 +59,7 @@ It is not an approval and does not make any hardware command safe by itself.
 - Route plan: \`${plan_status:-unknown}\`
 - Bundle: \`$bundle_dir\`
 
-Current blocker: the phone is in bootloader fastboot, not recovery fastbootd.
+$current_gate_note
 
 ## Artifact Identity
 
@@ -60,10 +73,10 @@ Current blocker: the phone is in bootloader fastboot, not recovery fastbootd.
 
 ## Next Approval Boundary
 
-The next hardware-state command requiring fresh exact approval is:
+$next_boundary_heading
 
 \`\`\`sh
-fastboot reboot fastboot
+$next_boundary_command
 \`\`\`
 
 Use the guarded stage helper for dry-run review:

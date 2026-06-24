@@ -23,19 +23,18 @@ collect evidence.
 
 - Product: `lmi`
 - Unlocked: `yes`
-- is-userspace: `no`
-- Route status: `WAITING_FOR_RECOVERY_FASTBOOTD`
+- is-userspace: `yes`
+- Route status: `READY_FOR_FASTBOOTD_PREFLIGHT`
 
-Current blocker: the device is still in bootloader fastboot. The next approved
-hardware-state step must be entering recovery fastbootd.
+Current blocker: fastbootd preflight is ready. The next step is a separately approved rootfs write to userdata.
 
 ## Exact Next Command Requiring Approval
 
 ```sh
-LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi scripts/60_stage_lmi_enter_fastbootd.sh --execute
+LMI_FLASH_CONFIRM=flash-xiaomi-lmi-rootfs-45bc097634b5-d778d4ea659e scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute
 ```
 
-After that, run:
+After that, rerun the readiness audit and only then request separate boot-stage approval.
 
 ```sh
 scripts/66_wait_and_audit_lmi_fastbootd.sh
@@ -47,8 +46,8 @@ finishes with `fastbootd audit gate: OK`.
 
 ## Artifact Hashes
 
-- Boot: `cfc5748035bccb9a4c5b3c1683ef887aa3ce7ce802d6d19fc69d4141b28f6570`
-- Rootfs: `24918896b43c962f1a54da44d53ad7fb722e9324a96dd6f1d1d3c93d832d73a7`
+- Boot: `45bc097634b521037a9a7b1298046e9ca56bae21c54e612876b8ad3be9610254`
+- Rootfs: `d778d4ea659e6fa09ea9038f3626d837d0ec2cea5d09aeb9d0653ce5ea38c4af`
 - Rollback boot candidate: `0c06ad2aca2ab0d510e9d9c97ba31d35a514b9a3d15850b1c4a2121e55fa5cbf`
 
 ## Canonical Local Reports

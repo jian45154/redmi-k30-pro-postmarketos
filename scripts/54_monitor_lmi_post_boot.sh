@@ -21,7 +21,9 @@ EOF
 bundle_dir=${LMI_RELEASE_BUNDLE_DIR:-/tmp/lmi-release-r6-bootmem-20260624}
 report=${LMI_POST_BOOT_REPORT:-$bundle_dir/POST_BOOT_MONITOR.txt}
 fastboot_bin=${FASTBOOT:-fastboot}
+fastboot_timeout=${LMI_FASTBOOT_TIMEOUT:-5}
 adb_bin=${ADB:-adb}
+adb_timeout=${LMI_ADB_TIMEOUT:-5}
 pmos_host=${LMI_PMOS_HOST:-172.16.42.1}
 timeout_s=${LMI_POST_BOOT_TIMEOUT:-180}
 interval_s=${LMI_POST_BOOT_INTERVAL:-3}
@@ -122,8 +124,8 @@ while [ "$SECONDS" -le "$deadline" ]; do
 	attempt=$((attempt + 1))
 	log "== attempt=$attempt seconds=$SECONDS =="
 
-	fastboot_devices=$("$fastboot_bin" devices 2>&1 || true)
-	adb_devices=$("$adb_bin" devices 2>&1 || true)
+	fastboot_devices=$(timeout "$fastboot_timeout" "$fastboot_bin" devices 2>&1 || true)
+	adb_devices=$(timeout "$adb_timeout" "$adb_bin" devices 2>&1 || true)
 	ip_br=$(ip -br addr 2>&1 || true)
 
 	if [ -n "$fastboot_devices" ]; then
@@ -168,8 +170,8 @@ while [ "$SECONDS" -le "$deadline" ]; do
 	fi
 done
 
-run_capture "final fastboot product" "$fastboot_bin" getvar product
-run_capture "final fastboot is-userspace" "$fastboot_bin" getvar is-userspace
+run_capture "final fastboot product" timeout "$fastboot_timeout" "$fastboot_bin" getvar product
+run_capture "final fastboot is-userspace" timeout "$fastboot_timeout" "$fastboot_bin" getvar is-userspace
 
 log
 log "summary:"

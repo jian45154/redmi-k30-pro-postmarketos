@@ -50,6 +50,12 @@ copy it to `.github/workflows/` only with a token that has workflow scope.
 To refresh all local r6 release reports and docs, run
 `scripts/62_refresh_lmi_release_docs.sh --quick`.
 
+The reusable host-side automation loop is documented in
+[`docs/mainline-automation-loop-20260624.md`](docs/mainline-automation-loop-20260624.md).
+Use `scripts/68_mainline_progress_loop.sh --once --quick` for the default
+read-only loop, and `scripts/69_audit_lmi_resources.sh --network` when local
+mainline resources need to be compared with remote repository refs.
+
 ## Read this first
 
 **[docs/porting-sm8250-downstream-to-postmarketos.md](docs/porting-sm8250-downstream-to-postmarketos.md)**

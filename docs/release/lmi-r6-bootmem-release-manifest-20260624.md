@@ -15,21 +15,19 @@ identify the exact artifacts in the local release bundle.
 
 - Product: `lmi`
 - Unlocked: `yes`
-- is-userspace: `no`
-- Persistent route plan: `WAITING_FOR_RECOVERY_FASTBOOTD`
+- is-userspace: `yes`
+- Persistent route plan: `READY_FOR_FASTBOOTD_PREFLIGHT`
 
-The expected current state is `WAITING_FOR_RECOVERY_FASTBOOTD`. No flash should
-be attempted while `is-userspace=no` unless a separately approved rollback
-decision explicitly chooses bootloader fastboot.
+The expected current state is `READY_FOR_FASTBOOTD_PREFLIGHT`. The fastbootd read-only gate has passed, but no flash should be attempted without fresh exact approval for the selected stage.
 
 ## Bundle SHA256SUMS
 
 ```text
-cfc5748035bccb9a4c5b3c1683ef887aa3ce7ce802d6d19fc69d4141b28f6570  boot-linux-copydown-lmi-r6-bootmem.img
-facabcaac7745be9e5bf1c94338ffd974d6ca6fa8982513edac69b721af0cf0b  boot-linux-copydown-lmi-r6-bootmem.manifest
-24918896b43c962f1a54da44d53ad7fb722e9324a96dd6f1d1d3c93d832d73a7  xiaomi-lmi-r6-bootmem.img
-bdccac69e54cab35044f24d3ce4914e2fced548879af47ae1d88038024d9cf5e  pmbootstrap-direct-boot-r6-bootmem.img
-91e17b132e95c48a86e3fe910075344162fd8e5082ba0f36e9441cb0675bc49c  vmlinuz-r6-bootmem
+45bc097634b521037a9a7b1298046e9ca56bae21c54e612876b8ad3be9610254  boot-linux-copydown-lmi-r6-bootmem.img
+b8062698cc60a39979b7965ba05f8a07ab54e4d67a569e8788004b54a66e40d6  boot-linux-copydown-lmi-r6-bootmem.manifest
+d778d4ea659e6fa09ea9038f3626d837d0ec2cea5d09aeb9d0653ce5ea38c4af  xiaomi-lmi-r6-bootmem.img
+d1f9978dd6b24141e596350281abb17eed4b17e86538543a8e74ef0393393dad  pmbootstrap-direct-boot-r6-bootmem.img
+353dba72fbacde0bd59f3ab71b3e354dd3d96fd706e776919bc7ae72619ab9fb  vmlinuz-r6-bootmem
 b9e390e417fe89a1e60549286ab7f1df2ec77eab2a56a6fc0d6d6a7456733b32  sm8250-xiaomi-lmi-r6-bootmem.dtb
 c3f6fe0b58c6ad1a8329deff8ac35305dd5868bac71ddeca55708ad259fd4a85  initramfs-r6-bootmem
 ```
@@ -40,7 +38,7 @@ c3f6fe0b58c6ad1a8329deff8ac35305dd5868bac71ddeca55708ad259fd4a85  initramfs-r6-b
 | --- | ---: |
 | `boot-linux-copydown-lmi-r6-bootmem.img` | 15892480 |
 | `boot-linux-copydown-lmi-r6-bootmem.manifest` | 2613 |
-| `xiaomi-lmi-r6-bootmem.img` | 1256602620 |
+| `xiaomi-lmi-r6-bootmem.img` | 1256631208 |
 | `pmbootstrap-direct-boot-r6-bootmem.img` | 40128512 |
 | `vmlinuz-r6-bootmem` | 30296072 |
 | `sm8250-xiaomi-lmi-r6-bootmem.dtb` | 135561 |

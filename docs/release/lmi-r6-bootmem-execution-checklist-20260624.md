@@ -7,28 +7,28 @@ It is not an approval and does not make any hardware command safe by itself.
 
 - Product: `lmi`
 - Unlocked: `yes`
-- is-userspace: `no`
-- Route plan: `WAITING_FOR_RECOVERY_FASTBOOTD`
+- is-userspace: `yes`
+- Route plan: `READY_FOR_FASTBOOTD_PREFLIGHT`
 - Bundle: `/tmp/lmi-release-r6-bootmem-20260624`
 
-Current blocker: the phone is in bootloader fastboot, not recovery fastbootd.
+Current blocker: fastbootd preflight is ready. The next step is a separately approved rootfs write to userdata.
 
 ## Artifact Identity
 
 - Boot image: `/tmp/lmi-release-r6-bootmem-20260624/boot-linux-copydown-lmi-r6-bootmem.img`
-- Boot SHA256: `cfc5748035bccb9a4c5b3c1683ef887aa3ce7ce802d6d19fc69d4141b28f6570`
+- Boot SHA256: `45bc097634b521037a9a7b1298046e9ca56bae21c54e612876b8ad3be9610254`
 - Rootfs image: `/tmp/lmi-release-r6-bootmem-20260624/xiaomi-lmi-r6-bootmem.img`
-- Rootfs SHA256: `24918896b43c962f1a54da44d53ad7fb722e9324a96dd6f1d1d3c93d832d73a7`
+- Rootfs SHA256: `d778d4ea659e6fa09ea9038f3626d837d0ec2cea5d09aeb9d0653ce5ea38c4af`
 - Copydown manifest: `/tmp/lmi-release-r6-bootmem-20260624/boot-linux-copydown-lmi-r6-bootmem.manifest`
 - Rollback boot: `/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img`
 - Rollback SHA256: `0c06ad2aca2ab0d510e9d9c97ba31d35a514b9a3d15850b1c4a2121e55fa5cbf`
 
 ## Next Approval Boundary
 
-The next hardware-state command requiring fresh exact approval is:
+The next persistent-write command requiring fresh exact approval is:
 
 ```sh
-fastboot reboot fastboot
+LMI_FLASH_CONFIRM=flash-xiaomi-lmi-rootfs-45bc097634b5-d778d4ea659e scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute
 ```
 
 Use the guarded stage helper for dry-run review:
@@ -63,8 +63,8 @@ flash, erase, format, or write partitions.
 These tokens are derived from the current artifact hashes.
 
 ```text
-rootfs:   LMI_FLASH_CONFIRM=flash-xiaomi-lmi-rootfs-cfc5748035bc-24918896b43c
-boot:     LMI_FLASH_CONFIRM=flash-xiaomi-lmi-boot-cfc5748035bc-24918896b43c
+rootfs:   LMI_FLASH_CONFIRM=flash-xiaomi-lmi-rootfs-45bc097634b5-d778d4ea659e
+boot:     LMI_FLASH_CONFIRM=flash-xiaomi-lmi-boot-45bc097634b5-d778d4ea659e
 rollback: LMI_ROLLBACK_CONFIRM=rollback-xiaomi-lmi-boot-0c06ad2aca2ab0d5-134217728
 fastbootd: LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi
 test reboot: LMI_TEST_REBOOT_CONFIRM=reboot-flashed-xiaomi-lmi
@@ -97,13 +97,13 @@ before use.
 3. Flash rootfs to `userdata` only if userdata destruction is accepted:
 
    ```sh
-   LMI_FLASH_CONFIRM=flash-xiaomi-lmi-rootfs-cfc5748035bc-24918896b43c scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute
+   LMI_FLASH_CONFIRM=flash-xiaomi-lmi-rootfs-45bc097634b5-d778d4ea659e scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute
    ```
 
 4. Flash the copydown boot image to `boot`:
 
    ```sh
-   LMI_FLASH_CONFIRM=flash-xiaomi-lmi-boot-cfc5748035bc-24918896b43c scripts/53_stage_lmi_fastbootd_flash.sh --stage boot --execute
+   LMI_FLASH_CONFIRM=flash-xiaomi-lmi-boot-45bc097634b5-d778d4ea659e scripts/53_stage_lmi_fastbootd_flash.sh --stage boot --execute
    ```
 
 5. Reboot only after separate approval:
