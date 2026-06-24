@@ -4,7 +4,9 @@ set -euo pipefail
 bundle_dir=${LMI_RELEASE_BUNDLE_DIR:-/tmp/lmi-release-r6-bootmem-20260624}
 output=${LMI_FASTBOOTD_ENTRY_SHEET:-$bundle_dir/FASTBOOTD_ENTRY_REQUIRED.txt}
 fastboot_bin=${FASTBOOT:-fastboot}
+fastboot_timeout=${LMI_FASTBOOT_TIMEOUT:-5}
 adb_bin=${ADB:-adb}
+adb_timeout=${LMI_ADB_TIMEOUT:-5}
 
 mkdir -p "$(dirname "$output")"
 
@@ -13,7 +15,17 @@ run_capture() {
 	shift
 	set +e
 	local out
-	out=$("$cmd" "$@" 2>&1)
+	case "$cmd" in
+		"$fastboot_bin")
+			out=$(timeout "$fastboot_timeout" "$cmd" "$@" 2>&1)
+			;;
+		"$adb_bin")
+			out=$(timeout "$adb_timeout" "$cmd" "$@" 2>&1)
+			;;
+		*)
+			out=$("$cmd" "$@" 2>&1)
+			;;
+	esac
 	local status=$?
 	set -e
 	printf '%s\n' "$out"

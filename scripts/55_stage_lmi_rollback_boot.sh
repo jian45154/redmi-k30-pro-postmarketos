@@ -21,6 +21,7 @@ EOF
 bundle_dir=${LMI_RELEASE_BUNDLE_DIR:-/tmp/lmi-release-r6-bootmem-20260624}
 rollback_boot=${LMI_ROLLBACK_BOOT_IMG:-/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img}
 fastboot_bin=${FASTBOOT:-fastboot}
+fastboot_timeout=${LMI_FASTBOOT_TIMEOUT:-5}
 report=${LMI_ROLLBACK_STAGE_REPORT:-$bundle_dir/ROLLBACK_STAGE_RESULT.txt}
 mode="dry-run"
 
@@ -56,7 +57,7 @@ getvar() {
 	local key=$1
 	local output
 	set +e
-	output=$("$fastboot_bin" getvar "$key" 2>&1)
+	output=$(timeout "$fastboot_timeout" "$fastboot_bin" getvar "$key" 2>&1)
 	local status=$?
 	set -e
 	printf '%s\n' "$output" | sed -n "s/^$key: //p" | tail -n 1
@@ -113,7 +114,7 @@ printf '  %q' "$fastboot_bin" flash boot "$rollback_boot" | tee -a "$report"
 log
 log
 
-devices=$("$fastboot_bin" devices 2>&1 || true)
+devices=$(timeout "$fastboot_timeout" "$fastboot_bin" devices 2>&1 || true)
 product=$(getvar product || true)
 unlocked=$(getvar unlocked || true)
 is_userspace=$(getvar is-userspace || true)

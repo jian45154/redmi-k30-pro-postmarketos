@@ -5,6 +5,7 @@ bundle_dir=${LMI_RELEASE_BUNDLE_DIR:-/tmp/lmi-release-r6-bootmem-20260624}
 timeout_s=${LMI_FASTBOOTD_WAIT_TIMEOUT:-120}
 interval_s=${LMI_FASTBOOTD_WAIT_INTERVAL:-2}
 fastboot_bin=${FASTBOOT:-fastboot}
+fastboot_timeout=${LMI_FASTBOOT_TIMEOUT:-5}
 report=${LMI_FASTBOOTD_WAIT_REPORT:-$bundle_dir/FASTBOOTD_WAIT_RESULT.txt}
 
 boot_img=${LMI_COPYDOWN_BOOT_IMG:-$bundle_dir/boot-linux-copydown-lmi-r6-bootmem.img}
@@ -21,7 +22,7 @@ getvar() {
 	local key=$1
 	local output
 	set +e
-	output=$("$fastboot_bin" getvar "$key" 2>&1)
+	output=$(timeout "$fastboot_timeout" "$fastboot_bin" getvar "$key" 2>&1)
 	local status=$?
 	set -e
 	printf '%s\n' "$output" | sed -n "s/^$key: //p" | tail -n 1
@@ -53,7 +54,7 @@ attempt=0
 
 while [ "$SECONDS" -le "$deadline" ]; do
 	attempt=$((attempt + 1))
-	devices=$("$fastboot_bin" devices 2>&1 || true)
+	devices=$(timeout "$fastboot_timeout" "$fastboot_bin" devices 2>&1 || true)
 	product=$(getvar product || true)
 	unlocked=$(getvar unlocked || true)
 	is_userspace=$(getvar is-userspace || true)

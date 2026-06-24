@@ -26,6 +26,19 @@ boot_sha=$(sed -n 's/^- Boot SHA256: `\(.*\)`/\1/p' "$checklist" | head -n 1)
 rootfs_sha=$(sed -n 's/^- Rootfs SHA256: `\(.*\)`/\1/p' "$checklist" | head -n 1)
 rollback_sha=$(sed -n 's/^- Rollback SHA256: `\(.*\)`/\1/p' "$checklist" | head -n 1)
 
+case "${plan_status:-}" in
+	READY_FOR_FASTBOOTD_PREFLIGHT)
+		current_gate_note="Current blocker: fastbootd preflight is ready. The next step is a separately approved rootfs write to userdata."
+		next_command="LMI_FLASH_CONFIRM=$(sed -n 's/^rootfs:   LMI_FLASH_CONFIRM=//p' "$checklist" | head -n 1) scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute"
+		after_command="After that, rerun the readiness audit and only then request separate boot-stage approval."
+		;;
+	*)
+		current_gate_note="Current blocker: the device is not yet confirmed in recovery fastbootd. The next approved hardware-state step must be entering recovery fastbootd."
+		next_command="LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi scripts/60_stage_lmi_enter_fastbootd.sh --execute"
+		after_command="After that, run:"
+		;;
+esac
+
 cat > "$output" <<EOF
 # Xiaomi lmi r6 current handoff - 2026-06-24
 
@@ -55,16 +68,15 @@ collect evidence.
 - is-userspace: \`${is_userspace:-unknown}\`
 - Route status: \`${plan_status:-unknown}\`
 
-Current blocker: the device is still in bootloader fastboot. The next approved
-hardware-state step must be entering recovery fastbootd.
+$current_gate_note
 
 ## Exact Next Command Requiring Approval
 
 \`\`\`sh
-LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi scripts/60_stage_lmi_enter_fastbootd.sh --execute
+$next_command
 \`\`\`
 
-After that, run:
+$after_command
 
 \`\`\`sh
 scripts/66_wait_and_audit_lmi_fastbootd.sh

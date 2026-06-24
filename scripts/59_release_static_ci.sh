@@ -27,20 +27,21 @@ manifest=docs/release/lmi-r6-bootmem-release-manifest-20260624.md
 checklist=docs/release/lmi-r6-bootmem-execution-checklist-20260624.md
 handoff=docs/release/lmi-r6-current-handoff-20260624.md
 readme=README.md
+automation_doc=docs/mainline-automation-loop-20260624.md
 
-for path in "$manifest" "$checklist" "$handoff" "$readme"; do
+for path in "$manifest" "$checklist" "$handoff" "$readme" "$automation_doc"; do
 	[ -f "$path" ] || {
 		echo "missing release doc: $path" >&2
 		exit 1
 	}
 done
 
-grep -q 'WAITING_FOR_RECOVERY_FASTBOOTD' "$manifest"
-grep -q 'WAITING_FOR_RECOVERY_FASTBOOTD' "$checklist"
-grep -q 'WAITING_FOR_RECOVERY_FASTBOOTD' "$handoff"
-grep -q 'is-userspace: `no`' "$manifest"
-grep -q 'is-userspace: `no`' "$checklist"
-grep -q 'is-userspace: `no`' "$handoff"
+grep -Eq 'WAITING_FOR_RECOVERY_FASTBOOTD|READY_FOR_FASTBOOTD_PREFLIGHT' "$manifest"
+grep -Eq 'WAITING_FOR_RECOVERY_FASTBOOTD|READY_FOR_FASTBOOTD_PREFLIGHT' "$checklist"
+grep -Eq 'WAITING_FOR_RECOVERY_FASTBOOTD|READY_FOR_FASTBOOTD_PREFLIGHT' "$handoff"
+grep -Eq 'is-userspace: `(no|yes|unknown)`' "$manifest"
+grep -Eq 'is-userspace: `(no|yes|unknown)`' "$checklist"
+grep -Eq 'is-userspace: `(no|yes|unknown)`' "$handoff"
 grep -q 'scripts/62_refresh_lmi_release_docs.sh --quick' "$manifest"
 grep -q 'scripts/62_refresh_lmi_release_docs.sh --quick' "$handoff"
 grep -q 'scripts/64_audit_lmi_persistent_readiness.sh' "$manifest"
@@ -49,6 +50,10 @@ grep -q 'scripts/66_wait_and_audit_lmi_fastbootd.sh' "$manifest"
 grep -q 'scripts/66_wait_and_audit_lmi_fastbootd.sh' "$checklist"
 grep -q 'scripts/66_wait_and_audit_lmi_fastbootd.sh' "$handoff"
 grep -q 'scripts/67_summarize_lmi_post_boot_evidence.sh' "$manifest"
+grep -q 'scripts/68_mainline_progress_loop.sh' "$automation_doc"
+grep -q 'scripts/69_audit_lmi_resources.sh' "$automation_doc"
+grep -q 'scripts/68_mainline_progress_loop.sh --once --quick' "$readme"
+grep -q 'scripts/69_audit_lmi_resources.sh --network' "$readme"
 grep -q 'fastbootd audit gate: OK' "$handoff"
 grep -q 'scripts/64_audit_lmi_persistent_readiness.sh' scripts/49_generate_lmi_flash_command_sheet.sh
 grep -q 'scripts/66_wait_and_audit_lmi_fastbootd.sh' scripts/49_generate_lmi_flash_command_sheet.sh
@@ -63,9 +68,9 @@ if grep -q '^- HEAD:' "$handoff"; then
 	echo "handoff should not archive a self-referential commit hash" >&2
 	exit 1
 fi
-grep -q 'fastboot reboot fastboot' "$checklist"
+grep -Eq 'fastboot reboot fastboot|scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute' "$checklist"
 grep -q 'scripts/60_stage_lmi_enter_fastbootd.sh --dry-run' "$checklist"
-grep -q 'scripts/60_stage_lmi_enter_fastbootd.sh --execute' "$handoff"
+grep -Eq 'scripts/60_stage_lmi_enter_fastbootd.sh --execute|scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute' "$handoff"
 grep -q 'scripts/61_stage_lmi_reboot_after_flash.sh --execute' "$checklist"
 grep -q 'scripts/67_summarize_lmi_post_boot_evidence.sh' "$checklist"
 grep -q 'Do not touch `super`' "$manifest"

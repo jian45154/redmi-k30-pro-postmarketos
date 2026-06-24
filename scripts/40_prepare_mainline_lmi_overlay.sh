@@ -16,6 +16,7 @@ no_zboot=false
 no_efi_stub=false
 arm64_48bit=false
 boot_critical_dts=false
+earlydebug=false
 
 update_sha512_sum() {
 	local apkbuild=$1
@@ -96,6 +97,15 @@ case "${1:-}" in
 	arm64_48bit=true
 	boot_critical_dts=true
 	;;
+--r7-earlydebug)
+	debug_shell=true
+	android_cmdline=true
+	no_zboot=true
+	no_efi_stub=true
+	arm64_48bit=true
+	boot_critical_dts=true
+	earlydebug=true
+	;;
 --restore-downstream)
 	rm -rf "$dst_root/device-xiaomi-lmi" \
 		"$dst_root/firmware-xiaomi-lmi" \
@@ -113,7 +123,7 @@ case "${1:-}" in
 "")
 	;;
 *)
-	echo "usage: $0 [--debug-shell|--debug-shell-android-cmdline|--debug-shell-android-cmdline-no-zboot|--debug-shell-android-cmdline-no-efi-stub|--debug-shell-android-cmdline-no-efi-stub-48bit|--debug-shell-android-cmdline-no-efi-stub-48bit-bootmem|--restore-downstream]" >&2
+	echo "usage: $0 [--debug-shell|--debug-shell-android-cmdline|--debug-shell-android-cmdline-no-zboot|--debug-shell-android-cmdline-no-efi-stub|--debug-shell-android-cmdline-no-efi-stub-48bit|--debug-shell-android-cmdline-no-efi-stub-48bit-bootmem|--r7-earlydebug|--restore-downstream]" >&2
 	exit 1
 	;;
 esac
@@ -169,6 +179,11 @@ if [ "$android_cmdline" = true ]; then
 	sed -i 's|^deviceinfo_kernel_cmdline=.*|deviceinfo_kernel_cmdline="androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery pmos.debug-shell"|' \
 		"$dst_root/device-xiaomi-lmi/deviceinfo"
 fi
+if [ "$earlydebug" = true ]; then
+	sed -i 's/^pkgrel=.*/pkgrel=93/' "$dst_root/device-xiaomi-lmi/APKBUILD"
+	sed -i 's|^deviceinfo_kernel_cmdline=.*|deviceinfo_kernel_cmdline="androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=2048 loop.max_part=7 cgroup.memory=nokmem,nosocket reboot=panic_warm androidboot.fstab_suffix=qcom androidboot.init_fatal_reboot_target=recovery pmos.debug-shell loglevel=8 ignore_loglevel initcall_debug printk.devkmsg=on pstore.backend=ramoops ramoops.mem_address=0xb0000000 ramoops.mem_size=0x400000 ramoops.console_size=0x200000 ramoops.pmsg_size=0x200000"|' \
+		"$dst_root/device-xiaomi-lmi/deviceinfo"
+fi
 update_sha512_sum "$dst_root/device-xiaomi-lmi/APKBUILD" "$dst_root/device-xiaomi-lmi/deviceinfo" deviceinfo
 
 kernel_apkbuild="$dst_root/linux-postmarketos-qcom-sm8250-lmi/APKBUILD"
@@ -218,6 +233,14 @@ if [ "$boot_critical_dts" = true ]; then
 		patch_sum=${patch_sum%% *}
 		perl -0pi -e 's/("\n)$/'"$patch_sum"'  0002-sm8250-xiaomi-lmi-boot-critical-memory.patch\n$1/' "$kernel_apkbuild"
 	fi
+fi
+if [ "$earlydebug" = true ]; then
+	sed -i 's/^pkgrel=.*/pkgrel=7/' "$kernel_apkbuild"
+	set_kernel_config_value "$kernel_config" CONFIG_PSTORE_DEFAULT_KMSG_BYTES 1048576
+	enable_kernel_config "$kernel_config" CONFIG_PRINTK_TIME
+	enable_kernel_config "$kernel_config" CONFIG_DEBUG_FS
+	enable_kernel_config "$kernel_config" CONFIG_DYNAMIC_DEBUG
+	enable_kernel_config "$kernel_config" CONFIG_DYNAMIC_DEBUG_CORE
 fi
 update_sha512_sum "$kernel_apkbuild" "$kernel_config" config-postmarketos-qcom-sm8250-lmi.aarch64
 perl -0pi -e 's/make zinstall modules_install dtbs_install \\\n\t\tARCH="\$_carch" \\\n\t\tINSTALL_PATH="\$pkgdir"\/boot\/ \\\n\t\tINSTALL_MOD_PATH="\$pkgdir" \\\n\t\tINSTALL_MOD_STRIP=1 \\\n\t\tINSTALL_DTBS_PATH="\$pkgdir\/boot\/dtbs"/make Image modules_install dtbs_install \\\n\t\tARCH="\$_carch" \\\n\t\tINSTALL_MOD_PATH="\$pkgdir" \\\n\t\tINSTALL_MOD_STRIP=1 \\\n\t\tINSTALL_DTBS_PATH="\$pkgdir\/boot\/dtbs"\n\tinstall -Dm755 "\$builddir"\/arch\/arm64\/boot\/Image "\$pkgdir"\/boot\/vmlinuz/s' \

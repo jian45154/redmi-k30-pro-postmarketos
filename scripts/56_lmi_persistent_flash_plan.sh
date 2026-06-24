@@ -22,6 +22,7 @@ rootfs_img=${LMI_ROOTFS_IMG:-$bundle_dir/xiaomi-lmi-r6-bootmem.img}
 rollback_boot=${LMI_ROLLBACK_BOOT_IMG:-/mnt/c/Users/microstar/Latest ADB Fastboot Tool/lmi/device-backup/lmi-current-boot.img}
 report=${LMI_PERSISTENT_PLAN_REPORT:-$bundle_dir/PERSISTENT_FLASH_PLAN.txt}
 fastboot_bin=${FASTBOOT:-fastboot}
+fastboot_timeout=${LMI_FASTBOOT_TIMEOUT:-5}
 quick=0
 
 while [ "$#" -gt 0 ]; do
@@ -63,7 +64,7 @@ getvar() {
 	local key=$1
 	local output
 	set +e
-	output=$("$fastboot_bin" getvar "$key" 2>&1)
+	output=$(timeout "$fastboot_timeout" "$fastboot_bin" getvar "$key" 2>&1)
 	local status=$?
 	set -e
 	printf '%s\n' "$output" | sed -n "s/^$key: //p" | tail -n 1
@@ -112,7 +113,7 @@ log "  rollback_boot=$rollback_boot"
 log "  rollback_boot_sha256=$rollback_sha"
 log
 
-devices=$("$fastboot_bin" devices 2>&1 || true)
+devices=$(timeout "$fastboot_timeout" "$fastboot_bin" devices 2>&1 || true)
 product=$(getvar product || true)
 unlocked=$(getvar unlocked || true)
 is_userspace=$(getvar is-userspace || true)
