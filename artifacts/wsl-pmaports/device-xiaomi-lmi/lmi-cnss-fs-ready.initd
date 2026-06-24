@@ -1,0 +1,15 @@
+#!/sbin/openrc-run
+
+description="Notify CNSS that firmware files are ready"
+
+depend() {
+	need lmi-firmware-mount lmi-qrtr-ns lmi-cnss-daemon
+	after rmtfs tqftpserv lmi-qrtr-ns lmi-cnss-daemon
+	before wpa_supplicant networkmanager
+}
+
+start() {
+	ebegin "Preparing xiaomi-lmi WLAN firmware and CNSS fs_ready"
+	lmi-wifi-start --fs-ready-only
+	eend $?
+}

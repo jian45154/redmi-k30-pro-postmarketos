@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo=${REPO:-/mnt/c/Users/microstar/Documents/lmi_linx}
+script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+repo=${REPO:-$(dirname "$script_dir")}
 tag=${TAG:-20260623}
 
 export TAG="$tag"

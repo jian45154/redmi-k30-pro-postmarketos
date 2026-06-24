@@ -1,0 +1,87 @@
+#!/sbin/openrc-run
+
+description="Expose xiaomi-lmi stock firmware partitions"
+
+depend() {
+	before udev udev-trigger rmtfs tqftpserv wpa_supplicant bluetooth
+}
+
+start() {
+	local fw_mnt="/mnt/vendor/firmware_mnt"
+	local fw_image="$fw_mnt/image"
+	local wlan_fw="$fw_mnt/image/qca6390"
+	local rmtfs_conf="/etc/conf.d/rmtfs"
+	local wlan_conf="/etc/conf.d/lmi-wlan-firmware"
+	local boarddata="bd_j11.elf"
+
+	ebegin "Mounting xiaomi-lmi firmware partition"
+	mkdir -p "$fw_mnt" /lib/firmware
+	mkdir -p /dev/disk/by-partlabel /dev/block/by-name
+
+	if [ ! -e /dev/disk/by-partlabel/modem ]; then
+		for uevent in /sys/class/block/*/uevent; do
+			[ -r "$uevent" ] || continue
+			grep -q '^PARTNAME=modem$' "$uevent" || continue
+			block="${uevent%/uevent}"
+			name="${block##*/}"
+			[ -r "/sys/class/block/$name/dev" ] || continue
+			major_minor="$(cat "/sys/class/block/$name/dev")"
+			[ -b "/dev/$name" ] || mknod "/dev/$name" b \
+				"${major_minor%:*}" "${major_minor#*:}" 2>/dev/null || true
+			ln -sfn "../../$name" /dev/disk/by-partlabel/modem
+			ln -sfn "../../$name" /dev/block/by-name/modem
+			break
+		done
+	fi
+
+	if ! mountpoint -q "$fw_mnt"; then
+		mount -o ro -t vfat /dev/disk/by-partlabel/modem "$fw_mnt" || {
+			eend 1
+			return 1
+		}
+	fi
+
+	[ -r "$wlan_conf" ] && . "$wlan_conf"
+	boarddata=${LMI_WLAN_BOARDDATA:-$boarddata}
+
+	if [ -d "$wlan_fw" ]; then
+		rm -rf /lib/firmware/qca6390
+		mkdir -p /lib/firmware/qca6390
+		for fw_file in "$wlan_fw"/*; do
+			[ -e "$fw_file" ] || continue
+			ln -sfn "$fw_file" "/lib/firmware/qca6390/${fw_file##*/}"
+		done
+
+		if [ -n "$boarddata" ] && [ -r "$wlan_fw/$boarddata" ]; then
+			ln -sfn "$wlan_fw/$boarddata" /lib/firmware/qca6390/bdwlan.elf
+		fi
+
+		for fw_file in /lib/firmware/qca6390/bdwlan* \
+			/lib/firmware/qca6390/bd_*.elf \
+			/lib/firmware/qca6390/regdb.bin \
+			/lib/firmware/qca6390/regdb_j11.bin \
+			/lib/firmware/qca6390/amss20.bin \
+			/lib/firmware/qca6390/m3.bin; do
+			[ -e "$fw_file" ] || continue
+			ln -sfn "qca6390/${fw_file##*/}" "/lib/firmware/${fw_file##*/}"
+		done
+	fi
+
+	for fw_file in "$fw_image"/*.mdt "$fw_image"/*.b[0-9][0-9] \
+		"$fw_image"/*.jsn "$fw_image"/*.sig; do
+		[ -e "$fw_file" ] || continue
+		ln -sfn "$fw_file" "/lib/firmware/${fw_file##*/}"
+	done
+
+	if [ -f "$rmtfs_conf" ] && ! grep -q '^command_args=' "$rmtfs_conf"; then
+		cat >> "$rmtfs_conf" <<'EOF'
+
+# xiaomi-lmi downstream 4.19 exposes Qualcomm subsystems through /dev/subsys_*
+# rather than mainline remoteproc. Do not pass -s, which requires rprocfd.
+command_args="-P -r"
+EOF
+	fi
+
+	[ -r /lib/firmware/qca6390/amss20.bin ]
+	eend $?
+}
