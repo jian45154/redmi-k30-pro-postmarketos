@@ -12,3 +12,7 @@ artifacts/images/*REJECTED*
 
 # Stray/empty scratch files
 /Running
+
+# Local private operator/device notes — do not publish
+/private/
+/hardware-debug-*/
