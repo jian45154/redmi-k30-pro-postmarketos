@@ -5,9 +5,9 @@ into a native Linux device with **postmarketOS**. The archived stable baseline
 uses the downstream LineageOS 4.19 vendor kernel with **Clang/LLVM** under
 **WSL2 + pmbootstrap**. The project now tracks two separate version lines:
 
-- **Downstream (`D-vNN`)**: LineageOS 4.19 downstream kernel, currently highest
-  artifact `D-v46`; strongest verified hardware milestone `D-v43` with Wi-Fi
-  interfaces and scan working.
+- **Downstream (`D-vNN`)**: LineageOS 4.19 downstream kernel. `D-v46` is the
+  verified Wi-Fi cleanup baseline, while `D-v43` remains the earlier Wi-Fi
+  baseline; the latest built local artifact is `D-v52`.
 - **Mainline/copydown (`M-rNN`)**: SM8250 mainline/copydown path, currently
   recorded through `M-r7`; host-side builds and guarded writes work, but no
   observable initramfs/USB milestone is proven.
@@ -23,18 +23,22 @@ uses the downstream LineageOS 4.19 vendor kernel with **Clang/LLVM** under
   (`0525:a4a2 POSTMARKETOS`, host `172.16.42.2`, device `172.16.42.1`).
 - ✅ **Persistent downstream v27 boot was installed**: `boot` and `userdata` boot into
   postmarketOS without `fastboot boot`.
-- ✅ **Downstream Wi-Fi bring-up works at `D-v43`**: `wlan0`, `p2p0`, and
-  `wifi-aware0` appear, CNSS stays `ONLINE` with `crash_count=0`, and
-  `iw dev wlan0 scan` succeeds.
-- ⏳ **Latest downstream artifact is `D-v46`** (`v46-daemon-status-idempotent`);
-  it is a cleanup build after the verified Wi-Fi path, with no separate runtime
-  verification found in this repo.
+- ✅ **Downstream Wi-Fi bring-up works at `D-v46`**: SSH is reachable, `wlan0`
+  is up with a default route, and `p2p0` plus `wifi-aware0` are present. `D-v43`
+  remains the earlier Wi-Fi baseline.
+- ⏳ **Latest built downstream artifact is `D-v52`** (`v52-d50-service-foundation`);
+  it is runtime-unverified. It matches current source package `1-r113`, carries
+  the target-side `lmi-rootctl` confirmation gates, and its rootfs static
+  verifier proves the `pd-mapper` service-foundation content is present. `D-v51`
+  remains an older rootctl target-gate artifact and must not be used to claim
+  the D-v52 service-foundation changes on hardware.
 - ⚠️ **Mainline/copydown reached `M-r7` but is not boot-verified**. `M-r6` and
   `M-r7` writes were accepted, but reboot testing stopped at the Redmi logo with
   no postmarketOS USB, telnet, SSH, ADB, or fastboot interface observed.
-- ⏳ **Display userspace takeover** — kernel DRM/KGSL and the DSI panel are
-  present, but the screen remains on the Redmi logo because no compositor takes
-  over the continuous splash.
+- ✅ **Screen and touch hardware are working** — the DSI panel displays the
+  minimal GUI and touch input is available at the hardware/input layer.
+- ⚠️ **On-screen keyboard is temporarily unavailable** in the current minimal
+  GUI; text entry is limited to the validated terminal/input path.
 - ⏳ **Audio / mic and Bluetooth** — next hardware focus. ALSA has no soundcard
   and Bluetooth remains incomplete; Wi-Fi has a verified downstream bring-up
   path but still needs service and policy cleanup.
@@ -134,16 +138,25 @@ downstream quick recipe. The staged persistent path is documented in
 ## Current hardware focus
 
 The downstream line has moved from boot/rootfs repair into hardware enablement.
+For the current local P0/P1/P2 status, run
+`scripts/85_audit_downstream_priority_status.sh`; generate the hardware-window
+command sheet with `scripts/86_generate_downstream_hardware_window_runbook.sh`.
+Redact new hardware-window logs with
+`scripts/87_redact_downstream_hardware_log.sh` before committing evidence.
 The immediate targets are:
 
 - display: start a minimal compositor or DRM/KMS test so userspace visibly takes
   over the panel;
 - sound and microphone: restore ADSP/audio firmware/service bring-up until ALSA
-  exposes real cards instead of `auto_null`;
-- networking: verify `D-v46` if it should replace the verified `D-v43` Wi-Fi
-  bring-up, then clean up service status and NetworkManager MAC behavior;
-- Bluetooth: unblock and initialize BT after WLAN/firmware service dependencies
-  are understood.
+  exposes real cards instead of `auto_null`; start with
+  `scripts/84_audit_downstream_p2_audio_bt_readiness.sh`, then passive runtime
+  evidence from `scripts/77_probe_downstream_p2_audio_bt.sh --all`;
+- networking: keep `D-v46` as the verified Wi-Fi cleanup baseline and `D-v43`
+  as the earlier Wi-Fi baseline, then clean up service status and NetworkManager
+  MAC behavior;
+- Bluetooth: unblock and initialize BT only after WLAN/firmware service
+  dependencies are understood from the same P2 static audit and passive runtime
+  evidence.
 
 The latest downstream Wi-Fi evidence is summarized in
 [`notes/wifi-bringup-live-2026-06-24.md`](notes/wifi-bringup-live-2026-06-24.md).
