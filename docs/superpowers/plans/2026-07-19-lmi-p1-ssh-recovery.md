@@ -6,7 +6,7 @@
 
 **Architecture:** A Python standard-library control plane stages pinned pmaports and D80 inputs in a repository-local work directory, invokes the pinned pmbootstrap CLI, applies the historical loop-device fix at pmaports source level, and emits fail-closed manifests. Candidate images are uploaded to a private GitHub Draft Release and downloaded into a fresh directory before one manifest-bound fastboot executor may touch `userdata`, temporarily boot, or write the uniquely resolved non-A/B `boot` partition. Runtime acceptance uses TOFU only for the first direct USB host-key capture, pins that key thereafter, proves negative SSH cases and persistence, then publishes an immutable release only after a second fresh-download verification.
 
-**Tech Stack:** Python 3 standard library and `unittest`; Bash only for reviewed package payloads; pmbootstrap `3.11.1` at commit `ce76febabd983db6445fa9a8b75d601970b2f436`; pmaports at `6fb3a1e5eb21c809891645a2ba5ae11fa788e032`; Alpine/OpenRC/OpenSSH; Android boot image v2; `fdisk`, `losetup`, `blkid`, `debugfs`, `cpio`, `zstd`; Windows platform-tools fastboot; GitHub CLI and REST API `2026-03-10`.
+**Tech Stack:** Python 3 standard library and `unittest`; Bash only for reviewed package payloads; pmbootstrap `3.11.1` at commit `ce76febabd983db6445fa9a8b75d601970b2f436`; pmaports at `6fb3a1e5eb21c809891645a2ba5ae11fa788e032`; Alpine/OpenRC/OpenSSH; Android boot image v2; a source-locked WSL verifier using Python, util-linux, e2fsprogs, qemu-user-static, and OpenSSH tools; `zstd`; Windows platform-tools fastboot; GitHub CLI and REST API `2026-03-10`.
 
 ## Global Constraints
 
@@ -31,6 +31,7 @@
 ## File map
 
 - `config/lmi-p1/source-lock.json`: machine-readable upstream, D80, tool, key-fingerprint, and distribution policy lock.
+- `config/lmi-p1/verification-tools.json`: exact WSL verifier binary paths, package versions, version output, and binary SHA-256 lock.
 - `config/lmi-p1/userdata-disposition.json`: auditable proof that the currently installed userdata is the disposable D80 postmarketOS test image rather than unbacked Android user data.
 - `scripts/lmi_p1/common.py`: subprocess, SHA-256, JSON, timeout, redaction, and atomic-output primitives.
 - `scripts/lmi_p1/inputs.py`: safe D80 download/extraction and exact-member verification.
@@ -60,11 +61,11 @@
 
 **Interfaces:**
 - Consumes: local filesystem paths and HTTPS URLs from `source-lock.json`.
-- Produces: `sha256_file(path: Path) -> str`, `run(argv: Sequence[str], timeout: int, cwd: Path | None = None, env: Mapping[str, str] | None = None, check: bool = True) -> subprocess.CompletedProcess[str]`, `write_json(path: Path, value: object) -> None`, and `prepare_inputs(lock_path: Path, cache_dir: Path) -> Path` returning the verified extracted D80 directory.
+- Produces: `sha256_file(path: Path) -> str`, `run(argv: Sequence[str], timeout: int, cwd: Path | None = None, env: Mapping[str, str] | None = None, check: bool = True, sensitive_values: Sequence[str] = ()) -> subprocess.CompletedProcess[str]`, `write_json(path: Path, value: object) -> None`, and `prepare_inputs(lock_path: Path, cache_dir: Path) -> Path` returning the verified extracted D80 directory.
 
 - [ ] **Step 1: Write failing primitive and archive-safety tests**
 
-  Test exact SHA computation, atomic JSON key sorting, timeout conversion to `GateError`, redaction of GitHub tokens/private-key blocks/device serial `8336ded7`, rejection of `../escape` and absolute tar members, outer hash mismatch, inner `SHA256SUMS` mismatch, a missing required APK, and a fully valid local `file://` archive. The valid fixture must contain all seven filenames and hashes as zero-byte or test-payload files with a generated internal checksum file; the production lock remains independent from fixture hashes.
+  Test exact SHA computation, atomic JSON key sorting, timeout conversion to `GateError`, redaction of GitHub tokens/private-key blocks and a synthetic runtime-injected device serial, rejection of empty sensitive values, rejection of `../escape` and absolute tar members, outer hash mismatch, inner `SHA256SUMS` mismatch, a missing required APK, and a fully valid local `file://` archive. Neither production code nor tests may embed the real serial; committed identity uses only its SHA-256. The valid fixture must contain all seven filenames and hashes as zero-byte or test-payload files with a generated internal checksum file; the production lock remains independent from fixture hashes.
 
   ```python
   class InputTests(unittest.TestCase):
@@ -90,7 +91,7 @@
 
 - [ ] **Step 3: Implement the primitives and safe input preparation**
 
-  `common.py` must define `GateError`, stream file hashes in 1 MiB blocks, call `subprocess.run(list(argv), text=True, capture_output=True, timeout=timeout, cwd=cwd, env=env, check=False)`, never invoke a shell, and replace secrets before including stdout/stderr in exceptions. `write_json` writes to a sibling temporary file, `fsync`s it, then calls `os.replace`.
+  `common.py` must define `GateError`, stream file hashes in 1 MiB blocks, call `subprocess.run(list(argv), text=True, capture_output=True, timeout=timeout, cwd=cwd, env=env, check=False)`, never invoke a shell, and replace pattern secrets plus each explicitly supplied non-empty `sensitive_values` member before including argv/stdout/stderr in exceptions. Hardware stages discover the unique serial at runtime, verify its committed SHA-256, and pass it only through this redaction boundary. `write_json` writes to a sibling temporary file, `fsync`s it, then calls `os.replace`.
 
   `inputs.py` must download to `*.partial`, hash before rename, and allow only ordinary files plus safe directory entries. It rejects symlinks, hardlinks, devices, FIFOs, and every other tar type; requires every normalized/resolved destination to remain below the extraction root; accepts either a flat archive or exactly one safe top-level wrapper directory; and returns the directory that directly contains `SHA256SUMS`. It verifies the lock-pinned SHA of that internal `SHA256SUMS`, requires the archive's complete regular-file set to equal the checksum-listed set plus `SHA256SUMS`, runs the full listed set through Python SHA-256 logic, and finally verifies the seven required APK hashes below. It must never trust a path supplied by the archive or restore archive ownership/unsafe modes.
 
@@ -414,6 +415,7 @@
 ### Task 4: Fail-closed boot, rootfs, package, and secret verifier
 
 **Files:**
+- Create: `config/lmi-p1/verification-tools.json`
 - Create: `scripts/lmi_p1/image.py`
 - Create: `tests/lmi_p1/test_image.py`
 - Modify: `scripts/inspect_android_boot_images.py`
@@ -425,7 +427,7 @@
 
 - [ ] **Step 1: Write failing fixture-driven verifier tests**
 
-  Factor the existing Android v2 parser into import-safe functions and test header version, pagesize, kernel/ramdisk/DTB bounds, truncated components, capacity, cmdline UUID extraction, and role validation. Fake `fdisk`, `losetup`, `blkid`, `mount`, `umount`, `debugfs`, and initramfs extraction outputs to cover 512-sector rejection, one/three partitions, UUID mismatch, absent `loop.max_part=7`, absent initramfs source-fix markers, wrong package versions, NetworkManager older than 1.52, missing USB takeover policy, missing authorized key, host private key presence, password hashes, failed target-rootfs `sshd.pam -t/-T`, permissive sshd, extra sudo rules, and a valid fixture.
+  Factor the existing Android v2 parser into import-safe functions and test the exact 1660-byte v2 header, `header_size`, page size, every aligned component range, recovery-DTBO/DTB bounds, truncated/overlapping/trailing data, capacity, byte-exact `cmdline + extra_cmdline` decoding, UUID extraction, and role validation. Test a bounded stdlib gzip/newc reader against path traversal, duplicate names, hardlinks, symlinks, devices, oversized members/archive totals, truncation, and concatenated/trailing archives. Fake fixed-argv `fdisk`, `losetup`, `blkid`, `e2fsck`, `mount`, `umount`, qemu/chroot isolation, and initramfs inputs to cover wrong tool hashes/versions, non-root invocation, 512-sector rejection, one/three partitions, UUID mismatch, absent `loop.max_part=7`, absent initramfs source-fix markers, wrong package versions, NetworkManager older than 1.52, missing USB takeover policy, missing authorized key, host private key presence, password hashes, failed target-rootfs `sshd.pam -t/-T`, permissive sshd, extra sudo rules, cleanup failure, and a valid fixture.
 
 - [ ] **Step 2: Run the focused test and confirm RED**
 
@@ -435,17 +437,25 @@
 
 - [ ] **Step 3: Implement exact structural checks**
 
-  Require Android boot header v2, page size 4096, total file size below `0x8000000`, a non-empty kernel/ramdisk/DTB, and cmdline containing `loop.max_part=7`, one `pmos_boot_uuid`, one `pmos_root_uuid`, and no conflicting duplicate. Extract the initramfs read-only and require the patched `fdisk -b`, `mdev -s`, uevent rescan, and bounded loop0p2 wait markers.
+  Implement Android boot parsing directly from the upstream AOSP v2 layout: require magic, version 2, `header_size=1660`, page size 4096, total file size below `0x8000000`, non-empty kernel/ramdisk/DTB, legal optional-component sizes, and every page-aligned range fully contained without overlap. Decode the two fixed command-line arrays by byte concatenation before the first NUL; do not insert a separator that is absent from the image. Require `loop.max_part=7`, one `pmos_boot_uuid`, one `pmos_root_uuid`, and no conflicting duplicate.
+
+  Read the gzip initramfs with bounded stdlib decompression and an in-memory, fail-closed `newc` parser; do not invoke `cpio` or extract attacker-controlled paths. Reject non-regular inspected targets, unsafe/duplicate names, hardlinks, devices, truncation, concatenated archives, trailing non-padding bytes, oversized members, and oversized decompressed totals. Require the patched `fdisk -b`, `mdev -s`, uevent rescan, and bounded loop0p2 wait markers from the parsed regular files.
+
+  The verifier is invoked with fixed argv through `/mnt/c/Windows/System32/wsl.exe -d Ubuntu -u root -- ...`; its Python entry point immediately requires `geteuid()==0`. It validates every absolute tool path, package version, version output, and binary SHA-256 against `verification-tools.json` before consuming a candidate. The lock includes at least Python, util-linux `fdisk`/`losetup`/`mount`/`umount`/`unshare`, e2fsprogs `e2fsck`, qemu-aarch64-static, coreutils `chroot`, and OpenSSH `ssh-keygen`. No interactive `sudo`, PATH lookup, shell string, or unlocked host tool is permitted.
 
   Attach the userdata read-only with:
 
   ```bash
-  sudo losetup --find --show --partscan --read-only --direct-io=on --sector-size 4096 /absolute/candidate/xiaomi-lmi.img
+  /usr/sbin/losetup --find --show --partscan --read-only --direct-io=on --sector-size 4096 /absolute/candidate/xiaomi-lmi.img
   ```
 
-  In a `finally` block, unmount both read-only mountpoints and detach the exact returned loop device. Require `fdisk -b 4096 -l` to report exactly two GPT partitions; require `blkid` labels `pmOS_boot` and `pmOS_root`; match both UUIDs to cmdline; run `e2fsck -fn` and accept only status 0. Status 4 means uncorrected filesystem errors and must fail.
+  First run locked `fdisk -b 4096 -l IMAGE` against the ordinary image file and require exactly two GPT partitions. Attach only that resolved ordinary file, require the returned path to match `/dev/loop[0-9]+`, and prove both partition nodes belong to that exact loop device. Before mounting, run locked `e2fsck -fn` on both partitions and accept only status 0; status 1/2 is not a clean candidate and status 4 is uncorrected corruption. Require `blkid` labels `pmOS_boot` and `pmOS_root`, and match both UUIDs to the boot cmdline. Mount each explicit partition with `ro,noload,nodev,nosuid,noexec`; in one `finally` path, unmount only verifier-owned mountpoints in reverse order and detach only the exact returned loop device. Cleanup failure is itself a failed verification and must retain enough non-secret diagnostics for manual recovery.
 
-  Inspect the mounted rootfs for exact replay package versions, `/etc/apk/world` identity constraints, target-rootfs NetworkManager version at least 1.52, the exact USB keyfile/takeover pair and permissions, default-runlevel `sshd`, RNDIS `0525:a4a2`, one expected authorized key, strict sshd policy, shadow fields exactly `!`, no host keys, no private key headers, no GitHub token patterns, no device serial, and only the P1 sudoers allowlist. Require the target rootfs OpenSSH PAM server to pass both `sshd.pam -t` and effective-configuration `sshd.pam -T` validation in an architecture-correct verifier context. Require `/etc/lmi-release-identity` to match the manifest's candidate ID, tag, source commit, UUIDs, and package versions; compare final image hashes only through the external canonical manifest.
+  Inspect the mounted rootfs for exact replay package versions, `/etc/apk/world` identity constraints, target-rootfs NetworkManager version at least 1.52, the exact USB keyfile/takeover pair and permissions, default-runlevel `sshd`, RNDIS `0525:a4a2`, one expected authorized key, strict sshd policy, shadow fields exactly `!`, no host keys, no private key headers, no GitHub token patterns, no raw serial whose SHA-256 matches the runtime-bound target, and only the P1 sudoers allowlist.
+
+  For OpenSSH semantic validation, create a verifier-owned ephemeral overlay above the read-only rootfs, place the locked static qemu binary and an ephemeral Ed25519 host key only in the overlay, and enter a new mount/PID/network namespace. Chroot to the merged view, drop to a non-root UID with no network, and run the target aarch64 `/usr/sbin/sshd.pam -t` plus `-T -C user=lmi,host=lmi,addr=172.16.42.2,laddr=172.16.42.1,lport=22` using the ephemeral key. Capture and compare the effective policy; never generate a host key in the candidate image or execute an unverified target binary outside that isolated context. Tear down the overlay/namespace scratch in the same bounded cleanup discipline. Task 8 still provides the authoritative real-login gate.
+
+  Require `/etc/lmi-release-identity` to match the manifest's candidate ID, tag, source commit, UUIDs, and package versions; compare final image hashes only through the external canonical manifest. Hash the candidate before and after all verification and require byte identity.
 
 - [ ] **Step 4: Emit canonical manifest and role-bound copies**
 
@@ -476,7 +486,7 @@
   Expected: all tests pass.
 
   ```bash
-  git add scripts/inspect_android_boot_images.py scripts/lmi_p1/image.py scripts/lmi_p1_cli.py tests/lmi_p1/test_image.py
+  git add config/lmi-p1/verification-tools.json scripts/inspect_android_boot_images.py scripts/lmi_p1/image.py scripts/lmi_p1_cli.py tests/lmi_p1/test_image.py
   git commit -m "feat: verify lmi p1 images fail closed"
   ```
 
@@ -607,10 +617,10 @@
   Fake both plain `key: value` and `(bootloader) key: value`. Test no device, two devices, wrong serial binding, wrong product, locked bootloader, missing/low/malformed battery, wrong mode, unavailable target, slot contradiction, too-small partition, modified image hash, build-directory path rather than verified-download path, missing Draft proof, missing userdata-disposition proof, and every forbidden target. Positive cases must assert the exact argv arrays below and no shell usage:
 
   ```text
-  [fastboot.exe, -s, 8336ded7, -S, 256M, flash, userdata, /absolute/fresh/xiaomi-lmi.img]
-  [fastboot.exe, -s, 8336ded7, boot, /absolute/fresh/boot-ram.img]
-  [fastboot.exe, -s, 8336ded7, flash, boot, /absolute/fresh/boot-persistent.img]
-  [fastboot.exe, -s, 8336ded7, reboot]
+  [fastboot.exe, -s, <runtime-serial>, -S, 256M, flash, userdata, /absolute/fresh/xiaomi-lmi.img]
+  [fastboot.exe, -s, <runtime-serial>, boot, /absolute/fresh/boot-ram.img]
+  [fastboot.exe, -s, <runtime-serial>, flash, boot, /absolute/fresh/boot-persistent.img]
+  [fastboot.exe, -s, <runtime-serial>, reboot]
   ```
 
 - [ ] **Step 2: Run the focused test and confirm RED**
