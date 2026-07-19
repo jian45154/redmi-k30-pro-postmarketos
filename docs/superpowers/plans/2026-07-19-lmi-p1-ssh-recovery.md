@@ -92,7 +92,7 @@
 
   `common.py` must define `GateError`, stream file hashes in 1 MiB blocks, call `subprocess.run(list(argv), text=True, capture_output=True, timeout=timeout, cwd=cwd, env=env, check=False)`, never invoke a shell, and replace secrets before including stdout/stderr in exceptions. `write_json` writes to a sibling temporary file, `fsync`s it, then calls `os.replace`.
 
-  `inputs.py` must download to `*.partial`, hash before rename, reject links/devices/non-regular tar members, require every resolved destination to remain below the extraction root, verify the lock-pinned SHA of the internal `SHA256SUMS`, run its complete member set through Python SHA-256 logic, and finally verify the seven required APK hashes below. It must never trust a path supplied by the archive.
+  `inputs.py` must download to `*.partial`, hash before rename, and allow only ordinary files plus safe directory entries. It rejects symlinks, hardlinks, devices, FIFOs, and every other tar type; requires every normalized/resolved destination to remain below the extraction root; accepts either a flat archive or exactly one safe top-level wrapper directory; and returns the directory that directly contains `SHA256SUMS`. It verifies the lock-pinned SHA of that internal `SHA256SUMS`, requires the archive's complete regular-file set to equal the checksum-listed set plus `SHA256SUMS`, runs the full listed set through Python SHA-256 logic, and finally verifies the seven required APK hashes below. It must never trust a path supplied by the archive or restore archive ownership/unsafe modes.
 
   ```text
   ac00f22751607ae736cc26fbe72c1ede9c7d4d26f3af887ab0af800d5d9a3934  device-xiaomi-lmi-1-r139.apk
