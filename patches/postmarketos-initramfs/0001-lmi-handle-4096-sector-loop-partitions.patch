@@ -1,0 +1,115 @@
+diff --git a/main/postmarketos-initramfs/APKBUILD b/main/postmarketos-initramfs/APKBUILD
+index 1310b7a..1f18358 100644
+--- a/main/postmarketos-initramfs/APKBUILD
++++ b/main/postmarketos-initramfs/APKBUILD
+@@ -2,7 +2,7 @@
+ maintainer="Casey Connolly <kcxt@postmarketos.org>"
+ pkgname=postmarketos-initramfs
+ pkgver=3.12.0
+-pkgrel=0
++pkgrel=1
+ pkgdesc="Base files for the postmarketOS initramfs / initramfs-extra"
+ url="https://postmarketos.org"
+ options="!check"  # no tests
+@@ -112,8 +112,8 @@ ace852ba267b3408998970df6042603c8bec1d033066d1c30ed65f1be955fee8644b57882898f102
+ 69852928464f01757e2f473bd2c2e7ecb4132ecf3e26bdec95932e928dfe9042f59316e0a509fd38bcda88e24dd94bf33e8a88118b5adbec7023d1c13da12f59  00-initramfs-base.files
+ 6d91270b96ce0c745391174201dde63b43a73ae6456c2e1138046beef3548580588fedbeae7cc914079162e99343b45d82c6e6a7ee1d03829aae7697ae52f575  00-initramfs-extra-base.files
+ bd72e8b6345a46ec13516c64d78d4fa1a9a18a8db9ab04aac605f9708629453dc65b6fbccd96b58eeb1ea68102ddbcae9dc6b369255c6c6c1fb18ce0bd43ec79  init.sh
+-1c1518e903a1d08fe6eed85534fe84d12f43bb5fbfbca97de8aed78f30ddf96ebc2391d39eab02d8689549ca1367f422182995a26e5fda284afea024c433b1b9  init_functions.sh
+-7aa82d5e2907470d667612643d98371dff27b2650051f8c568ab43d1b97677362c3e6fbd442474086d681ea7c0cfbcaf269d3eef2d2dc3ff4ebf17c786b82148  init_2nd.sh
++50a743c2d681a1392a2b608b9f474e6fa9ce71cb30fb99a4c480c615a9fba94f9e2ed9084da32baf7cdd28b13ea5fea57cb968cd8e63aa427ca0c2ec97cbc3e3  init_functions.sh
++8962ee5df4ef49cb626da6b2b3e34f796a942e84df4419b8e577dff7dfa746f8b70324a36d02ba758cbc3c8e628aa0835b42015f50c9a3cbb20d7e6ef1da7054  init_2nd.sh
+ 4eca94327274511011967cde1f663b00b1a8182f7dddc3ba19d5c1f0ac094087a154a250c140ca70ac75a2e7c5bb70b03e94fa5eca63a5393efc4a23d025e1c3  init_functions_2nd.sh
+ 675e7d5bee39b2df7d322117f8dcaccc274d61beaf4d50ead19bbf2109446d64b1c0aa0c5b4f9846eb6c1c403418f28f6364eff4537ba41120fbfcbc484b7da7  mdev.conf
+ "
+diff --git a/main/postmarketos-initramfs/init_2nd.sh b/main/postmarketos-initramfs/init_2nd.sh
+index c280f95..a7faaf3 100644
+--- a/main/postmarketos-initramfs/init_2nd.sh
++++ b/main/postmarketos-initramfs/init_2nd.sh
+@@ -102,6 +102,18 @@ done
+ # with /dev/log in there.
+ rm /dev/log 2>/dev/null || true
+ 
++mkdir -p /sysroot/var/lib/lmi-p1
++{
++	echo "transition=switch_root-ready"
++	echo "boot_id=$(cat /proc/sys/kernel/random/boot_id)"
++	echo "root_device=$PMOS_ROOT"
++	echo "root_uuid=$root_uuid"
++	echo "boot_uuid=$boot_uuid"
++} > /sysroot/var/lib/lmi-p1/initramfs-transition.new
++mv /sysroot/var/lib/lmi-p1/initramfs-transition.new \
++	/sysroot/var/lib/lmi-p1/initramfs-transition
++sync
++
+ # shellcheck disable=SC2093
+ exec switch_root /sysroot "$init"
+ 
+diff --git a/main/postmarketos-initramfs/init_functions.sh b/main/postmarketos-initramfs/init_functions.sh
+index c267d62..6a01871 100644
+--- a/main/postmarketos-initramfs/init_functions.sh
++++ b/main/postmarketos-initramfs/init_functions.sh
+@@ -351,7 +351,27 @@ setup_dynamic_partitions() {
+ 	done
+ }
+ 
++lmi_populate_block_devs() {
++	mkdir -p /dev /dev/disk/by-partlabel /dev/block/by-name
++	for uevent in /sys/class/block/*/uevent; do
++		[ -r "$uevent" ] || continue
++		block="${uevent%/uevent}"
++		name="${block##*/}"
++		[ -r "/sys/class/block/$name/dev" ] || continue
++		major_minor="$(cat "/sys/class/block/$name/dev")"
++		[ -b "/dev/$name" ] ||
++			mknod "/dev/$name" b "${major_minor%:*}" "${major_minor#*:}" 2>/dev/null || true
++		partname="$(grep '^PARTNAME=' "$uevent" 2>/dev/null | cut -d= -f2- || true)"
++		if [ -n "$partname" ] && [ -b "/dev/$name" ]; then
++			ln -sf "../../$name" "/dev/disk/by-partlabel/$partname" 2>/dev/null || true
++			ln -sf "../../$name" "/dev/block/by-name/$partname" 2>/dev/null || true
++		fi
++	done
++}
++
+ mount_subpartitions() {
++	lmi_populate_block_devs 2>/dev/null || true
++
+ 	# skip if ran already (unmerged -extra)
+ 	if [ -n "$PMOS_ROOT" ] && [ -n "$PMOS_BOOT" ]; then
+ 		return
+@@ -393,7 +413,11 @@ mount_subpartitions() {
+ 			#  MBR:
+ 			# /dev/mmcblk0p62p1 *  4,4,1   979,210,2   2048  499711   97664  243M 83 Linux
+ 			local part_count
+-			part_count="$(fdisk -l "$partition" 2>/dev/null | grep -cE '^ +[0-9]|^'"$partition")"
++			if [ -n "$deviceinfo_rootfs_image_sector_size" ]; then
++				part_count="$(fdisk -b "$deviceinfo_rootfs_image_sector_size" -l "$partition" 2>/dev/null | grep -cE '^ +[0-9]|^'"$partition")"
++			else
++				part_count="$(fdisk -l "$partition" 2>/dev/null | grep -cE '^ +[0-9]|^'"$partition")"
++			fi
+ 			# It's probably the right "disk" if it has 2 partitions on it.
+ 			if [ "$part_count" -eq 2 ]; then
+ 				echo "Mount subpartitions of $partition"
+@@ -405,6 +429,22 @@ mount_subpartitions() {
+ 					SUBPARTITION_DEV=""
+ 					continue
+ 				fi
++				loop_name="$(basename "$SUBPARTITION_LOOP")"
++				loop_part="/dev/${loop_name}p2"
++				for wait_try in 1 2 3 4 5; do
++					[ -b "$loop_part" ] && break
++					[ -e "/sys/class/block/${loop_name}p2/uevent" ] &&
++						echo add > "/sys/class/block/${loop_name}p2/uevent"
++					lmi_populate_block_devs 2>/dev/null || true
++					sleep 0.2
++				done
++				if [ ! -b "$loop_part" ]; then
++					echo "WARNING: $loop_part did not appear after losetup"
++					losetup -d "$SUBPARTITION_LOOP"
++					SUBPARTITION_DEV=""
++					SUBPARTITION_LOOP=""
++					continue
++				fi
+ 				# Ensure that this was the *correct* subpartition
+ 				# Some devices have mmc partitions that appear to have
+ 				# subpartitions, but aren't our subpartition.
