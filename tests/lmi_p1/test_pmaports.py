@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -143,12 +144,30 @@ class PmaportsTests(unittest.TestCase):
             text=True,
         ).stdout.strip()
 
+    @staticmethod
+    def worktree_snapshot(root):
+        snapshot = {}
+        for path in sorted(root.rglob("*")):
+            relative = path.relative_to(root)
+            if relative.parts[:1] == (".git",):
+                continue
+            if path.is_symlink():
+                snapshot[relative.as_posix()] = ("link", os.readlink(path))
+            elif path.is_file():
+                snapshot[relative.as_posix()] = ("file", path.read_bytes())
+            else:
+                snapshot[relative.as_posix()] = ("directory",)
+        return snapshot
+
     def make_source(self, *, collision=False):
         package = self.source / "main/postmarketos-initramfs"
         package.mkdir(parents=True)
         (self.source / "device/downstream").mkdir(parents=True)
         (self.source / "device/downstream/README.md").write_text(
             "fixture\n", encoding="utf-8"
+        )
+        (self.source / ".gitignore").write_text(
+            "ignored-stage.txt\n", encoding="utf-8"
         )
         if collision:
             collision_dir = self.source / "device/downstream/device-xiaomi-lmi"
@@ -190,6 +209,15 @@ class PmaportsTests(unittest.TestCase):
         }
         arguments.update(overrides)
         return prepare_pmaports(**arguments)
+
+    def staged_initramfs_paths(self):
+        self.prepare()
+        package = self.destination / "main/postmarketos-initramfs"
+        return (
+            package / "APKBUILD",
+            package / "init_functions.sh",
+            package / "init_2nd.sh",
+        )
 
     def test_stages_exact_commit_overlay_patch_and_manifest(self):
         manifest = self.prepare()
@@ -234,6 +262,128 @@ class PmaportsTests(unittest.TestCase):
                 hashlib.sha256((self.destination / relative).read_bytes()).hexdigest(),
             )
 
+    def test_block_population_precedes_partition_candidate_evaluation(self):
+        _, init_functions_path, _ = self.staged_initramfs_paths()
+        init_functions = init_functions_path.read_text(encoding="utf-8")
+        mount = init_functions[init_functions.index("mount_subpartitions() {") :]
+        significant = [
+            line.strip()
+            for line in mount.splitlines()[1:]
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+
+        self.assertEqual(
+            significant[0], "lmi_populate_block_devs 2>/dev/null || true"
+        )
+        self.assertLess(
+            mount.index("lmi_populate_block_devs 2>/dev/null || true"),
+            mount.index('try_parts="/dev/disk/by-partlabel/userdata'),
+        )
+
+    def test_fdisk_sector_size_branches_execute_exact_argv(self):
+        _, init_functions_path, _ = self.staged_initramfs_paths()
+        init_functions = init_functions_path.read_text(encoding="utf-8")
+        branch_start = init_functions.index(
+            '\t\t\tif [ -n "$deviceinfo_rootfs_image_sector_size" ]; then'
+        )
+        branch_end = init_functions.index("\n\t\t\tfi", branch_start) + len(
+            "\n\t\t\tfi"
+        )
+        branch = init_functions[branch_start:branch_end]
+        fake_bin = self.root / "fake-bin"
+        fake_bin.mkdir()
+        fdisk_log = self.root / "fdisk-argv"
+        fake_fdisk = fake_bin / "fdisk"
+        fake_fdisk.write_text(
+            "#!/usr/bin/env bash\n"
+            "printf '%s\\n' \"$@\" > \"$FDISK_LOG\"\n"
+            "printf ' 1\\n 2\\n'\n",
+            encoding="utf-8",
+        )
+        fake_fdisk.chmod(0o755)
+        environment = dict(os.environ)
+        environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
+        environment["FDISK_LOG"] = str(fdisk_log)
+
+        def run_branch(sector_size):
+            result = subprocess.run(
+                [
+                    "bash",
+                    "-eu",
+                    "-c",
+                    "partition=/dev/fixture\n"
+                    f"deviceinfo_rootfs_image_sector_size={sector_size!r}\n"
+                    f"{branch}\n"
+                    "printf '%s\\n' \"$part_count\"",
+                ],
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            self.assertEqual(result.stdout, "2\n")
+            return fdisk_log.read_text(encoding="utf-8").splitlines()
+
+        self.assertEqual(run_branch(""), ["-l", "/dev/fixture"])
+        self.assertEqual(
+            run_branch("4096"), ["-b", "4096", "-l", "/dev/fixture"]
+        )
+
+    def test_loop_retry_is_exact_and_cleanup_precedes_continue(self):
+        _, init_functions_path, _ = self.staged_initramfs_paths()
+        init_functions = init_functions_path.read_text(encoding="utf-8")
+        retry_values = re.findall(
+            r"for wait_try in ([^;]+); do", init_functions
+        )
+
+        self.assertEqual(retry_values, ["1 2 3 4 5"])
+        cleanup_start = init_functions.index('if [ ! -b "$loop_part" ]; then')
+        cleanup_end = init_functions.index("\n\t\t\t\tfi", cleanup_start)
+        cleanup = init_functions[cleanup_start:cleanup_end]
+        continue_index = cleanup.index("continue")
+        for required in (
+            'losetup -d "$SUBPARTITION_LOOP"',
+            'SUBPARTITION_DEV=""',
+            'SUBPARTITION_LOOP=""',
+        ):
+            self.assertLess(cleanup.index(required), continue_index)
+        self.assertEqual(cleanup.count("continue"), 1)
+
+    def test_transition_write_move_sync_immediately_precedes_switch_root(self):
+        _, _, init_2nd_path = self.staged_initramfs_paths()
+        init_2nd = init_2nd_path.read_text(encoding="utf-8")
+        significant = [
+            line.strip()
+            for line in init_2nd.splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        write_index = significant.index(
+            "} > /sysroot/var/lib/lmi-p1/initramfs-transition.new"
+        )
+        move_index = significant.index(
+            "mv /sysroot/var/lib/lmi-p1/initramfs-transition.new " + "\\"
+        )
+        sync_index = significant.index("sync")
+        exec_index = significant.index('exec switch_root /sysroot "$init"')
+
+        self.assertEqual(move_index, write_index + 1)
+        self.assertEqual(
+            significant[move_index + 1],
+            "/sysroot/var/lib/lmi-p1/initramfs-transition",
+        )
+        self.assertEqual(sync_index, move_index + 2)
+        self.assertEqual(exec_index, sync_index + 1)
+
+    def test_applied_initramfs_shell_files_parse_with_bash(self):
+        _, init_functions_path, init_2nd_path = self.staged_initramfs_paths()
+
+        subprocess.run(
+            ["bash", "-n", str(init_functions_path), str(init_2nd_path)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
     def test_wrong_source_head_fails_closed(self):
         with self.assertRaisesRegex(GateError, "source HEAD"):
             self.prepare(commit="0" * 40)
@@ -256,6 +406,59 @@ class PmaportsTests(unittest.TestCase):
         self.assertEqual(
             (self.destination / "unrelated").read_text(encoding="utf-8"), "keep\n"
         )
+
+    def test_destination_inside_source_fails_before_mutating_source(self):
+        destination = self.source / "generated/stage"
+        before = self.worktree_snapshot(self.source)
+
+        with self.assertRaisesRegex(GateError, "path overlap"):
+            self.prepare(destination=destination)
+
+        self.assertEqual(self.worktree_snapshot(self.source), before)
+        self.assertFalse(destination.parent.exists())
+
+    def test_destination_inside_overlay_fails_before_mutating_overlay(self):
+        destination = self.overlay / "generated/stage"
+        before = self.worktree_snapshot(self.overlay)
+
+        with self.assertRaisesRegex(GateError, "path overlap"):
+            self.prepare(destination=destination)
+
+        self.assertEqual(self.worktree_snapshot(self.overlay), before)
+        self.assertFalse(destination.parent.exists())
+
+    def test_equal_and_ancestor_destination_overlaps_fail_closed(self):
+        for label, destination in (
+            ("equal source", self.source),
+            ("equal overlay", self.overlay),
+            ("equal package", self.overlay / "device-xiaomi-lmi"),
+            ("ancestor", self.root),
+        ):
+            with self.subTest(label=label):
+                with self.assertRaisesRegex(GateError, "path overlap"):
+                    self.prepare(destination=destination)
+
+    def test_source_and_overlay_overlap_fails_closed(self):
+        nested_overlay = self.source / "local-overlays"
+        self.overlay.rename(nested_overlay)
+        before = self.worktree_snapshot(self.source)
+
+        with self.assertRaisesRegex(GateError, "path overlap"):
+            self.prepare(overlay=nested_overlay)
+
+        self.assertEqual(self.worktree_snapshot(self.source), before)
+        self.assertFalse(self.destination.exists())
+
+    def test_source_root_symlink_is_rejected_without_mutation(self):
+        source_link = self.root / "source-link"
+        os.symlink(self.source, source_link, target_is_directory=True)
+        before = self.worktree_snapshot(self.source)
+
+        with self.assertRaisesRegex(GateError, "source root must not be a symlink"):
+            self.prepare(source=source_link)
+
+        self.assertEqual(self.worktree_snapshot(self.source), before)
+        self.assertFalse(self.destination.exists())
 
     def test_reusing_populated_destination_fails_closed(self):
         self.prepare()
@@ -300,6 +503,26 @@ diff --git a/device/downstream/device-xiaomi-lmi/APKBUILD b/device/downstream/de
 
         with self.assertRaisesRegex(GateError, "overlay file changed"):
             self.prepare(patch=unexpected_patch)
+
+    def test_patch_created_ignored_file_is_inventoried_and_rejected(self):
+        ignored_patch = self.root / "unexpected-ignored-file.patch"
+        ignored_patch.write_text(
+            PATCH.read_text(encoding="utf-8")
+            + """\
+diff --git a/ignored-stage.txt b/ignored-stage.txt
+new file mode 100644
+--- /dev/null
++++ b/ignored-stage.txt
+@@ -0,0 +1 @@
++ignored payload
+""",
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(GateError, "unexpected untracked file"):
+            self.prepare(patch=ignored_patch)
+
+        self.assertFalse((self.destination / ".lmi-p1-stage.json").exists())
 
     def test_cli_stages_pmaports_with_explicit_inputs(self):
         result = subprocess.run(

@@ -28,7 +28,7 @@ def _git(repository: Path, *arguments: str) -> str:
     return completed.stdout.strip()
 
 
-def _tree_entries(root: Path):
+def _tree_entries(root: Path, *, skip_git_directory: bool = False):
     pending = [root]
     while pending:
         directory = pending.pop()
@@ -38,6 +38,8 @@ def _tree_entries(root: Path):
             raise GateError(f"cannot inspect tree {directory}: {error}") from None
         for entry in entries:
             path = Path(entry.path)
+            if skip_git_directory and directory == root and entry.name == ".git":
+                continue
             yield path
             if entry.is_dir(follow_symlinks=False):
                 pending.append(path)
@@ -51,7 +53,46 @@ def _is_within(path: Path, root: Path) -> bool:
     return True
 
 
-def _validate_tree(root: Path, *, allow_git_directory: bool = False) -> None:
+def _paths_overlap(left: Path, right: Path) -> bool:
+    return left == right or _is_within(left, right) or _is_within(right, left)
+
+
+def _reject_path_overlaps(
+    source: Path,
+    destination: Path,
+    overlay: Path,
+    overlay_sources: dict[str, Path],
+) -> None:
+    resolved = {
+        "source": source.resolve(strict=True),
+        "destination": destination.resolve(strict=False),
+        "overlay": overlay.resolve(strict=True),
+        **{
+            f"overlay package {name}": path.resolve(strict=True)
+            for name, path in overlay_sources.items()
+        },
+    }
+    labels = tuple(resolved)
+    for index, left_label in enumerate(labels):
+        for right_label in labels[index + 1 :]:
+            left = resolved[left_label]
+            right = resolved[right_label]
+            expected_overlay_child = (
+                left_label == "overlay"
+                and right_label.startswith("overlay package ")
+                and left != right
+                and _is_within(right, left)
+            )
+            if expected_overlay_child:
+                continue
+            if _paths_overlap(left, right):
+                raise GateError(
+                    f"path overlap: {left_label}={left} and "
+                    f"{right_label}={right}"
+                )
+
+
+def _validate_tree(root: Path, *, skip_git_directory: bool = False) -> None:
     try:
         resolved_root = root.resolve(strict=True)
     except OSError as error:
@@ -59,10 +100,7 @@ def _validate_tree(root: Path, *, allow_git_directory: bool = False) -> None:
     if root.is_symlink() or not root.is_dir():
         raise GateError(f"tree must be a real directory: {root}")
 
-    for path in _tree_entries(root):
-        relative = path.relative_to(root)
-        if allow_git_directory and relative.parts[:1] == (".git",):
-            continue
+    for path in _tree_entries(root, skip_git_directory=skip_git_directory):
         try:
             mode = path.lstat().st_mode
         except OSError as error:
@@ -104,7 +142,7 @@ def _sha256_entry(path: Path) -> str:
     return sha256_file(path)
 
 
-def _verify_expected_changes(destination: Path, overlay_files: set[str]) -> None:
+def _verify_expected_changes(destination: Path, overlay_files: set[str]) -> set[str]:
     staged = _git(destination, "diff", "--cached", "--name-only")
     if staged:
         raise GateError(f"unexpected staged modification in destination: {staged}")
@@ -117,7 +155,7 @@ def _verify_expected_changes(destination: Path, overlay_files: set[str]) -> None
             f"expected {sorted(expected_tracked)!r}, got {sorted(tracked_lines)!r}"
         )
 
-    untracked = set(
+    ordinary_untracked = set(
         filter(
             None,
             _git(
@@ -128,12 +166,26 @@ def _verify_expected_changes(destination: Path, overlay_files: set[str]) -> None
             ).splitlines(),
         )
     )
+    ignored_untracked = set(
+        filter(
+            None,
+            _git(
+                destination,
+                "ls-files",
+                "--others",
+                "--ignored",
+                "--exclude-standard",
+            ).splitlines(),
+        )
+    )
+    untracked = ordinary_untracked | ignored_untracked
     if untracked != overlay_files:
         raise GateError(
             "unexpected untracked file in destination: "
             f"expected {sorted(overlay_files)!r}, got {sorted(untracked)!r}"
         )
     _git(destination, "diff", "--check")
+    return set(_PATCHED_FILES) | untracked
 
 
 def _verify_overlay_content(
@@ -163,20 +215,12 @@ def prepare_pmaports(
     overlay = Path(overlay)
     patch = Path(patch)
 
-    _output_path_must_be_empty(destination)
+    if source.is_symlink():
+        raise GateError(f"source root must not be a symlink: {source}")
     if not source.is_dir():
         raise GateError(f"pmaports source is not a directory: {source}")
-    if patch.is_symlink() or not patch.is_file():
-        raise GateError(f"patch must be a real file: {patch}")
     if overlay.is_symlink() or not overlay.is_dir():
         raise GateError(f"overlay must be a real directory: {overlay}")
-
-    source_head = _git(source, "rev-parse", "--verify", "HEAD")
-    if source_head != commit:
-        raise GateError(f"source HEAD mismatch: expected {commit}, got {source_head}")
-    source_changes = _git(source, "status", "--porcelain", "--untracked-files=no")
-    if source_changes:
-        raise GateError(f"source has tracked modifications: {source_changes}")
 
     overlay_sources: dict[str, Path] = {}
     for package_name in _OVERLAY_PACKAGES:
@@ -185,6 +229,18 @@ def prepare_pmaports(
             raise GateError(f"missing real overlay package directory: {package}")
         _validate_tree(package)
         overlay_sources[package_name] = package
+
+    _reject_path_overlaps(source, destination, overlay, overlay_sources)
+    _output_path_must_be_empty(destination)
+    if patch.is_symlink() or not patch.is_file():
+        raise GateError(f"patch must be a real file: {patch}")
+
+    source_head = _git(source, "rev-parse", "--verify", "HEAD")
+    if source_head != commit:
+        raise GateError(f"source HEAD mismatch: expected {commit}, got {source_head}")
+    source_changes = _git(source, "status", "--porcelain", "--untracked-files=no")
+    if source_changes:
+        raise GateError(f"source has tracked modifications: {source_changes}")
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     run(
@@ -197,7 +253,7 @@ def prepare_pmaports(
         raise GateError(f"staged commit mismatch: expected {commit}, got {staged_head}")
     if _git(destination, "status", "--porcelain"):
         raise GateError("newly cloned destination is dirty")
-    _validate_tree(destination, allow_git_directory=True)
+    _validate_tree(destination, skip_git_directory=True)
 
     manifest: dict[str, str] = {"commit": commit}
     expected_overlay_files: set[str] = set()
@@ -233,7 +289,7 @@ def prepare_pmaports(
         timeout=_COMMAND_TIMEOUT,
         cwd=destination,
     )
-    _verify_expected_changes(destination, expected_overlay_files)
+    inventory = _verify_expected_changes(destination, expected_overlay_files)
     _verify_overlay_content(destination, expected_overlay_content)
 
     for relative in _PATCHED_FILES:
@@ -241,6 +297,13 @@ def prepare_pmaports(
         if staged_file.is_symlink() or not staged_file.is_file():
             raise GateError(f"patched file is not a real file: {relative}")
         manifest[relative] = sha256_file(staged_file)
+
+    manifest_files = set(manifest) - {"commit"}
+    if manifest_files != inventory:
+        raise GateError(
+            "stage inventory is not fully hashed: "
+            f"inventory {sorted(inventory)!r}, manifest {sorted(manifest_files)!r}"
+        )
 
     manifest = dict(sorted(manifest.items()))
     write_json(destination / ".lmi-p1-stage.json", manifest)
