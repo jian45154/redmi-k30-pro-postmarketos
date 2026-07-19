@@ -288,6 +288,9 @@
 - Create: `files/lmi-p1/lmi-rootctl`
 - Create: `files/lmi-p1/90-lmi-rootctl`
 - Create: `files/lmi-p1/lmi-release-identity`
+- Create: `files/lmi-p1/sudoers`
+- Create: `files/lmi-p1/lmi-usb0.nmconnection`
+- Create: `files/lmi-p1/90-lmi-usb0-takeover.conf`
 - Create: `scripts/lmi_p1/build.py`
 - Create: `tests/lmi_p1/test_build.py`
 - Modify: `scripts/lmi_p1_cli.py`
@@ -350,7 +353,7 @@
   AuthenticationMethods publickey
   AuthorizedKeysFile .ssh/authorized_keys
   AllowUsers lmi
-  UsePAM no
+  UsePAM yes
   X11Forwarding no
   AllowTcpForwarding no
   PermitTunnel no
@@ -376,6 +379,18 @@
   6. Run `install --no-fde --sector-size 4096 --no-sparse --password "$ephemeral_password"` without `--zap`.
   7. Mount the image only through `pmbootstrap chroot -r --image`, replace the SSH/rootctl/identity payloads, remove `/etc/ssh/ssh_host_*`, set both root and lmi shadow password fields exactly to `!`, verify one matching authorized key and its fingerprint, enable `sshd` and USB network in the default runlevel, and assert no generic sudo rule remains.
   8. Run `export "$empty_export_dir" --no-install`, then hash every output.
+
+  Review correction requirements:
+
+  - Validate staged pmaports as an exact detached tree: HEAD must equal the pinned commit; the index must be clean; tracked modifications plus ordinary and ignored untracked files must equal the hashed manifest inventory, with `.lmi-p1-stage.json` as the only unmanifested metadata file. Reject missing, extra, type-changed, or hash-mismatched members, and run the same validation again after copying into the candidate.
+  - Accept only the pinned repository's tracked `pmbootstrap.py` blob. Make a fresh local no-hardlink clone inside the empty candidate, detach it at the pinned commit, verify the checkout is clean and the entrypoint blob matches, and invoke only that copy through `sys.executable -E -B` with all `PYTHON*`, `LD_PRELOAD`, and `LD_LIBRARY_PATH` injection variables removed. Every internal Git child must first remove all inherited `GIT_*` variables, then set `GIT_CONFIG_NOSYSTEM=1`, `GIT_CONFIG_GLOBAL=/dev/null`, and `GIT_TERMINAL_PROMPT=0`; pmbootstrap itself receives that same sanitized Git base so its descendant Git calls cannot recover the hostile environment. Every direct Git argv binds the already-resolved repository with exact `-c safe.directory=...` and disables hooks, clone/checkout cannot execute hooks, and any pinned `.gitattributes` checkout filter fails closed before checkout. No network clone is allowed.
+  - Keep root and `lmi` shadow fields exactly `!`, all password and keyboard-interactive authentication disabled, and use `UsePAM yes` so the installed PAM OpenSSH server still admits the locked `lmi` account for its sole Ed25519 key. Real OpenSSH acceptance remains a Task 8 runtime gate.
+  - Replace `/etc/sudoers` with the exact sudo-rs-compatible `root ALL=(ALL) ALL` plus `@includedir /etc/sudoers.d` policy, remove `lmi` from `wheel`, retain only `90-lmi-rootctl`, remove all doas grants, and verify the effective file set, ownership, modes, group membership, and syntax with Alpine sudo-rs `/usr/bin/visudo -cf /etc/sudoers`.
+  - Normalize `/etc/apk/world` to exact `name=version` pins for all seven replay packages, reject bare or conflicting replay entries after normalization and after the final install, and copy the verified pinned world into the image.
+  - Install a root-owned mode-0600 NetworkManager keyfile bound to `usb0`, with autoconnect priority 100, `ipv4.method=shared`, `address1=172.16.42.1/24`, `never-default=true`, `shared-dhcp-range=172.16.42.2,172.16.42.2`, and IPv6 disabled. Also install exact root-owned mode-0644 `/etc/NetworkManager/conf.d/90-lmi-usb0-takeover.conf` with `[device-lmi-usb0]`, `match-device=interface-name:usb0`, `managed=1`, and `keep-configuration=no`; this forces NetworkManager to replace the initramfs-era external `/16` configuration with the higher-priority persistent profile. Enable and verify NetworkManager in the default runlevel; shelli supplies NetworkManager and dnsmasq.
+  - Treat pmbootstrap export entries as absolute symlinks. After shutdown, require the exact boot/rootfs/kernel/initramfs/DTB inventory, reject dangling, escaping, or extra entries, atomically replace every approved link with a copied regular file, reject hardlinks, and hash the complete materialized inventory.
+
+  Add focused RED tests for each correction before production changes: unlisted tracked/ignored pmaports changes and post-copy mutation; ignored/wrong pmbootstrap entrypoints, Python environment sanitization, hostile Git environment/global hooks, explicit safe-directory argv, and checkout-filter rejection; exact PAM/sudo/world/keyfile/takeover policy; real-like absolute export links plus extra/escaping/dangling rejection and regular-file materialization.
 
   `scripts/70_build_downstream_ssh_wifi.sh` must lose its default password and become a compatibility wrapper that prints a deprecation notice and execs `python3 scripts/lmi_p1_cli.py build`; it must not contain old build logic.
 
@@ -410,7 +425,7 @@
 
 - [ ] **Step 1: Write failing fixture-driven verifier tests**
 
-  Factor the existing Android v2 parser into import-safe functions and test header version, pagesize, kernel/ramdisk/DTB bounds, truncated components, capacity, cmdline UUID extraction, and role validation. Fake `fdisk`, `losetup`, `blkid`, `mount`, `umount`, `debugfs`, and initramfs extraction outputs to cover 512-sector rejection, one/three partitions, UUID mismatch, absent `loop.max_part=7`, absent initramfs source-fix markers, wrong package versions, missing authorized key, host private key presence, password hashes, permissive sshd, extra sudo rules, and a valid fixture.
+  Factor the existing Android v2 parser into import-safe functions and test header version, pagesize, kernel/ramdisk/DTB bounds, truncated components, capacity, cmdline UUID extraction, and role validation. Fake `fdisk`, `losetup`, `blkid`, `mount`, `umount`, `debugfs`, and initramfs extraction outputs to cover 512-sector rejection, one/three partitions, UUID mismatch, absent `loop.max_part=7`, absent initramfs source-fix markers, wrong package versions, NetworkManager older than 1.52, missing USB takeover policy, missing authorized key, host private key presence, password hashes, failed target-rootfs `sshd.pam -t/-T`, permissive sshd, extra sudo rules, and a valid fixture.
 
 - [ ] **Step 2: Run the focused test and confirm RED**
 
@@ -430,7 +445,7 @@
 
   In a `finally` block, unmount both read-only mountpoints and detach the exact returned loop device. Require `fdisk -b 4096 -l` to report exactly two GPT partitions; require `blkid` labels `pmOS_boot` and `pmOS_root`; match both UUIDs to cmdline; run `e2fsck -fn` and accept only status 0. Status 4 means uncorrected filesystem errors and must fail.
 
-  Inspect the mounted rootfs for exact replay package versions, `/etc/apk/world` identity constraints, default-runlevel `sshd`, RNDIS `0525:a4a2`, one expected authorized key, strict sshd policy, shadow fields exactly `!`, no host keys, no private key headers, no GitHub token patterns, no device serial, and only the P1 sudoers allowlist. Require `/etc/lmi-release-identity` to match the manifest's candidate ID, tag, source commit, UUIDs, and package versions; compare final image hashes only through the external canonical manifest.
+  Inspect the mounted rootfs for exact replay package versions, `/etc/apk/world` identity constraints, target-rootfs NetworkManager version at least 1.52, the exact USB keyfile/takeover pair and permissions, default-runlevel `sshd`, RNDIS `0525:a4a2`, one expected authorized key, strict sshd policy, shadow fields exactly `!`, no host keys, no private key headers, no GitHub token patterns, no device serial, and only the P1 sudoers allowlist. Require the target rootfs OpenSSH PAM server to pass both `sshd.pam -t` and effective-configuration `sshd.pam -T` validation in an architecture-correct verifier context. Require `/etc/lmi-release-identity` to match the manifest's candidate ID, tag, source commit, UUIDs, and package versions; compare final image hashes only through the external canonical manifest.
 
 - [ ] **Step 4: Emit canonical manifest and role-bound copies**
 
@@ -659,7 +674,7 @@
 
   Wait at most 180 seconds for TCP 22. On the direct point-to-point RNDIS link only, capture one Ed25519 host key, record its fingerprint, then use `UserKnownHostsFile=.work/lmi-p1/lmi-p1-ssh-20260719-1/evidence/known_hosts`, `StrictHostKeyChecking=yes`, `IdentitiesOnly=yes`, `BatchMode=yes`, and the one expected private key for every command. Never use the global known_hosts file.
 
-  Before SSH, require the Windows PnP inventory to expose exactly one present `USB\\VID_0525&PID_A4A2` RNDIS device and TCP 22 at `172.16.42.1`. Prove correct login and five independent sessions. Generate a temporary wrong Ed25519 key and require failure. Require `PreferredAuthentications=password` with `BatchMode=yes` to fail for `lmi`; require the correct key to fail for `root`. Runtime checks require `/` from loop partition 2, `/boot` from loop partition 1, `usb0=172.16.42.1`, `sshd` started, current boot ID, package versions, and `/etc/lmi-release-identity` equal to the manifest. Capture `dmesg`/initramfs evidence showing the 4096-sector loop partition discovery, root mount, and completed `switch_root`; the two mount facts alone do not replace that boot-transition evidence.
+  Before SSH, require the Windows PnP inventory to expose exactly one present `USB\\VID_0525&PID_A4A2` RNDIS device and TCP 22 at `172.16.42.1`. Prove correct login and five independent sessions. Generate a temporary wrong Ed25519 key and require failure. Require `PreferredAuthentications=password` with `BatchMode=yes` to fail for `lmi`; require the correct key to fail for `root`. Runtime checks require `/` from loop partition 2, `/boot` from loop partition 1, NetworkManager's active `usb0` connection ID exactly `lmi-usb0`, exactly one `usb0` IPv4 address `172.16.42.1/24` with no retained `/16`, `172.16.42.2` as the sole shared-DHCP lease, `sshd` started, current boot ID, package versions, and `/etc/lmi-release-identity` equal to the manifest. Verify the `lmi` account is neither expired nor blocked by aging, has an interactive shell rather than `nologin`, and completes public-key login with the locked `!` shadow field. Capture `dmesg`/initramfs evidence showing the 4096-sector loop partition discovery, root mount, and completed `switch_root`; the two mount facts alone do not replace that boot-transition evidence.
 
 - [ ] **Step 4: Test USB recovery, persistence, and reboot identity**
 

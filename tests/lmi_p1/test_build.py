@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 from contextlib import redirect_stdout
+import dataclasses
 import hashlib
 import io
 import json
@@ -37,7 +38,7 @@ KbdInteractiveAuthentication no
 AuthenticationMethods publickey
 AuthorizedKeysFile .ssh/authorized_keys
 AllowUsers lmi
-UsePAM no
+UsePAM yes
 X11Forwarding no
 AllowTcpForwarding no
 PermitTunnel no
@@ -51,6 +52,71 @@ Subsystem sftp internal-sftp
             (PAYLOAD / "90-lmi-rootctl").read_text(),
             "lmi ALL=(root) NOPASSWD: /usr/sbin/lmi-rootctl\n",
         )
+        sudoers = PAYLOAD / "sudoers"
+        self.assertTrue(sudoers.is_file())
+        self.assertEqual(
+            sudoers.read_text(),
+            "root ALL=(ALL) ALL\n@includedir /etc/sudoers.d\n",
+        )
+
+    def test_usb0_networkmanager_profile_is_exact(self):
+        expected = """\
+[connection]
+id=lmi-usb0
+type=ethernet
+interface-name=usb0
+autoconnect=true
+autoconnect-priority=100
+
+[ethernet]
+
+[ipv4]
+method=shared
+address1=172.16.42.1/24
+never-default=true
+shared-dhcp-range=172.16.42.2,172.16.42.2
+
+[ipv6]
+method=disabled
+"""
+        profile = PAYLOAD / "lmi-usb0.nmconnection"
+        self.assertTrue(profile.is_file())
+        self.assertEqual(profile.read_text(), expected)
+
+    def test_usb0_networkmanager_takeover_policy_is_exact(self):
+        expected = """\
+[device-lmi-usb0]
+match-device=interface-name:usb0
+managed=1
+keep-configuration=no
+"""
+        policy = PAYLOAD / "90-lmi-usb0-takeover.conf"
+        self.assertTrue(policy.is_file())
+        self.assertEqual(policy.read_text(), expected)
+
+    def test_finalizer_closes_privilege_world_and_usb_policy(self):
+        finalizer = build_module._finalizer_script()
+        for marker in (
+            '/bin/cp "$stage/sudoers" /etc/sudoers',
+            "/usr/bin/visudo -cf /etc/sudoers",
+            "/usr/sbin/delgroup lmi wheel",
+            "/usr/bin/id -nG lmi",
+            "/bin/rm -f /etc/doas.conf /etc/doas.d/* /etc/doas.d/.[!.]* /etc/doas.d/..?*",
+            "/bin/rm -f /etc/sudoers.d/* /etc/sudoers.d/.[!.]* /etc/sudoers.d/..?*",
+            '/bin/cp "$stage/world" /etc/apk/world',
+            '/bin/cp "$stage/lmi-usb0.nmconnection"',
+            "/etc/NetworkManager/system-connections/lmi-usb0.nmconnection",
+            '/bin/cp "$stage/90-lmi-usb0-takeover.conf"',
+            "/etc/NetworkManager/conf.d/90-lmi-usb0-takeover.conf",
+            "/bin/chmod 0600 /etc/NetworkManager/system-connections/lmi-usb0.nmconnection",
+            "/bin/chmod 0644 /etc/NetworkManager/conf.d/90-lmi-usb0-takeover.conf",
+            "/bin/chown root:root /etc/NetworkManager/conf.d/90-lmi-usb0-takeover.conf",
+            '/usr/bin/cmp -s "$stage/90-lmi-usb0-takeover.conf"',
+            "/bin/chown root:root /etc/ssh/sshd_config",
+            "/bin/chown root:root /usr/sbin/lmi-rootctl",
+            "/bin/chown root:root /etc/lmi-release-identity",
+        ):
+            self.assertIn(marker, finalizer)
 
     def test_rootctl_bootloader_dispatch_uses_exact_fake_command(self):
         source = (PAYLOAD / "lmi-rootctl").read_text()
@@ -263,6 +329,15 @@ class BuilderTests(unittest.TestCase):
         "weston-shell-desktop-14.0.2-r10",
         "weston-terminal-14.0.2-r10",
     )
+    required_versions = {
+        "device-xiaomi-lmi": "1-r139",
+        "linux-xiaomi-lmi": "4.19.325-r9",
+        "weston": "14.0.2-r10",
+        "weston-backend-drm": "14.0.2-r10",
+        "weston-clients": "14.0.2-r10",
+        "weston-shell-desktop": "14.0.2-r10",
+        "weston-terminal": "14.0.2-r10",
+    }
     fixed_add = (
         "evtest,pd-mapper,pd-mapper-openrc,seatd,seatd-openrc,"
         "weston-backend-drm,weston-clients,weston-shell-desktop,weston-terminal"
@@ -274,6 +349,8 @@ class BuilderTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
         self.log = self.root / "pmbootstrap-argv.jsonl"
+        self.pmbootstrap_environment_log = self.root / "pmbootstrap-environment.json"
+        self.pmbootstrap_entrypoint_log = self.root / "pmbootstrap-entrypoint.txt"
         self.finalizer_copy = self.root / "finalize-copy"
         self.fake_repo = self.root / "fake-pmbootstrap"
         self.fake_repo.mkdir()
@@ -292,11 +369,22 @@ class BuilderTests(unittest.TestCase):
         (self.pmaports / "pmaports.cfg").write_text(
             "[pmaports]\nchannel = edge\nversion = 7\n"
         )
-        (self.pmaports / ".lmi-p1-stage.json").write_text(
-            json.dumps({"commit": "f" * 40}) + "\n"
-        )
+        (self.pmaports / ".gitignore").write_text("*.ignored\n")
         device_package = self.pmaports / "device/downstream/device-xiaomi-lmi"
         device_package.mkdir(parents=True)
+        (device_package / "deviceinfo").write_text(
+            'deviceinfo_codename="xiaomi-lmi"\n'
+            'deviceinfo_arch="aarch64"\n'
+            'deviceinfo_rootfs_image_sector_size="512"\n'
+        )
+        self._git("init", "-q", cwd=self.pmaports)
+        self._git("config", "user.name", "LMI test", cwd=self.pmaports)
+        self._git(
+            "config", "user.email", "lmi-pmaports-test@example.invalid", cwd=self.pmaports
+        )
+        self._git("add", ".", cwd=self.pmaports)
+        self._git("commit", "-q", "-m", "pinned pmaports base", cwd=self.pmaports)
+        self.pmaports_commit = self._git("rev-parse", "HEAD", cwd=self.pmaports).strip()
         (device_package / "deviceinfo").write_text(
             'deviceinfo_codename="xiaomi-lmi"\n'
             'deviceinfo_arch="aarch64"\n'
@@ -305,7 +393,7 @@ class BuilderTests(unittest.TestCase):
         (self.pmaports / ".lmi-p1-stage.json").write_text(
             json.dumps(
                 {
-                    "commit": "f" * 40,
+                    "commit": self.pmaports_commit,
                     "device/downstream/device-xiaomi-lmi/deviceinfo": hashlib.sha256(
                         (device_package / "deviceinfo").read_bytes()
                     ).hexdigest(),
@@ -361,6 +449,8 @@ class BuilderTests(unittest.TestCase):
             os.environ,
             {
                 "LMI_FAKE_PMBOOTSTRAP_LOG": str(self.log),
+                "LMI_FAKE_PMBOOTSTRAP_ENV_LOG": str(self.pmbootstrap_environment_log),
+                "LMI_FAKE_PMBOOTSTRAP_ENTRYPOINT_LOG": str(self.pmbootstrap_entrypoint_log),
                 "LMI_FAKE_FINALIZER_COPY": str(self.finalizer_copy),
             },
             clear=False,
@@ -370,7 +460,7 @@ class BuilderTests(unittest.TestCase):
         self.constants = mock.patch.multiple(
             build_module,
             _EXPECTED_PMBOOTSTRAP_COMMIT=self.fake_commit,
-            _EXPECTED_PMAPORTS_COMMIT="f" * 40,
+            _EXPECTED_PMAPORTS_COMMIT=self.pmaports_commit,
             _REPLAY_APK_HASHES=self.replay_hashes,
         )
         self.constants.start()
@@ -404,6 +494,19 @@ for flag in ("-c", "-w", "-p"):
 work = Path(args[args.index("-w") + 1])
 tail = args[args.index("-p") + 2:]
 if tail == ["--version"]:
+    Path(os.environ["LMI_FAKE_PMBOOTSTRAP_ENV_LOG"]).write_text(
+        json.dumps(
+            {
+                key: value
+                for key, value in os.environ.items()
+                if key.upper().startswith(("PYTHON", "GIT_"))
+                or key.upper() in {"LD_LIBRARY_PATH", "LD_PRELOAD"}
+            }
+        )
+    )
+    Path(os.environ["LMI_FAKE_PMBOOTSTRAP_ENTRYPOINT_LOG"]).write_text(
+        str(Path(__file__).resolve()) + "\n"
+    )
     print("3.11.1")
     raise SystemExit(0)
 action = tail[0]
@@ -456,6 +559,12 @@ def install_replay():
         "weston\nweston-backend-drm\nweston-clients\n"
         "weston-shell-desktop\nweston-terminal\n"
     )
+    if os.environ.get("LMI_FAKE_CONFLICTING_WORLD") == "1":
+        world.write_text(world.read_text().replace("weston\n", "weston=14.0.2-r8\n"))
+    if os.environ.get("LMI_FAKE_TAGGED_WORLD") == "1":
+        world.write_text(
+            world.read_text().replace("weston\n", "weston@edge=14.0.2-r10\n")
+        )
 
 if action == "checksum" or action == "build" or action == "index":
     raise SystemExit(0)
@@ -495,6 +604,8 @@ if action == "install":
         "UUID=11111111-2222-3333-4444-555555555555 / ext4 defaults 0 0\n"
         "UUID=AAAA-BBBB /boot vfat nodev,nosuid,noexec 0 0\n"
     )
+    if os.environ.get("LMI_FAKE_FINAL_INSTALL_BARE_WORLD") == "1":
+        world.write_text(world.read_text().replace("weston=14.0.2-r10\n", "weston\n"))
     raise SystemExit(0)
 if action == "chroot":
     inner = rest[rest.index("--") + 1:]
@@ -513,8 +624,15 @@ if action == "chroot":
         staged = work / "packages/lmi-p1-finalize"
         copied = Path(os.environ["LMI_FAKE_FINALIZER_COPY"])
         copied.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(staged / "finalize.sh", copied / "finalize.sh")
-        shutil.copy2(staged / "lmi-release-identity", copied / "lmi-release-identity")
+        for name in (
+            "finalize.sh",
+            "lmi-release-identity",
+            "world",
+            "sudoers",
+            "lmi-usb0.nmconnection",
+            "90-lmi-usb0-takeover.conf",
+        ):
+            shutil.copy2(staged / name, copied / name)
         print("lmi-p1-finalize=ok")
         raise SystemExit(0)
     print("unsupported fake chroot command: " + repr(inner), file=sys.stderr)
@@ -527,13 +645,27 @@ if action == "export":
         print("export was not empty", file=sys.stderr)
         raise SystemExit(90)
     export.mkdir(parents=True, exist_ok=True)
-    (export / "boot.img").write_bytes(b"android-boot")
-    (export / "xiaomi-lmi.img").write_bytes(b"final-combined-image")
-    (export / "vmlinuz").write_bytes(b"kernel")
-    (export / "initramfs").write_bytes(b"initramfs")
+    export_targets = {
+        "boot.img": rootfs / "boot/boot.img",
+        "xiaomi-lmi.img": work / "chroot_native/home/pmos/rootfs/xiaomi-lmi.img",
+        "vmlinuz": rootfs / "boot/vmlinuz",
+        "initramfs": rootfs / "boot/initramfs",
+    }
+    for name, target in export_targets.items():
+        (export / name).symlink_to(target.resolve())
     dtbs = export / "dtbs"
     dtbs.mkdir()
-    (dtbs / "sm8250-xiaomi-lmi.dtb").write_bytes(b"dtb")
+    (dtbs / "sm8250-xiaomi-lmi.dtb").symlink_to(
+        (rootfs / "boot/sm8250-xiaomi-lmi.dtb").resolve()
+    )
+    if os.environ.get("LMI_FAKE_EXPORT_EXTRA") == "1":
+        (export / "unexpected.bin").symlink_to((rootfs / "boot/vmlinuz").resolve())
+    if os.environ.get("LMI_FAKE_EXPORT_ESCAPE") == "1":
+        (export / "boot.img").unlink()
+        (export / "boot.img").symlink_to(Path("/etc/passwd"))
+    if os.environ.get("LMI_FAKE_EXPORT_DANGLING") == "1":
+        (export / "boot.img").unlink()
+        (export / "boot.img").symlink_to((work / "missing-boot.img").resolve())
     raise SystemExit(0)
 print("unsupported fake action: " + action, file=sys.stderr)
 raise SystemExit(89)
@@ -657,6 +789,17 @@ raise SystemExit(89)
             self.assertTrue(path.is_absolute())
             self.assertTrue(path.exists(), path)
         self.assertTrue(result.dtb_dir.is_dir())
+        materialized = (
+            result.boot_img,
+            result.userdata_img,
+            result.vmlinuz,
+            result.initramfs,
+            *sorted(result.dtb_dir.iterdir()),
+        )
+        for output in materialized:
+            self.assertTrue(output.is_file(), output)
+            self.assertFalse(output.is_symlink(), output)
+            self.assertEqual(output.stat().st_nlink, 1, output)
         packages = result.packages.read_text().splitlines()
         for required in self.package_lines:
             self.assertIn(required, packages)
@@ -683,6 +826,32 @@ raise SystemExit(89)
         self.assertNotIn("boot_sha256", identity)
         self.assertNotIn("rootfs_sha256", identity)
         self.assertEqual((self.finalizer_copy / "lmi-release-identity").read_bytes(), result.identity.read_bytes())
+        world = result.world.read_text().splitlines()
+        pinned_world = {
+            f"{name}={version}" for name, version in self.required_versions.items()
+        }
+        self.assertTrue(pinned_world.issubset(world))
+        self.assertTrue(set(self.required_versions).isdisjoint(world))
+        self.assertEqual(
+            (self.finalizer_copy / "world").read_bytes(), result.world.read_bytes()
+        )
+        self.assertEqual(
+            (self.finalizer_copy / "sudoers").read_bytes(),
+            (PAYLOAD / "sudoers").read_bytes(),
+        )
+        self.assertEqual(
+            (self.finalizer_copy / "lmi-usb0.nmconnection").read_bytes(),
+            (PAYLOAD / "lmi-usb0.nmconnection").read_bytes(),
+        )
+        self.assertEqual(
+            (self.finalizer_copy / "90-lmi-usb0-takeover.conf").read_bytes(),
+            (PAYLOAD / "90-lmi-usb0-takeover.conf").read_bytes(),
+        )
+        self.assertEqual(
+            self.finalizer_copy.joinpath("90-lmi-usb0-takeover.conf").stat().st_mode
+            & 0o777,
+            0o644,
+        )
         finalizer = (self.finalizer_copy / "finalize.sh").read_text()
         for marker in (
             "/etc/ssh/ssh_host_*",
@@ -711,6 +880,24 @@ raise SystemExit(89)
                     build_candidate(self.ctx)
         self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
 
+    def test_conflicting_replay_world_constraint_is_rejected(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_CONFLICTING_WORLD": "1"}):
+            with self.assertRaisesRegex(GateError, "conflicting replay world constraint"):
+                build_candidate(self.ctx)
+        self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+
+    def test_tagged_replay_world_constraint_is_rejected(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_TAGGED_WORLD": "1"}):
+            with self.assertRaisesRegex(GateError, "conflicting replay world constraint"):
+                build_candidate(self.ctx)
+        self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+
+    def test_final_install_cannot_relax_pinned_world(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_FINAL_INSTALL_BARE_WORLD": "1"}):
+            with self.assertRaisesRegex(GateError, "replay world constraint mismatch"):
+                build_candidate(self.ctx)
+        self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+
     def test_exception_runs_shutdown_and_does_not_copy_password_to_logs(self):
         with mock.patch.dict(os.environ, {"LMI_FAKE_FAIL_FINAL_INSTALL": "1"}):
             with mock.patch.object(
@@ -729,6 +916,21 @@ raise SystemExit(89)
                 )
         self.assertFalse((self.work / "work/packages/lmi-p1-finalize").exists())
 
+    def test_export_rejects_extra_entry(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_EXPORT_EXTRA": "1"}):
+            with self.assertRaisesRegex(GateError, "unexpected export inventory"):
+                build_candidate(self.ctx)
+
+    def test_export_rejects_target_outside_candidate(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_EXPORT_ESCAPE": "1"}):
+            with self.assertRaisesRegex(GateError, "export target escapes candidate"):
+                build_candidate(self.ctx)
+
+    def test_export_rejects_dangling_target(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_EXPORT_DANGLING": "1"}):
+            with self.assertRaisesRegex(GateError, "dangling export target"):
+                build_candidate(self.ctx)
+
     def test_dirty_source_repository_is_rejected_before_pmbootstrap(self):
         (self.source_repo / "untracked-build-input").write_text("dirty\n")
         with self.assertRaisesRegex(GateError, "repository is dirty"):
@@ -739,6 +941,149 @@ raise SystemExit(89)
         (self.fake_repo / "untracked-tool-input").write_text("dirty\n")
         with self.assertRaisesRegex(GateError, "pmbootstrap repository is dirty"):
             build_candidate(self.ctx)
+        self.assertFalse(self.log.exists())
+
+    def test_staged_pmaports_rejects_unlisted_tracked_member(self):
+        with (self.pmaports / ".gitignore").open("a") as stream:
+            stream.write("extra-unmanifested-pattern\n")
+        with self.assertRaisesRegex(GateError, "pmaports stage inventory mismatch"):
+            build_candidate(self.ctx)
+        self.assertFalse(self.log.exists())
+
+    def test_staged_pmaports_rejects_unlisted_ignored_member(self):
+        (self.pmaports / "unlisted.ignored").write_text("ignored but unmanifested\n")
+        with self.assertRaisesRegex(GateError, "pmaports stage inventory mismatch"):
+            build_candidate(self.ctx)
+        self.assertFalse(self.log.exists())
+
+    def test_staged_pmaports_head_must_match_manifest_commit(self):
+        self._git("commit", "--allow-empty", "-q", "-m", "unexpected head", cwd=self.pmaports)
+        with self.assertRaisesRegex(GateError, "pmaports stage HEAD mismatch"):
+            build_candidate(self.ctx)
+        self.assertFalse(self.log.exists())
+
+    def test_staged_pmaports_manifest_must_be_a_real_file(self):
+        manifest = self.pmaports / ".lmi-p1-stage.json"
+        external = self.root / "external-stage-manifest.json"
+        manifest.replace(external)
+        manifest.symlink_to(external)
+        with self.assertRaisesRegex(GateError, "manifest must be a real file"):
+            build_candidate(self.ctx)
+        self.assertFalse(self.log.exists())
+
+    def test_copied_pmaports_is_fully_revalidated_before_pmbootstrap(self):
+        original_copy = build_module._copy_pmaports
+
+        def copy_then_tamper(source: Path, destination: Path) -> None:
+            original_copy(source, destination)
+            (destination / "copied-extra").write_text("unlisted after copy\n")
+
+        with mock.patch.object(build_module, "_copy_pmaports", side_effect=copy_then_tamper):
+            with self.assertRaisesRegex(GateError, "pmaports stage inventory mismatch"):
+                build_candidate(self.ctx)
+        self.assertFalse(self.log.exists())
+
+    def test_ignored_fake_pmbootstrap_entrypoint_is_rejected(self):
+        ignored = self.fake_repo / "ignored-pmbootstrap.py"
+        ignored.write_text(self._fake_pmbootstrap_source())
+        ignored.chmod(0o755)
+        (self.fake_repo / ".git/info/exclude").write_text("ignored-pmbootstrap.py\n")
+        with self.assertRaisesRegex(GateError, "tracked pmbootstrap.py"):
+            build_candidate(dataclasses.replace(self.ctx, pmbootstrap=ignored))
+        self.assertFalse(self.log.exists())
+
+    def test_pmbootstrap_runs_only_isolated_clone_with_python_env_sanitized(self):
+        injected = {
+            "PYTHONPATH": "/tmp/attacker-pythonpath",
+            "PYTHONBREAKPOINT": "attacker.breakpoint",
+            "PYTHONATTACKVECTOR": "must-not-reach-pmbootstrap",
+            "LD_LIBRARY_PATH": "/tmp/attacker-native-library-path",
+            "GIT_DIR": "/tmp/attacker-git-dir",
+            "GIT_CONFIG_GLOBAL": "/tmp/attacker-global-gitconfig",
+            "GIT_OPTIONAL_LOCKS": "0",
+        }
+        with mock.patch.dict(os.environ, injected, clear=False):
+            self._build()
+        self.assertEqual(
+            json.loads(self.pmbootstrap_environment_log.read_text()),
+            {
+                "GIT_CONFIG_NOSYSTEM": "1",
+                "GIT_CONFIG_GLOBAL": os.devnull,
+                "GIT_TERMINAL_PROMPT": "0",
+            },
+        )
+        entrypoint = Path(self.pmbootstrap_entrypoint_log.read_text().strip())
+        self.assertNotEqual(entrypoint, self.pmbootstrap.resolve())
+        self.assertEqual(entrypoint, (self.work / "pmbootstrap/pmbootstrap.py").resolve())
+
+    def test_git_dir_environment_cannot_redirect_repository_validation(self):
+        with mock.patch.dict(
+            os.environ, {"GIT_DIR": str(self.fake_repo / ".git")}, clear=False
+        ):
+            self._build()
+
+    def test_global_post_checkout_hook_cannot_execute(self):
+        sentinel = self.root / "malicious-hook-ran"
+        hooks = self.root / "global-hooks"
+        hooks.mkdir()
+        hook = hooks / "post-checkout"
+        hook.write_text(f"#!/bin/sh\n/usr/bin/touch {sentinel}\n")
+        hook.chmod(0o755)
+        global_config = self.root / "malicious-global-gitconfig"
+        global_config.write_text(f"[core]\n\thooksPath = {hooks}\n")
+        with mock.patch.dict(
+            os.environ, {"GIT_CONFIG_GLOBAL": str(global_config)}, clear=False
+        ):
+            self._build()
+        self.assertFalse(sentinel.exists())
+
+    def test_git_commands_are_sanitized_and_bind_exact_safe_directories(self):
+        with mock.patch.dict(
+            os.environ, {"GIT_OPTIONAL_LOCKS": "0"}, clear=False
+        ), mock.patch.object(build_module, "run", wraps=build_module.run) as runner:
+            self._build()
+
+        allowed_repositories = {
+            self.pmaports.resolve(),
+            self.source_repo.resolve(),
+            self.fake_repo.resolve(),
+            (self.work / "pmaports").resolve(),
+            (self.work / "pmbootstrap").resolve(),
+        }
+        git_calls = [
+            call for call in runner.call_args_list if call.args[0][0] == "git"
+        ]
+        self.assertTrue(git_calls)
+        for call in git_calls:
+            argv = list(call.args[0])
+            environment = call.kwargs.get("env")
+            self.assertIsNotNone(environment, argv)
+            self.assertEqual(environment["GIT_CONFIG_NOSYSTEM"], "1")
+            self.assertEqual(environment["GIT_CONFIG_GLOBAL"], os.devnull)
+            self.assertEqual(environment["GIT_TERMINAL_PROMPT"], "0")
+            self.assertNotIn("GIT_OPTIONAL_LOCKS", environment)
+            configs = [
+                argv[index + 1]
+                for index, value in enumerate(argv[:-1])
+                if value == "-c"
+            ]
+            safe = [value for value in configs if value.startswith("safe.directory=")]
+            self.assertEqual(len(safe), 1, argv)
+            self.assertIn(Path(safe[0].split("=", 1)[1]), allowed_repositories)
+            self.assertIn("core.hooksPath=/dev/null", configs)
+
+    def test_pmbootstrap_tree_with_checkout_filter_is_rejected(self):
+        (self.fake_repo / ".gitattributes").write_text("*.py filter=evil\n")
+        self._git("add", ".gitattributes", cwd=self.fake_repo)
+        self._git("commit", "-q", "-m", "add checkout filter", cwd=self.fake_repo)
+        filtered_commit = self._git(
+            "rev-parse", "HEAD", cwd=self.fake_repo
+        ).strip()
+        with mock.patch.object(
+            build_module, "_EXPECTED_PMBOOTSTRAP_COMMIT", filtered_commit
+        ):
+            with self.assertRaisesRegex(GateError, "checkout filter attributes"):
+                build_candidate(self.ctx)
         self.assertFalse(self.log.exists())
 
     def test_tampered_staged_pmaports_manifest_member_is_rejected(self):

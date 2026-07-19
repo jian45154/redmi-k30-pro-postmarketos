@@ -1,0 +1,17 @@
+[connection]
+id=lmi-usb0
+type=ethernet
+interface-name=usb0
+autoconnect=true
+autoconnect-priority=100
+
+[ethernet]
+
+[ipv4]
+method=shared
+address1=172.16.42.1/24
+never-default=true
+shared-dhcp-range=172.16.42.2,172.16.42.2
+
+[ipv6]
+method=disabled

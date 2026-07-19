@@ -8,7 +8,7 @@ KbdInteractiveAuthentication no
 AuthenticationMethods publickey
 AuthorizedKeysFile .ssh/authorized_keys
 AllowUsers lmi
-UsePAM no
+UsePAM yes
 X11Forwarding no
 AllowTcpForwarding no
 PermitTunnel no
