@@ -1,0 +1,1 @@
+lmi ALL=(root) NOPASSWD: /usr/sbin/lmi-rootctl

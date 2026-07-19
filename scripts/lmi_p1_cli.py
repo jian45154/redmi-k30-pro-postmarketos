@@ -4,14 +4,17 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import fields, is_dataclass
 import json
 from pathlib import Path
 from typing import Sequence
 
 if __package__:
+    from .lmi_p1.build import BuildContext, build_candidate
     from .lmi_p1.common import GateError
     from .lmi_p1.pmaports import prepare_pmaports
 else:
+    from lmi_p1.build import BuildContext, build_candidate
     from lmi_p1.common import GateError
     from lmi_p1.pmaports import prepare_pmaports
 
@@ -27,7 +30,30 @@ def build_parser() -> argparse.ArgumentParser:
     stage.add_argument("--commit", required=True)
     stage.add_argument("--overlay", type=Path, required=True)
     stage.add_argument("--patch", type=Path, required=True)
+    build = commands.add_parser(
+        "build", help="build one isolated secure lmi P1 replay candidate"
+    )
+    build.add_argument("--repo", type=Path, required=True)
+    build.add_argument("--tag", required=True)
+    build.add_argument("--source-commit", required=True)
+    build.add_argument("--work", type=Path, required=True)
+    build.add_argument("--pmaports", type=Path, required=True)
+    build.add_argument("--d80", type=Path, required=True)
+    build.add_argument("--pmbootstrap", type=Path, required=True)
+    build.add_argument("--public-key", type=Path, required=True)
+    build.add_argument("--public-key-fingerprint", required=True)
     return parser
+
+
+def _json_result(value: object) -> object:
+    if is_dataclass(value) and not isinstance(value, type):
+        return {
+            field.name: str(getattr(value, field.name))
+            if isinstance(getattr(value, field.name), Path)
+            else getattr(value, field.name)
+            for field in fields(value)
+        }
+    return value
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -42,11 +68,25 @@ def main(argv: Sequence[str] | None = None) -> int:
                 overlay=arguments.overlay,
                 patch=arguments.patch,
             )
+        elif arguments.command == "build":
+            result = build_candidate(
+                BuildContext(
+                    repo=arguments.repo,
+                    tag=arguments.tag,
+                    source_commit=arguments.source_commit,
+                    work=arguments.work,
+                    pmaports=arguments.pmaports,
+                    d80=arguments.d80,
+                    pmbootstrap=arguments.pmbootstrap,
+                    public_key=arguments.public_key,
+                    public_key_fingerprint=arguments.public_key_fingerprint,
+                )
+            )
         else:  # pragma: no cover - argparse rejects unknown commands
             parser.error(f"unsupported command: {arguments.command}")
     except GateError as error:
         parser.exit(1, f"lmi-p1 gate failed: {error}\n")
-    print(json.dumps(result, indent=2, sort_keys=True))
+    print(json.dumps(_json_result(result), indent=2, sort_keys=True))
     return 0
 
 

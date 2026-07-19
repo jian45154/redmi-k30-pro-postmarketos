@@ -561,7 +561,7 @@ class PmaportsCliTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_cli_help_exposes_only_the_staging_command(self):
+    def test_cli_help_exposes_staging_and_build_commands(self):
         result = subprocess.run(
             [sys.executable, str(REPOSITORY / "scripts/lmi_p1_cli.py"), "--help"],
             cwd=REPOSITORY,
@@ -571,7 +571,7 @@ class PmaportsCliTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("stage-pmaports", result.stdout)
-        self.assertNotIn("build", result.stdout)
+        self.assertIn("build", result.stdout)
 
 
 if __name__ == "__main__":

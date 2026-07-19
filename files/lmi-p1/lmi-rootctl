@@ -1,0 +1,81 @@
+#!/bin/sh
+set -eu
+
+usage() {
+	printf '%s\n' \
+		'Usage:' \
+		'  lmi-rootctl reboot' \
+		'  lmi-rootctl reboot-bootloader --confirm reboot-bootloader-lmi-p1' \
+		'  lmi-rootctl service sshd status' \
+		'  lmi-rootctl service sshd restart --confirm restart-sshd-lmi-p1' >&2
+	exit 2
+}
+
+caller=${SUDO_USER:-${USER:-unknown}}
+case "$caller" in
+	''|*[!A-Za-z0-9._-]*) caller=unknown ;;
+esac
+
+image=unknown
+if [ -r /etc/lmi-release-identity ]; then
+	while IFS='=' read -r key value; do
+		case "$key" in
+			candidate_id)
+				case "$value" in
+					*[!0-9a-f]*|'') ;;
+					*) image=$value ;;
+				esac
+				;;
+		esac
+	done < /etc/lmi-release-identity
+fi
+
+log_action() {
+	phase=$1
+	action=$2
+	status=$3
+	/usr/bin/logger -t lmi-rootctl \
+		"phase=$phase caller=$caller action=$action image=$image status=$status"
+}
+
+[ "$#" -ge 1 ] || usage
+
+case "$1" in
+	reboot)
+		[ "$#" -eq 1 ] || usage
+		log_action before reboot nonreturning
+		exec /sbin/reboot
+		;;
+	reboot-bootloader)
+		[ "$#" -eq 3 ] &&
+			[ "$2" = --confirm ] &&
+			[ "$3" = reboot-bootloader-lmi-p1 ] || usage
+		log_action before reboot-bootloader nonreturning
+		exec /sbin/reboot bootloader
+		;;
+	service)
+		[ "$#" -ge 3 ] && [ "$2" = sshd ] || usage
+		case "$3" in
+			status)
+				[ "$#" -eq 3 ] || usage
+				action='service-sshd-status'
+				;;
+			restart)
+				[ "$#" -eq 5 ] &&
+					[ "$4" = --confirm ] &&
+					[ "$5" = restart-sshd-lmi-p1 ] || usage
+				action='service-sshd-restart'
+				;;
+			*) usage ;;
+		esac
+		log_action before "$action" pending
+		if /sbin/rc-service sshd "$3"; then
+			status=0
+		else
+			status=$?
+		fi
+		log_action after "$action" "$status"
+		exit "$status"
+		;;
+	*) usage ;;
+esac
