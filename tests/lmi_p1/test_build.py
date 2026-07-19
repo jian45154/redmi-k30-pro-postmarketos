@@ -18,7 +18,14 @@ from unittest import mock
 import scripts.lmi_p1.build as build_module
 from scripts.lmi_p1.build import BuildContext, BuildResult, build_candidate
 from scripts.lmi_p1.common import GateError
+from scripts.lmi_p1.pmaports import prepare_pmaports
 import scripts.lmi_p1_cli as cli_module
+from tests.lmi_p1.test_pmaports import (
+    APKBUILD as PMAPORTS_APKBUILD,
+    INIT_2ND as PMAPORTS_INIT_2ND,
+    INIT_FUNCTIONS as PMAPORTS_INIT_FUNCTIONS,
+    PATCH as PMAPORTS_PATCH,
+)
 
 
 REPO = Path(__file__).resolve().parents[2]
@@ -249,6 +256,7 @@ class PublicInterfaceTests(unittest.TestCase):
                 "dtb_dir",
                 "packages",
                 "world",
+                "sshd_pam",
                 "build_log",
                 "identity",
             ),
@@ -266,6 +274,7 @@ class PublicInterfaceTests(unittest.TestCase):
                 dtb_dir=(root / "dtbs").absolute(),
                 packages=(root / "packages.txt").absolute(),
                 world=(root / "world").absolute(),
+                sshd_pam=(root / "sshd-pam.json").absolute(),
                 build_log=(root / "build.log").absolute(),
                 identity=(root / "identity").absolute(),
             )
@@ -351,6 +360,7 @@ class BuilderTests(unittest.TestCase):
         self.log = self.root / "pmbootstrap-argv.jsonl"
         self.pmbootstrap_environment_log = self.root / "pmbootstrap-environment.json"
         self.pmbootstrap_entrypoint_log = self.root / "pmbootstrap-entrypoint.txt"
+        self.export_inventory_log = self.root / "pmbootstrap-export-inventory.json"
         self.finalizer_copy = self.root / "finalize-copy"
         self.fake_repo = self.root / "fake-pmbootstrap"
         self.fake_repo.mkdir()
@@ -364,43 +374,45 @@ class BuilderTests(unittest.TestCase):
         self._git("commit", "-q", "-m", "fake pmbootstrap", cwd=self.fake_repo)
         self.fake_commit = self._git("rev-parse", "HEAD", cwd=self.fake_repo).strip()
 
-        self.pmaports = self.root / "staged-pmaports"
-        self.pmaports.mkdir()
-        (self.pmaports / "pmaports.cfg").write_text(
+        self.pmaports_source = self.root / "pmaports-source"
+        self.pmaports_source.mkdir()
+        (self.pmaports_source / "pmaports.cfg").write_text(
             "[pmaports]\nchannel = edge\nversion = 7\n"
         )
-        (self.pmaports / ".gitignore").write_text("*.ignored\n")
-        device_package = self.pmaports / "device/downstream/device-xiaomi-lmi"
-        device_package.mkdir(parents=True)
-        (device_package / "deviceinfo").write_text(
-            'deviceinfo_codename="xiaomi-lmi"\n'
-            'deviceinfo_arch="aarch64"\n'
-            'deviceinfo_rootfs_image_sector_size="512"\n'
+        (self.pmaports_source / ".gitignore").write_text("*.ignored\n")
+        (self.pmaports_source / "device/downstream").mkdir(parents=True)
+        (self.pmaports_source / "device/downstream/README.md").write_text(
+            "fixture downstream directory\n"
         )
-        self._git("init", "-q", cwd=self.pmaports)
-        self._git("config", "user.name", "LMI test", cwd=self.pmaports)
+        initramfs_package = (
+            self.pmaports_source / "main/postmarketos-initramfs"
+        )
+        initramfs_package.mkdir(parents=True)
+        (initramfs_package / "APKBUILD").write_text(PMAPORTS_APKBUILD)
+        (initramfs_package / "init_functions.sh").write_text(
+            PMAPORTS_INIT_FUNCTIONS
+        )
+        (initramfs_package / "init_2nd.sh").write_text(PMAPORTS_INIT_2ND)
+        self._git("init", "-q", cwd=self.pmaports_source)
+        self._git("config", "user.name", "LMI test", cwd=self.pmaports_source)
         self._git(
-            "config", "user.email", "lmi-pmaports-test@example.invalid", cwd=self.pmaports
+            "config",
+            "user.email",
+            "lmi-pmaports-test@example.invalid",
+            cwd=self.pmaports_source,
         )
-        self._git("add", ".", cwd=self.pmaports)
-        self._git("commit", "-q", "-m", "pinned pmaports base", cwd=self.pmaports)
-        self.pmaports_commit = self._git("rev-parse", "HEAD", cwd=self.pmaports).strip()
-        (device_package / "deviceinfo").write_text(
-            'deviceinfo_codename="xiaomi-lmi"\n'
-            'deviceinfo_arch="aarch64"\n'
-            'deviceinfo_rootfs_image_sector_size="4096"\n'
+        self._git("add", ".", cwd=self.pmaports_source)
+        self._git(
+            "commit",
+            "-q",
+            "-m",
+            "pinned pmaports base",
+            cwd=self.pmaports_source,
         )
-        (self.pmaports / ".lmi-p1-stage.json").write_text(
-            json.dumps(
-                {
-                    "commit": self.pmaports_commit,
-                    "device/downstream/device-xiaomi-lmi/deviceinfo": hashlib.sha256(
-                        (device_package / "deviceinfo").read_bytes()
-                    ).hexdigest(),
-                }
-            )
-            + "\n"
-        )
+        self.pmaports_commit = self._git(
+            "rev-parse", "HEAD", cwd=self.pmaports_source
+        ).strip()
+        self.pmaports = self.root / "staged-pmaports"
 
         self.d80 = self.root / "d80"
         self.d80.mkdir()
@@ -425,15 +437,48 @@ class BuilderTests(unittest.TestCase):
         self.source_repo = self.root / "source-repo"
         (self.source_repo / "files").mkdir(parents=True)
         shutil.copytree(PAYLOAD, self.source_repo / "files/lmi-p1")
+        overlay = self.source_repo / "artifacts/wsl-pmaports"
+        device_overlay = overlay / "device-xiaomi-lmi"
+        kernel_overlay = overlay / "linux-xiaomi-lmi"
+        device_overlay.mkdir(parents=True)
+        kernel_overlay.mkdir(parents=True)
+        (device_overlay / "APKBUILD").write_text("device overlay\n")
+        (device_overlay / "deviceinfo").write_text(
+            'deviceinfo_codename="xiaomi-lmi"\n'
+            'deviceinfo_arch="aarch64"\n'
+            'deviceinfo_dtb="qcom/kona-v2.1-lmi"\n'
+            'deviceinfo_rootfs_image_sector_size="4096"\n'
+        )
+        (kernel_overlay / "APKBUILD").write_text("kernel overlay\n")
+        source_patch = (
+            self.source_repo
+            / "patches/postmarketos-initramfs/0001-lmi-handle-4096-sector-loop-partitions.patch"
+        )
+        source_patch.parent.mkdir(parents=True)
+        shutil.copyfile(PMAPORTS_PATCH, source_patch)
         self._git("init", "-q", cwd=self.source_repo)
         self._git("config", "user.name", "LMI test", cwd=self.source_repo)
         self._git(
             "config", "user.email", "lmi-source-test@example.invalid", cwd=self.source_repo
         )
-        self._git("add", "files/lmi-p1", cwd=self.source_repo)
+        self._git("add", ".", cwd=self.source_repo)
         self._git("commit", "-q", "-m", "source payload", cwd=self.source_repo)
         self.work = self.root / "candidate"
         self.source_commit = self._git("rev-parse", "HEAD", cwd=self.source_repo).strip()
+        prepare_pmaports(
+            source=self.pmaports_source,
+            destination=self.pmaports,
+            commit=self.pmaports_commit,
+            overlay=overlay,
+            patch=source_patch,
+        )
+        self._git("config", "user.name", "LMI test", cwd=self.pmaports)
+        self._git(
+            "config",
+            "user.email",
+            "lmi-pmaports-test@example.invalid",
+            cwd=self.pmaports,
+        )
         self.ctx = BuildContext(
             repo=self.source_repo,
             tag="lmi-p1-ssh-20260719-1",
@@ -451,12 +496,33 @@ class BuilderTests(unittest.TestCase):
                 "LMI_FAKE_PMBOOTSTRAP_LOG": str(self.log),
                 "LMI_FAKE_PMBOOTSTRAP_ENV_LOG": str(self.pmbootstrap_environment_log),
                 "LMI_FAKE_PMBOOTSTRAP_ENTRYPOINT_LOG": str(self.pmbootstrap_entrypoint_log),
+                "LMI_FAKE_EXPORT_INVENTORY_LOG": str(self.export_inventory_log),
                 "LMI_FAKE_FINALIZER_COPY": str(self.finalizer_copy),
             },
             clear=False,
         )
         self.environment.start()
         self.addCleanup(self.environment.stop)
+        production_environment = build_module._pmbootstrap_environment
+
+        def fake_pmbootstrap_environment():
+            environment = production_environment()
+            environment.update(
+                {
+                    key: value
+                    for key, value in os.environ.items()
+                    if key.startswith("LMI_FAKE_")
+                }
+            )
+            return environment
+
+        self.fake_environment = mock.patch.object(
+            build_module,
+            "_pmbootstrap_environment",
+            side_effect=fake_pmbootstrap_environment,
+        )
+        self.fake_environment.start()
+        self.addCleanup(self.fake_environment.stop)
         self.constants = mock.patch.multiple(
             build_module,
             _EXPECTED_PMBOOTSTRAP_COMMIT=self.fake_commit,
@@ -476,6 +542,8 @@ class BuilderTests(unittest.TestCase):
     @staticmethod
     def _fake_pmbootstrap_source() -> str:
         return r'''#!/usr/bin/env python3
+import base64
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -487,6 +555,9 @@ log = Path(os.environ["LMI_FAKE_PMBOOTSTRAP_LOG"])
 with log.open("a", encoding="utf-8") as stream:
     stream.write(json.dumps(args) + "\n")
 
+if "--as-root" not in args:
+    print("root invocation omitted global --as-root", file=sys.stderr)
+    raise SystemExit(96)
 for flag in ("-c", "-w", "-p"):
     if flag not in args or args.index(flag) + 1 >= len(args):
         print(f"missing global {flag}", file=sys.stderr)
@@ -499,8 +570,47 @@ if tail == ["--version"]:
             {
                 key: value
                 for key, value in os.environ.items()
-                if key.upper().startswith(("PYTHON", "GIT_"))
-                or key.upper() in {"LD_LIBRARY_PATH", "LD_PRELOAD"}
+                if key.upper()
+                in {
+                    "HOME",
+                    "USER",
+                    "LOGNAME",
+                    "SHELL",
+                    "LANG",
+                    "LC_ALL",
+                    "TZ",
+                    "TMPDIR",
+                    "TERM",
+                    "GIT_CONFIG_NOSYSTEM",
+                    "GIT_CONFIG_GLOBAL",
+                    "GIT_TERMINAL_PROMPT",
+                    "GIT_NO_REPLACE_OBJECTS",
+                    "BASH_ENV",
+                    "ENV",
+                    "CDPATH",
+                    "SHELLOPTS",
+                    "BASHOPTS",
+                    "IFS",
+                    "PATH",
+                    "PYTHONPATH",
+                    "PYTHONBREAKPOINT",
+                    "PYTHONATTACKVECTOR",
+                    "LD_LIBRARY_PATH",
+                    "LD_AUDIT",
+                    "PMBOOTSTRAP_CMD",
+                    "PMB_ATTACK",
+                    "APK_CONFIG",
+                    "CCACHE_DIR",
+                    "XDG_CONFIG_HOME",
+                    "GIT_DIR",
+                    "GIT_OPTIONAL_LOCKS",
+                    "GH_TOKEN",
+                    "AWS_SECRET_ACCESS_KEY",
+                    "SSH_AUTH_SOCK",
+                    "HTTPS_PROXY",
+                    "SSL_CERT_FILE",
+                    "HOST_BUILD_SECRET",
+                }
             }
         )
     )
@@ -516,12 +626,75 @@ db = rootfs / "lib/apk/db/installed"
 package_list = rootfs / "packages.txt"
 world = rootfs / "etc/apk/world"
 
+def sshd_blob():
+    payload = b"fixture-openssh-server-pam\n"
+    blob = bytearray(64 + 56)
+    blob[:4] = b"\x7fELF"
+    blob[4] = 2
+    blob[5] = 1
+    blob[6] = 1
+    blob[16:18] = (2).to_bytes(2, "little")
+    blob[18:20] = (183).to_bytes(2, "little")
+    blob[20:24] = (1).to_bytes(4, "little")
+    blob[24:32] = (0x400000).to_bytes(8, "little")
+    blob[32:40] = (64).to_bytes(8, "little")
+    blob[52:54] = (64).to_bytes(2, "little")
+    blob[54:56] = (56).to_bytes(2, "little")
+    blob[56:58] = (1).to_bytes(2, "little")
+    blob[64:68] = (1).to_bytes(4, "little")
+    blob[68:72] = (5).to_bytes(4, "little")
+    blob[72:80] = (0).to_bytes(8, "little")
+    blob[80:88] = (0x400000).to_bytes(8, "little")
+    blob[88:96] = (0x400000).to_bytes(8, "little")
+    blob[96:104] = (len(blob) + len(payload)).to_bytes(8, "little")
+    blob[104:112] = (len(blob) + len(payload)).to_bytes(8, "little")
+    blob[112:120] = (0x1000).to_bytes(8, "little")
+    return bytes(blob) + payload
+
+def openssh_record(version="9.9_p2-r0", *, owner="openssh-server-pam"):
+    if os.environ.get("LMI_FAKE_OPENSSH_MISSING_PACKAGE") == "1":
+        return ""
+    digest = base64.b64encode(hashlib.sha1(sshd_blob()).digest()).decode().rstrip("=")
+    if os.environ.get("LMI_FAKE_OPENSSH_BAD_DB_CHECKSUM") == "1":
+        digest = base64.b64encode(b"x" * 20).decode().rstrip("=")
+    file_name = (
+        "other-sshd" if os.environ.get("LMI_FAKE_OPENSSH_UNOWNED") == "1" else "sshd.pam"
+    )
+    return (
+        f"P:{owner}\nV:{version}\nA:aarch64\n"
+        f"F:usr/sbin\nR:{file_name}\nZ:Q1{digest}\n\n"
+    )
+
+def install_sshd_file():
+    target = rootfs / "usr/sbin/sshd.pam"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.unlink(missing_ok=True)
+    if os.environ.get("LMI_FAKE_OPENSSH_MISSING_FILE") == "1":
+        return
+    if os.environ.get("LMI_FAKE_OPENSSH_SYMLINK") == "1":
+        target.symlink_to(rootfs / "missing-sshd-target")
+        return
+    blob = sshd_blob()
+    if os.environ.get("LMI_FAKE_OPENSSH_WRONG_ARCH") == "1":
+        blob = blob[:18] + (62).to_bytes(2, "little") + blob[20:]
+    if os.environ.get("LMI_FAKE_OPENSSH_TRUNCATED_ELF") == "1":
+        blob = blob[:24]
+    if os.environ.get("LMI_FAKE_OPENSSH_BAD_ELF_TYPE") == "1":
+        blob = blob[:16] + (0).to_bytes(2, "little") + blob[18:]
+    if os.environ.get("LMI_FAKE_OPENSSH_BAD_ELF_HEADER_SIZE") == "1":
+        blob = blob[:52] + (24).to_bytes(2, "little") + blob[54:]
+    if os.environ.get("LMI_FAKE_OPENSSH_BAD_PROGRAM_TABLE") == "1":
+        blob = blob[:32] + (len(blob) + 1).to_bytes(8, "little") + blob[40:]
+    target.write_bytes(blob)
+    target.chmod(0o755)
+
 def write_bootstrap_rootfs():
     db.parent.mkdir(parents=True, exist_ok=True)
     db.write_text(
         "P:device-xiaomi-lmi\nV:1-r107\n\n"
         "P:linux-xiaomi-lmi\nV:4.19.325-r8\n\n"
         "P:weston\nV:14.0.2-r8\n\n"
+        + openssh_record()
     )
     package_list.write_text(
         "device-xiaomi-lmi-1-r107\n"
@@ -552,8 +725,9 @@ def install_replay():
         "P:weston-clients\nV:14.0.2-r10\n\n"
         "P:weston-shell-desktop\nV:14.0.2-r10\n\n"
         "P:weston-terminal\nV:14.0.2-r10\n\n"
+        + openssh_record()
     )
-    package_list.write_text(lines)
+    package_list.write_text(lines + "openssh-server-pam-9.9_p2-r0\n")
     world.write_text(
         "device-xiaomi-lmi\nlinux-xiaomi-lmi\npostmarketos-ui-shelli\n"
         "weston\nweston-backend-drm\nweston-clients\n"
@@ -565,6 +739,8 @@ def install_replay():
         world.write_text(
             world.read_text().replace("weston\n", "weston@edge=14.0.2-r10\n")
         )
+    if os.environ.get("LMI_FAKE_OPENSSH_WORLD_CONFLICT") == "1":
+        world.write_text(world.read_text() + "openssh-server-pam>=99\n")
 
 if action == "checksum" or action == "build" or action == "index":
     raise SystemExit(0)
@@ -591,6 +767,18 @@ if action == "install":
     if os.environ.get("LMI_FAKE_FAIL_FINAL_INSTALL") == "1":
         print("forced final install failure", file=sys.stderr)
         raise SystemExit(46)
+    if os.environ.get("LMI_FAKE_OPENSSH_VERSION_CHANGE") == "1":
+        db.write_text(
+            db.read_text().replace(
+                openssh_record(), openssh_record(version="9.9_p3-r0")
+            )
+        )
+        package_list.write_text(
+            package_list.read_text().replace(
+                "openssh-server-pam-9.9_p2-r0", "openssh-server-pam-9.9_p3-r0"
+            )
+        )
+    install_sshd_file()
     native_rootfs = work / "chroot_native/home/pmos/rootfs"
     native_rootfs.mkdir(parents=True, exist_ok=True)
     (native_rootfs / "xiaomi-lmi.img").write_bytes(b"combined-image")
@@ -599,7 +787,21 @@ if action == "install":
     (boot / "boot.img").write_bytes(b"android-boot")
     (boot / "vmlinuz").write_bytes(b"kernel")
     (boot / "initramfs").write_bytes(b"initramfs")
-    (boot / "sm8250-xiaomi-lmi.dtb").write_bytes(b"dtb")
+    if os.environ.get("LMI_FAKE_EXPORT_INITRAMFS_EXTRA") == "1":
+        (boot / "initramfs-extra").write_bytes(b"initramfs-extra")
+    if os.environ.get("LMI_FAKE_EXPORT_UNKNOWN_DYNAMIC") == "1":
+        (boot / "initramfs-extra-attacker").write_bytes(b"unknown-dynamic")
+    if os.environ.get("LMI_FAKE_EXPORT_OPTIONAL_REAL") == "1":
+        (boot / "vendor_boot.img").write_bytes(b"vendor-boot")
+    selected_dtb = boot / "dtbs/qcom/kona-v2.1-lmi.dtb"
+    selected_dtb.parent.mkdir(parents=True, exist_ok=True)
+    if os.environ.get("LMI_FAKE_DTB_MISSING") != "1":
+        if os.environ.get("LMI_FAKE_DTB_DANGLING") == "1":
+            selected_dtb.symlink_to((work / "missing-selected-dtb").resolve())
+        elif os.environ.get("LMI_FAKE_DTB_ESCAPE") == "1":
+            selected_dtb.symlink_to(Path("/etc/passwd"))
+        else:
+            selected_dtb.write_bytes(b"dtb")
     (rootfs / "etc/fstab").write_text(
         "UUID=11111111-2222-3333-4444-555555555555 / ext4 defaults 0 0\n"
         "UUID=AAAA-BBBB /boot vfat nodev,nosuid,noexec 0 0\n"
@@ -629,6 +831,7 @@ if action == "chroot":
             "lmi-release-identity",
             "world",
             "sudoers",
+            "sshd_config",
             "lmi-usb0.nmconnection",
             "90-lmi-usb0-takeover.conf",
         ):
@@ -647,25 +850,50 @@ if action == "export":
     export.mkdir(parents=True, exist_ok=True)
     export_targets = {
         "boot.img": rootfs / "boot/boot.img",
+        "vendor_boot.img": rootfs / "boot/vendor_boot.img",
+        "uInitrd": rootfs / "boot/uInitrd",
+        "uImage": rootfs / "boot/uImage",
+        "dtbo.img": rootfs / "boot/dtbo.img",
         "xiaomi-lmi.img": work / "chroot_native/home/pmos/rootfs/xiaomi-lmi.img",
+        "xiaomi-lmi-boot.img": work / "chroot_native/home/pmos/rootfs/xiaomi-lmi-boot.img",
+        "xiaomi-lmi-root.img": work / "chroot_native/home/pmos/rootfs/xiaomi-lmi-root.img",
+        "pmos-xiaomi-lmi.zip": work / "chroot_buildroot_aarch64/var/lib/postmarketos-android-recovery-installer/pmos-xiaomi-lmi.zip",
+        "lk2nd.img": rootfs / "boot/lk2nd.img",
         "vmlinuz": rootfs / "boot/vmlinuz",
         "initramfs": rootfs / "boot/initramfs",
     }
+    if os.environ.get("LMI_FAKE_EXPORT_INITRAMFS_EXTRA") == "1":
+        export_targets["initramfs-extra"] = rootfs / "boot/initramfs-extra"
+    if os.environ.get("LMI_FAKE_EXPORT_UNKNOWN_DYNAMIC") == "1":
+        export_targets["initramfs-extra-attacker"] = (
+            rootfs / "boot/initramfs-extra-attacker"
+        )
     for name, target in export_targets.items():
         (export / name).symlink_to(target.resolve())
-    dtbs = export / "dtbs"
-    dtbs.mkdir()
-    (dtbs / "sm8250-xiaomi-lmi.dtb").symlink_to(
-        (rootfs / "boot/sm8250-xiaomi-lmi.dtb").resolve()
+    Path(os.environ["LMI_FAKE_EXPORT_INVENTORY_LOG"]).write_text(
+        json.dumps(
+            {
+                name: os.readlink(export / name)
+                for name in sorted(export_targets)
+            },
+            sort_keys=True,
+        )
     )
     if os.environ.get("LMI_FAKE_EXPORT_EXTRA") == "1":
         (export / "unexpected.bin").symlink_to((rootfs / "boot/vmlinuz").resolve())
+    if os.environ.get("LMI_FAKE_EXPORT_UNKNOWN_DANGLING") == "1":
+        (export / "unknown-optional.img").symlink_to(
+            (work / "missing-unknown-optional.img").resolve()
+        )
     if os.environ.get("LMI_FAKE_EXPORT_ESCAPE") == "1":
         (export / "boot.img").unlink()
         (export / "boot.img").symlink_to(Path("/etc/passwd"))
     if os.environ.get("LMI_FAKE_EXPORT_DANGLING") == "1":
         (export / "boot.img").unlink()
         (export / "boot.img").symlink_to((work / "missing-boot.img").resolve())
+    if os.environ.get("LMI_FAKE_EXPORT_OPTIONAL_ESCAPE") == "1":
+        (export / "vendor_boot.img").unlink()
+        (export / "vendor_boot.img").symlink_to(Path("/etc/passwd"))
     raise SystemExit(0)
 print("unsupported fake action: " + action, file=sys.stderr)
 raise SystemExit(89)
@@ -690,6 +918,7 @@ raise SystemExit(89)
         result = self._build()
         records = self._records()
         for record in records:
+            self.assertIn("--as-root", record)
             for flag in ("-c", "-w", "-p"):
                 self.assertIn(flag, record)
                 self.assertTrue(Path(record[record.index(flag) + 1]).is_absolute())
@@ -789,20 +1018,77 @@ raise SystemExit(89)
             self.assertTrue(path.is_absolute())
             self.assertTrue(path.exists(), path)
         self.assertTrue(result.dtb_dir.is_dir())
+        fake_export = json.loads(self.export_inventory_log.read_text())
+        self.assertEqual(
+            set(fake_export),
+            {
+                "boot.img",
+                "vendor_boot.img",
+                "uInitrd",
+                "uImage",
+                "dtbo.img",
+                "xiaomi-lmi.img",
+                "xiaomi-lmi-boot.img",
+                "xiaomi-lmi-root.img",
+                "pmos-xiaomi-lmi.zip",
+                "lk2nd.img",
+                "vmlinuz",
+                "initramfs",
+            },
+        )
+        self.assertTrue(all(Path(target).is_absolute() for target in fake_export.values()))
         materialized = (
             result.boot_img,
             result.userdata_img,
             result.vmlinuz,
             result.initramfs,
-            *sorted(result.dtb_dir.iterdir()),
+            *sorted(path for path in result.dtb_dir.rglob("*") if path.is_file()),
         )
         for output in materialized:
             self.assertTrue(output.is_file(), output)
             self.assertFalse(output.is_symlink(), output)
             self.assertEqual(output.stat().st_nlink, 1, output)
+        self.assertEqual(
+            {
+                path.relative_to(result.dtb_dir).as_posix()
+                for path in result.dtb_dir.rglob("*")
+                if path.is_file()
+            },
+            {"qcom/kona-v2.1-lmi.dtb"},
+        )
+        for optional in (
+            "vendor_boot.img",
+            "uInitrd",
+            "uImage",
+            "dtbo.img",
+            "xiaomi-lmi-boot.img",
+            "xiaomi-lmi-root.img",
+            "pmos-xiaomi-lmi.zip",
+            "lk2nd.img",
+        ):
+            self.assertFalse((self.work / "export" / optional).exists())
+            self.assertFalse((self.work / "export" / optional).is_symlink())
         packages = result.packages.read_text().splitlines()
         for required in self.package_lines:
             self.assertIn(required, packages)
+        self.assertIn("openssh-server-pam-9.9_p2-r0", packages)
+        sshd_pam = json.loads(result.sshd_pam.read_text())
+        self.assertEqual(
+            sshd_pam,
+            {
+                "apk_database_checksum": sshd_pam["apk_database_checksum"],
+                "architecture": "aarch64",
+                "package": "openssh-server-pam",
+                "package_id": "openssh-server-pam-9.9_p2-r0",
+                "path": "/usr/sbin/sshd.pam",
+                "schema": "lmi-sshd-pam-attestation/v1",
+                "sha256": sshd_pam["sha256"],
+                "size": 147,
+                "version": "9.9_p2-r0",
+            },
+        )
+        self.assertRegex(sshd_pam["apk_database_checksum"], r"^Q1[A-Za-z0-9+/]+$")
+        self.assertRegex(sshd_pam["sha256"], r"^[0-9a-f]{64}$")
         identity = dict(
             line.split("=", 1) for line in result.identity.read_text().splitlines()
         )
@@ -831,6 +1117,7 @@ raise SystemExit(89)
             f"{name}={version}" for name, version in self.required_versions.items()
         }
         self.assertTrue(pinned_world.issubset(world))
+        self.assertIn("openssh-server-pam=9.9_p2-r0", world)
         self.assertTrue(set(self.required_versions).isdisjoint(world))
         self.assertEqual(
             (self.finalizer_copy / "world").read_bytes(), result.world.read_bytes()
@@ -878,6 +1165,70 @@ raise SystemExit(89)
             ):
                 with self.assertRaisesRegex(GateError, "changed installed package database"):
                     build_candidate(self.ctx)
+        self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+
+    def test_missing_openssh_server_pam_package_is_rejected_before_final_install(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_OPENSSH_MISSING_PACKAGE": "1"}):
+            with self.assertRaisesRegex(
+                GateError, "missing installed package: openssh-server-pam"
+            ):
+                build_candidate(self.ctx)
+        self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+
+    def test_openssh_server_pam_version_cannot_change_during_final_install(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_OPENSSH_VERSION_CHANGE": "1"}):
+            with self.assertRaisesRegex(
+                GateError, "openssh-server-pam version changed during final install"
+            ):
+                build_candidate(self.ctx)
+        self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+
+    def test_conflicting_openssh_server_pam_world_constraint_is_rejected(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_OPENSSH_WORLD_CONFLICT": "1"}):
+            with self.assertRaisesRegex(
+                GateError, "conflicting world constraint for openssh-server-pam"
+            ):
+                build_candidate(self.ctx)
+        self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+
+    def test_sshd_pam_must_be_owned_by_openssh_server_pam(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_OPENSSH_UNOWNED": "1"}):
+            with self.assertRaisesRegex(
+                GateError, "openssh-server-pam does not uniquely own /usr/sbin/sshd.pam"
+            ):
+                build_candidate(self.ctx)
+        self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+
+    def test_sshd_pam_must_be_a_real_aarch64_elf(self):
+        elf_error = "sshd.pam is not a valid little-endian 64-bit AArch64 ELF"
+        for variable, message in (
+            ("LMI_FAKE_OPENSSH_MISSING_FILE", "sshd.pam must be a regular non-symlink"),
+            ("LMI_FAKE_OPENSSH_SYMLINK", "sshd.pam must be a regular non-symlink"),
+            ("LMI_FAKE_OPENSSH_WRONG_ARCH", elf_error),
+            ("LMI_FAKE_OPENSSH_TRUNCATED_ELF", elf_error),
+            ("LMI_FAKE_OPENSSH_BAD_ELF_TYPE", elf_error),
+            ("LMI_FAKE_OPENSSH_BAD_ELF_HEADER_SIZE", elf_error),
+            ("LMI_FAKE_OPENSSH_BAD_PROGRAM_TABLE", elf_error),
+        ):
+            with self.subTest(variable=variable):
+                try:
+                    with mock.patch.dict(os.environ, {variable: "1"}):
+                        with self.assertRaisesRegex(GateError, message):
+                            build_candidate(self.ctx)
+                    self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+                finally:
+                    if self.work.exists():
+                        shutil.rmtree(self.work)
+                    self.log.unlink(missing_ok=True)
+                    self.finalizer_copy = self.root / f"finalize-copy-{variable}"
+                    os.environ["LMI_FAKE_FINALIZER_COPY"] = str(self.finalizer_copy)
+
+    def test_sshd_pam_must_match_its_apk_database_checksum(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_OPENSSH_BAD_DB_CHECKSUM": "1"}):
+            with self.assertRaisesRegex(
+                GateError, "sshd.pam does not match its APK database checksum"
+            ):
+                build_candidate(self.ctx)
         self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
 
     def test_conflicting_replay_world_constraint_is_rejected(self):
@@ -931,11 +1282,59 @@ raise SystemExit(89)
             with self.assertRaisesRegex(GateError, "dangling export target"):
                 build_candidate(self.ctx)
 
-    def test_dirty_source_repository_is_rejected_before_pmbootstrap(self):
+    def test_export_rejects_unknown_dangling_entry(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_EXPORT_UNKNOWN_DANGLING": "1"}):
+            with self.assertRaisesRegex(GateError, "unexpected export inventory"):
+                build_candidate(self.ctx)
+
+    def test_export_rejects_known_optional_target_escape(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_EXPORT_OPTIONAL_ESCAPE": "1"}):
+            with self.assertRaisesRegex(GateError, "export target escapes candidate"):
+                build_candidate(self.ctx)
+
+    def test_export_materializes_known_optional_when_real(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_EXPORT_OPTIONAL_REAL": "1"}):
+            self._build()
+        optional = self.work / "export/vendor_boot.img"
+        self.assertTrue(optional.is_file())
+        self.assertFalse(optional.is_symlink())
+        self.assertEqual(optional.stat().st_nlink, 1)
+        self.assertEqual(optional.read_bytes(), b"vendor-boot")
+
+    def test_export_materializes_exact_initramfs_extra_when_real(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_EXPORT_INITRAMFS_EXTRA": "1"}):
+            self._build()
+        extra = self.work / "export/initramfs-extra"
+        self.assertTrue(extra.is_file())
+        self.assertFalse(extra.is_symlink())
+        self.assertEqual(extra.stat().st_nlink, 1)
+        self.assertEqual(extra.read_bytes(), b"initramfs-extra")
+
+    def test_export_rejects_unknown_dynamic_variant(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_EXPORT_UNKNOWN_DYNAMIC": "1"}):
+            with self.assertRaisesRegex(GateError, "unexpected export inventory"):
+                build_candidate(self.ctx)
+
+    def test_export_rejects_missing_selected_nested_dtb(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_DTB_MISSING": "1"}):
+            with self.assertRaisesRegex(GateError, "selected DTB is missing"):
+                build_candidate(self.ctx)
+
+    def test_export_rejects_dangling_selected_nested_dtb(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_DTB_DANGLING": "1"}):
+            with self.assertRaisesRegex(GateError, "selected DTB must be a real file"):
+                build_candidate(self.ctx)
+
+    def test_export_rejects_escaping_selected_nested_dtb(self):
+        with mock.patch.dict(os.environ, {"LMI_FAKE_DTB_ESCAPE": "1"}):
+            with self.assertRaisesRegex(GateError, "selected DTB must be a real file"):
+                build_candidate(self.ctx)
+
+    def test_dirty_source_worktree_is_not_used_as_a_build_input(self):
         (self.source_repo / "untracked-build-input").write_text("dirty\n")
-        with self.assertRaisesRegex(GateError, "repository is dirty"):
-            build_candidate(self.ctx)
-        self.assertFalse(self.log.exists())
+        self._build()
+        self.assertTrue(self.log.exists())
+        self.assertFalse((self.work / "source/untracked-build-input").exists())
 
     def test_dirty_pmbootstrap_repository_is_rejected_before_version_probe(self):
         (self.fake_repo / "untracked-tool-input").write_text("dirty\n")
@@ -956,9 +1355,50 @@ raise SystemExit(89)
             build_candidate(self.ctx)
         self.assertFalse(self.log.exists())
 
+    def test_staged_pmaports_rejects_assume_unchanged_tracked_bytes(self):
+        config = self.pmaports / "pmaports.cfg"
+        config.write_text(config.read_text() + "# hidden attacker bytes\n")
+        self._git(
+            "update-index", "--assume-unchanged", "pmaports.cfg", cwd=self.pmaports
+        )
+        with self.assertRaisesRegex(GateError, "special index flags"):
+            build_candidate(self.ctx)
+        self.assertFalse(self.log.exists())
+
+    def test_staged_pmaports_rejects_skip_worktree_tracked_bytes(self):
+        self._git("update-index", "--skip-worktree", "pmaports.cfg", cwd=self.pmaports)
+        config = self.pmaports / "pmaports.cfg"
+        config.write_text(config.read_text() + "# hidden attacker bytes\n")
+        with self.assertRaisesRegex(GateError, "special index flags"):
+            build_candidate(self.ctx)
+        self.assertFalse(self.log.exists())
+
+    def test_staged_pmaports_rejects_replacement_tree(self):
+        original = self.pmaports_commit
+        self._git("config", "user.name", "LMI test", cwd=self.pmaports)
+        self._git(
+            "config",
+            "user.email",
+            "lmi-pmaports-test@example.invalid",
+            cwd=self.pmaports,
+        )
+        config = self.pmaports / "pmaports.cfg"
+        attacker = config.read_text() + "# replacement-tree bytes\n"
+        config.write_text(attacker)
+        self._git("add", "pmaports.cfg", cwd=self.pmaports)
+        self._git("commit", "-q", "-m", "replacement tree", cwd=self.pmaports)
+        replacement = self._git("rev-parse", "HEAD", cwd=self.pmaports).strip()
+        self._git("checkout", "-q", "--detach", original, cwd=self.pmaports)
+        config.write_text(attacker)
+        self._git("replace", original, replacement, cwd=self.pmaports)
+
+        with self.assertRaisesRegex(GateError, "replace refs"):
+            build_candidate(self.ctx)
+        self.assertFalse(self.log.exists())
+
     def test_staged_pmaports_head_must_match_manifest_commit(self):
         self._git("commit", "--allow-empty", "-q", "-m", "unexpected head", cwd=self.pmaports)
-        with self.assertRaisesRegex(GateError, "pmaports stage HEAD mismatch"):
+        with self.assertRaisesRegex(GateError, "pmaports base source HEAD mismatch"):
             build_candidate(self.ctx)
         self.assertFalse(self.log.exists())
 
@@ -972,13 +1412,17 @@ raise SystemExit(89)
         self.assertFalse(self.log.exists())
 
     def test_copied_pmaports_is_fully_revalidated_before_pmbootstrap(self):
-        original_copy = build_module._copy_pmaports
+        original_prepare = build_module.prepare_pmaports
 
-        def copy_then_tamper(source: Path, destination: Path) -> None:
-            original_copy(source, destination)
+        def prepare_then_tamper(*args, **kwargs):
+            manifest = original_prepare(*args, **kwargs)
+            destination = Path(kwargs["destination"])
             (destination / "copied-extra").write_text("unlisted after copy\n")
+            return manifest
 
-        with mock.patch.object(build_module, "_copy_pmaports", side_effect=copy_then_tamper):
+        with mock.patch.object(
+            build_module, "prepare_pmaports", side_effect=prepare_then_tamper
+        ):
             with self.assertRaisesRegex(GateError, "pmaports stage inventory mismatch"):
                 build_candidate(self.ctx)
         self.assertFalse(self.log.exists())
@@ -992,24 +1436,87 @@ raise SystemExit(89)
             build_candidate(dataclasses.replace(self.ctx, pmbootstrap=ignored))
         self.assertFalse(self.log.exists())
 
+    def test_source_assume_unchanged_payload_uses_commit_blob(self):
+        relative = Path("files/lmi-p1/sshd_config")
+        payload = self.source_repo / relative
+        committed = subprocess.run(
+            ["git", "-C", str(self.source_repo), "show", f"{self.source_commit}:{relative.as_posix()}"],
+            capture_output=True,
+            check=True,
+        ).stdout
+        payload.write_text("PermitRootLogin yes\nPasswordAuthentication yes\n")
+        self._git(
+            "update-index", "--assume-unchanged", relative.as_posix(), cwd=self.source_repo
+        )
+
+        self._build()
+
+        self.assertEqual((self.finalizer_copy / "sshd_config").read_bytes(), committed)
+        self.assertNotIn(b"PermitRootLogin yes", committed)
+
+    def test_source_repository_rejects_replace_refs(self):
+        original = self.source_commit
+        payload = self.source_repo / "files/lmi-p1/sshd_config"
+        payload.write_text("PermitRootLogin yes\n")
+        self._git("add", "files/lmi-p1/sshd_config", cwd=self.source_repo)
+        self._git("commit", "-q", "-m", "replacement payload", cwd=self.source_repo)
+        replacement = self._git("rev-parse", "HEAD", cwd=self.source_repo).strip()
+        self._git("checkout", "-q", "--detach", original, cwd=self.source_repo)
+        self._git("replace", original, replacement, cwd=self.source_repo)
+
+        with self.assertRaisesRegex(GateError, "replace refs"):
+            build_candidate(self.ctx)
+        self.assertFalse(self.log.exists())
+
     def test_pmbootstrap_runs_only_isolated_clone_with_python_env_sanitized(self):
         injected = {
             "PYTHONPATH": "/tmp/attacker-pythonpath",
             "PYTHONBREAKPOINT": "attacker.breakpoint",
             "PYTHONATTACKVECTOR": "must-not-reach-pmbootstrap",
             "LD_LIBRARY_PATH": "/tmp/attacker-native-library-path",
+            "LD_AUDIT": "/tmp/attacker-audit-library",
+            "BASH_ENV": "/tmp/attacker-bash-env",
+            "ENV": "/tmp/attacker-shell-env",
+            "CDPATH": "/tmp/attacker-cdpath",
+            "SHELLOPTS": "xtrace",
+            "BASHOPTS": "extdebug",
+            "IFS": "attacker-ifs",
+            "BASH_FUNC_attacker%%": "() { /usr/bin/false; }",
+            "PMBOOTSTRAP_CMD": "attacker-pmbootstrap-command",
+            "PMB_ATTACK": "attacker-pmb-control",
+            "APK_CONFIG": "/tmp/attacker-apk-config",
+            "CCACHE_DIR": "/tmp/attacker-ccache",
+            "XDG_CONFIG_HOME": "/tmp/attacker-xdg-config",
+            "PATH": "/tmp/attacker-path",
             "GIT_DIR": "/tmp/attacker-git-dir",
             "GIT_CONFIG_GLOBAL": "/tmp/attacker-global-gitconfig",
             "GIT_OPTIONAL_LOCKS": "0",
+            "GH_TOKEN": "synthetic-gh-secret",
+            "AWS_SECRET_ACCESS_KEY": "synthetic-aws-secret",
+            "SSH_AUTH_SOCK": "/tmp/synthetic-agent.sock",
+            "HTTPS_PROXY": "http://synthetic-proxy.invalid",
+            "SSL_CERT_FILE": "/tmp/synthetic-ca.pem",
+            "HOST_BUILD_SECRET": "synthetic-host-secret",
         }
         with mock.patch.dict(os.environ, injected, clear=False):
             self._build()
         self.assertEqual(
             json.loads(self.pmbootstrap_environment_log.read_text()),
             {
+                "HOME": "/root",
+                "USER": "root",
+                "LOGNAME": "root",
+                "SHELL": "/bin/sh",
+                "LANG": "C.UTF-8",
+                "LC_ALL": "C.UTF-8",
+                "TZ": "UTC",
+                "TMPDIR": "/tmp",
+                "TERM": "dumb",
                 "GIT_CONFIG_NOSYSTEM": "1",
                 "GIT_CONFIG_GLOBAL": os.devnull,
                 "GIT_TERMINAL_PROMPT": "0",
+                "GIT_NO_REPLACE_OBJECTS": "1",
+                "PATH": "/usr/sbin:/usr/bin:/sbin:/bin",
             },
         )
         entrypoint = Path(self.pmbootstrap_entrypoint_log.read_text().strip())
@@ -1051,7 +1558,9 @@ raise SystemExit(89)
             (self.work / "pmbootstrap").resolve(),
         }
         git_calls = [
-            call for call in runner.call_args_list if call.args[0][0] == "git"
+            call
+            for call in runner.call_args_list
+            if Path(call.args[0][0]).name == "git"
         ]
         self.assertTrue(git_calls)
         for call in git_calls:
@@ -1061,7 +1570,29 @@ raise SystemExit(89)
             self.assertEqual(environment["GIT_CONFIG_NOSYSTEM"], "1")
             self.assertEqual(environment["GIT_CONFIG_GLOBAL"], os.devnull)
             self.assertEqual(environment["GIT_TERMINAL_PROMPT"], "0")
+            self.assertEqual(environment["GIT_NO_REPLACE_OBJECTS"], "1")
+            self.assertEqual(environment["PATH"], "/usr/sbin:/usr/bin:/sbin:/bin")
             self.assertNotIn("GIT_OPTIONAL_LOCKS", environment)
+            for key in environment:
+                self.assertFalse(key.upper().startswith("LD_"), key)
+                self.assertFalse(key.upper().startswith("PYTHON"), key)
+                self.assertFalse(
+                    key.upper().startswith(
+                        (
+                            "BASH_FUNC_",
+                            "PMBOOTSTRAP",
+                            "PMB",
+                            "APK_",
+                            "CCACHE",
+                            "XDG_",
+                        )
+                    ),
+                    key,
+                )
+                self.assertNotIn(
+                    key.upper(),
+                    {"BASH_ENV", "ENV", "CDPATH", "SHELLOPTS", "BASHOPTS", "IFS"},
+                )
             configs = [
                 argv[index + 1]
                 for index, value in enumerate(argv[:-1])
