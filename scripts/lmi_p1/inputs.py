@@ -68,7 +68,11 @@ def safe_extract(archive_path: Path, output_dir: Path) -> None:
             destinations: dict[str, Path] = {}
             members_by_name: dict[str, tarfile.TarInfo] = {}
             for member in members:
-                if not (member.isreg() or member.isdir()):
+                is_ordinary_file = member.type in (
+                    tarfile.REGTYPE,
+                    tarfile.AREGTYPE,
+                )
+                if not (is_ordinary_file or member.isdir()):
                     raise GateError(
                         f"non-regular archive member rejected: {member.name!r}"
                     )

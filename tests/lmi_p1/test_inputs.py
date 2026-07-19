@@ -181,6 +181,16 @@ class InputTests(unittest.TestCase):
         with self.assertRaisesRegex(GateError, "non-regular archive member"):
             safe_extract(archive, self.out)
 
+    def test_rejects_contiguous_tar_members(self):
+        archive = self.make_special_tar("contiguous", tarfile.CONTTYPE)
+        with self.assertRaisesRegex(GateError, "non-regular archive member"):
+            safe_extract(archive, self.out)
+
+    def test_rejects_gnu_sparse_tar_members(self):
+        archive = self.make_special_tar("sparse", tarfile.GNUTYPE_SPARSE)
+        with self.assertRaisesRegex(GateError, "non-regular archive member"):
+            safe_extract(archive, self.out)
+
     def test_outer_hash_is_checked_before_extract(self):
         archive = self.make_tar({"SHA256SUMS": b""})
         lock = self.lock_for(archive, sha="0" * 64)
