@@ -13,7 +13,6 @@ from typing import Mapping, Sequence
 
 
 _HASH_BLOCK_SIZE = 1024 * 1024
-_DEVICE_SERIAL = "8336ded7"
 _GITHUB_TOKEN_RE = re.compile(
     r"(?<![A-Za-z0-9_])(?:github_pat_[A-Za-z0-9_]{20,255}|gh[pousr]_[A-Za-z0-9]{20,255})(?![A-Za-z0-9_])"
 )
@@ -46,15 +45,30 @@ def _as_text(value: str | bytes | None) -> str:
     return value
 
 
-def _redact(value: str | bytes | None) -> str:
+def _sensitive_values(values: Sequence[str]) -> tuple[str, ...]:
+    normalized: list[str] = []
+    for value in values:
+        if not isinstance(value, str) or not value:
+            raise GateError("sensitive value must not be empty")
+        normalized.append(value)
+    return tuple(sorted(set(normalized), key=len, reverse=True))
+
+
+def _redact(
+    value: str | bytes | None, sensitive_values: Sequence[str] = ()
+) -> str:
     redacted = _as_text(value)
     redacted = _PRIVATE_KEY_RE.sub("[REDACTED_PRIVATE_KEY]", redacted)
     redacted = _GITHUB_TOKEN_RE.sub("[REDACTED_GITHUB_TOKEN]", redacted)
-    return redacted.replace(_DEVICE_SERIAL, "[REDACTED_DEVICE_SERIAL]")
+    for sensitive in _sensitive_values(sensitive_values):
+        redacted = redacted.replace(sensitive, "[REDACTED_DEVICE_SERIAL]")
+    return redacted
 
 
-def _command_for_error(argv: Sequence[str]) -> str:
-    return _redact(repr(list(argv)))
+def _command_for_error(
+    argv: Sequence[str], sensitive_values: Sequence[str] = ()
+) -> str:
+    return _redact(repr(list(argv)), sensitive_values)
 
 
 def run(
@@ -63,9 +77,11 @@ def run(
     cwd: Path | None = None,
     env: Mapping[str, str] | None = None,
     check: bool = True,
+    sensitive_values: Sequence[str] = (),
 ) -> subprocess.CompletedProcess[str]:
     """Run an argv-only subprocess and convert failures into redacted GateError."""
 
+    sensitive = _sensitive_values(sensitive_values)
     command = list(argv)
     try:
         completed = subprocess.run(
@@ -79,22 +95,23 @@ def run(
         )
     except subprocess.TimeoutExpired as error:
         raise GateError(
-            f"command timed out after {timeout} seconds: {_command_for_error(command)}\n"
-            f"stdout:\n{_redact(error.stdout)}\n"
-            f"stderr:\n{_redact(error.stderr)}"
+            f"command timed out after {timeout} seconds: "
+            f"{_command_for_error(command, sensitive)}\n"
+            f"stdout:\n{_redact(error.stdout, sensitive)}\n"
+            f"stderr:\n{_redact(error.stderr, sensitive)}"
         ) from None
     except OSError as error:
         raise GateError(
-            f"command could not start: {_command_for_error(command)}: "
-            f"{_redact(str(error))}"
+            f"command could not start: {_command_for_error(command, sensitive)}: "
+            f"{_redact(str(error), sensitive)}"
         ) from None
 
     if check and completed.returncode != 0:
         raise GateError(
             f"command failed with exit status {completed.returncode}: "
-            f"{_command_for_error(command)}\n"
-            f"stdout:\n{_redact(completed.stdout)}\n"
-            f"stderr:\n{_redact(completed.stderr)}"
+            f"{_command_for_error(command, sensitive)}\n"
+            f"stdout:\n{_redact(completed.stdout, sensitive)}\n"
+            f"stderr:\n{_redact(completed.stderr, sensitive)}"
         )
     return completed
 

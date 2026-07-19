@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import configparser
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import secrets
 import shutil
@@ -18,13 +19,22 @@ import sys
 import tempfile
 from typing import Mapping, Sequence
 
-from .common import GateError, run, sha256_file
+from .common import GateError, run, sha256_file, write_json
+from .pmaports import (
+    _compare_physical_trees,
+    _reject_replace_refs,
+    _reject_special_index_flags,
+    _secure_checkout,
+    prepare_pmaports,
+)
 
 
 _EXPECTED_PMBOOTSTRAP_VERSION = "3.11.1"
 _EXPECTED_PMBOOTSTRAP_COMMIT = "ce76febabd983db6445fa9a8b75d601970b2f436"
 _EXPECTED_PMAPORTS_COMMIT = "6fb3a1e5eb21c809891645a2ba5ae11fa788e032"
 _COMMAND_TIMEOUT = 4 * 60 * 60
+_GIT = "/usr/bin/git"
+_SYSTEM_PATH = "/usr/sbin:/usr/bin:/sbin:/bin"
 _PACKAGES = (
     "postmarketos-initramfs",
     "linux-xiaomi-lmi",
@@ -73,6 +83,23 @@ _OLD_APKS = (
 _TAG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _UUID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]{0,63}$")
+_EXPECTED_DTB_STEM = "qcom/kona-v2.1-lmi"
+_STANDARD_EXPORT_TARGETS = {
+    "boot.img": ("rootfs", "boot/boot.img"),
+    "vendor_boot.img": ("rootfs", "boot/vendor_boot.img"),
+    "uInitrd": ("rootfs", "boot/uInitrd"),
+    "uImage": ("rootfs", "boot/uImage"),
+    "dtbo.img": ("rootfs", "boot/dtbo.img"),
+    "xiaomi-lmi.img": ("native", "home/pmos/rootfs/xiaomi-lmi.img"),
+    "xiaomi-lmi-boot.img": ("native", "home/pmos/rootfs/xiaomi-lmi-boot.img"),
+    "xiaomi-lmi-root.img": ("native", "home/pmos/rootfs/xiaomi-lmi-root.img"),
+    "pmos-xiaomi-lmi.zip": (
+        "buildroot",
+        "var/lib/postmarketos-android-recovery-installer/pmos-xiaomi-lmi.zip",
+    ),
+    "lk2nd.img": ("rootfs", "boot/lk2nd.img"),
+}
+_REQUIRED_STANDARD_EXPORTS = {"boot.img", "xiaomi-lmi.img"}
 
 
 @dataclass(frozen=True)
@@ -97,8 +124,17 @@ class BuildResult:
     dtb_dir: Path
     packages: Path
     world: Path
+    sshd_pam: Path
     build_log: Path
     identity: Path
+
+
+@dataclass(frozen=True)
+class _ApkPackageRecord:
+    name: str
+    version: str
+    architecture: str | None
+    files: tuple[tuple[str, str | None], ...]
 
 
 def _is_within(path: Path, root: Path) -> bool:
@@ -159,19 +195,26 @@ def _read_json(path: Path, label: str) -> object:
 
 
 def _git_environment() -> dict[str, str]:
-    environment = {
-        key: value
-        for key, value in os.environ.items()
-        if not key.upper().startswith("GIT_")
+    return {
+        "HOME": "/root",
+        "USER": "root",
+        "LOGNAME": "root",
+        "SHELL": "/bin/sh",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "TZ": "UTC",
+        "TMPDIR": "/tmp",
+        "TERM": "dumb",
+        "PATH": _SYSTEM_PATH,
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_TERMINAL_PROMPT": "0",
+        "GIT_NO_REPLACE_OBJECTS": "1",
     }
-    environment.update(
-        {
-            "GIT_CONFIG_NOSYSTEM": "1",
-            "GIT_CONFIG_GLOBAL": os.devnull,
-            "GIT_TERMINAL_PROMPT": "0",
-        }
-    )
-    return environment
+
+
+def _pmbootstrap_environment() -> dict[str, str]:
+    return _git_environment()
 
 
 def _git_repository(repository: Path) -> Path:
@@ -187,7 +230,7 @@ def _git_repository(repository: Path) -> Path:
 def _git_prefix(repository: Path) -> tuple[Path, list[str]]:
     resolved = _git_repository(repository)
     return resolved, [
-        "git",
+        _GIT,
         "-c",
         f"safe.directory={resolved}",
         "-c",
@@ -227,7 +270,9 @@ def _nul_name_status(value: str) -> set[tuple[str, str]]:
     return {(fields[index], fields[index + 1]) for index in range(0, len(fields), 2)}
 
 
-def _validate_staged_pmaports(path: Path) -> None:
+def _validate_staged_pmaports_self(path: Path) -> dict[str, object]:
+    _reject_replace_refs(path, "pmaports stage")
+    _reject_special_index_flags(path, "pmaports stage")
     manifest_path = path / ".lmi-p1-stage.json"
     if manifest_path.is_symlink() or not manifest_path.is_file():
         raise GateError("pmaports stage manifest must be a real file")
@@ -318,6 +363,15 @@ def _validate_staged_pmaports(path: Path) -> None:
     )
     if matches != ["4096"]:
         raise GateError("staged lmi deviceinfo does not pin rootfs sector size 4096")
+    return stage
+
+
+def _validate_staged_pmaports(path: Path, expected: Path) -> None:
+    stage = _validate_staged_pmaports_self(path)
+    expected_stage = _validate_staged_pmaports_self(expected)
+    if stage != expected_stage:
+        raise GateError("pmaports stage manifest does not match reconstructed inputs")
+    _compare_physical_trees(path, expected, "pmaports stage")
 
 
 def _pmaports_channel(path: Path) -> str:
@@ -331,13 +385,6 @@ def _pmaports_channel(path: Path) -> str:
     if re.fullmatch(r"[A-Za-z0-9._-]+", channel) is None:
         raise GateError(f"unsafe pmaports channel: {channel!r}")
     return channel
-
-
-def _copy_pmaports(source: Path, destination: Path) -> None:
-    try:
-        shutil.copytree(source, destination, symlinks=True)
-    except OSError as error:
-        raise GateError(f"could not copy staged pmaports: {error}") from None
 
 
 def _pmbootstrap_entrypoint_blob(repository: Path, entrypoint: Path) -> str:
@@ -552,27 +599,277 @@ def _all_key_hashes(work: Path, rootfs: Path) -> tuple[tuple[str, tuple[tuple[st
     )
 
 
-def _parse_apk_database(path: Path) -> list[str]:
+def _parse_apk_records(path: Path) -> tuple[_ApkPackageRecord, ...]:
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as error:
         raise GateError(f"could not read installed package database: {error}") from None
-    packages: dict[str, str] = {}
+    packages: dict[str, _ApkPackageRecord] = {}
     for block in re.split(r"\n\s*\n", text.strip()):
-        fields: dict[str, str] = {}
+        scalar_fields: dict[str, list[str]] = {"P": [], "V": [], "A": []}
+        files: list[list[str | None]] = []
+        current_directory: PurePosixPath | None = None
+        last_file: int | None = None
         for line in block.splitlines():
-            if len(line) >= 3 and line[1] == ":":
-                fields.setdefault(line[0], line[2:])
-        name = fields.get("P")
-        version = fields.get("V")
-        if name is None or version is None:
-            continue
+            if len(line) >= 2 and line[1] == ":":
+                field = line[0]
+                value = line[2:]
+                if field in scalar_fields:
+                    scalar_fields[field].append(value)
+                elif field == "F":
+                    directory = PurePosixPath(value) if value else PurePosixPath()
+                    if (
+                        directory.is_absolute()
+                        or any(part in {"", ".", ".."} for part in directory.parts)
+                    ):
+                        raise GateError("installed package database contains an unsafe directory")
+                    current_directory = directory
+                    last_file = None
+                elif field == "R":
+                    name = PurePosixPath(value)
+                    if (
+                        current_directory is None
+                        or not value
+                        or name.is_absolute()
+                        or len(name.parts) != 1
+                        or name.name in {"", ".", ".."}
+                    ):
+                        raise GateError("installed package database contains an unsafe file")
+                    files.append(
+                        ["/" + (current_directory / name).as_posix(), None]
+                    )
+                    last_file = len(files) - 1
+                elif field == "Z":
+                    if last_file is None or files[last_file][1] is not None:
+                        raise GateError(
+                            "installed package database contains an orphan or duplicate checksum"
+                        )
+                    files[last_file][1] = value
+        names = scalar_fields["P"]
+        versions = scalar_fields["V"]
+        architectures = scalar_fields["A"]
+        if len(names) != 1 or len(versions) != 1:
+            raise GateError("installed package database contains a malformed package record")
+        name = names[0]
+        version = versions[0]
         if name in packages:
             raise GateError(f"duplicate installed package database entry: {name}")
-        packages[name] = version
+        if len(architectures) > 1:
+            raise GateError(f"duplicate installed package architecture entry: {name}")
+        file_paths = [str(file[0]) for file in files]
+        if len(file_paths) != len(set(file_paths)):
+            raise GateError(f"duplicate installed package file entry: {name}")
+        packages[name] = _ApkPackageRecord(
+            name=name,
+            version=version,
+            architecture=architectures[0] if architectures else None,
+            files=tuple((str(file[0]), file[1]) for file in files),
+        )
     if not packages:
         raise GateError("installed package database contains no package records")
-    return [f"{name}-{packages[name]}" for name in sorted(packages)]
+    return tuple(packages[name] for name in sorted(packages))
+
+
+def _parse_apk_database(path: Path) -> list[str]:
+    return [f"{record.name}-{record.version}" for record in _parse_apk_records(path)]
+
+
+def _sshd_pam_package_record(
+    path: Path,
+) -> tuple[_ApkPackageRecord, str]:
+    records = _parse_apk_records(path)
+    matches = [record for record in records if record.name == "openssh-server-pam"]
+    if len(matches) != 1:
+        raise GateError("missing installed package: openssh-server-pam")
+    package = matches[0]
+    if package.architecture != "aarch64":
+        raise GateError("openssh-server-pam architecture is not exactly aarch64")
+    ownership = [
+        (record.name, checksum)
+        for record in records
+        for file_path, checksum in record.files
+        if file_path == "/usr/sbin/sshd.pam"
+    ]
+    if len(ownership) != 1 or ownership[0][0] != package.name:
+        raise GateError(
+            "openssh-server-pam does not uniquely own /usr/sbin/sshd.pam"
+        )
+    checksum = ownership[0][1]
+    if checksum is None:
+        raise GateError("sshd.pam has no APK database checksum")
+    return package, checksum
+
+
+def _apk_checksum(checksum: str) -> tuple[str, bytes]:
+    algorithms = {
+        "Q1": ("sha1", hashlib.sha1().digest_size),
+        "Q2": ("sha256", hashlib.sha256().digest_size),
+    }
+    prefix = checksum[:2]
+    if prefix not in algorithms or len(checksum) <= 2:
+        raise GateError("sshd.pam has an unsupported APK database checksum")
+    encoded = checksum[2:]
+    encoded += "=" * (-len(encoded) % 4)
+    try:
+        decoded = base64.b64decode(encoded, validate=True)
+    except (ValueError, binascii.Error):
+        raise GateError("sshd.pam has a malformed APK database checksum") from None
+    algorithm, size = algorithms[prefix]
+    if len(decoded) != size:
+        raise GateError("sshd.pam has a malformed APK database checksum")
+    return algorithm, decoded
+
+
+def _stat_identity(value: os.stat_result) -> tuple[int, int, int, int, int, int]:
+    return (
+        value.st_dev,
+        value.st_ino,
+        value.st_mode,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+
+
+def _verify_aarch64_elf(descriptor: int, file_size: int) -> None:
+    message = "sshd.pam is not a valid little-endian 64-bit AArch64 ELF"
+    try:
+        header = os.pread(descriptor, 64, 0)
+    except OSError:
+        raise GateError(message) from None
+    if (
+        len(header) != 64
+        or header[:4] != b"\x7fELF"
+        or header[4] != 2
+        or header[5] != 1
+        or header[6] != 1
+        or int.from_bytes(header[16:18], "little") not in {2, 3}
+        or int.from_bytes(header[18:20], "little") != 183
+        or int.from_bytes(header[20:24], "little") != 1
+        or int.from_bytes(header[52:54], "little") != 64
+        or int.from_bytes(header[54:56], "little") != 56
+    ):
+        raise GateError(message)
+
+    program_offset = int.from_bytes(header[32:40], "little")
+    program_entry_size = int.from_bytes(header[54:56], "little")
+    program_count = int.from_bytes(header[56:58], "little")
+    program_size = program_entry_size * program_count
+    if (
+        program_count == 0
+        or program_offset < 64
+        or program_offset > file_size
+        or program_size > file_size - program_offset
+    ):
+        raise GateError(message)
+    try:
+        program_table = os.pread(descriptor, program_size, program_offset)
+    except OSError:
+        raise GateError(message) from None
+    if len(program_table) != program_size:
+        raise GateError(message)
+
+    load_segment = False
+    executable_load_segment = False
+    for index in range(program_count):
+        start = index * program_entry_size
+        entry = program_table[start : start + program_entry_size]
+        segment_type = int.from_bytes(entry[0:4], "little")
+        flags = int.from_bytes(entry[4:8], "little")
+        offset = int.from_bytes(entry[8:16], "little")
+        virtual_address = int.from_bytes(entry[16:24], "little")
+        file_bytes = int.from_bytes(entry[32:40], "little")
+        memory_bytes = int.from_bytes(entry[40:48], "little")
+        alignment = int.from_bytes(entry[48:56], "little")
+        if (
+            (file_bytes and (offset > file_size or file_bytes > file_size - offset))
+            or (alignment > 1 and alignment & (alignment - 1) != 0)
+        ):
+            raise GateError(message)
+        if segment_type == 1:
+            load_segment = True
+            if (
+                memory_bytes < file_bytes
+                or (
+                    alignment > 1
+                    and offset % alignment != virtual_address % alignment
+                )
+            ):
+                raise GateError(message)
+            if flags & 1:
+                executable_load_segment = True
+    if not load_segment or not executable_load_segment:
+        raise GateError(message)
+
+
+def _verify_sshd_pam(
+    rootfs: Path, installed_db: Path, expected_version: str
+) -> dict[str, object]:
+    package, apk_checksum = _sshd_pam_package_record(installed_db)
+    if package.version != expected_version:
+        raise GateError("openssh-server-pam version changed during final install")
+
+    target = rootfs / "usr/sbin/sshd.pam"
+    for parent in (rootfs / "usr", rootfs / "usr/sbin"):
+        try:
+            parent_mode = parent.lstat().st_mode
+        except OSError:
+            raise GateError("sshd.pam parent path must be a real directory") from None
+        if parent.is_symlink() or not stat.S_ISDIR(parent_mode):
+            raise GateError("sshd.pam parent path must be a real directory")
+    try:
+        before = target.lstat()
+    except OSError:
+        raise GateError("sshd.pam must be a regular non-symlink") from None
+    if target.is_symlink() or not stat.S_ISREG(before.st_mode):
+        raise GateError("sshd.pam must be a regular non-symlink")
+    if before.st_mode & 0o111 == 0:
+        raise GateError("sshd.pam is not executable")
+
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(target, flags)
+    except OSError as error:
+        raise GateError(f"could not securely open sshd.pam: {error}") from None
+    sha1 = hashlib.sha1(usedforsecurity=False)
+    sha256 = hashlib.sha256()
+    try:
+        with os.fdopen(descriptor, "rb") as stream:
+            opened = os.fstat(stream.fileno())
+            if not stat.S_ISREG(opened.st_mode):
+                raise GateError("sshd.pam must be a regular non-symlink")
+            for block in iter(lambda: stream.read(1024 * 1024), b""):
+                sha1.update(block)
+                sha256.update(block)
+            _verify_aarch64_elf(stream.fileno(), opened.st_size)
+    except OSError as error:
+        raise GateError(f"could not read sshd.pam: {error}") from None
+    try:
+        after = target.lstat()
+    except OSError:
+        raise GateError("sshd.pam changed while it was being verified") from None
+    if not (
+        _stat_identity(before)
+        == _stat_identity(opened)
+        == _stat_identity(after)
+    ):
+        raise GateError("sshd.pam changed while it was being verified")
+
+    checksum_algorithm, expected_checksum = _apk_checksum(apk_checksum)
+    actual_checksum = sha1.digest() if checksum_algorithm == "sha1" else sha256.digest()
+    if actual_checksum != expected_checksum:
+        raise GateError("sshd.pam does not match its APK database checksum")
+    return {
+        "schema": "lmi-sshd-pam-attestation/v1",
+        "package": package.name,
+        "version": package.version,
+        "package_id": f"{package.name}-{package.version}",
+        "architecture": package.architecture,
+        "path": "/usr/sbin/sshd.pam",
+        "apk_database_checksum": apk_checksum,
+        "sha256": sha256.hexdigest(),
+        "size": opened.st_size,
+    }
 
 
 def _verify_package_policy(packages: Sequence[str]) -> None:
@@ -639,9 +936,32 @@ def _pin_replay_world(path: Path) -> None:
         raise GateError(f"could not pin apk world: {error}") from None
 
 
-def _read_world(path: Path) -> str:
+def _pin_exact_world_package(path: Path, name: str, version: str) -> None:
     lines = _world_lines(path)
-    for name, version in _REQUIRED_PACKAGE_VERSIONS.items():
+    expected = f"{name}={version}"
+    matches = _world_specs(lines, name)
+    conflicting = [line for line in matches if line not in {name, expected}]
+    if conflicting or len(matches) > 1:
+        raise GateError(f"conflicting world constraint for {name}: {matches!r}")
+    retained = [line for line in lines if line not in matches]
+    retained.append(expected)
+    try:
+        path.write_text("\n".join(sorted(retained)) + "\n", encoding="utf-8")
+    except OSError as error:
+        raise GateError(f"could not pin apk world package: {error}") from None
+
+
+def _read_world(
+    path: Path, extra_versions: Mapping[str, str] | None = None
+) -> str:
+    lines = _world_lines(path)
+    required = dict(_REQUIRED_PACKAGE_VERSIONS)
+    if extra_versions is not None:
+        overlap = set(required) & set(extra_versions)
+        if overlap:
+            raise GateError(f"duplicate required world package: {sorted(overlap)!r}")
+        required.update(extra_versions)
+    for name, version in required.items():
         expected = f"{name}={version}"
         matches = _world_specs(lines, name)
         if matches != [expected]:
@@ -898,7 +1218,41 @@ def _stage_finalizer(
     return destination
 
 
-def _export_link_target(path: Path, candidate: Path) -> Path:
+def _deviceinfo_dtb(path: Path) -> Path:
+    deviceinfo = path / "device/downstream/device-xiaomi-lmi/deviceinfo"
+    try:
+        text = deviceinfo.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        raise GateError(f"could not read staged DTB policy: {error}") from None
+    matches = re.findall(
+        r'^deviceinfo_dtb=["\']?([^"\'\n]+)["\']?$',
+        text,
+        flags=re.MULTILINE,
+    )
+    if matches != [_EXPECTED_DTB_STEM]:
+        raise GateError(
+            "staged lmi deviceinfo does not select the exact nested DTB: "
+            f"{matches!r}"
+        )
+    return Path(*(_EXPECTED_DTB_STEM + ".dtb").split("/"))
+
+
+def _expected_export_target(candidate: Path, scope: str, relative: str) -> Path:
+    roots = {
+        "rootfs": candidate / "work/chroot_rootfs_xiaomi-lmi",
+        "native": candidate / "work/chroot_native",
+        "buildroot": candidate / "work/chroot_buildroot_aarch64",
+    }
+    return (roots[scope] / relative).absolute()
+
+
+def _export_link_target(
+    path: Path,
+    expected_target: Path,
+    candidate: Path,
+    *,
+    required: bool,
+) -> Path | None:
     if not path.is_symlink():
         raise GateError(f"export entry is not an absolute symlink: {path}")
     try:
@@ -907,41 +1261,74 @@ def _export_link_target(path: Path, candidate: Path) -> Path:
         raise GateError(f"could not read export symlink {path}: {error}") from None
     if not raw_target.is_absolute():
         raise GateError(f"export entry is not an absolute symlink: {path}")
+    if not _is_within(raw_target, candidate):
+        raise GateError(f"export target escapes candidate: {path} -> {raw_target}")
+    if not os.path.lexists(raw_target) and required:
+        raise GateError(f"dangling export target: {path}")
+    if raw_target != expected_target:
+        raise GateError(
+            f"export target mismatch: {path.name} -> {raw_target}, "
+            f"expected {expected_target}"
+        )
+    if not os.path.lexists(expected_target):
+        if required:
+            raise GateError(f"dangling export target: {path}")
+        return None
+    if expected_target.is_symlink() or not expected_target.is_file():
+        raise GateError(f"export target is not a real file: {path} -> {expected_target}")
     try:
         target = path.resolve(strict=True)
     except (OSError, RuntimeError):
         raise GateError(f"dangling export target: {path}") from None
     if not _is_within(target, candidate):
         raise GateError(f"export target escapes candidate: {path} -> {target}")
-    if target.is_symlink() or not target.is_file():
+    if target != expected_target or target.is_symlink() or not target.is_file():
         raise GateError(f"export target is not a real file: {path} -> {target}")
     return target
 
 
+def _stage_selected_dtb(export: Path, candidate: Path, relative: Path) -> None:
+    rootfs = (candidate / "work/chroot_rootfs_xiaomi-lmi").absolute()
+    source = (rootfs / "boot/dtbs" / relative).absolute()
+    if not os.path.lexists(source):
+        raise GateError(f"selected DTB is missing: {source}")
+    try:
+        resolved = source.resolve(strict=True)
+    except (OSError, RuntimeError):
+        raise GateError(f"selected DTB must be a real file: {source}") from None
+    if (
+        source.is_symlink()
+        or not source.is_file()
+        or resolved != source
+        or not _is_within(resolved, rootfs)
+    ):
+        raise GateError(f"selected DTB must be a real file: {source}")
+    dtb_root = export / "dtbs"
+    if os.path.lexists(dtb_root):
+        raise GateError("unexpected export inventory: pmbootstrap exported a DTB directory")
+    destination = dtb_root / relative
+    destination.parent.mkdir(parents=True)
+    destination.symlink_to(source)
+
+
 def _validate_export_links(
-    export: Path, candidate: Path
-) -> dict[str, tuple[Path, Path]]:
+    export: Path, candidate: Path, selected_dtb: Path
+) -> tuple[dict[str, tuple[Path, Path]], list[Path]]:
     if export.is_symlink() or not export.is_dir():
         raise GateError(f"export root is not a real directory: {export}")
     entries = {entry.name: entry for entry in export.iterdir()}
     kernels = sorted(name for name in entries if name.startswith("vmlinuz"))
-    initramfs = sorted(
-        name
-        for name in entries
-        if name.startswith("initramfs") and "extra" not in name
-    )
-    if len(kernels) != 1 or len(initramfs) != 1:
+    initramfs_all = sorted(name for name in entries if name.startswith("initramfs"))
+    allowed_initramfs = {"initramfs", "initramfs-extra"}
+    if kernels != ["vmlinuz"] or not (
+        set(initramfs_all) <= allowed_initramfs and "initramfs" in initramfs_all
+    ):
         raise GateError(
-            "unexpected export inventory: expected one kernel and one initramfs, "
-            f"got kernels={kernels!r}, initramfs={initramfs!r}"
+            "unexpected export inventory: expected exact vmlinuz/initramfs names, "
+            f"got kernels={kernels!r}, initramfs={initramfs_all!r}"
         )
-    expected_top = {
-        "boot.img",
-        "xiaomi-lmi.img",
-        kernels[0],
-        initramfs[0],
-        "dtbs",
-    }
+    dynamic = kernels + initramfs_all
+    expected_top = set(_STANDARD_EXPORT_TARGETS) | set(dynamic) | {"dtbs"}
     if set(entries) != expected_top:
         raise GateError(
             "unexpected export inventory: "
@@ -950,27 +1337,54 @@ def _validate_export_links(
     dtb_root = entries["dtbs"]
     if dtb_root.is_symlink() or not dtb_root.is_dir():
         raise GateError("exported DTB inventory is not a real directory")
-    dtb_entries = sorted(dtb_root.iterdir())
-    if not dtb_entries or any(
-        entry.name.startswith(".") or entry.suffix != ".dtb" for entry in dtb_entries
-    ):
+    dtb_link = dtb_root / selected_dtb
+    expected_dtb_directories = {
+        dtb_root.joinpath(*selected_dtb.parts[:index])
+        for index in range(1, len(selected_dtb.parts))
+    }
+    actual_dtb_entries = set(dtb_root.rglob("*"))
+    if actual_dtb_entries != expected_dtb_directories | {dtb_link}:
         raise GateError(
             "unexpected export inventory: invalid DTB entries "
-            f"{[entry.name for entry in dtb_entries]!r}"
+            f"{sorted(str(entry.relative_to(dtb_root)) for entry in actual_dtb_entries)!r}"
         )
 
-    approved = [
-        entries["boot.img"],
-        entries["xiaomi-lmi.img"],
-        entries[kernels[0]],
-        entries[initramfs[0]],
-        *dtb_entries,
-    ]
     result: dict[str, tuple[Path, Path]] = {}
-    for link in approved:
-        relative = link.relative_to(export).as_posix()
-        result[relative] = (link, _export_link_target(link, candidate))
-    return result
+    dangling_optional: list[Path] = []
+    for name, (scope, target_relative) in _STANDARD_EXPORT_TARGETS.items():
+        link = entries[name]
+        target = _export_link_target(
+            link,
+            _expected_export_target(candidate, scope, target_relative),
+            candidate,
+            required=name in _REQUIRED_STANDARD_EXPORTS,
+        )
+        if target is None:
+            dangling_optional.append(link)
+        else:
+            result[name] = (link, target)
+    rootfs_boot = (candidate / "work/chroot_rootfs_xiaomi-lmi/boot").absolute()
+    for name in dynamic:
+        link = entries[name]
+        target = _export_link_target(
+            link,
+            rootfs_boot / name,
+            candidate,
+            required=True,
+        )
+        if target is None:
+            raise GateError(f"required dynamic export is dangling: {link}")
+        result[name] = (link, target)
+    dtb_target = _export_link_target(
+        dtb_link,
+        (candidate / "work/chroot_rootfs_xiaomi-lmi/boot/dtbs" / selected_dtb).absolute(),
+        candidate,
+        required=True,
+    )
+    if dtb_target is None:
+        raise GateError(f"required selected DTB export is dangling: {dtb_link}")
+    result[dtb_link.relative_to(export).as_posix()] = (dtb_link, dtb_target)
+    return result, dangling_optional
 
 
 def _materialize_export_link(link: Path, target: Path) -> None:
@@ -998,8 +1412,18 @@ def _materialize_export_link(link: Path, target: Path) -> None:
             Path(temporary_name).unlink(missing_ok=True)
 
 
-def _materialize_export(export: Path, candidate: Path) -> dict[str, Path]:
-    approved = _validate_export_links(export, candidate)
+def _materialize_export(
+    export: Path, candidate: Path, selected_dtb: Path
+) -> dict[str, Path]:
+    _stage_selected_dtb(export, candidate, selected_dtb)
+    approved, dangling_optional = _validate_export_links(
+        export, candidate, selected_dtb
+    )
+    for link in dangling_optional:
+        try:
+            link.unlink()
+        except OSError as error:
+            raise GateError(f"could not remove dangling optional export {link}: {error}") from None
     for link, target in approved.values():
         _materialize_export_link(link, target)
     result = {relative: link for relative, (link, _target) in approved.items()}
@@ -1029,18 +1453,6 @@ def build_candidate(ctx: BuildContext) -> BuildResult:
     pmbootstrap_source = _real_file(
         Path(ctx.pmbootstrap), "pmbootstrap executable", executable=True
     )
-    _validate_staged_pmaports(source_pmaports)
-
-    head = _git_output(repo, "rev-parse", "--verify", "HEAD").strip()
-    if head != ctx.source_commit:
-        raise GateError(
-            f"repository HEAD mismatch: expected {ctx.source_commit}, got {head}"
-        )
-    repository_status = _git_output(
-        repo, "status", "--porcelain", "--untracked-files=all"
-    ).strip()
-    if repository_status:
-        raise GateError("repository is dirty; commit the exact build inputs first")
 
     work_requested = Path(ctx.work).absolute()
     unresolved_inputs = (source_pmaports, d80, public_key, pmbootstrap_source)
@@ -1053,17 +1465,47 @@ def build_candidate(ctx: BuildContext) -> BuildResult:
     config_dir = candidate / "config"
     pmb_work = candidate / "work"
     isolated_pmaports = candidate / "pmaports"
+    source_checkout = candidate / "source"
     export_dir = candidate / "export"
     config_dir.mkdir()
     pmb_work.mkdir()
     export_dir.mkdir()
-    _copy_pmaports(source_pmaports, isolated_pmaports)
-    _validate_staged_pmaports(isolated_pmaports)
+    _secure_checkout(
+        repo,
+        source_checkout,
+        ctx.source_commit,
+        "source checkout",
+        require_clean_source=False,
+        reject_source_index_flags=False,
+    )
+    pmaports_base = candidate / "pmaports-base"
+    _secure_checkout(
+        source_pmaports,
+        pmaports_base,
+        _EXPECTED_PMAPORTS_COMMIT,
+        "pmaports base",
+        require_clean_source=False,
+        reject_source_index_flags=True,
+    )
+    prepare_pmaports(
+        source=pmaports_base,
+        destination=isolated_pmaports,
+        commit=_EXPECTED_PMAPORTS_COMMIT,
+        overlay=source_checkout / "artifacts/wsl-pmaports",
+        patch=(
+            source_checkout
+            / "patches/postmarketos-initramfs/0001-lmi-handle-4096-sector-loop-partitions.patch"
+        ),
+    )
+    shutil.rmtree(pmaports_base)
+    _validate_staged_pmaports(isolated_pmaports, isolated_pmaports)
+    _validate_staged_pmaports(source_pmaports, isolated_pmaports)
+    selected_dtb = _deviceinfo_dtb(isolated_pmaports)
     pmbootstrap_repository, pmbootstrap = _prepare_pmbootstrap(
         pmbootstrap_source, candidate
     )
 
-    payload = repo / "files/lmi-p1"
+    payload = source_checkout / "files/lmi-p1"
     if payload.is_symlink() or not payload.is_dir():
         raise GateError(f"missing real lmi P1 payload directory: {payload}")
     actual_fingerprint, public_key_text = _public_key_fingerprint(public_key)
@@ -1083,12 +1525,7 @@ def build_candidate(ctx: BuildContext) -> BuildResult:
         f"pmbootstrap={pmbootstrap}",
         f"pmaports={isolated_pmaports}",
     ]
-    pmbootstrap_environment = {
-        key: value
-        for key, value in _git_environment().items()
-        if not key.upper().startswith("PYTHON")
-        and key.upper() not in {"LD_LIBRARY_PATH", "LD_PRELOAD"}
-    }
+    pmbootstrap_environment = _pmbootstrap_environment()
     password = secrets.token_urlsafe(32)
     pmb_started = False
     clean_shutdown = False
@@ -1103,6 +1540,7 @@ def build_candidate(ctx: BuildContext) -> BuildResult:
             "-E",
             "-B",
             str(pmbootstrap),
+            "--as-root",
             "-c",
             str(config_path.absolute()),
             "-w",
@@ -1231,8 +1669,15 @@ def build_candidate(ctx: BuildContext) -> BuildResult:
             raise GateError("replay introduced an APK signing key")
         packages = _parse_apk_database(installed_db)
         _verify_package_policy(packages)
+        sshd_package, _ = _sshd_pam_package_record(installed_db)
         _pin_replay_world(rootfs / "etc/apk/world")
-        _read_world(rootfs / "etc/apk/world")
+        _pin_exact_world_package(
+            rootfs / "etc/apk/world", sshd_package.name, sshd_package.version
+        )
+        _read_world(
+            rootfs / "etc/apk/world",
+            {sshd_package.name: sshd_package.version},
+        )
 
         invoke(
             "install",
@@ -1245,7 +1690,13 @@ def build_candidate(ctx: BuildContext) -> BuildResult:
         )
         packages = _parse_apk_database(installed_db)
         _verify_package_policy(packages)
-        world_text = _read_world(rootfs / "etc/apk/world")
+        sshd_pam_attestation = _verify_sshd_pam(
+            rootfs, installed_db, sshd_package.version
+        )
+        world_text = _read_world(
+            rootfs / "etc/apk/world",
+            {sshd_package.name: sshd_package.version},
+        )
         if _all_key_hashes(pmb_work, rootfs) != keys_before:
             raise GateError("final install changed the pinned APK key inventory")
         boot_uuid, root_uuid = _parse_fstab(rootfs / "etc/fstab")
@@ -1298,7 +1749,7 @@ def build_candidate(ctx: BuildContext) -> BuildResult:
             pmbootstrap_repository, pmbootstrap, expected_pmbootstrap_blob
         )
 
-        materialized = _materialize_export(export_dir, candidate)
+        materialized = _materialize_export(export_dir, candidate, selected_dtb)
         boot_img = materialized["boot.img"].absolute()
         userdata_img = materialized["xiaomi-lmi.img"].absolute()
         kernel_name = next(
@@ -1309,7 +1760,9 @@ def build_candidate(ctx: BuildContext) -> BuildResult:
         initramfs_name = next(
             relative
             for relative in materialized
-            if "/" not in relative and relative.startswith("initramfs")
+            if "/" not in relative
+            and relative.startswith("initramfs")
+            and "extra" not in relative
         )
         vmlinuz = materialized[kernel_name].absolute()
         initramfs = materialized[initramfs_name].absolute()
@@ -1324,17 +1777,20 @@ def build_candidate(ctx: BuildContext) -> BuildResult:
         packages_path.write_text(packages_text, encoding="utf-8")
         world_path = (export_dir / "world").absolute()
         world_path.write_text(world_text, encoding="utf-8")
+        sshd_pam_path = (export_dir / "sshd-pam.json").absolute()
+        write_json(sshd_pam_path, sshd_pam_attestation)
+        sshd_pam_path.chmod(0o644)
         identity_path = (export_dir / "lmi-release-identity").absolute()
         identity_path.write_text(identity_text, encoding="utf-8")
         identity_path.chmod(0o644)
+        materialized_outputs = sorted(
+            set(materialized.values()), key=lambda path: path.relative_to(export_dir).as_posix()
+        )
         for output in (
-            boot_img,
-            userdata_img,
-            vmlinuz,
-            initramfs,
-            *dtbs,
+            *materialized_outputs,
             packages_path,
             world_path,
+            sshd_pam_path,
             identity_path,
         ):
             relative = output.relative_to(export_dir).as_posix()
@@ -1349,6 +1805,7 @@ def build_candidate(ctx: BuildContext) -> BuildResult:
             dtb_dir=dtb_dir,
             packages=packages_path,
             world=world_path,
+            sshd_pam=sshd_pam_path,
             build_log=build_log,
             identity=identity_path,
         )

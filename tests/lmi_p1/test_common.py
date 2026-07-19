@@ -75,7 +75,7 @@ class CommonTests(unittest.TestCase):
                 timeout=1,
             )
 
-    def test_run_redacts_tokens_private_keys_and_device_serial(self):
+    def test_run_redacts_tokens_private_keys_and_runtime_sensitive_values(self):
         classic_token = "ghp_0123456789abcdefghijklmnopqrstuvwxyz"
         fine_grained_token = (
             "github_pat_11ABCDEFGHIJKLMNOP_0123456789abcdefghijklmnopqrstuv"
@@ -85,7 +85,7 @@ class CommonTests(unittest.TestCase):
             "private-key-material\n"
             "-----END OPENSSH PRIVATE KEY-----"
         )
-        serial = "8336ded7"
+        serial = "synthetic-device-serial-for-redaction"
         stdout = f"classic={classic_token}\n{private_key}\nserial={serial}\n"
         stderr = f"fine={fine_grained_token}\nserial={serial}\n"
         code = (
@@ -96,7 +96,11 @@ class CommonTests(unittest.TestCase):
         )
 
         with self.assertRaises(GateError) as raised:
-            run([sys.executable, "-c", code], timeout=5)
+            run(
+                [sys.executable, "-c", code, serial],
+                timeout=5,
+                sensitive_values=(serial,),
+            )
 
         message = str(raised.exception)
         for secret in (
@@ -111,6 +115,40 @@ class CommonTests(unittest.TestCase):
         self.assertIn("[REDACTED_PRIVATE_KEY]", message)
         self.assertIn("[REDACTED_DEVICE_SERIAL]", message)
         self.assertIn("exit status 7", message)
+
+    def test_run_redacts_runtime_sensitive_values_from_timeout(self):
+        secret = "synthetic-timeout-sensitive-value"
+        timeout = subprocess.TimeoutExpired(
+            ["example", secret],
+            3,
+            output=f"stdout {secret}",
+            stderr=f"stderr {secret}",
+        )
+        with mock.patch(
+            "scripts.lmi_p1.common.subprocess.run", side_effect=timeout
+        ), self.assertRaises(GateError) as raised:
+            run(["example", secret], timeout=3, sensitive_values=(secret,))
+
+        message = str(raised.exception)
+        self.assertNotIn(secret, message)
+        self.assertGreaterEqual(message.count("[REDACTED_DEVICE_SERIAL]"), 3)
+
+    def test_run_redacts_runtime_sensitive_values_from_oserror(self):
+        secret = "synthetic-oserror-sensitive-value"
+        with mock.patch(
+            "scripts.lmi_p1.common.subprocess.run",
+            side_effect=OSError(f"cannot execute {secret}"),
+        ), self.assertRaises(GateError) as raised:
+            run(["example", secret], timeout=3, sensitive_values=(secret,))
+
+        self.assertNotIn(secret, str(raised.exception))
+        self.assertIn("[REDACTED_DEVICE_SERIAL]", str(raised.exception))
+
+    def test_run_rejects_empty_runtime_sensitive_value_without_starting_process(self):
+        with mock.patch("scripts.lmi_p1.common.subprocess.run") as subprocess_run:
+            with self.assertRaisesRegex(GateError, "sensitive value must not be empty"):
+                run(["example"], timeout=3, sensitive_values=("",))
+        subprocess_run.assert_not_called()
 
     def test_run_returns_nonzero_process_when_check_is_false(self):
         result = run(

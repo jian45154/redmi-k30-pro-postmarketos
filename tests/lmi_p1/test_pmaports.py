@@ -7,8 +7,10 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 from scripts.lmi_p1.common import GateError
+import scripts.lmi_p1.pmaports as pmaports_module
 from scripts.lmi_p1.pmaports import prepare_pmaports
 
 
@@ -416,6 +418,55 @@ class PmaportsTests(unittest.TestCase):
 
         self.assertEqual(self.worktree_snapshot(self.source), before)
         self.assertFalse(destination.parent.exists())
+
+    def test_source_replace_refs_fail_before_checkout(self):
+        original = self.commit
+        tracked = self.source / "device/downstream/README.md"
+        tracked.write_text("replacement tree\n", encoding="utf-8")
+        self.git(self.source, "add", "device/downstream/README.md")
+        self.git(self.source, "commit", "-q", "-m", "replacement tree")
+        replacement = self.git(self.source, "rev-parse", "HEAD")
+        self.git(self.source, "checkout", "-q", "--detach", original)
+        self.git(self.source, "replace", original, replacement)
+
+        with self.assertRaisesRegex(GateError, "replace refs"):
+            self.prepare()
+        self.assertFalse(self.destination.exists())
+
+    def test_checkout_is_local_no_hardlinks_no_checkout_and_git_is_sanitized(self):
+        with mock.patch.object(
+            pmaports_module, "run", wraps=pmaports_module.run
+        ) as runner:
+            self.prepare()
+
+        git_calls = [
+            call
+            for call in runner.call_args_list
+            if Path(call.args[0][0]).name == "git"
+        ]
+        self.assertTrue(git_calls)
+        clone_calls = [call for call in git_calls if "clone" in call.args[0]]
+        self.assertEqual(len(clone_calls), 1)
+        clone = list(clone_calls[0].args[0])
+        self.assertIn("--local", clone)
+        self.assertIn("--no-hardlinks", clone)
+        self.assertIn("--no-checkout", clone)
+        self.assertNotIn("--shared", clone)
+        for call in git_calls:
+            environment = call.kwargs.get("env")
+            self.assertIsNotNone(environment)
+            self.assertEqual(environment["GIT_NO_REPLACE_OBJECTS"], "1")
+            self.assertEqual(
+                environment["PATH"], "/usr/sbin:/usr/bin:/sbin:/bin"
+            )
+
+    def test_physical_checkout_hashing_streams_regular_files(self):
+        with mock.patch.object(
+            Path,
+            "read_bytes",
+            side_effect=AssertionError("physical checkout must stream regular files"),
+        ):
+            self.prepare()
 
     def test_destination_inside_overlay_fails_before_mutating_overlay(self):
         destination = self.overlay / "generated/stage"
