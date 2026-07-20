@@ -1,0 +1,23 @@
+#!/sbin/openrc-run
+
+description="Bounded xiaomi-lmi Weston display handoff"
+command="/usr/sbin/lmi-display-handoff"
+pidfile="/run/lmi-p2/display.pid"
+output_log="/var/log/lmi-p2-display.log"
+error_log="/var/log/lmi-p2-display.log"
+supervisor="supervise-daemon"
+respawn_delay="2"
+respawn_max="3"
+respawn_period="60"
+retry="TERM/5/KILL/5"
+
+depend() {
+	need seatd
+	use udev
+	after seatd udev-trigger
+}
+
+start_pre() {
+	checkpath --directory --mode 0755 /run/lmi-p2
+	checkpath --file --mode 0640 /var/log/lmi-p2-display.log
+}

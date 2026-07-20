@@ -65,8 +65,8 @@ documented in:
 The `lmi-r6-current-handoff-20260624.md` file is older than the r6/r7 result
 documents; prefer the per-result release records when judging current state.
 
-Static release checks can be run locally with
-`scripts/59_release_static_ci.sh`. A GitHub Actions workflow template is kept at
+Static release checks, including the P1, P2, and P3 host test suites, can be run
+locally with `scripts/59_release_static_ci.sh`. A GitHub Actions workflow template is kept at
 [`docs/release/edge-release-checks.workflow.yml`](docs/release/edge-release-checks.workflow.yml);
 copy it to `.github/workflows/` only with a token that has workflow scope.
 To refresh all local r6 release reports and docs, run
@@ -134,6 +134,9 @@ downstream quick recipe. The staged persistent path is documented in
 - `scripts/` — current WSL/device helper scripts for rebuilding v27/v28,
   checking exported images, collecting hardware evidence, and staging guarded
   mainline/copydown operations; see [`scripts/README.md`](scripts/README.md).
+- `config/lmi-p1/root-boundary/` — deployment guide, exact launcher-only
+  sudoers policy, and offline validator for the sealed P1 root boundary; see
+  [`config/lmi-p1/root-boundary/README.md`](config/lmi-p1/root-boundary/README.md).
 
 ## Current hardware focus
 

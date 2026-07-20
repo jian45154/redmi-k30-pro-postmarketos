@@ -15,7 +15,7 @@ LMI_FLASH_CONFIRM=flash-xiaomi-lmi-rootfs-45bc097634b5-d778d4ea659e scripts/53_s
 - Stage: `rootfs`
 - Target partition: `userdata`
 - Status: `OK`
-- Fastbootd device after write: `8336ded7 fastboot`
+- Fastbootd device after write: `<redacted-device-serial> fastboot`
 - Product after write: `lmi`
 - is-userspace after write: `yes`
 - userdata size reported after write: `0x1AC07FB000`

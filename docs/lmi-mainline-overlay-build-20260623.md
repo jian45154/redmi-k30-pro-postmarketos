@@ -285,7 +285,7 @@ Rootfs sparse image validation:
 Device state check after this build was read-only only:
 
 ```text
-fastboot devices: 8336ded7 fastboot
+fastboot devices: <redacted-device-serial> fastboot
 lsusb: 18d1:d00d Google Inc. Xiaomi Mi/Redmi 2 (fastboot)
 ```
 
@@ -362,7 +362,7 @@ Rootfs sparse image validation:
 Read-only device state check after this build:
 
 ```text
-fastboot devices: 8336ded7 fastboot
+fastboot devices: <redacted-device-serial> fastboot
 lsusb: 18d1:d00d Google Inc. Xiaomi Mi/Redmi 2 (fastboot)
 ```
 

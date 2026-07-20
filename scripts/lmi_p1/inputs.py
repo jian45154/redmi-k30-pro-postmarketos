@@ -1,4 +1,4 @@
-"""Acquire and verify the immutable D80 replay inputs."""
+"""Acquire and verify the P2-recovery inputs."""
 
 from __future__ import annotations
 
@@ -133,7 +133,10 @@ def _load_d80_lock(lock_path: Path) -> dict[str, object]:
         value = json.loads(lock_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
         raise GateError(f"could not read source lock: {error}") from None
-    if not isinstance(value, dict) or value.get("schema") != 1:
+    if not isinstance(value, dict) or (
+        (value.get("schema") != 1 and value.get("schema") != "lmi-source-lock/v2")
+        or isinstance(value.get("schema"), bool)
+    ):
         raise GateError("invalid source lock schema")
     d80 = value.get("d80")
     if not isinstance(d80, dict):

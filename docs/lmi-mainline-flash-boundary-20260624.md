@@ -593,7 +593,7 @@ Output:
 Current read-only state:
 
 ```text
-fastboot devices: 8336ded7 fastboot
+fastboot devices: <redacted-device-serial> fastboot
 adb devices: no device
 product=lmi
 unlocked=yes

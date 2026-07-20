@@ -1,6 +1,7 @@
 import hashlib
 import io
 import json
+import re
 from pathlib import Path
 import stat
 import tarfile
@@ -8,6 +9,7 @@ import tempfile
 import unittest
 
 from scripts.lmi_p1.common import GateError
+import scripts.lmi_p1.build as build_module
 from scripts.lmi_p1.inputs import prepare_inputs, safe_extract
 
 
@@ -310,15 +312,98 @@ class InputTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
+
+        sha1_re = re.compile(r"^[0-9a-f]{40}$")
+        sha256_re = re.compile(r"^[0-9a-f]{64}$")
+        sha512_re = re.compile(r"^[0-9a-f]{128}$")
+        self.assertEqual(len(actual["pmbootstrap"]["entrypoint_sha256"]), 64)
+        self.assertRegex(actual["pmbootstrap"]["entrypoint_sha256"], sha256_re)
+        self.assertEqual(len(actual["pmbootstrap"]["tree"]), 40)
+        self.assertEqual(len(actual["pmaports"]["tree"]), 40)
+        self.assertEqual(len(actual["kernel"]["commit"]), 40)
+        self.assertEqual(len(actual["kernel"]["sha512"]), 128)
+        self.assertEqual(len(actual["pmaports"]["commit"]), 40)
+        self.assertEqual(len(actual["pmbootstrap"]["commit"]), 40)
+        self.assertRegex(actual["pmbootstrap"]["commit"], sha1_re)
+        self.assertRegex(actual["pmaports"]["commit"], sha1_re)
+        self.assertRegex(actual["kernel"]["commit"], sha1_re)
+        self.assertRegex(actual["kernel"]["sha512"], sha512_re)
+        self.assertRegex(actual["offline_cache"]["aggregate_sha256"], sha256_re)
+        self.assertRegex(actual["offline_cache"]["manifest_sha256"], sha256_re)
+        known_good_kernel = actual.pop("known_good_kernel_package")
+        self.assertEqual(
+            known_good_kernel,
+            build_module._EXPECTED_KNOWN_GOOD_KERNEL_PIN,
+        )
+
         expected = {
-            "schema": 1,
+            "schema": "lmi-source-lock/v3",
             "pmbootstrap": {
+                "entrypoint_sha256": "475f14ae696ef66a88f3d48c04fdfe391d0714b044522a2423b6872b99cd03bd",
+                "remote": "https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git",
                 "commit": "ce76febabd983db6445fa9a8b75d601970b2f436",
+                "tree": "6ea77f76fe5914d44ed8c85ae51b81f1081e73b7",
                 "version": "3.11.1",
             },
             "pmaports": {
-                "commit": "6fb3a1e5eb21c809891645a2ba5ae11fa788e032"
+                "remote": "https://gitlab.postmarketos.org/postmarketOS/pmaports.git",
+                "commit": "6fb3a1e5eb21c809891645a2ba5ae11fa788e032",
+                "tree": "749f154b6f154f86133e7c7616074aa9eb876f2e",
             },
+            "offline_cache": {
+                "aggregate_sha256": "261d675016c298c0d924fa856c834e355ac13c7b5f536459e3236ee698351018",
+                "manifest_sha256": "4192aa5636fb6a740dc47fb7370e32547359bc8c3ea1464fb891b347a84b60a3",
+                "schema": "lmi-p1-offline-cache/v2",
+            },
+            "kernel": {
+                "commit": "a5b3099017ae581aae8bf597b2f9c8c765026af1",
+                "package": "linux-xiaomi-lmi",
+                "remote": "https://github.com/LineageOS/android_kernel_xiaomi_sm8250",
+                "sha512": "b9d00e0efcb88d613bd65b1f2cd6b75e2b5f0d79b23def0b9c14eb397265e582a580e93cb365d81e7aa167b027920845ff8db798bbf781bbd9e7845e796bd923",
+                "version": "4.19.325-r8",
+            },
+            "public_credential_policy": {
+                "boot_state": "never_booted",
+                "credential_state": "unprovisioned",
+                "owner_test_artifact": "never-publish",
+                "personalization_required": True,
+                "ssh_ready": False,
+            },
+            "release": {
+                "source_repo": "jian45154/redmi-k30-pro-postmarketos",
+                "public_allowed": True,
+                "visibility": "public",
+            },
+        }
+
+        self.assertEqual(actual, expected)
+
+    def test_production_source_lock_excludes_private_inputs(self):
+        repository = Path(__file__).resolve().parents[2]
+        source_lock = repository / "config/lmi-p1/source-lock.json"
+        source_lock_text = source_lock.read_text(encoding="utf-8")
+        source_lock_json = json.loads(source_lock_text)
+
+        self.assertEqual(source_lock_json["schema"], "lmi-source-lock/v3")
+        self.assertNotIn("artifact_repo", source_lock_json["release"])
+        self.assertNotIn("ssh", source_lock_json)
+        self.assertIn("public_allowed", source_lock_json["release"])
+        self.assertTrue(source_lock_json["release"]["public_allowed"])
+        self.assertNotIn("d80", source_lock_json)
+        self.assertNotRegex(source_lock_text, r"[A-Za-z]:[\\/]+Users[\\/]")
+        self.assertNotIn("SHA256:", source_lock_text)
+        self.assertNotIn("serial_sha256", source_lock_text)
+        self.assertNotIn("d82_evidence_member_sha256", source_lock_text)
+
+    def test_p2_d80_source_lock_is_exact(self):
+        repository = Path(__file__).resolve().parents[2]
+        actual = json.loads(
+            (repository / "config/lmi-p2/d80-source-lock.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        expected = {
+            "schema": "lmi-source-lock/v2",
             "d80": {
                 "url": "https://github.com/jian45154/redmi-k30-pro-postmarketos/releases/download/d80-minimal-gui-osk-20260712/d80-minimal-gui-osk-20260712.tar.gz",
                 "size": 19451357,
@@ -326,40 +411,16 @@ class InputTests(unittest.TestCase):
                 "inner_sha256sums_sha256": "561efa3a0e311e4bb5118f661f897da1c54838e2746f18e94665e711e0f85c33",
                 "required_members": PRODUCTION_REQUIRED_MEMBERS,
             },
-            "ssh": {
-                "public_key_path": "/mnt/c/Users/microstar/.ssh/id_ed25519.pub",
-                "fingerprint": "SHA256:MaX0FIvahR2a2THIjIYYfpbmTGVDk/8fwJ1a+ov3n9o",
-            },
-            "release": {
-                "source_repo": "jian45154/redmi-k30-pro-postmarketos",
-                "artifact_repo": "jian45154/redmi-k30-pro-postmarketos-artifacts",
-                "visibility": "private",
-                "public_allowed": False,
-            },
         }
-
         self.assertEqual(actual, expected)
 
-    def test_userdata_disposition_records_the_exact_authorization_basis(self):
+    def test_private_userdata_disposition_is_not_committed(self):
         repository = Path(__file__).resolve().parents[2]
-        actual = json.loads(
-            (repository / "config/lmi-p1/userdata-disposition.json").read_text(
-                encoding="utf-8"
-            )
-        )
-        self.assertEqual(
-            actual,
-            {
-                "schema": "lmi-userdata-disposition/v1",
-                "product": "lmi",
-                "serial_sha256": "0d71649b94add9a513413c424925341348208dd8a900ed8474c623cd47c2dfeb",
-                "classification": "disposable-pmos-test-data",
-                "prior_d80_userdata_sha256": "c005e29f2f924154152ff58b228d14e6c3a716cfbbbabf9995be198792b40d90",
-                "d82_evidence_member_sha256": "4ac88bcfbfab1b12c9158f1bd2636626b019712ea2d41ade6c856a56c589f2d1",
-                "basis": "D81 deliberately replaced userdata with that D80 postmarketOS image; D82 successfully booted it and bound the same root UUID; the repository is an installation/porting workspace and the user has authorized replacement of this test image.",
-                "warning": "This is not an Android personal-data backup and would be insufficient if the serial hash, prior image identity, or project history differed.",
-            },
-        )
+        public_path = repository / "config/lmi-p1/userdata-disposition.json"
+
+        self.assertFalse(public_path.exists())
+        self.assertIn("/private/", (repository / ".gitignore").read_text())
+
 
 
 if __name__ == "__main__":

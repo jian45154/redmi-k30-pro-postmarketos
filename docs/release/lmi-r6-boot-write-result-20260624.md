@@ -14,7 +14,7 @@ LMI_FLASH_CONFIRM=flash-xiaomi-lmi-boot-45bc097634b5-d778d4ea659e scripts/53_sta
 - Stage: `boot`
 - Target partition: `boot`
 - Status: `OK`
-- Fastbootd device after write: `8336ded7 fastboot`
+- Fastbootd device after write: `<redacted-device-serial> fastboot`
 - Product after write: `lmi`
 - is-userspace after write: `yes`
 - boot partition size after write: `0x8000000`

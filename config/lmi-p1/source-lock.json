@@ -1,35 +1,125 @@
 {
-  "schema": 1,
+  "schema": "lmi-source-lock/v3",
   "pmbootstrap": {
+    "entrypoint_sha256": "475f14ae696ef66a88f3d48c04fdfe391d0714b044522a2423b6872b99cd03bd",
+    "remote": "https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git",
     "commit": "ce76febabd983db6445fa9a8b75d601970b2f436",
+    "tree": "6ea77f76fe5914d44ed8c85ae51b81f1081e73b7",
     "version": "3.11.1"
   },
   "pmaports": {
-    "commit": "6fb3a1e5eb21c809891645a2ba5ae11fa788e032"
+    "remote": "https://gitlab.postmarketos.org/postmarketOS/pmaports.git",
+    "commit": "6fb3a1e5eb21c809891645a2ba5ae11fa788e032",
+    "tree": "749f154b6f154f86133e7c7616074aa9eb876f2e"
   },
-  "d80": {
-    "url": "https://github.com/jian45154/redmi-k30-pro-postmarketos/releases/download/d80-minimal-gui-osk-20260712/d80-minimal-gui-osk-20260712.tar.gz",
-    "size": 19451357,
-    "sha256": "f380eb275ef4ba8854dd3bc389f7113a701a29ab3fd302684b729e6ad64286ca",
-    "inner_sha256sums_sha256": "561efa3a0e311e4bb5118f661f897da1c54838e2746f18e94665e711e0f85c33",
-    "required_members": {
-      "device-xiaomi-lmi-1-r139.apk": "ac00f22751607ae736cc26fbe72c1ede9c7d4d26f3af887ab0af800d5d9a3934",
-      "linux-xiaomi-lmi-4.19.325-r9.apk": "678a94cb0d309c69e56e697533ad7f6fe9e9cbfc7dea5a5109ca55b36ee72f50",
-      "weston-14.0.2-r10.apk": "d62a5b63fb1d4a35cec06dedf62c86d7da67b4d796ea7c973ea92035622bf2e7",
-      "weston-backend-drm-14.0.2-r10.apk": "53e95028082b3ddecb5460aa100557971b368451f1f51f0b92b9484a6b76bc1b",
-      "weston-clients-14.0.2-r10.apk": "1301346e110d7363a5fbe611f3ee282a3074ec2c52d884485ca961bb63835476",
-      "weston-shell-desktop-14.0.2-r10.apk": "b7bd061487f7ede3ebd102a3552d5596c87091146cf1d60a1a93c6ada847083e",
-      "weston-terminal-14.0.2-r10.apk": "868eadb0171214945a34cec73da00a6b78d4a4e3e115611545f56bdb25a3d877"
-    }
+  "offline_cache": {
+    "aggregate_sha256": "261d675016c298c0d924fa856c834e355ac13c7b5f536459e3236ee698351018",
+    "manifest_sha256": "4192aa5636fb6a740dc47fb7370e32547359bc8c3ea1464fb891b347a84b60a3",
+    "schema": "lmi-p1-offline-cache/v2"
   },
-  "ssh": {
-    "public_key_path": "/mnt/c/Users/microstar/.ssh/id_ed25519.pub",
-    "fingerprint": "SHA256:MaX0FIvahR2a2THIjIYYfpbmTGVDk/8fwJ1a+ov3n9o"
+  "kernel": {
+    "commit": "a5b3099017ae581aae8bf597b2f9c8c765026af1",
+    "package": "linux-xiaomi-lmi",
+    "remote": "https://github.com/LineageOS/android_kernel_xiaomi_sm8250",
+    "sha512": "b9d00e0efcb88d613bd65b1f2cd6b75e2b5f0d79b23def0b9c14eb397265e582a580e93cb365d81e7aa167b027920845ff8db798bbf781bbd9e7845e796bd923",
+    "version": "4.19.325-r8"
+  },
+  "known_good_kernel_package": {
+    "apk_tools": {
+      "sha256": "a6542dc1fdb6214be1ef462668241bfe91f301e9249c99c0c6c327269d5e5ce4",
+      "version": "3.0.6-r0"
+    },
+    "artifact": {
+      "format": "apk-v3",
+      "path": "artifacts/lmi-p1/known-good-kernel/linux-xiaomi-lmi-4.19.325-r8-p1-known-good.apk",
+      "sha256": "01b199611407c100c621599bd3060084c19e1fd90f8e9df64cc10966f6949eb0",
+      "size": 17418891,
+      "world_checksum": "Q17Cf8DcVUIUw2n/xDNf7Pr9WKqpU="
+    },
+    "historical_installed_db_sha256": "0cb29b13383b606e443ff803a3b5ceb55a8ce266951ff0b1ccd1600ecfc595c5",
+    "identity": {
+      "architecture": "aarch64",
+      "description": "P1 reconstructed known-good v46 kernel; not the upstream r8 binary",
+      "name": "linux-xiaomi-lmi",
+      "origin": "linux-xiaomi-lmi-p1-known-good",
+      "version": "4.19.325-r8"
+    },
+    "payload": {
+      "boot/dtbs/qcom/kona-v2.1-lmi.dtb": {
+        "historical_q1": "Q19O3+WS3OUPq8gHC5WtdsTruzGFU=",
+        "mode": "0644",
+        "sha256": "aee89cc172734de955a11ec335b16d3a1b5da51667083b919271c2b6902d57a6"
+      },
+      "boot/dtbs/qcom/kona-v2.1.dtb": {
+        "historical_q1": "Q16bz92+wp31OHZsQ+W9A23MuaTBE=",
+        "mode": "0644",
+        "sha256": "0ba04a2de0fe16688f19a42c88380b55684766a7ba404f782a51a2089a9c1de9"
+      },
+      "boot/dtbs/qcom/kona-v2.dtb": {
+        "historical_q1": "Q1s/8EKbW0JdVcqbDlcvIF+2AIU/4=",
+        "mode": "0644",
+        "sha256": "f2fc300b0f34728b44e8faf0d35c08eaaced1feff1751a1761c2af64a655ccb3"
+      },
+      "boot/dtbs/qcom/kona.dtb": {
+        "historical_q1": "Q1SYl9MN1glz+DnlMhT5nlWaStDrM=",
+        "mode": "0644",
+        "sha256": "6308344e8922c615dadcc638002d90e0623729f077f199d99f0a0b881c918c7a"
+      },
+      "boot/dtbs/qcom/lmi-sm8250-overlay.dtbo": {
+        "historical_q1": "Q1E1/Yc9/BLSOaQHO8yL3QQBAEX5s=",
+        "mode": "0644",
+        "sha256": "c432876c7f32b3daa8c4158135bc711548d1279744bafcb633f09a771dec96d2"
+      },
+      "boot/vmlinuz": {
+        "historical_q1": "Q1MXqTOyS9LVwxr/gPYkPfCoE9eqo=",
+        "mode": "0644",
+        "sha256": "38c38390ca9a474b4d29d24fb25ad9139bb58e2ad9cd88b5b601abad2f8c2d5e"
+      },
+      "usr/share/kernel/xiaomi-lmi/kernel.release": {
+        "historical_q1": "Q1QUCgtJmw5tqsyQOGAFhlkwz7y1k=",
+        "mode": "0755",
+        "sha256": "57e559636bd29f68002ebf08a425e10ffdbe8b6ce9c2d19d0d2230635b1ba691"
+      }
+    },
+    "pmbootstrap_status_index": {
+      "install_trust": false,
+      "path": "artifacts/lmi-p1/known-good-kernel/pmbootstrap-status-APKINDEX.tar.gz",
+      "sha256": "62578fea929f40c9b8ee8a66d96eefb2daaf6b77fb86be52a240d2979d76fe3b",
+      "size": 332
+    },
+    "schema": "lmi-p1-known-good-kernel-package/v2",
+    "selection": {
+      "sealed_build": "signed-apkv3-direct-path",
+      "unsealed_build": "normal-source-build"
+    },
+    "signer_public_key": {
+      "path": "artifacts/lmi-p1/known-good-kernel/lmi-p1-known-good-kernel.rsa.pub",
+      "sha256": "c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79e936736",
+      "size": 800
+    },
+    "source_apk": {
+      "acquisition_provenance": "unavailable",
+      "format": "apk-v2",
+      "sha256": "67cbc5a543b425d3602ffa33b722fbf0379dcdbf184c5996c960576f16c91610",
+      "signature_verification": {
+        "apk_tools_sha256": "a6542dc1fdb6214be1ef462668241bfe91f301e9249c99c0c6c327269d5e5ce4",
+        "result": "untrusted-signature",
+        "signer_provenance": "unavailable"
+      },
+      "size": 17418119
+    },
+    "source_date_epoch": 1782292186
+  },
+  "public_credential_policy": {
+    "boot_state": "never_booted",
+    "credential_state": "unprovisioned",
+    "owner_test_artifact": "never-publish",
+    "personalization_required": true,
+    "ssh_ready": false
   },
   "release": {
     "source_repo": "jian45154/redmi-k30-pro-postmarketos",
-    "artifact_repo": "jian45154/redmi-k30-pro-postmarketos-artifacts",
-    "visibility": "private",
-    "public_allowed": false
+    "public_allowed": true,
+    "visibility": "public"
   }
 }
