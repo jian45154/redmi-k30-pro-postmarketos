@@ -12,6 +12,15 @@ uses the downstream LineageOS 4.19 vendor kernel with **Clang/LLVM** under
   recorded through `M-r7`; host-side builds and guarded writes work, but no
   observable initramfs/USB milestone is proven.
 
+## Installer release
+
+The single user guide for the experimental CLI release is
+[`docs/lmi-cli-installer.md`](docs/lmi-cli-installer.md). Version
+`v0.1.0-alpha.1` is a source-only pre-release: it contains no boot/rootfs image
+or profile and is not a ready-to-flash package. This version is strictly
+verification-only: `install` is always a no-device dry-run, and the CLI exposes
+no command that changes device state.
+
 ## Status
 
 - ✅ **Kernel + DTBs + full image build** (Clang/LLVM, pmbootstrap).
