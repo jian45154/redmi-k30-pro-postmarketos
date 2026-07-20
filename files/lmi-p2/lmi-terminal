@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+
+[ "$#" -eq 0 ] || exit 64
+exec /usr/bin/weston-terminal \
+	--shell=/usr/libexec/lmi-p2/lmi-terminal-bridge

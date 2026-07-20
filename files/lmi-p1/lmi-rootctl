@@ -4,7 +4,7 @@ set -eu
 usage() {
 	printf '%s\n' \
 		'Usage:' \
-		'  lmi-rootctl reboot' \
+		'  lmi-rootctl reboot --confirm reboot-lmi-p1' \
 		'  lmi-rootctl reboot-bootloader --confirm reboot-bootloader-lmi-p1' \
 		'  lmi-rootctl service sshd status' \
 		'  lmi-rootctl service sshd restart --confirm restart-sshd-lmi-p1' >&2
@@ -42,7 +42,9 @@ log_action() {
 
 case "$1" in
 	reboot)
-		[ "$#" -eq 1 ] || usage
+		[ "$#" -eq 3 ] &&
+			[ "$2" = --confirm ] &&
+			[ "$3" = reboot-lmi-p1 ] || usage
 		log_action before reboot nonreturning
 		exec /sbin/reboot
 		;;

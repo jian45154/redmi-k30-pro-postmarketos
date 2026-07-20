@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 from pathlib import Path
+import re
 import shutil
 import stat
+from typing import Callable
 
 from .common import GateError, run, sha256_file, write_json
 
@@ -22,7 +25,7 @@ _PATCHED_FILES = (
 )
 
 
-def _git_environment() -> dict[str, str]:
+def _git_environment(*, allow_file_protocol: bool = False) -> dict[str, str]:
     return {
         "HOME": "/root",
         "USER": "root",
@@ -38,6 +41,8 @@ def _git_environment() -> dict[str, str]:
         "GIT_CONFIG_GLOBAL": os.devnull,
         "GIT_TERMINAL_PROMPT": "0",
         "GIT_NO_REPLACE_OBJECTS": "1",
+        "GIT_NO_LAZY_FETCH": "1",
+        "GIT_ALLOW_PROTOCOL": "file" if allow_file_protocol else "",
     }
 
 
@@ -56,6 +61,14 @@ def _git_prefix(repository: Path) -> tuple[Path, list[str]]:
         "core.hooksPath=/dev/null",
         "-c",
         "core.fsmonitor=false",
+        "-c",
+        "protocol.allow=never",
+        "-c",
+        "core.attributesFile=/dev/null",
+        "-c",
+        "core.excludesFile=/dev/null",
+        "-c",
+        "diff.external=/usr/bin/false",
     ]
 
 
@@ -109,6 +122,41 @@ def _require_sha1_repository(repository: Path, label: str) -> None:
         raise GateError(f"{label} Git object format must be sha1, got {object_format!r}")
 
 
+def _reject_promisor_and_alternates(repository: Path, label: str) -> None:
+    git_directory = repository / ".git"
+    if git_directory.is_symlink() or not git_directory.is_dir():
+        raise GateError(f"{label} must use a real in-tree .git directory")
+    for relative in ("objects/info/alternates", "objects/info/http-alternates"):
+        alternate = git_directory / relative
+        if os.path.lexists(alternate):
+            raise GateError(f"{label} uses object alternates")
+    configured = _git_output(
+        repository,
+        "config",
+        "--local",
+        "--no-includes",
+        "--null",
+        "--get-regexp",
+        r"^(extensions\.partialclone|remote\..*\.(promisor|partialclonefilter))$",
+        check=False,
+    )
+    if configured:
+        raise GateError(f"{label} is a partial clone or promisor repository")
+
+
+def _require_local_object_closure(repository: Path, commit: str, label: str) -> None:
+    try:
+        _git_output(
+            repository,
+            "rev-list",
+            "--objects",
+            "--missing=error",
+            commit,
+        )
+    except GateError:
+        raise GateError(f"{label} does not contain every pinned object locally") from None
+
+
 def _safe_git_path(relative: str, label: str) -> None:
     if (
         not relative
@@ -120,10 +168,16 @@ def _safe_git_path(relative: str, label: str) -> None:
 
 
 def _git_tree(repository: Path, commit: str, label: str) -> dict[str, tuple[str, str]]:
-    records = _nul_records(
+    return _git_tree_from_output(
         _git_output(repository, "ls-tree", "-r", "--full-tree", "-z", commit),
-        f"{label} tree inventory",
+        label,
     )
+
+
+def _git_tree_from_output(value: str, label: str) -> dict[str, tuple[str, str]]:
+    """Parse one filter-independent ``ls-tree -z`` inventory."""
+
+    records = _nul_records(value, f"{label} tree inventory")
     result: dict[str, tuple[str, str]] = {}
     for record in records:
         try:
@@ -136,13 +190,35 @@ def _git_tree(repository: Path, commit: str, label: str) -> dict[str, tuple[str,
             raise GateError(
                 f"{label} tree contains an unsupported entry: {relative} {mode} {kind}"
             )
-        if object_id == "0" * 40 or len(object_id) != 40:
+        if re.fullmatch(r"[0-9a-f]{40}", object_id) is None or object_id == "0" * 40:
             raise GateError(f"{label} tree contains an invalid object ID")
         if relative in result:
             raise GateError(f"{label} tree contains a duplicate path: {relative}")
         result[relative] = (mode, object_id)
     if not result:
         raise GateError(f"{label} pinned tree is empty")
+    return result
+
+
+def _git_index_from_output(value: str, label: str) -> dict[str, tuple[str, str]]:
+    """Parse an exact stage-0 ``ls-files --stage -z`` inventory."""
+
+    result: dict[str, tuple[str, str]] = {}
+    for record in _nul_records(value, f"{label} index inventory"):
+        try:
+            header, relative = record.split("\t", 1)
+            mode, object_id, stage = header.split(" ")
+        except ValueError:
+            raise GateError(f"{label} index inventory is malformed") from None
+        _safe_git_path(relative, label)
+        if (
+            stage != "0"
+            or mode not in {"100644", "100755", "120000"}
+            or re.fullmatch(r"[0-9a-f]{40}", object_id) is None
+            or relative in result
+        ):
+            raise GateError(f"{label} index inventory is unsafe")
+        result[relative] = (mode, object_id)
     return result
 
 
@@ -162,11 +238,14 @@ def _blob_ids(payload: bytes) -> tuple[str, str]:
     ).hexdigest()
 
 
-def _stat_identity(value: os.stat_result) -> tuple[int, int, int, int, int, int]:
+def _stat_identity(value: os.stat_result) -> tuple[int, ...]:
     return (
         value.st_dev,
         value.st_ino,
         value.st_mode,
+        value.st_uid,
+        value.st_gid,
+        value.st_nlink,
         value.st_size,
         value.st_mtime_ns,
         value.st_ctime_ns,
@@ -178,8 +257,10 @@ def _stream_blob_ids(path: Path, initial: os.stat_result, label: str) -> tuple[s
     sha1.update(b"blob " + str(initial.st_size).encode("ascii") + b"\0")
     sha256 = hashlib.sha256()
     total = 0
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
     try:
-        with path.open("rb") as stream:
+        descriptor = os.open(path, flags)
+        with os.fdopen(descriptor, "rb") as stream:
             opened = os.fstat(stream.fileno())
             if _stat_identity(opened) != _stat_identity(initial):
                 raise GateError(f"{label} changed before hashing")
@@ -207,20 +288,66 @@ def _stream_blob_ids(path: Path, initial: os.stat_result, label: str) -> tuple[s
     return sha1.hexdigest(), sha256.hexdigest()
 
 
+def _physical_xattrs(path: Path) -> list[str]:
+    try:
+        return list(os.listxattr(path, follow_symlinks=False))
+    except (AttributeError, NotImplementedError):
+        raise GateError("physical-tree xattr inspection is unavailable") from None
+    except OSError as error:
+        raise GateError(
+            f"cannot inspect physical-tree xattrs: errno {error.errno or 'unknown'}"
+        ) from None
+
+
+def _check_physical_metadata(
+    path: Path,
+    metadata: os.stat_result,
+    label: str,
+    *,
+    expected_uid: int,
+    expected_gid: int,
+    symlink: bool = False,
+) -> None:
+    if metadata.st_uid != expected_uid or metadata.st_gid != expected_gid:
+        raise GateError(f"{label} contains foreign-owned metadata")
+    if not stat.S_ISDIR(metadata.st_mode) and metadata.st_nlink != 1:
+        raise GateError(f"{label} contains a hardlinked non-directory")
+    if _physical_xattrs(path):
+        raise GateError(f"{label} contains xattrs")
+
+
 def _physical_tree(
     root: Path, label: str
 ) -> tuple[dict[str, tuple[str, str, str]], set[str]]:
-    if root.is_symlink() or not root.is_dir():
+    try:
+        root_metadata = root.lstat()
+    except OSError as error:
+        raise GateError(f"cannot inspect {label}: errno {error.errno or 'unknown'}") from None
+    if stat.S_ISLNK(root_metadata.st_mode) or not stat.S_ISDIR(root_metadata.st_mode):
         raise GateError(f"{label} must be a real directory")
+    expected_uid = root_metadata.st_uid
+    expected_gid = root_metadata.st_gid
+    _check_physical_metadata(
+        root,
+        root_metadata,
+        label,
+        expected_uid=expected_uid,
+        expected_gid=expected_gid,
+    )
+    if stat.S_IMODE(root_metadata.st_mode) not in {0o700, 0o750, 0o755}:
+        raise GateError(f"{label} has unsafe physical directory mode")
     files: dict[str, tuple[str, str, str]] = {}
     directories: set[str] = set()
     pending = [root]
     while pending:
         directory = pending.pop()
         try:
+            directory_before = directory.lstat()
             entries = sorted(os.scandir(directory), key=lambda entry: entry.name)
         except OSError as error:
-            raise GateError(f"cannot inspect {label}: {error}") from None
+            raise GateError(
+                f"cannot inspect {label}: errno {error.errno or 'unknown'}"
+            ) from None
         for entry in entries:
             path = Path(entry.path)
             relative = path.relative_to(root).as_posix()
@@ -233,16 +360,63 @@ def _physical_tree(
                 initial = path.lstat()
                 mode = initial.st_mode
                 if stat.S_ISDIR(mode):
+                    _check_physical_metadata(
+                        path,
+                        initial,
+                        label,
+                        expected_uid=expected_uid,
+                        expected_gid=expected_gid,
+                    )
+                    permission = stat.S_IMODE(mode)
+                    if permission not in {0o700, 0o750, 0o755}:
+                        raise GateError(
+                            f"{label} has unsafe physical directory mode: "
+                            f"{relative} {permission:#06o}"
+                        )
                     directories.add(relative)
                     pending.append(path)
                     continue
                 if stat.S_ISLNK(mode):
-                    payload = os.readlink(path).encode(
+                    _check_physical_metadata(
+                        path,
+                        initial,
+                        label,
+                        expected_uid=expected_uid,
+                        expected_gid=expected_gid,
+                        symlink=True,
+                    )
+                    first_target = os.readlink(path)
+                    second_target = os.readlink(path)
+                    final = path.lstat()
+                    if (
+                        first_target != second_target
+                        or _stat_identity(initial) != _stat_identity(final)
+                    ):
+                        raise GateError(f"{label} symlink changed while hashing")
+                    payload = first_target.encode(
                         "utf-8", errors="surrogateescape"
                     )
                     git_mode = "120000"
                 elif stat.S_ISREG(mode):
-                    git_mode = "100755" if mode & 0o111 else "100644"
+                    _check_physical_metadata(
+                        path,
+                        initial,
+                        label,
+                        expected_uid=expected_uid,
+                        expected_gid=expected_gid,
+                    )
+                    git_mode = "100755" if mode & stat.S_IXUSR else "100644"
+                    permission = stat.S_IMODE(mode)
+                    allowed_permissions = (
+                        {0o700, 0o750, 0o755}
+                        if git_mode == "100755"
+                        else {0o600, 0o640, 0o644}
+                    )
+                    if permission not in allowed_permissions:
+                        raise GateError(
+                            f"{label} has unsafe physical mode: "
+                            f"{relative} {permission:#06o}"
+                        )
                     object_id, digest = _stream_blob_ids(
                         path, initial, f"{label} entry {relative}"
                     )
@@ -252,8 +426,233 @@ def _physical_tree(
                 raise GateError(f"cannot inspect {label} entry {relative}: {error}") from None
             if stat.S_ISLNK(mode):
                 object_id, digest = _blob_ids(payload)
+                permission = stat.S_IMODE(mode)
             files[relative] = (git_mode, object_id, digest)
+        try:
+            directory_after = directory.lstat()
+        except OSError as error:
+            raise GateError(
+                f"cannot re-inspect {label}: errno {error.errno or 'unknown'}"
+            ) from None
+        if _stat_identity(directory_before) != _stat_identity(directory_after):
+            raise GateError(f"{label} directory changed while enumerating")
     return files, directories
+
+
+def _duplicate_stage_key(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise GateError("pmaports stage manifest contains a duplicate key")
+        result[key] = value
+    return result
+
+
+def _read_stage_manifest(path: Path) -> dict[str, object]:
+    manifest_path = path / ".lmi-p1-stage.json"
+    try:
+        before = manifest_path.lstat()
+    except OSError as error:
+        raise GateError(
+            f"pmaports stage manifest is unavailable: errno {error.errno or 'unknown'}"
+        ) from None
+    if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+        raise GateError("pmaports stage manifest must be a real file with one link")
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(manifest_path, flags)
+        with os.fdopen(descriptor, "rb") as stream:
+            opened = os.fstat(stream.fileno())
+            payload = stream.read(16 * 1024 * 1024 + 1)
+            finished = os.fstat(stream.fileno())
+        after = manifest_path.lstat()
+    except OSError as error:
+        raise GateError(
+            f"could not read pmaports stage manifest: errno {error.errno or 'unknown'}"
+        ) from None
+    if len(payload) > 16 * 1024 * 1024:
+        raise GateError("pmaports stage manifest exceeds its size limit")
+    if not (
+        _stat_identity(before)
+        == _stat_identity(opened)
+        == _stat_identity(finished)
+        == _stat_identity(after)
+    ):
+        raise GateError("pmaports stage manifest changed while reading")
+    try:
+        value = json.loads(
+            payload.decode("utf-8", errors="strict"),
+            object_pairs_hook=_duplicate_stage_key,
+        )
+    except GateError:
+        raise
+    except (UnicodeError, json.JSONDecodeError):
+        raise GateError("pmaports stage manifest is not valid UTF-8 JSON") from None
+    if not isinstance(value, dict):
+        raise GateError("pmaports stage manifest must be a JSON object")
+    canonical = (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    if payload != canonical:
+        raise GateError("pmaports stage manifest bytes are not canonical")
+    return value
+
+
+def _read_physical_payload(
+    path: Path,
+    expected_digest: str,
+    maximum: int,
+    label: str,
+) -> bytes:
+    try:
+        before = path.lstat()
+    except OSError as error:
+        raise GateError(f"cannot inspect {label}: errno {error.errno or 'unknown'}") from None
+    if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+        raise GateError(f"{label} is not one real file")
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+        with os.fdopen(descriptor, "rb") as stream:
+            opened = os.fstat(stream.fileno())
+            payload = stream.read(maximum + 1)
+            finished = os.fstat(stream.fileno())
+        after = path.lstat()
+    except OSError as error:
+        raise GateError(f"cannot read {label}: errno {error.errno or 'unknown'}") from None
+    if len(payload) > maximum:
+        raise GateError(f"{label} exceeds its size limit")
+    if not (
+        _stat_identity(before)
+        == _stat_identity(opened)
+        == _stat_identity(finished)
+        == _stat_identity(after)
+    ):
+        raise GateError(f"{label} changed while reading")
+    if hashlib.sha256(payload).hexdigest() != expected_digest:
+        raise GateError(f"{label} changed after physical inventory")
+    return payload
+
+
+def _allowed_stage_member(relative: str) -> bool:
+    if relative in _PATCHED_FILES:
+        return True
+    return any(
+        relative.startswith(f"device/downstream/{package}/")
+        for package in _OVERLAY_PACKAGES
+    )
+
+
+def validate_staged_pmaports(
+    path: Path,
+    expected_commit: str,
+    *,
+    git_output: Callable[..., str] = _git_output,
+) -> dict[str, object]:
+    """Validate the single shared, raw `.lmi-p1-stage.json` contract.
+
+    The policy never asks Git to diff or hash worktree bytes, so checkout
+    filters, attributes and ignore rules cannot hide a physical deviation.
+    """
+
+    path = Path(path)
+    if re.fullmatch(r"[0-9a-f]{40}", expected_commit) is None:
+        raise GateError("pmaports expected commit is invalid")
+    stage = _read_stage_manifest(path)
+    if stage.get("commit") != expected_commit:
+        raise GateError("pmaports stage commit mismatch")
+    members = {relative: digest for relative, digest in stage.items() if relative != "commit"}
+    if not members:
+        raise GateError("pmaports stage manifest has no hashed members")
+    for relative, digest in members.items():
+        if (
+            not isinstance(relative, str)
+            or not isinstance(digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        ):
+            raise GateError("pmaports stage manifest contains an unsafe member")
+        _safe_git_path(relative, "pmaports stage manifest")
+        if not _allowed_stage_member(relative):
+            raise GateError("pmaports stage manifest contains an unauthorized member")
+
+    required_members = {
+        *_PATCHED_FILES,
+        "device/downstream/device-xiaomi-lmi/APKBUILD",
+        "device/downstream/device-xiaomi-lmi/deviceinfo",
+        "device/downstream/linux-xiaomi-lmi/APKBUILD",
+    }
+    if not required_members.issubset(members):
+        raise GateError("pmaports stage manifest lacks required P1 members")
+
+    head = git_output(path, "rev-parse", "--verify", "HEAD^{commit}").strip()
+    if head != expected_commit:
+        raise GateError("pmaports stage HEAD mismatch")
+    expected = _git_tree_from_output(
+        git_output(path, "ls-tree", "-r", "--full-tree", "-z", expected_commit),
+        "pmaports stage",
+    )
+    index = _git_index_from_output(
+        git_output(path, "ls-files", "--stage", "-z"),
+        "pmaports stage",
+    )
+    if index != expected:
+        raise GateError("pmaports stage index differs from HEAD")
+    for relative in members:
+        if relative in _PATCHED_FILES:
+            if relative not in expected:
+                raise GateError("pmaports patched stage member is not tracked by HEAD")
+        elif relative in expected:
+            raise GateError("pmaports overlay stage member unexpectedly exists in HEAD")
+    actual, directories = _physical_tree(path, "pmaports stage")
+    manifest_record = actual.pop(".lmi-p1-stage.json", None)
+    if manifest_record is None or manifest_record[0] != "100644":
+        raise GateError("pmaports stage manifest physical metadata is invalid")
+    expected_paths = set(expected) | set(members)
+    if set(actual) != expected_paths:
+        raise GateError("pmaports stage inventory mismatch: physical paths")
+    expected_directories = _expected_directories(expected_paths)
+    if directories != expected_directories:
+        raise GateError("pmaports stage physical directory inventory mismatch")
+    for relative, (mode, object_id, digest) in actual.items():
+        if relative in members:
+            if digest != members[relative]:
+                raise GateError("pmaports stage hash mismatch: member digest")
+            if relative in expected:
+                expected_mode, expected_object = expected[relative]
+                if (
+                    mode not in {"100644", "100755"}
+                    or mode != expected_mode
+                    or object_id == expected_object
+                ):
+                    raise GateError("pmaports tracked stage deviation is not exact")
+            elif mode != "100644":
+                raise GateError("pmaports untracked stage member mode is not canonical")
+        elif (mode, object_id) != expected[relative]:
+            raise GateError(
+                "pmaports stage inventory mismatch: unlisted tracked bytes or mode"
+            )
+
+    deviceinfo = path / "device/downstream/device-xiaomi-lmi/deviceinfo"
+    try:
+        deviceinfo_digest = members[
+            "device/downstream/device-xiaomi-lmi/deviceinfo"
+        ]
+        text = _read_physical_payload(
+            deviceinfo,
+            deviceinfo_digest,
+            1024 * 1024,
+            "staged lmi deviceinfo",
+        ).decode("utf-8", errors="strict")
+    except KeyError:
+        raise GateError("pmaports stage manifest lacks lmi deviceinfo") from None
+    except UnicodeError:
+        raise GateError("staged lmi deviceinfo is not valid UTF-8") from None
+    matches = re.findall(
+        r'^deviceinfo_rootfs_image_sector_size=["\']?([^"\'\n]+)["\']?$',
+        text,
+        flags=re.MULTILINE,
+    )
+    if matches != ["4096"]:
+        raise GateError("staged lmi deviceinfo does not pin rootfs sector size 4096")
+    return stage
 
 
 def _verify_physical_checkout(repository: Path, commit: str, label: str) -> None:
@@ -309,6 +708,7 @@ def _secure_checkout(
     require_clean_source: bool,
     reject_source_index_flags: bool,
 ) -> None:
+    _reject_promisor_and_alternates(source, label + " source")
     _reject_replace_refs(source, label + " source")
     if reject_source_index_flags:
         _reject_special_index_flags(source, label + " source")
@@ -318,12 +718,15 @@ def _secure_checkout(
         raise GateError(
             f"{label} source HEAD mismatch: expected {commit}, got {head}"
         )
+    _require_local_object_closure(source, commit, label + " source")
     if _git(source, "cat-file", "-t", commit) != "commit":
         raise GateError(f"{label} source commit is not a commit object")
     if require_clean_source:
+        _physical_tree(source, label + " source")
         changes = _git(source, "status", "--porcelain", "--untracked-files=no")
         if changes:
             raise GateError(f"source has tracked modifications: {changes}")
+        _verify_physical_checkout(source, commit, label + " source")
     _reject_checkout_filters(source, commit, label + " source")
 
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -340,13 +743,15 @@ def _secure_checkout(
             str(destination),
         ],
         timeout=_COMMAND_TIMEOUT,
-        env=_git_environment(),
+        env=_git_environment(allow_file_protocol=True),
     )
     alternates = destination / ".git/objects/info/alternates"
     if alternates.exists() or alternates.is_symlink():
         raise GateError(f"{label} isolated checkout uses object alternates")
+    _reject_promisor_and_alternates(destination, label)
     _reject_replace_refs(destination, label)
     _require_sha1_repository(destination, label)
+    _require_local_object_closure(destination, commit, label)
     _reject_checkout_filters(destination, commit, label)
     _git(destination, "checkout", "--detach", "--force", commit)
     _verify_physical_checkout(destination, commit, label)
@@ -474,11 +879,13 @@ def _sha256_entry(path: Path) -> str:
 
 
 def _verify_expected_changes(destination: Path, overlay_files: set[str]) -> set[str]:
-    staged = _git(destination, "diff", "--cached", "--name-only")
+    staged = _git(destination, "diff", "--no-ext-diff", "--cached", "--name-only")
     if staged:
         raise GateError(f"unexpected staged modification in destination: {staged}")
 
-    tracked_lines = _git(destination, "diff", "--name-status").splitlines()
+    tracked_lines = _git(
+        destination, "diff", "--no-ext-diff", "--name-status"
+    ).splitlines()
     expected_tracked = {f"M\t{path}" for path in _PATCHED_FILES}
     if set(tracked_lines) != expected_tracked:
         raise GateError(
@@ -515,7 +922,7 @@ def _verify_expected_changes(destination: Path, overlay_files: set[str]) -> set[
             "unexpected untracked file in destination: "
             f"expected {sorted(overlay_files)!r}, got {sorted(untracked)!r}"
         )
-    _git(destination, "diff", "--check")
+    _git(destination, "diff", "--no-ext-diff", "--check")
     return set(_PATCHED_FILES) | untracked
 
 

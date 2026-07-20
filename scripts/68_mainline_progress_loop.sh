@@ -28,6 +28,7 @@ Options:
 Environment overrides:
   LMI_RELEASE_BUNDLE_DIR
   LMI_ROLLBACK_BOOT_IMG
+  LMI_PMOS_TEST_PASSWORD   Required with --build; never written to the report.
   PMOS_EXPORT_DIR
   OUT_DIR
 EOF
@@ -44,6 +45,7 @@ do_build=0
 do_fastbootd=0
 network_resources=0
 quick=0
+test_password=
 overlay_variant=--debug-shell-android-cmdline-no-efi-stub-48bit-bootmem
 
 while [ "$#" -gt 0 ]; do
@@ -128,6 +130,23 @@ if [ "$iterations" -eq 0 ]; then
 	echo "--iterations must be greater than zero" >&2
 	exit 2
 fi
+if [ "$do_build" -eq 1 ]; then
+	if [ -z "${LMI_PMOS_TEST_PASSWORD:-}" ]; then
+		echo "LMI_PMOS_TEST_PASSWORD must be set locally when --build is used." >&2
+		echo "The password has no public default and must not be committed." >&2
+		exit 2
+	fi
+	case "$LMI_PMOS_TEST_PASSWORD" in
+		*$'\n'*|*$'\r'*)
+			echo "LMI_PMOS_TEST_PASSWORD must not contain newline characters." >&2
+			exit 2
+			;;
+	esac
+	test_password=$LMI_PMOS_TEST_PASSWORD
+	# Do not expose the credential to audited helper commands through their
+	# environment. Only the deliberately redacted install step receives it.
+	unset LMI_PMOS_TEST_PASSWORD
+fi
 
 mkdir -p "$(dirname "$report")"
 : > "$report"
@@ -144,6 +163,20 @@ run_step() {
 	"$@" 2>&1 | tee -a "$report"
 	local status=${PIPESTATUS[0]}
 	set -e
+	log "status=$status"
+	log
+	return "$status"
+}
+
+run_sensitive_step() {
+	local name=$1
+	shift
+	log "## $name"
+	set +e
+	"$@" >/dev/null 2>&1
+	local status=$?
+	set -e
+	log "output=withheld because this command receives a credential"
 	log "status=$status"
 	log
 	return "$status"
@@ -171,8 +204,8 @@ build_release_bundle() {
 		pmbootstrap build linux-postmarketos-qcom-sm8250-lmi --force
 	run_step "build mainline device package" \
 		pmbootstrap build device-xiaomi-lmi --force
-	run_step "install postmarketOS image" \
-		pmbootstrap install --password "${LMI_PMOS_TEST_PASSWORD:-147147}" --zap
+	run_sensitive_step "install postmarketOS image" \
+		pmbootstrap install --password "$test_password" --zap
 	run_step "export postmarketOS image" \
 		pmbootstrap export
 	run_step "build copydown boot image" \

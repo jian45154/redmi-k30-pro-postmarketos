@@ -1,0 +1,16 @@
+#!/sbin/openrc-run
+
+description="Activate the fixed lmi USB management link and its DHCP server"
+command=/usr/sbin/lmi-usb0-dhcp
+command_args=start
+
+depend() {
+	need net
+	after networkmanager
+}
+
+stop() {
+	ebegin "Stopping the lmi USB management DHCP server"
+	/usr/sbin/lmi-usb0-dhcp stop
+	eend $?
+}

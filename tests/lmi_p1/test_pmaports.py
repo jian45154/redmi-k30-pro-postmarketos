@@ -180,6 +180,7 @@ class PmaportsTests(unittest.TestCase):
             INIT_FUNCTIONS, encoding="utf-8"
         )
         (package / "init_2nd.sh").write_text(INIT_2ND, encoding="utf-8")
+        (package / "init_2nd.sh").chmod(0o755)
         subprocess.run(
             ["git", "init", "-q", str(self.source)],
             check=True,
@@ -456,9 +457,64 @@ class PmaportsTests(unittest.TestCase):
             environment = call.kwargs.get("env")
             self.assertIsNotNone(environment)
             self.assertEqual(environment["GIT_NO_REPLACE_OBJECTS"], "1")
+            self.assertEqual(environment["GIT_NO_LAZY_FETCH"], "1")
             self.assertEqual(
                 environment["PATH"], "/usr/sbin:/usr/bin:/sbin:/bin"
             )
+
+    def test_missing_promised_attributes_never_runs_remote_helper(self):
+        attributes = self.source / ".gitattributes"
+        attributes.write_text("*.sh text\n", encoding="utf-8")
+        self.git(self.source, "add", ".gitattributes")
+        self.git(self.source, "commit", "-q", "-m", "promised attributes")
+        self.commit = self.git(self.source, "rev-parse", "HEAD")
+        blob = self.git(self.source, "rev-parse", "HEAD:.gitattributes")
+        sentinel = self.root / "remote-helper-ran"
+        helper = self.root / "sentinel-helper"
+        helper.write_text(f"#!/bin/sh\n/usr/bin/touch {sentinel}\nexit 1\n")
+        helper.chmod(0o755)
+        self.git(self.source, "config", "core.repositoryFormatVersion", "1")
+        self.git(self.source, "config", "extensions.partialClone", "origin")
+        self.git(self.source, "config", "remote.origin.promisor", "true")
+        self.git(self.source, "config", "remote.origin.partialCloneFilter", "blob:none")
+        self.git(self.source, "config", "remote.origin.url", f"ext::{helper}")
+        self.git(self.source, "config", "protocol.ext.allow", "always")
+        (self.source / ".git/objects" / blob[:2] / blob[2:]).unlink()
+
+        with self.assertRaisesRegex(GateError, "promisor|partial clone"):
+            self.prepare()
+
+        self.assertFalse(sentinel.exists())
+        self.assertFalse(self.destination.exists())
+
+    def test_source_object_alternates_are_rejected_before_checkout(self):
+        alternates = self.source / ".git/objects/info/alternates"
+        alternates.parent.mkdir(parents=True, exist_ok=True)
+        alternates.write_text(str(self.root / "attacker-objects") + "\n")
+
+        with self.assertRaisesRegex(GateError, "object alternates"):
+            self.prepare()
+
+        self.assertFalse(self.destination.exists())
+
+    def test_physical_checkout_rejects_dangerous_file_modes(self):
+        executable = self.source / "main/postmarketos-initramfs/init_2nd.sh"
+        for mode in (0o001, 0o003, 0o4755):
+            with self.subTest(mode=oct(mode)):
+                executable.chmod(mode)
+                with self.assertRaisesRegex(GateError, "physical mode|Git mode"):
+                    self.prepare()
+                self.assertFalse(self.destination.exists())
+                executable.chmod(0o755)
+
+    def test_physical_checkout_rejects_writable_directory_mode(self):
+        directory = self.source / "main/postmarketos-initramfs"
+        directory.chmod(0o777)
+
+        with self.assertRaisesRegex(GateError, "directory mode"):
+            self.prepare()
+
+        self.assertFalse(self.destination.exists())
 
     def test_physical_checkout_hashing_streams_regular_files(self):
         with mock.patch.object(
@@ -623,6 +679,24 @@ class PmaportsCliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("stage-pmaports", result.stdout)
         self.assertIn("build", result.stdout)
+
+
+class LmiKernelSourceIntegrityTests(unittest.TestCase):
+    def test_local_kernel_patches_have_exact_sha512_entries(self):
+        package = REPOSITORY / "artifacts/wsl-pmaports/linux-xiaomi-lmi"
+        apkbuild = (package / "APKBUILD").read_text(encoding="utf-8")
+
+        self.assertNotRegex(
+            apkbuild,
+            r"(?m)^SKIP\s+",
+            "local lmi kernel sources must never bypass checksum verification",
+        )
+        for name in (
+            "lmi-vfs-mount-diagnostic.patch",
+            "lmi-rmtfs-mem-node.patch",
+        ):
+            digest = hashlib.sha512((package / name).read_bytes()).hexdigest()
+            self.assertIn(f"{digest}  {name}", apkbuild)
 
 
 if __name__ == "__main__":

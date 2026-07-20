@@ -1,0 +1,531 @@
+#!/bin/sh
+set -eu
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+LC_ALL=C
+export PATH LC_ALL
+umask 077
+
+BOOT_CONTROL=/sys/kernel/boot_adsp/boot
+DT_BASE=/sys/firmware/devicetree/base
+DEVICEINFO=/usr/share/deviceinfo/device-xiaomi-lmi
+RELEASE_IDENTITY=/etc/lmi-release-identity
+MSM_SUBSYS_BASE=/sys/bus/msm_subsys/devices
+FIRMWARE_BASE=/lib/firmware
+FIRMWARE_SOURCE_ROOT=/mnt/vendor/firmware_mnt/image
+FIRMWARE_INVENTORY=/etc/lmi-p3/adsp-firmware.inventory
+FIRMWARE_PROVENANCE=/etc/lmi-p3/adsp-firmware.provenance
+RC_STARTED_BASE=/run/openrc/started
+RUNTIME_ROOT=/run
+RUNTIME_DIRECTORY=/run/lmi-p3
+LOCK_DIRECTORY=/run/lmi-p3/adsp-transition.lock
+ATTEMPT_LATCH=/run/lmi-p3/adsp-boot-attempted
+ROUTE_GUARD=/usr/libexec/lmi-p3-route-guard
+RC_SERVICE=/sbin/rc-service
+ID=/usr/bin/id
+READLINK=/usr/bin/readlink
+SHA256SUM=/usr/bin/sha256sum
+STAT=/usr/bin/stat
+TR=/usr/bin/tr
+UNAME=/bin/uname
+SLEEP=/bin/sleep
+
+CONFIRMATION='lmi-p3:boot-adsp=1'
+EXPECTED_MACHINE='aarch64'
+EXPECTED_KERNEL_RELEASE='4.19.325-cip128-st12-perf'
+EXPECTED_BOOT_CONTROL_METADATA='0:0:220:regular file'
+EXPECTED_DT_MODEL='Qualcomm Technologies, Inc. xiaomi lmi'
+EXPECTED_DT_COMPATIBLE='qcom,kona-mtp
+qcom,kona
+qcom,mtp'
+POSTCHECK_ATTEMPTS=50
+POSTCHECK_INTERVAL=0.1
+
+fail() {
+	printf 'lmi-adsp-control: %s\n' "$1" >&2
+	return 1
+}
+
+is_sha256() {
+	value=$1
+	[ "${#value}" -eq 64 ] || return 1
+	case "$value" in
+		*[!0-9a-f]*) return 1 ;;
+	esac
+}
+
+require_root() {
+	[ -x "$ID" ] || fail "$ID is unavailable" || return 1
+	uid=$($ID -u) || fail 'could not determine the effective uid' || return 1
+	[ "$uid" = 0 ] || fail 'this operation requires explicit uid 0' || return 1
+}
+
+check_root_owned_file() {
+	path=$1
+	mode=$2
+	label=$3
+	[ -f "$path" ] && [ ! -L "$path" ] && [ -r "$path" ] ||
+		fail "$label is not one readable regular file: $path" || return 1
+	metadata=$($STAT -c '%u:%g:%a:%h:%F' "$path") ||
+		fail "could not stat $label: $path" || return 1
+	[ "$metadata" = "0:0:$mode:1:regular file" ] ||
+		fail "$label must be root:root mode $mode with one link" || return 1
+}
+
+check_root_owned_directory() {
+	path=$1
+	mode=$2
+	label=$3
+	[ -d "$path" ] && [ ! -L "$path" ] ||
+		fail "$label is not one real directory: $path" || return 1
+	metadata=$($STAT -c '%u:%g:%a:%F' "$path") ||
+		fail "could not stat $label: $path" || return 1
+	[ "$metadata" = "0:0:$mode:directory" ] ||
+		fail "$label must be root:root mode $mode" || return 1
+}
+
+read_exact_text() {
+	path=$1
+	expected=$2
+	label=$3
+	[ -r "$path" ] || fail "$label is missing or unreadable: $path" || return 1
+	actual=$(sed -n '1,$p' "$path") ||
+		fail "could not read $label: $path" || return 1
+	[ "$actual" = "$expected" ] ||
+		fail "$label does not match the reviewed value" || return 1
+}
+
+check_release_identity() {
+	check_root_owned_file "$RELEASE_IDENTITY" 644 'release identity' || return 1
+	schema_count=0
+	scope_count=0
+	device_count=0
+	kernel_count=0
+	while IFS='=' read -r key value || [ -n "${key}${value}" ]; do
+		case "$key" in
+			schema)
+				schema_count=$((schema_count + 1))
+				[ "$value" = lmi-p1-release-identity/v2 ] ||
+					fail 'release identity schema mismatch' || return 1
+				;;
+			scope)
+				scope_count=$((scope_count + 1))
+				[ "$value" = lmi-p1-ssh ] ||
+					fail 'release identity scope mismatch' || return 1
+				;;
+			device_xiaomi_lmi)
+				device_count=$((device_count + 1))
+				[ "$value" = 1-r107 ] ||
+					fail 'device-xiaomi-lmi is not exactly 1-r107' || return 1
+				;;
+			linux_xiaomi_lmi)
+				kernel_count=$((kernel_count + 1))
+				[ "$value" = 4.19.325-r8 ] ||
+					fail 'linux-xiaomi-lmi is not exactly 4.19.325-r8' || return 1
+				;;
+		esac
+	done < "$RELEASE_IDENTITY"
+	[ "$schema_count:$scope_count:$device_count:$kernel_count" = 1:1:1:1 ] ||
+		fail 'release identity fields are missing or ambiguous' || return 1
+}
+
+check_device_identity() {
+	check_release_identity || return 1
+	check_root_owned_file "$DEVICEINFO" 644 deviceinfo || return 1
+	codename_count=0
+	dtb_count=0
+	while IFS='=' read -r key value || [ -n "${key}${value}" ]; do
+		case "$key" in
+			deviceinfo_codename)
+				codename_count=$((codename_count + 1))
+				[ "$value" = '"xiaomi-lmi"' ] ||
+					fail 'deviceinfo contains a conflicting codename assignment' ||
+					return 1
+				;;
+			deviceinfo_dtb)
+				dtb_count=$((dtb_count + 1))
+				[ "$value" = '"qcom/kona-v2.1-lmi"' ] ||
+					fail 'deviceinfo contains a conflicting DT assignment' ||
+					return 1
+				;;
+			*deviceinfo_codename*)
+				fail 'deviceinfo contains an alternate codename assignment form'
+				return 1
+				;;
+			*deviceinfo_dtb*)
+				fail 'deviceinfo contains an alternate DT assignment form'
+				return 1
+				;;
+		esac
+	done < "$DEVICEINFO"
+	[ "$codename_count:$dtb_count" = 1:1 ] ||
+		fail 'deviceinfo codename or DT assignment is missing or duplicated' || return 1
+	[ "$($UNAME -m)" = "$EXPECTED_MACHINE" ] ||
+		fail 'running machine architecture mismatch' || return 1
+	[ "$($UNAME -r)" = "$EXPECTED_KERNEL_RELEASE" ] ||
+		fail 'running kernel release does not match the reviewed r8 build' || return 1
+	[ -r "$DT_BASE/model" ] || fail 'DT model is missing or unreadable' || return 1
+	dt_model=$($TR '\000' '\n' < "$DT_BASE/model") ||
+		fail 'could not decode DT model' || return 1
+	[ "$dt_model" = "$EXPECTED_DT_MODEL" ] ||
+		fail 'DT model does not match the reviewed value' || return 1
+	[ -r "$DT_BASE/compatible" ] ||
+		fail 'DT compatible property is missing or unreadable' || return 1
+	compatible=$($TR '\000' '\n' < "$DT_BASE/compatible") ||
+		fail 'could not decode DT compatible property' || return 1
+	[ "$compatible" = "$EXPECTED_DT_COMPATIBLE" ] ||
+		fail 'DT compatible sequence does not match reviewed lmi overlay' || return 1
+}
+
+read_subsystem_state() {
+	adsp_path=
+	adsp_count=0
+	seen_names=' '
+	for candidate in "$MSM_SUBSYS_BASE"/subsys*; do
+		[ -e "$candidate" ] || [ -L "$candidate" ] || continue
+		[ -d "$candidate" ] ||
+			fail "msm_subsys candidate is not a directory: $candidate" || return 1
+		[ -r "$candidate/name" ] ||
+			fail "msm_subsys candidate has no readable name: $candidate" || return 1
+		name=$(sed -n '1,$p' "$candidate/name") ||
+			fail "could not read msm_subsys name: $candidate" || return 1
+		case "$name" in
+			a650_zap|adsp|cdsp|cvpss|esoc0|ipa_fws|ipa_uc|npu|slpi|spss|venus|wlan) ;;
+			*) fail "unrecognized msm_subsys name at $candidate"; return 1 ;;
+		esac
+		case "$seen_names" in
+			*" $name "*)
+				if [ "$name" = adsp ]; then
+					fail 'expected exactly one msm_subsys ADSP node; duplicate ADSP names found'
+				else
+					fail "duplicate msm_subsys name: $name"
+				fi
+				return 1
+				;;
+		esac
+		seen_names="$seen_names$name "
+		if [ "$name" = adsp ]; then
+			adsp_count=$((adsp_count + 1))
+			adsp_path=$candidate
+		fi
+	done
+	[ "$adsp_count" -eq 1 ] ||
+		fail "expected exactly one msm_subsys ADSP node, found $adsp_count" || return 1
+	read_exact_text "$adsp_path/firmware_name" adsp 'ADSP firmware name' || return 1
+	[ -r "$adsp_path/state" ] ||
+		fail 'ADSP subsystem state is missing or unreadable' || return 1
+	ADSP_STATE=$(sed -n '1,$p' "$adsp_path/state") ||
+		fail 'could not read ADSP subsystem state' || return 1
+	ADSP_SUBSYSTEM=$adsp_path
+}
+
+check_offline_state() {
+	read_subsystem_state || return 1
+	[ "$ADSP_STATE" = OFFLINE ] ||
+		fail "ADSP must be exactly OFFLINE before the one write; found $ADSP_STATE" ||
+		return 1
+}
+
+check_services() {
+	[ -x "$RC_SERVICE" ] || fail "$RC_SERVICE is unavailable" || return 1
+	for service in lmi-firmware-mount lmi-qrtr-ns pd-mapper rmtfs tqftpserv; do
+		[ -e "$RC_STARTED_BASE/$service" ] || [ -L "$RC_STARTED_BASE/$service" ] ||
+			fail "$service has no OpenRC started marker" || return 1
+		"$RC_SERVICE" "$service" status >/dev/null 2>&1 ||
+			fail "$service is not started" || return 1
+	done
+}
+
+check_boot_control() {
+	[ -f "$BOOT_CONTROL" ] && [ ! -L "$BOOT_CONTROL" ] ||
+		fail "$BOOT_CONTROL is not one regular sysfs attribute" || return 1
+	metadata=$($STAT -c '%u:%g:%a:%F' "$BOOT_CONTROL") ||
+		fail "could not stat $BOOT_CONTROL" || return 1
+	[ "$metadata" = "$EXPECTED_BOOT_CONTROL_METADATA" ] ||
+		fail "$BOOT_CONTROL must be root:root mode 0220 regular file" || return 1
+	[ -w "$BOOT_CONTROL" ] || fail "$BOOT_CONTROL is not writable" || return 1
+}
+
+check_review_file() {
+	path=$1
+	digest=$2
+	label=$3
+	is_sha256 "$digest" || fail "$label SHA-256 is not exact" || return 1
+	check_root_owned_file "$path" 600 "$label" || return 1
+	[ -s "$path" ] || fail "$label is empty: $path" || return 1
+	actual=$($SHA256SUM "$path") || fail "could not hash $label" || return 1
+	actual=${actual%% *}
+	[ "$actual" = "$digest" ] || fail "$label digest mismatch" || return 1
+}
+
+check_provenance() {
+	expected_digest=$1
+	check_review_file "$FIRMWARE_PROVENANCE" "$expected_digest" \
+		'firmware provenance' || return 1
+	schema=0
+	kind=0
+	root=0
+	evidence=0
+	review=0
+	while IFS='=' read -r key value || [ -n "${key}${value}" ]; do
+		case "$key" in
+			schema)
+				schema=$((schema + 1))
+				[ "$value" = lmi-p3-adsp-firmware-provenance/v1 ] ||
+					fail 'firmware provenance schema mismatch' || return 1
+				;;
+			source_kind)
+				kind=$((kind + 1))
+				[ "$value" = stock-readonly-firmware-partition ] ||
+					fail 'firmware provenance source kind mismatch' || return 1
+				;;
+			source_root)
+				root=$((root + 1))
+				[ "$value" = "$FIRMWARE_SOURCE_ROOT" ] ||
+					fail 'firmware provenance source root mismatch' || return 1
+				;;
+			source_evidence_sha256)
+				evidence=$((evidence + 1))
+				is_sha256 "$value" ||
+					fail 'firmware provenance evidence digest is invalid' || return 1
+				;;
+			review_id)
+				review=$((review + 1))
+				case "$value" in
+					''|*[!A-Za-z0-9._:-]*)
+						fail 'firmware provenance review_id is invalid'
+						return 1
+						;;
+				esac
+				;;
+			*) fail "unknown or empty firmware provenance field: $key"; return 1 ;;
+		esac
+	done < "$FIRMWARE_PROVENANCE"
+	[ "$schema:$kind:$root:$evidence:$review" = 1:1:1:1:1 ] ||
+		fail 'firmware provenance fields are missing or ambiguous' || return 1
+}
+
+check_firmware_file() {
+	name=$1
+	expected_size=$2
+	expected_digest=$3
+	path=$FIRMWARE_BASE/$name
+
+	[ -f "$path" ] && [ -r "$path" ] && [ -s "$path" ] ||
+		fail "$name is not a nonempty readable regular firmware target" || return 1
+	resolved=$($READLINK -f "$path") ||
+		fail "could not resolve firmware provenance for $name" || return 1
+	[ "$resolved" = "$FIRMWARE_SOURCE_ROOT/$name" ] ||
+		fail "$name does not resolve to the reviewed stock firmware root" || return 1
+	actual_size=$($STAT -Lc %s "$path") || fail "could not stat $name" || return 1
+	[ "$actual_size" = "$expected_size" ] || fail "$name size mismatch" || return 1
+	actual_digest=$($SHA256SUM "$path") || fail "could not hash $name" || return 1
+	actual_digest=${actual_digest%% *}
+	[ "$actual_digest" = "$expected_digest" ] || fail "$name digest mismatch" || return 1
+}
+
+check_inventory() {
+	inventory_digest=$1
+	provenance_digest=$2
+	check_review_file "$FIRMWARE_INVENTORY" "$inventory_digest" \
+		'firmware inventory' || return 1
+
+	line_number=0
+	mdt_count=0
+	segment_count=0
+	last_segment=-1
+	while IFS= read -r line || [ -n "$line" ]; do
+		line_number=$((line_number + 1))
+		case "$line_number" in
+			1)
+				[ "$line" = schema=lmi-p3-adsp-firmware-inventory/v1 ] ||
+					fail 'firmware inventory schema mismatch' || return 1
+				continue
+				;;
+			2)
+				[ "$line" = "provenance_sha256=$provenance_digest" ] ||
+					fail 'inventory/provenance binding mismatch' || return 1
+				continue
+				;;
+		esac
+		old_ifs=$IFS
+		IFS=:
+		set -f
+		set -- $line
+		set +f
+		IFS=$old_ifs
+		[ "$#" -eq 4 ] && [ "$1" = file ] ||
+			fail "invalid firmware inventory entry at line $line_number" || return 1
+		name=$2
+		size=$3
+		digest=$4
+		case "$size" in ''|*[!0-9]*) fail "invalid size for $name"; return 1 ;; esac
+		[ "$size" -gt 0 ] || fail "empty firmware is forbidden: $name" || return 1
+		is_sha256 "$digest" || fail "invalid digest for $name" || return 1
+		case "$name" in
+			adsp.mdt)
+				[ "$mdt_count" -eq 0 ] && [ "$segment_count" -eq 0 ] ||
+					fail 'adsp.mdt must occur exactly once before all segments' || return 1
+				mdt_count=1
+				;;
+			adsp.b[0-9][0-9])
+				[ "$mdt_count" -eq 1 ] ||
+					fail 'ADSP segments must follow adsp.mdt' || return 1
+				suffix=${name#adsp.b}
+				number=${suffix#0}
+				[ -n "$number" ] || number=0
+				[ "$number" -gt "$last_segment" ] ||
+					fail 'ADSP segment inventory must be unique and numerically sorted' ||
+					return 1
+				last_segment=$number
+				segment_count=$((segment_count + 1))
+				;;
+			*) fail "unreviewed firmware basename in inventory: $name"; return 1 ;;
+		esac
+		check_firmware_file "$name" "$size" "$digest" || return 1
+	done < "$FIRMWARE_INVENTORY"
+	[ "$line_number" -ge 4 ] && [ "$mdt_count" -eq 1 ] && [ "$segment_count" -gt 0 ] ||
+		fail 'inventory must contain adsp.mdt and at least one reviewed segment' ||
+		return 1
+
+	actual_segment_count=0
+	for path in "$FIRMWARE_BASE"/adsp.b*; do
+		[ -e "$path" ] || [ -L "$path" ] || continue
+		name=${path##*/}
+		case "$name" in
+			adsp.b[0-9][0-9]) actual_segment_count=$((actual_segment_count + 1)) ;;
+			*) fail "unreviewed ADSP-like firmware file is present: $name"; return 1 ;;
+		esac
+	done
+	[ "$actual_segment_count" -eq "$segment_count" ] ||
+		fail 'actual ADSP segment set is incomplete or contains unreviewed entries' ||
+		return 1
+}
+
+check_static_preconditions() {
+	require_root || return 1
+	check_root_owned_file "$ROUTE_GUARD" 755 'P3 route guard' || return 1
+	[ -x "$ROUTE_GUARD" ] || fail 'P3 route guard is not executable' || return 1
+	"$ROUTE_GUARD" >/dev/null || fail 'P1 privilege/legacy-route guard failed' || return 1
+	check_device_identity || return 1
+	check_boot_control || return 1
+	check_services || return 1
+	check_offline_state || return 1
+}
+
+check_full_preconditions() {
+	inventory_digest=$1
+	provenance_digest=$2
+	check_static_preconditions || return 1
+	check_provenance "$provenance_digest" || return 1
+	check_inventory "$inventory_digest" "$provenance_digest" || return 1
+}
+
+probe_static() {
+	check_static_preconditions || return 1
+	printf '%s\n' \
+		'lmi-adsp-control: static preconditions satisfied; firmware review not validated; no write performed'
+}
+
+probe_full() {
+	check_full_preconditions "$1" "$2" || return 1
+	printf '%s\n' \
+		'lmi-adsp-control: full reviewed preconditions satisfied; ADSP is OFFLINE; no write performed'
+}
+
+ensure_runtime_directory() {
+	check_root_owned_directory "$RUNTIME_ROOT" 755 'runtime root' || return 1
+	if [ ! -e "$RUNTIME_DIRECTORY" ] && [ ! -L "$RUNTIME_DIRECTORY" ]; then
+		if ! mkdir -m 700 "$RUNTIME_DIRECTORY" 2>/dev/null; then
+			[ -e "$RUNTIME_DIRECTORY" ] || [ -L "$RUNTIME_DIRECTORY" ] ||
+				fail 'could not create the private P3 runtime directory safely' ||
+				return 1
+		fi
+	fi
+	check_root_owned_directory "$RUNTIME_DIRECTORY" 700 \
+		'private P3 runtime directory' || return 1
+}
+
+acquire_lock() {
+	ensure_runtime_directory || return 1
+	mkdir -m 700 "$LOCK_DIRECTORY" 2>/dev/null ||
+		fail 'another lmi ADSP transition is active or a stale lock exists' || return 1
+	check_root_owned_directory "$LOCK_DIRECTORY" 700 \
+		'ADSP transition lock' || return 1
+	trap 'rmdir "$LOCK_DIRECTORY" 2>/dev/null || true' EXIT
+	trap 'trap - HUP INT TERM; exit 129' HUP
+	trap 'trap - HUP INT TERM; exit 130' INT
+	trap 'trap - HUP INT TERM; exit 143' TERM
+}
+
+check_no_attempt_latch() {
+	if [ -e "$ATTEMPT_LATCH" ] || [ -L "$ATTEMPT_LATCH" ]; then
+		fail 'an ADSP boot has already been attempted during this boot'
+		return 1
+	fi
+}
+
+persist_attempt_latch() {
+	check_root_owned_directory "$RUNTIME_DIRECTORY" 700 \
+		'private P3 runtime directory' || return 1
+	check_root_owned_directory "$LOCK_DIRECTORY" 700 \
+		'ADSP transition lock' || return 1
+	mkdir -m 700 "$ATTEMPT_LATCH" 2>/dev/null ||
+		fail 'an ADSP boot has already been attempted during this boot' || return 1
+	check_root_owned_directory "$ATTEMPT_LATCH" 700 'ADSP attempt latch' || return 1
+}
+
+boot_once() {
+	inventory_digest=$1
+	provenance_digest=$2
+	acquire_lock || return 1
+	check_no_attempt_latch || return 1
+	check_full_preconditions "$inventory_digest" "$provenance_digest" || return 1
+	persist_attempt_latch || return 1
+	# Hash validation above can be slow. Revalidate all mutable identity,
+	# service, route, sysfs, and exact-OFFLINE inputs immediately before write.
+	check_static_preconditions || return 1
+	printf '%s\n' 1 > "$BOOT_CONTROL"
+
+	attempt=0
+	while [ "$attempt" -lt "$POSTCHECK_ATTEMPTS" ]; do
+		read_subsystem_state || return 1
+		case "$ADSP_STATE" in
+			ONLINE)
+				printf '%s\n' 'lmi-adsp-control: ADSP reached exact ONLINE state'
+				return 0
+				;;
+			OFFLINE) ;;
+			*) fail "ADSP entered unexpected post-write state: $ADSP_STATE"; return 1 ;;
+		esac
+		attempt=$((attempt + 1))
+		[ "$attempt" -lt "$POSTCHECK_ATTEMPTS" ] || break
+		"$SLEEP" "$POSTCHECK_INTERVAL"
+	done
+	fail "ADSP did not reach ONLINE within $POSTCHECK_ATTEMPTS bounded checks"
+}
+
+case "$#:${1-}" in
+	0:)
+		probe_static
+		;;
+	1:probe)
+		probe_static
+		;;
+	5:probe)
+		[ "$2" = --inventory-sha256 ] && [ "$4" = --provenance-sha256 ] ||
+			fail 'probe digest arguments are malformed' || exit 64
+		probe_full "$3" "$5"
+		;;
+	7:boot)
+		[ "$2" = --confirm-exact ] && [ "$3" = "$CONFIRMATION" ] &&
+			[ "$4" = --inventory-sha256 ] && [ "$6" = --provenance-sha256 ] ||
+			fail 'boot requires the exact confirmation and reviewed digest arguments' ||
+			exit 64
+		boot_once "$5" "$7"
+		;;
+	*)
+		fail 'usage: lmi-adsp-control [probe [--inventory-sha256 HEX --provenance-sha256 HEX] | boot --confirm-exact TOKEN --inventory-sha256 HEX --provenance-sha256 HEX]'
+		exit 64
+		;;
+esac

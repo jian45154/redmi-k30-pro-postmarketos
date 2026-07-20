@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+profile=lmi-usb0
+interface=usb0
+dhcp_service=unudhcpd.usb0
+
+activate() {
+	[ "$(/usr/bin/nmcli -g connection.id connection show "$profile")" = "$profile" ]
+	[ "$(/usr/bin/nmcli -g connection.interface-name connection show "$profile")" = "$interface" ]
+	/usr/bin/nmcli --wait 30 connection up id "$profile" ifname "$interface"
+	/sbin/rc-service "$dhcp_service" start
+}
+
+deactivate() {
+	/sbin/rc-service "$dhcp_service" stop
+}
+
+case "${1:-}" in
+	start) activate ;;
+	stop) deactivate ;;
+	*) exit 64 ;;
+esac
