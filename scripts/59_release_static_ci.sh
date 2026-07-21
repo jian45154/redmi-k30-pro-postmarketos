@@ -25,65 +25,117 @@ compile(source, str(path), "exec")
 PY
 done < <(git ls-files 'scripts/*.py' | sort)
 
-echo "release static CI: P1/P2/P3 host test suites"
-for suite in lmi_p1 lmi_p2 lmi_p3; do
+echo "release static CI: installer, P1/P2/P2-D114/P3, and six-row host test suites"
+for suite in lmi_installer lmi_p1 lmi_p2 lmi_p2_d114 lmi_p3 lmi_weston_sixrow; do
 	echo "  unittest tests/$suite"
 	python3 -m unittest discover -v -s "tests/$suite"
 done
 
 echo "release static CI: release docs"
-manifest=docs/release/lmi-r6-bootmem-release-manifest-20260624.md
-checklist=docs/release/lmi-r6-bootmem-execution-checklist-20260624.md
-handoff=docs/release/lmi-r6-current-handoff-20260624.md
 readme=README.md
-automation_doc=docs/mainline-automation-loop-20260624.md
+ramboot_doc=docs/lmi-d110-session-approval.md
+ramboot_helper=scripts/72_stage_downstream_ssh_wifi_test.sh
+porting_guide=docs/porting-sm8250-downstream-to-postmarketos.md
+porting_guide_zh=docs/porting-sm8250-downstream-to-postmarketos.zh.md
+archive_manifest=docs/release/lmi-r6-bootmem-release-manifest-20260624.md
+archive_checklist=docs/release/lmi-r6-bootmem-execution-checklist-20260624.md
+archive_handoff=docs/release/lmi-r6-current-handoff-20260624.md
+archive_migration=docs/lmi-mainline-migration-plan-20260623.md
+archive_overlay=docs/lmi-mainline-overlay-build-20260623.md
+archive_flash_boundary=docs/lmi-mainline-flash-boundary-20260624.md
 
-for path in "$manifest" "$checklist" "$handoff" "$readme" "$automation_doc"; do
+require_file() {
+	local path=$1
 	[ -f "$path" ] || {
-		echo "missing release doc: $path" >&2
+		printf 'missing release contract file: %s\n' "$path" >&2
 		exit 1
 	}
+}
+
+require_literal() {
+	local path=$1 expected=$2
+	if ! grep -Fq -- "$expected" "$path"; then
+		printf 'missing release contract in %s: %s\n' "$path" "$expected" >&2
+		exit 1
+	fi
+}
+
+reject_literal() {
+	local path=$1 retired=$2
+	if grep -Fq -- "$retired" "$path"; then
+		printf 'retired release contract remains in %s: %s\n' "$path" "$retired" >&2
+		exit 1
+	fi
+}
+
+reject_direct_fastboot_boot() {
+	local path=$1
+	if grep -Eq '(^[[:space:]]*|`)(sudo[[:space:]]+)?fastboot(\.exe)?[[:space:]]+boot[[:space:]]+[^[:space:]`]' "$path"; then
+		printf 'unguarded direct fastboot boot command remains in active guide: %s\n' "$path" >&2
+		exit 1
+	fi
+}
+
+for path in \
+	"$readme" \
+	"$ramboot_doc" \
+	"$ramboot_helper" \
+	"$porting_guide" \
+	"$porting_guide_zh" \
+	"$archive_manifest" \
+	"$archive_checklist" \
+	"$archive_handoff" \
+	"$archive_migration" \
+	"$archive_overlay" \
+	"$archive_flash_boundary"; do
+	require_file "$path"
 done
 
-grep -Eq 'WAITING_FOR_RECOVERY_FASTBOOTD|READY_FOR_FASTBOOTD_PREFLIGHT' "$manifest"
-grep -Eq 'WAITING_FOR_RECOVERY_FASTBOOTD|READY_FOR_FASTBOOTD_PREFLIGHT' "$checklist"
-grep -Eq 'WAITING_FOR_RECOVERY_FASTBOOTD|READY_FOR_FASTBOOTD_PREFLIGHT' "$handoff"
-grep -Eq 'is-userspace: `(no|yes|unknown)`' "$manifest"
-grep -Eq 'is-userspace: `(no|yes|unknown)`' "$checklist"
-grep -Eq 'is-userspace: `(no|yes|unknown)`' "$handoff"
-grep -q 'scripts/62_refresh_lmi_release_docs.sh --quick' "$manifest"
-grep -q 'scripts/62_refresh_lmi_release_docs.sh --quick' "$handoff"
-grep -q 'scripts/64_audit_lmi_persistent_readiness.sh' "$manifest"
-grep -q 'scripts/64_audit_lmi_persistent_readiness.sh' "$checklist"
-grep -q 'scripts/66_wait_and_audit_lmi_fastbootd.sh' "$manifest"
-grep -q 'scripts/66_wait_and_audit_lmi_fastbootd.sh' "$checklist"
-grep -q 'scripts/66_wait_and_audit_lmi_fastbootd.sh' "$handoff"
-grep -q 'scripts/67_summarize_lmi_post_boot_evidence.sh' "$manifest"
-grep -q 'scripts/68_mainline_progress_loop.sh' "$automation_doc"
-grep -q 'scripts/69_audit_lmi_resources.sh' "$automation_doc"
-grep -q 'scripts/68_mainline_progress_loop.sh --once --quick' "$readme"
-grep -q 'scripts/69_audit_lmi_resources.sh --network' "$readme"
-grep -q 'fastbootd audit gate: OK' "$handoff"
-grep -q 'scripts/64_audit_lmi_persistent_readiness.sh' scripts/49_generate_lmi_flash_command_sheet.sh
-grep -q 'scripts/66_wait_and_audit_lmi_fastbootd.sh' scripts/49_generate_lmi_flash_command_sheet.sh
-grep -q 'scripts/67_summarize_lmi_post_boot_evidence.sh' scripts/49_generate_lmi_flash_command_sheet.sh
-grep -q 'fastbootd audit gate: OK' scripts/49_generate_lmi_flash_command_sheet.sh
-grep -q 'RAM-only boot is no longer a prerequisite' "$handoff"
-grep -q 'guarded recovery-fastbootd persistent test' "$handoff"
-grep -q 'fastboot boot /tmp/postmarketOS-export/boot.img # RAM only; writes nothing' "$readme"
-grep -q 'The staged persistent path is documented' "$readme"
-grep -q 'downstream v27 xiaomi-lmi baseline' "$readme"
-if grep -q '^- HEAD:' "$handoff"; then
-	echo "handoff should not archive a self-referential commit hash" >&2
+echo "  current guarded D110 RAM-boot contract"
+authorize_command='scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --authorize-session'
+execute_command='scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --execute'
+require_literal "$readme" 'Do not pass an arbitrary export directly to `fastboot`.'
+require_literal "$readme" "$authorize_command"
+require_literal "$readme" "$execute_command"
+require_literal "$readme" 'docs/lmi-d110-session-approval.md'
+require_literal "$readme" 'never retries a failed boot automatically'
+require_literal "$ramboot_doc" '--stage ramboot --authorize-session'
+require_literal "$ramboot_doc" '--stage ramboot --execute'
+require_literal "$ramboot_doc" '--stage ramboot --revoke-session'
+require_literal "$porting_guide" "$authorize_command"
+require_literal "$porting_guide" "$execute_command"
+require_literal "$porting_guide" 'lmi-d110-session-approval.md'
+require_literal "$porting_guide_zh" "$authorize_command"
+require_literal "$porting_guide_zh" "$execute_command"
+require_literal "$porting_guide_zh" 'lmi-d110-session-approval.md'
+for active_guide in "$readme" "$porting_guide" "$porting_guide_zh"; do
+	reject_direct_fastboot_boot "$active_guide"
+done
+reject_literal "$porting_guide" 'writes nothing'
+reject_literal "$porting_guide_zh" '不写任何东西'
+reject_literal "$porting_guide_zh" '不写任何分区'
+
+echo "  archived mainline/r6 evidence boundary"
+archive_warning='**Archived evidence — do not execute commands from this file.**'
+require_literal "$readme" 'The mainline/copydown release records are still archived under `docs/release/`.'
+require_literal "$readme" 'The `lmi-r6-current-handoff-20260624.md` file is older than the r6/r7 result'
+require_literal "$readme" 'The mainline/copydown r6 checklist is historical evidence, not a current route.'
+require_literal "$readme" 'Do not run its fastboot or flash commands.'
+reject_literal "$readme" 'For the mainline/copydown r6 route, use the release checklist'
+reject_literal "$readme" 'To refresh all local r6 release reports and docs'
+for archive_doc in \
+	docs/release/*.md \
+	"$archive_migration" \
+	"$archive_overlay" \
+	"$archive_flash_boundary"; do
+	require_literal "$archive_doc" "$archive_warning"
+done
+require_literal "$archive_manifest" 'Do not touch `super`'
+require_literal "$archive_checklist" 'Do not write `super`'
+if grep -q '^- HEAD:' "$archive_handoff"; then
+	echo "archived handoff should not contain a self-referential commit hash" >&2
 	exit 1
 fi
-grep -Eq 'fastboot reboot fastboot|scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute' "$checklist"
-grep -q 'scripts/60_stage_lmi_enter_fastbootd.sh --dry-run' "$checklist"
-grep -Eq 'scripts/60_stage_lmi_enter_fastbootd.sh --execute|scripts/53_stage_lmi_fastbootd_flash.sh --stage rootfs --execute' "$handoff"
-grep -q 'scripts/61_stage_lmi_reboot_after_flash.sh --execute' "$checklist"
-grep -q 'scripts/67_summarize_lmi_post_boot_evidence.sh' "$checklist"
-grep -q 'Do not touch `super`' "$manifest"
-grep -q 'Do not write `super`' "$checklist"
 
 echo "release static CI: lmi release safety lint"
 bash scripts/65_lmi_release_safety_lint.sh

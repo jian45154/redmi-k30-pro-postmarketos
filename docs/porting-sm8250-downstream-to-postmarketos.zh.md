@@ -123,7 +123,10 @@ deviceinfo_dtb="qcom/kona-v2.1"
 
 ## 坑 7 — 从 Windows 经 USB 连设备
 
-`fastboot boot boot.img`(只进 RAM、不写任何东西)是最安全的首测。之后 pmOS gadget
+临时启动不会显式刷写分区,但启动后的操作系统仍可能修改持久化的 `userdata`。
+不要把任意镜像直接交给 fastboot。对于已经审查的 D110 恢复镜像,请使用仓库的
+授权/执行守卫流程,详见
+[`lmi-d110-session-approval.md`](lmi-d110-session-approval.md)。启动后 pmOS gadget
 枚举为 **`18d1:d001 POSTMARKETOS`**,一个 **CDC-NCM** 网络 gadget——但 Windows 给它
 绑了个 "ADB 接口",不出网卡。
 
@@ -215,8 +218,18 @@ pmbootstrap checksum device-xiaomi-lmi
 pmbootstrap build    device-xiaomi-lmi
 pmbootstrap install  --no-fde
 pmbootstrap export                              # -> /tmp/postmarketOS-export/boot.img
-fastboot boot /tmp/postmarketOS-export/boot.img # 只进 RAM;不写任何分区
 ```
+
+不要直接启动这个未经固定的导出镜像。候选镜像必须先经过审查并按哈希固定。
+在仓库根目录中,已有的 D110 恢复镜像只使用以下守卫流程:
+
+```bash
+scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --authorize-session
+scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --execute
+```
+
+授权范围、撤销方式和持久化 `userdata` 的剩余风险见
+[`lmi-d110-session-approval.md`](lmi-d110-session-approval.md)。
 
 ## 现状
 

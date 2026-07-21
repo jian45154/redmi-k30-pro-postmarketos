@@ -1,5 +1,9 @@
 # Xiaomi lmi r6 rootfs write result - 2026-06-24
 
+> **Archived evidence — do not execute commands from this file.**
+> This completed result is historical evidence. Any suggested next step or
+> approval language below has expired and is not present authorization.
+
 This records the approved rootfs write that was executed after the r6
 mainline/copydown fastbootd preflight passed. It is not an approval for any
 additional write or reboot.

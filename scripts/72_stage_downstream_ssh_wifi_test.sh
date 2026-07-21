@@ -11,12 +11,13 @@ export LC_ALL
 umask 077
 
 readonly CLAIM='No explicit fastboot partition flash; the booted OS may mutate persisted userdata.'
-readonly TRUSTED_POLICY_SHA256='e3587cce02a78f7a9915c445b7c30e0491a07d924921ee80b80067f1afd1db58'
+readonly TRUSTED_POLICY_SHA256='18d3efc57152f297784e0b97af221789e4d508a73d5485e3fac3c5ba94c232cd'
 readonly POLICY_REL='private/lmi-p1/recovery/d110-d114/d110-recovery-policy.json'
 readonly POWERSHELL='/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
 readonly WSLPATH='/usr/bin/wslpath'
 readonly READ_ONLY_TIMEOUT=10
 execute_deadline_epoch=
+session_lock_fd=
 
 fail() {
 	printf 'refused: %s\n' "$*" >&2
@@ -28,13 +29,23 @@ usage() {
 Usage:
   scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --dry-run
   scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --preflight
-  scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --execute \
-    --receipt <pending-receipt.json> \
-    --confirm boot-d110-<full-boot-sha256>-<preflight-nonce>
+  scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --authorize-session
+  scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --execute
+  scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --revoke-session
 
-The preflight is read-only and creates a fresh, short-lived one-shot receipt.
-Execute atomically consumes that receipt before rechecking the handset and
-attempting exactly one pinned fastboot boot command. It never retries.
+Preflight is read-only. Authorize-session performs the same complete read-only
+preflight, then grants the current CODEX_THREAD_ID session ongoing authority for
+this exact policy, helper, host boot, artifact, device, stage, operation, and
+tool. The grant has no short chat-confirmation TTL; it remains valid within the
+pinned session safety ceiling until explicit local revocation or any bound
+input changes. The raw session ID is neither stored nor printed. It is a thread
+scope discriminator, not an independent cryptographic authentication factor.
+
+Execute needs no caller receipt or confirmation. It verifies the same session
+grant under a non-blocking exclusive lock, repeats the complete preflight, then
+creates and immediately consumes an internal 30-second one-shot attempt receipt
+before rechecking and attempting exactly one pinned fastboot boot command. It
+never retries. Only one execute may be in progress at a time.
 
 No explicit fastboot partition flash; the booted OS may mutate persisted userdata.
 EOF
@@ -51,8 +62,6 @@ policy_path=$repo/$POLICY_REL
 
 mode=
 stage=
-receipt_arg=
-confirmation=
 while [ "$#" -gt 0 ]; do
 	case "$1" in
 		--stage)
@@ -60,22 +69,13 @@ while [ "$#" -gt 0 ]; do
 			stage=$2
 			shift 2
 			;;
-		--dry-run|--preflight|--execute)
+		--dry-run|--preflight|--authorize-session|--execute|--revoke-session)
 			[ -z "$mode" ] || fail "choose exactly one mode"
 			mode=$1
 			shift
 			;;
-		--receipt)
-			[ "$#" -ge 2 ] || fail "--receipt requires a path"
-			[ -z "$receipt_arg" ] || fail "--receipt may appear only once"
-			receipt_arg=$2
-			shift 2
-			;;
-		--confirm)
-			[ "$#" -ge 2 ] || fail "--confirm requires a value"
-			[ -z "$confirmation" ] || fail "--confirm may appear only once"
-			confirmation=$2
-			shift 2
+		--receipt|--confirm|--session-id)
+			fail "$1 is a retired caller-approval interface and is not accepted"
 			;;
 		-h|--help)
 			usage
@@ -89,16 +89,12 @@ done
 
 [ "$stage" = ramboot ] || fail "--stage ramboot is required; this gate cannot flash userdata"
 case "$mode" in
-	--dry-run|--preflight) [ -z "$receipt_arg$confirmation" ] || fail "receipt and confirmation are execute-only" ;;
-	--execute)
-		[ -n "$receipt_arg" ] || fail "--execute requires --receipt"
-		[ -n "$confirmation" ] || fail "--execute requires --confirm"
-		;;
-	*) fail "choose exactly one of --dry-run, --preflight, or --execute" ;;
+	--dry-run|--preflight|--authorize-session|--execute|--revoke-session) ;;
+	*) fail "choose exactly one documented mode" ;;
 esac
 
-# Refuse the former caller-selectable trust inputs instead of silently ignoring
-# them. The receipt and confirmation are approvals, not trust anchors.
+# Refuse former caller-selectable trust and approval inputs instead of silently
+# ignoring them. CODEX_THREAD_ID is the sole session identity input.
 for legacy_name in \
 	REPO FASTBOOT DOWNSTREAM_BOOT_IMG DOWNSTREAM_USERDATA_IMG \
 	DOWNSTREAM_MANIFEST DOWNSTREAM_FASTBOOT_SHA256 \
@@ -110,6 +106,57 @@ for legacy_name in \
 		fail "$legacy_name is not accepted by the pinned D110 recovery gate"
 	fi
 done
+
+capture_helper_identity() {
+	local output status
+	set +e
+	output=$(/usr/bin/python3 -I -S -B - "$script_path" <<'PY'
+import hashlib
+import os
+from pathlib import Path
+import stat
+import sys
+
+path = Path(sys.argv[1])
+flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+try:
+    fd = os.open(path, flags)
+    before = os.fstat(fd)
+    if (not stat.S_ISREG(before.st_mode) or before.st_uid != os.geteuid()
+            or before.st_nlink != 1 or stat.S_IMODE(before.st_mode) & 0o111 == 0):
+        raise OSError
+    digest = hashlib.sha256()
+    while True:
+        chunk = os.read(fd, 1024 * 1024)
+        if not chunk:
+            break
+        digest.update(chunk)
+    after = os.fstat(fd)
+finally:
+    try:
+        os.close(fd)
+    except NameError:
+        pass
+identity = lambda st: (st.st_dev, st.st_ino, st.st_mode, st.st_nlink, st.st_size,
+                       st.st_mtime_ns, st.st_ctime_ns)
+if identity(before) != identity(after):
+    raise SystemExit(1)
+print(digest.hexdigest() + "\t" + ":".join(map(str, identity(before))))
+PY
+	)
+	status=$?
+	set -e
+	[ "$status" -eq 0 ] || fail "the helper identity could not be captured safely"
+	IFS=$'\t' read -r helper_sha helper_identity <<< "$output"
+	[[ $helper_sha =~ ^[0-9a-f]{64}$ ]] && [ -n "$helper_identity" ] || fail "the helper identity record is invalid"
+}
+
+verify_helper_identity() {
+	local captured_sha=$helper_sha captured_identity=$helper_identity
+	capture_helper_identity
+	[ "$helper_sha" = "$captured_sha" ] && [ "$helper_identity" = "$captured_identity" ] \
+		|| fail "the helper changed during the gated operation"
+}
 
 # Verify the private policy, its historical D199/D200 identity evidence, both
 # exact manifests, and the complete Android boot image semantics. The verifier
@@ -240,8 +287,8 @@ policy_data, policy_sha = private_file(policy_path)
 if policy_sha != trusted_sha or policy_path != repo / "private/lmi-p1/recovery/d110-d114/d110-recovery-policy.json":
     die()
 policy = load_json(policy_data)
-exact_keys(policy, ("schema", "policy_id", "claim", "historical_identity", "artifact", "fastboot", "device", "execution"))
-if policy["schema"] != "lmi-d110-recovery-policy/v1":
+exact_keys(policy, ("schema", "policy_id", "claim", "historical_identity", "artifact", "fastboot", "device", "approval", "execution"))
+if policy["schema"] != "lmi-d110-recovery-policy/v2":
     die()
 string(policy["policy_id"])
 if policy["claim"] != "No explicit fastboot partition flash; the booted OS may mutate persisted userdata.":
@@ -432,6 +479,18 @@ minimum_download = integer(device["minimum_max_download_size"], boot_size, 2**63
 if d199_product != product or d200_product != product or unlocked != "yes" or is_userspace != "no" or battery_soc_ok != "yes":
     die()
 
+approval = policy["approval"]
+exact_keys(approval, ("mode", "session_id_environment", "grant_dir", "explicit_revocation", "session_max_seconds", "host_boot_id_path"))
+if (approval["mode"] != "codex-thread-session"
+        or approval["session_id_environment"] != "CODEX_THREAD_ID"
+        or approval["explicit_revocation"] is not True
+        or approval["host_boot_id_path"] != "/proc/sys/kernel/random/boot_id"):
+    die()
+session_max_seconds = integer(approval["session_max_seconds"], 60, 86400)
+grant_dir = relative_private(approval["grant_dir"])
+if grant_dir.parent != policy_path.parent:
+    die()
+
 execution = policy["execution"]
 exact_keys(execution, ("operation", "explicit_fastboot_partition_flash", "booted_os_may_mutate_persisted_userdata", "receipt_ttl_seconds", "max_action_attempts", "automatic_retry", "action_timeout_seconds", "receipt_dir"))
 if (execution["operation"] != "fastboot boot" or execution["explicit_fastboot_partition_flash"] is not False
@@ -441,11 +500,13 @@ if (execution["operation"] != "fastboot boot" or execution["explicit_fastboot_pa
 ttl = integer(execution["receipt_ttl_seconds"], 30, 300)
 action_timeout = integer(execution["action_timeout_seconds"], 1, 300)
 receipt_dir = relative_private(execution["receipt_dir"])
-if receipt_dir.parent != policy_path.parent:
+if receipt_dir.parent != policy_path.parent or receipt_dir == grant_dir:
     die()
 
 action_binding = {
     "policy_sha256": policy_sha,
+    "claim": policy["claim"],
+    "stage": "ramboot",
     "operation": "fastboot boot",
     "boot_sha256": boot_sha,
     "boot_size": boot_size,
@@ -461,6 +522,15 @@ action_binding = {
     "fastboot_acquisition_attestation_sha256": acquisition_sha,
     "expected_device_identity_sha256": expected_identity,
     "device_policy": device,
+    "approval_policy": approval,
+    "execution_policy": {
+        "explicit_fastboot_partition_flash": execution["explicit_fastboot_partition_flash"],
+        "booted_os_may_mutate_persisted_userdata": execution["booted_os_may_mutate_persisted_userdata"],
+        "receipt_ttl_seconds": ttl,
+        "max_action_attempts": execution["max_action_attempts"],
+        "automatic_retry": execution["automatic_retry"],
+        "action_timeout_seconds": action_timeout,
+    },
 }
 action_digest = hashlib.sha256(json.dumps(action_binding, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
@@ -470,7 +540,7 @@ fields = (privacy_nonce, expected_identity, legacy_fingerprint, str(boot_path), 
           kernel_sha, ramdisk_sha, dtb_sha, host_kind, host_path, fastboot_sha,
           str(fastboot_size), product, unlocked, is_userspace, str(minimum_battery),
           battery_soc_ok, str(minimum_download), str(ttl), str(action_timeout),
-          str(receipt_dir), action_digest, "END")
+          str(receipt_dir), str(grant_dir), str(session_max_seconds), action_digest, "END")
 if any("\t" in field or "\n" in field or "\r" in field for field in fields):
     die()
 print("\t".join(fields))
@@ -485,7 +555,7 @@ PY
 		ramdisk_sha dtb_sha fastboot_host_kind fastboot_host_path fastboot_sha \
 		fastboot_size expected_product expected_unlocked expected_userspace \
 		minimum_battery_mv expected_battery_soc minimum_max_download receipt_ttl \
-		action_timeout receipt_dir action_digest output_end <<< "$output"
+		action_timeout receipt_dir grant_dir session_max_seconds action_digest output_end <<< "$output"
 	[ "$output_end" = END ] || fail "local policy verifier returned an invalid record"
 }
 
@@ -706,11 +776,359 @@ preflight_device() {
 	device_max_download=$number
 }
 
-create_receipt() {
+capture_session_scope() {
+	local output status
+	set +e
+	output=$(/usr/bin/python3 -I -S -B - <<'PY'
+import hashlib
+import os
+import re
+import sys
+
+thread_id = os.environ.get("CODEX_THREAD_ID")
+if thread_id is None or not 1 <= len(thread_id.encode("utf-8")) <= 512:
+    raise SystemExit(1)
+if any(ord(character) < 32 or ord(character) == 127 for character in thread_id):
+    raise SystemExit(1)
+try:
+    with open("/proc/sys/kernel/random/boot_id", "r", encoding="ascii") as source:
+        boot_id = source.read()
+except OSError:
+    raise SystemExit(1)
+if boot_id.endswith("\n"):
+    boot_id = boot_id[:-1]
+if re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", boot_id) is None:
+    raise SystemExit(1)
+thread_binding = hashlib.sha256(
+    b"lmi-d110-codex-thread-session/v1\0" + thread_id.encode("utf-8")
+).hexdigest()
+boot_binding = hashlib.sha256(
+    b"lmi-d110-host-boot/v1\0" + boot_id.encode("ascii")
+).hexdigest()
+print(thread_binding + "\t" + boot_binding)
+PY
+	)
+	status=$?
+	set -e
+	[ "$status" -eq 0 ] || fail "a valid current CODEX_THREAD_ID session scope is required"
+	IFS=$'\t' read -r thread_binding host_boot_id_sha <<< "$output"
+	[[ $thread_binding =~ ^[0-9a-f]{64}$ ]] && [[ $host_boot_id_sha =~ ^[0-9a-f]{64}$ ]] \
+		|| fail "the session scope binding is invalid"
+	unset CODEX_THREAD_ID
+}
+
+prepare_session_storage() {
+	local create=$1 status
+	set +e
+	/usr/bin/python3 -I -S -B - "$grant_dir" "$create" <<'PY'
+import os
+from pathlib import Path
+import stat
+import sys
+
+base = Path(sys.argv[1])
+create = sys.argv[2] == "create"
+
+def good_dir(path):
+    st = path.lstat()
+    return (stat.S_ISDIR(st.st_mode) and stat.S_IMODE(st.st_mode) == 0o700
+            and st.st_uid == os.geteuid())
+
+try:
+    if not good_dir(base.parent):
+        raise OSError
+    if create:
+        try:
+            base.mkdir(mode=0o700)
+        except FileExistsError:
+            pass
+    if not good_dir(base):
+        raise OSError
+    for child in (base / "active", base / "revoked"):
+        if create:
+            try:
+                child.mkdir(mode=0o700)
+            except FileExistsError:
+                pass
+        if not good_dir(child):
+            raise OSError
+    lock = base / "execute.lock"
+    if create:
+        flags = (os.O_WRONLY | os.O_CREAT | os.O_EXCL
+                 | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            fd = os.open(lock, flags, 0o600)
+            os.fsync(fd)
+            os.close(fd)
+        except FileExistsError:
+            pass
+    fd = os.open(lock, os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+                 | getattr(os, "O_NOFOLLOW", 0))
+    st = os.fstat(fd)
+    os.close(fd)
+    if (not stat.S_ISREG(st.st_mode) or stat.S_IMODE(st.st_mode) != 0o600
+            or st.st_uid != os.geteuid() or st.st_nlink != 1):
+        raise OSError
+except OSError:
+    raise SystemExit(1)
+PY
+	status=$?
+	set -e
+	[ "$status" -eq 0 ] || fail "the private session grant storage is missing or unsafe"
+}
+
+acquire_session_lock() {
+	local lock_path=$grant_dir/execute.lock expected actual
+	[ ! -L "$lock_path" ] || fail "the session execution lock must not be a symlink"
+	exec {session_lock_fd}<> "$lock_path" || fail "could not open the session execution lock"
+	[ ! -L "$lock_path" ] || fail "the session execution lock changed type"
+	[ "$(/usr/bin/stat -c '%a:%u:%h' -- "$lock_path")" = "600:$(/usr/bin/id -u):1" ] \
+		|| fail "the session execution lock ownership, mode, or link count is unsafe"
+	expected=$(/usr/bin/stat -c '%d:%i' -- "$lock_path") || fail "could not inspect the session execution lock"
+	actual=$(/usr/bin/stat -Lc '%d:%i' -- "/proc/self/fd/$session_lock_fd") || fail "could not inspect the open session execution lock"
+	[ "$expected" = "$actual" ] || fail "the session execution lock changed while it was opened"
+	/usr/bin/flock -n "$session_lock_fd" || fail "another session execution or revocation is already in progress"
+}
+
+release_session_lock() {
+	[ -n "$session_lock_fd" ] || return 0
+	exec {session_lock_fd}>&-
+	session_lock_fd=
+}
+
+create_session_grant() {
+	local output status
+	grant_path=$grant_dir/active/grant-$thread_binding.json
+	if [ -e "$grant_path" ] || [ -L "$grant_path" ]; then
+		# Reauthorization is deliberately idempotent: a valid existing grant is
+		# retained with its original deadline. Invalid/expired state must first
+		# be explicitly archived with --revoke-session.
+		verify_session_grant
+		grant_result=reused-with-original-deadline
+		return 0
+	fi
+	set +e
+	output=$(/usr/bin/python3 -I -S -B - "$grant_dir" "$thread_binding" \
+		"$host_boot_id_sha" "$TRUSTED_POLICY_SHA256" "$action_digest" "$boot_sha" \
+		"$expected_identity" "$fastboot_sha" "$fastboot_identity" "$stage" "$helper_sha" \
+		"$session_max_seconds" <<'PY'
+import json
+import os
+from pathlib import Path
+import secrets
+import stat
+import sys
+import time
+
+base = Path(sys.argv[1])
+(thread_binding, host_boot, policy_sha, action_digest, boot_sha, device_identity,
+ fastboot_sha, fastboot_identity, stage, helper_sha) = sys.argv[2:12]
+session_max = int(sys.argv[12])
+active = base / "active"
+
+def good_dir(path):
+    st = path.lstat()
+    return (stat.S_ISDIR(st.st_mode) and stat.S_IMODE(st.st_mode) == 0o700
+            and st.st_uid == os.geteuid())
+
+try:
+    if not all(good_dir(path) for path in (base, active, base / "revoked")):
+        raise OSError
+    now = int(time.time())
+    record = {
+        "schema": "lmi-d110-codex-session-grant/v1",
+        "thread_binding_sha256": thread_binding,
+        "host_boot_id_sha256": host_boot,
+        "policy_sha256": policy_sha,
+        "action_digest": action_digest,
+        "boot_sha256": boot_sha,
+        "device_identity_sha256": device_identity,
+        "fastboot_sha256": fastboot_sha,
+        "fastboot_identity": fastboot_identity,
+        "stage": stage,
+        "operation": "fastboot boot",
+        "helper_sha256": helper_sha,
+        "issued_at_epoch": now,
+        "expires_at_epoch": now + session_max,
+    }
+    payload = (json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n").encode("ascii")
+    name = "grant-" + thread_binding + ".json"
+    final = active / name
+    try:
+        existing = final.lstat()
+    except FileNotFoundError:
+        pass
+    else:
+        if (not stat.S_ISREG(existing.st_mode) or stat.S_IMODE(existing.st_mode) != 0o600
+                or existing.st_uid != os.geteuid() or existing.st_nlink != 1):
+            raise OSError
+    temporary = active / ("." + name + "." + secrets.token_hex(16) + ".tmp")
+    flags = (os.O_WRONLY | os.O_CREAT | os.O_EXCL
+             | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0))
+    fd = os.open(temporary, flags, 0o600)
+    try:
+        view = memoryview(payload)
+        while view:
+            written = os.write(fd, view)
+            if written <= 0:
+                raise OSError
+            view = view[written:]
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    os.replace(temporary, final)
+    directory_fd = os.open(active, os.O_RDONLY | os.O_DIRECTORY)
+    os.fsync(directory_fd)
+    os.close(directory_fd)
+except (OSError, ValueError):
+    raise SystemExit(1)
+print(str(final))
+PY
+	)
+	status=$?
+	set -e
+	[ "$status" -eq 0 ] || fail "could not atomically create the private session grant"
+	grant_path=$output
+	grant_result=created
+}
+
+verify_session_grant() {
+	local status
+	grant_path=$grant_dir/active/grant-$thread_binding.json
+	set +e
+	/usr/bin/python3 -I -S -B - "$grant_path" "$thread_binding" "$host_boot_id_sha" \
+		"$TRUSTED_POLICY_SHA256" "$action_digest" "$boot_sha" "$expected_identity" \
+		"$fastboot_sha" "$fastboot_identity" "$stage" "$helper_sha" "$session_max_seconds" <<'PY'
+import json
+import os
+from pathlib import Path
+import stat
+import sys
+import time
+
+path = Path(sys.argv[1])
+(thread_binding, host_boot, policy_sha, action_digest, boot_sha, device_identity,
+ fastboot_sha, fastboot_identity, stage, helper_sha) = sys.argv[2:12]
+session_max = int(sys.argv[12])
+required = {"schema", "thread_binding_sha256", "host_boot_id_sha256", "policy_sha256",
+            "action_digest", "boot_sha256", "device_identity_sha256", "fastboot_sha256",
+            "fastboot_identity", "stage", "operation", "helper_sha256",
+            "issued_at_epoch", "expires_at_epoch"}
+
+def no_duplicates(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError
+        value[key] = item
+    return value
+
+try:
+    parent = path.parent
+    for directory in (parent.parent, parent):
+        st = directory.lstat()
+        if (not stat.S_ISDIR(st.st_mode) or stat.S_IMODE(st.st_mode) != 0o700
+                or st.st_uid != os.geteuid()):
+            raise OSError
+    fd = os.open(path, os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+                 | getattr(os, "O_NOFOLLOW", 0))
+    before = os.fstat(fd)
+    if (not stat.S_ISREG(before.st_mode) or stat.S_IMODE(before.st_mode) != 0o600
+            or before.st_uid != os.geteuid() or before.st_nlink != 1 or before.st_size > 8192):
+        raise OSError
+    data = os.read(fd, 8193)
+    after = os.fstat(fd)
+    os.close(fd)
+    identity = lambda st: (st.st_dev, st.st_ino, st.st_mode, st.st_nlink, st.st_size,
+                           st.st_mtime_ns, st.st_ctime_ns)
+    if len(data) > 8192 or identity(before) != identity(after):
+        raise OSError
+    record = json.loads(data.decode("ascii"), object_pairs_hook=no_duplicates)
+    expected = {
+        "schema": "lmi-d110-codex-session-grant/v1",
+        "thread_binding_sha256": thread_binding,
+        "host_boot_id_sha256": host_boot,
+        "policy_sha256": policy_sha,
+        "action_digest": action_digest,
+        "boot_sha256": boot_sha,
+        "device_identity_sha256": device_identity,
+        "fastboot_sha256": fastboot_sha,
+        "fastboot_identity": fastboot_identity,
+        "stage": stage,
+        "operation": "fastboot boot",
+        "helper_sha256": helper_sha,
+    }
+    if not isinstance(record, dict) or set(record) != required:
+        raise ValueError
+    if any(record[key] != value for key, value in expected.items()):
+        raise ValueError
+    issued, expires = record["issued_at_epoch"], record["expires_at_epoch"]
+    now = int(time.time())
+    if (isinstance(issued, bool) or isinstance(expires, bool)
+            or not isinstance(issued, int) or not isinstance(expires, int)
+            or expires - issued != session_max or issued > now + 2 or now >= expires
+            or int(before.st_mtime) < issued - 2 or int(before.st_mtime) > issued + 2):
+        raise ValueError
+except (OSError, ValueError, UnicodeError, json.JSONDecodeError):
+    raise SystemExit(1)
+PY
+	status=$?
+	set -e
+	[ "$status" -eq 0 ] || fail "the current Codex thread has no valid session grant for this exact operation"
+}
+
+revoke_session_grant() {
+	local status
+	set +e
+	/usr/bin/python3 -I -S -B - "$grant_dir" "$thread_binding" <<'PY'
+import os
+from pathlib import Path
+import stat
+import sys
+
+base = Path(sys.argv[1])
+name = "grant-" + sys.argv[2] + ".json"
+active = base / "active"
+revoked = base / "revoked"
+try:
+    for directory in (base, active, revoked):
+        st = directory.lstat()
+        if (not stat.S_ISDIR(st.st_mode) or stat.S_IMODE(st.st_mode) != 0o700
+                or st.st_uid != os.geteuid()):
+            raise OSError
+    source = active / name
+    st = source.lstat()
+    if (not stat.S_ISREG(st.st_mode) or stat.S_IMODE(st.st_mode) != 0o600
+            or st.st_uid != os.geteuid() or st.st_nlink != 1):
+        raise OSError
+    target = revoked / name
+    try:
+        old = target.lstat()
+    except FileNotFoundError:
+        pass
+    else:
+        if (not stat.S_ISREG(old.st_mode) or stat.S_IMODE(old.st_mode) != 0o600
+                or old.st_uid != os.geteuid() or old.st_nlink != 1):
+            raise OSError
+    os.replace(source, target)
+    for directory in (active, revoked):
+        fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+        os.fsync(fd)
+        os.close(fd)
+except OSError:
+    raise SystemExit(1)
+PY
+	status=$?
+	set -e
+	[ "$status" -eq 0 ] || fail "the session grant could not be atomically revoked"
+}
+
+create_attempt_receipt() {
 	local output status
 	set +e
 	output=$(/usr/bin/python3 -I -S -B - "$receipt_dir" "$TRUSTED_POLICY_SHA256" \
-		"$action_digest" "$boot_sha" "$expected_identity" "$device_battery_mv" \
+		"$action_digest" "$boot_sha" "$expected_identity" "$thread_binding" \
+		"$host_boot_id_sha" "$helper_sha" "$fastboot_identity" "$stage" "$device_battery_mv" \
 		"$device_max_download" "$receipt_ttl" <<'PY'
 import hashlib
 import json
@@ -722,85 +1140,89 @@ import sys
 import time
 
 receipt_dir = Path(sys.argv[1])
-policy_sha, action_digest, boot_sha, identity = sys.argv[2:6]
-battery, max_download, ttl = map(int, sys.argv[6:9])
+(policy_sha, action_digest, boot_sha, identity, thread_binding, host_boot,
+ helper_sha, fastboot_identity, stage) = sys.argv[2:11]
+battery, max_download, ttl = map(int, sys.argv[11:14])
 
-def die():
-    raise SystemExit(1)
+def good_dir(path):
+    st = path.lstat()
+    return (stat.S_ISDIR(st.st_mode) and stat.S_IMODE(st.st_mode) == 0o700
+            and st.st_uid == os.geteuid())
 
-parent = receipt_dir.parent
 try:
-    st = parent.lstat()
-except OSError:
-    die()
-if not stat.S_ISDIR(st.st_mode) or stat.S_IMODE(st.st_mode) != 0o700 or st.st_uid != os.geteuid():
-    die()
-try:
-    receipt_dir.mkdir(mode=0o700)
-except FileExistsError:
-    pass
-for directory in (receipt_dir, receipt_dir / "pending", receipt_dir / "consumed"):
-    if directory != receipt_dir:
-        try:
-            directory.mkdir(mode=0o700)
-        except FileExistsError:
-            pass
-    st = directory.lstat()
-    if not stat.S_ISDIR(st.st_mode) or stat.S_IMODE(st.st_mode) != 0o700 or st.st_uid != os.geteuid():
-        die()
-
-now = int(time.time())
-nonce = secrets.token_hex(32)
-receipt_id = hashlib.sha256((policy_sha + "\0" + nonce).encode("ascii")).hexdigest()
-record = {
-    "schema": "lmi-d110-one-shot-receipt/v1",
-    "policy_sha256": policy_sha,
-    "action_digest": action_digest,
-    "boot_sha256": boot_sha,
-    "device_identity_sha256": identity,
-    "issued_at_epoch": now,
-    "expires_at_epoch": now + ttl,
-    "challenge_nonce": nonce,
-    "preflight_battery_mv": battery,
-    "preflight_max_download_size": max_download,
-}
-payload = (json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n").encode("ascii")
-pending = receipt_dir / "pending"
-temporary = pending / ("." + receipt_id + ".tmp")
-final = pending / ("receipt-" + receipt_id + ".json")
-flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
-fd = os.open(temporary, flags, 0o600)
-try:
-    os.write(fd, payload)
+    if not good_dir(receipt_dir.parent):
+        raise OSError
+    try:
+        receipt_dir.mkdir(mode=0o700)
+    except FileExistsError:
+        pass
+    for directory in (receipt_dir, receipt_dir / "pending", receipt_dir / "consumed"):
+        if directory != receipt_dir:
+            try:
+                directory.mkdir(mode=0o700)
+            except FileExistsError:
+                pass
+        if not good_dir(directory):
+            raise OSError
+    now = int(time.time())
+    nonce = secrets.token_hex(32)
+    receipt_id = hashlib.sha256((policy_sha + "\0" + nonce).encode("ascii")).hexdigest()
+    record = {
+        "schema": "lmi-d110-internal-attempt-receipt/v1",
+        "policy_sha256": policy_sha,
+        "action_digest": action_digest,
+        "boot_sha256": boot_sha,
+        "device_identity_sha256": identity,
+        "thread_binding_sha256": thread_binding,
+        "host_boot_id_sha256": host_boot,
+        "helper_sha256": helper_sha,
+        "fastboot_identity": fastboot_identity,
+        "stage": stage,
+        "operation": "fastboot boot",
+        "issued_at_epoch": now,
+        "expires_at_epoch": now + ttl,
+        "challenge_nonce": nonce,
+        "preflight_battery_mv": battery,
+        "preflight_max_download_size": max_download,
+    }
+    payload = (json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n").encode("ascii")
+    pending = receipt_dir / "pending"
+    temporary = pending / ("." + receipt_id + ".tmp")
+    final = pending / ("receipt-" + receipt_id + ".json")
+    flags = (os.O_WRONLY | os.O_CREAT | os.O_EXCL
+             | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0))
+    fd = os.open(temporary, flags, 0o600)
+    view = memoryview(payload)
+    while view:
+        written = os.write(fd, view)
+        if written <= 0:
+            raise OSError
+        view = view[written:]
     os.fsync(fd)
-finally:
     os.close(fd)
-# Publish without replacement only after the complete payload is durable.
-os.link(temporary, final, follow_symlinks=False)
-os.unlink(temporary)
-os.chmod(final, 0o600, follow_symlinks=False)
-directory_fd = os.open(pending, os.O_RDONLY | os.O_DIRECTORY)
-try:
+    os.link(temporary, final, follow_symlinks=False)
+    os.unlink(temporary)
+    directory_fd = os.open(pending, os.O_RDONLY | os.O_DIRECTORY)
     os.fsync(directory_fd)
-finally:
     os.close(directory_fd)
-print(str(final) + "\t" + nonce)
+except (OSError, ValueError):
+    raise SystemExit(1)
+print(str(final))
 PY
 	)
 	status=$?
 	set -e
-	[ "$status" -eq 0 ] || fail "could not create a private one-shot preflight receipt"
-	IFS=$'\t' read -r pending_receipt challenge_nonce <<< "$output"
-	[[ $challenge_nonce =~ ^[0-9a-f]{64}$ ]] || fail "receipt creator returned an invalid challenge"
+	[ "$status" -eq 0 ] || fail "could not create the private internal attempt receipt"
+	pending_receipt=$output
 }
 
-consume_receipt() {
+consume_attempt_receipt() {
 	local output status
 	set +e
-	output=$(/usr/bin/python3 -I -S -B - "$receipt_dir" "$receipt_arg" \
-		"$TRUSTED_POLICY_SHA256" "$action_digest" "$boot_sha" \
-		"$expected_identity" "$receipt_ttl" 3<<< "$confirmation" <<'PY'
-import hmac
+	output=$(/usr/bin/python3 -I -S -B - "$receipt_dir" "$pending_receipt" \
+		"$TRUSTED_POLICY_SHA256" "$action_digest" "$boot_sha" "$expected_identity" \
+		"$thread_binding" "$host_boot_id_sha" "$helper_sha" "$fastboot_identity" "$stage" "$receipt_ttl" <<'PY'
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -811,104 +1233,121 @@ import time
 
 receipt_dir = Path(sys.argv[1])
 requested = Path(sys.argv[2])
-policy_sha, action_digest, boot_sha, identity = sys.argv[3:7]
-ttl = int(sys.argv[7])
-confirmation = os.fdopen(3).read()
-if confirmation.endswith("\n"):
-    confirmation = confirmation[:-1]
-
-def die():
-    raise SystemExit(1)
-
+(policy_sha, action_digest, boot_sha, identity, thread_binding, host_boot,
+ helper_sha, fastboot_identity, stage) = sys.argv[3:12]
+ttl = int(sys.argv[12])
 pending = receipt_dir / "pending"
 consumed = receipt_dir / "consumed"
+
+def no_duplicates(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError
+        value[key] = item
+    return value
+
 try:
     if requested != pending / requested.name or requested.parent != pending:
-        die()
+        raise ValueError
     name = requested.name
     if re.fullmatch(r"receipt-[0-9a-f]{64}\.json", name) is None:
-        die()
+        raise ValueError
     for directory in (receipt_dir, pending, consumed):
         st = directory.lstat()
-        if not stat.S_ISDIR(st.st_mode) or stat.S_IMODE(st.st_mode) != 0o700 or st.st_uid != os.geteuid():
-            die()
+        if (not stat.S_ISDIR(st.st_mode) or stat.S_IMODE(st.st_mode) != 0o700
+                or st.st_uid != os.geteuid()):
+            raise OSError
     pending_fd = os.open(pending, os.O_RDONLY | os.O_DIRECTORY)
     consumed_fd = os.open(consumed, os.O_RDONLY | os.O_DIRECTORY)
-    try:
-        flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
-        fd = os.open(name, flags, dir_fd=pending_fd)
-        try:
-            before = os.fstat(fd)
-            if (not stat.S_ISREG(before.st_mode) or stat.S_IMODE(before.st_mode) != 0o600
-                    or before.st_uid != os.geteuid() or before.st_nlink != 1 or before.st_size > 8192):
-                die()
-            data = b""
-            while True:
-                chunk = os.read(fd, 8192)
-                if not chunk:
-                    break
-                data += chunk
-                if len(data) > 8192:
-                    die()
-            after = os.fstat(fd)
-            identity_tuple = lambda st: (st.st_dev, st.st_ino, st.st_mode, st.st_nlink, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
-            if identity_tuple(before) != identity_tuple(after):
-                die()
-        finally:
-            os.close(fd)
-        try:
-            record = json.loads(data.decode("ascii"), object_pairs_hook=lambda pairs: dict(pairs) if len(dict(pairs)) == len(pairs) else die())
-        except (UnicodeError, json.JSONDecodeError):
-            die()
-        required = {"schema", "policy_sha256", "action_digest", "boot_sha256", "device_identity_sha256", "issued_at_epoch", "expires_at_epoch", "challenge_nonce", "preflight_battery_mv", "preflight_max_download_size"}
-        if not isinstance(record, dict) or set(record) != required:
-            die()
-        nonce = record["challenge_nonce"]
-        if (record["schema"] != "lmi-d110-one-shot-receipt/v1" or record["policy_sha256"] != policy_sha
-                or record["action_digest"] != action_digest or record["boot_sha256"] != boot_sha
-                or record["device_identity_sha256"] != identity or not isinstance(nonce, str)
-                or re.fullmatch(r"[0-9a-f]{64}", nonce) is None):
-            die()
-        issued, expires = record["issued_at_epoch"], record["expires_at_epoch"]
-        if isinstance(issued, bool) or isinstance(expires, bool) or not isinstance(issued, int) or not isinstance(expires, int):
-            die()
-        now = int(time.time())
-        if expires - issued != ttl or issued > now + 2 or now >= expires or now - issued > ttl:
-            die()
-        if int(before.st_mtime) < issued - 2 or int(before.st_mtime) > issued + 2:
-            die()
-        expected_confirmation = "boot-d110-" + boot_sha + "-" + nonce
-        if not hmac.compare_digest(confirmation, expected_confirmation):
-            die()
-        moved_name = name[:-5] + ".consumed.json"
-        # link() is the atomic no-replace claim. If execution crashes before
-        # unlink(), the consumed name still prevents a second claimant.
-        os.link(name, moved_name, src_dir_fd=pending_fd, dst_dir_fd=consumed_fd, follow_symlinks=False)
-        moved = os.stat(moved_name, dir_fd=consumed_fd, follow_symlinks=False)
-        if moved.st_dev != before.st_dev or moved.st_ino != before.st_ino:
-            die()
-        os.fsync(consumed_fd)
-        os.unlink(name, dir_fd=pending_fd)
-        os.fsync(pending_fd)
-    finally:
-        os.close(pending_fd)
-        os.close(consumed_fd)
-except (OSError, ValueError, TypeError):
-    die()
-print(str(consumed / moved_name) + "\t" + str(expires))
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(name, flags, dir_fd=pending_fd)
+    before = os.fstat(fd)
+    if (not stat.S_ISREG(before.st_mode) or stat.S_IMODE(before.st_mode) != 0o600
+            or before.st_uid != os.geteuid() or before.st_nlink != 1 or before.st_size > 8192):
+        raise OSError
+    data = os.read(fd, 8193)
+    after = os.fstat(fd)
+    os.close(fd)
+    identity_tuple = lambda st: (st.st_dev, st.st_ino, st.st_mode, st.st_nlink,
+                                 st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+    if len(data) > 8192 or identity_tuple(before) != identity_tuple(after):
+        raise OSError
+    record = json.loads(data.decode("ascii"), object_pairs_hook=no_duplicates)
+    required = {"schema", "policy_sha256", "action_digest", "boot_sha256",
+                "device_identity_sha256", "thread_binding_sha256", "host_boot_id_sha256",
+                "helper_sha256", "fastboot_identity", "stage", "operation", "issued_at_epoch",
+                "expires_at_epoch", "challenge_nonce", "preflight_battery_mv",
+                "preflight_max_download_size"}
+    if not isinstance(record, dict) or set(record) != required:
+        raise ValueError
+    nonce = record["challenge_nonce"]
+    if not isinstance(nonce, str) or re.fullmatch(r"[0-9a-f]{64}", nonce) is None:
+        raise ValueError
+    receipt_id = hashlib.sha256((policy_sha + "\0" + nonce).encode("ascii")).hexdigest()
+    if name != "receipt-" + receipt_id + ".json":
+        raise ValueError
+    expected = {
+        "schema": "lmi-d110-internal-attempt-receipt/v1",
+        "policy_sha256": policy_sha,
+        "action_digest": action_digest,
+        "boot_sha256": boot_sha,
+        "device_identity_sha256": identity,
+        "thread_binding_sha256": thread_binding,
+        "host_boot_id_sha256": host_boot,
+        "helper_sha256": helper_sha,
+        "fastboot_identity": fastboot_identity,
+        "stage": stage,
+        "operation": "fastboot boot",
+    }
+    if any(record[key] != value for key, value in expected.items()):
+        raise ValueError
+    issued, expires = record["issued_at_epoch"], record["expires_at_epoch"]
+    now = int(time.time())
+    if (isinstance(issued, bool) or isinstance(expires, bool)
+            or not isinstance(issued, int) or not isinstance(expires, int)
+            or expires - issued != ttl or issued > now + 2 or now >= expires
+            or int(before.st_mtime) < issued - 2 or int(before.st_mtime) > issued + 2):
+        raise ValueError
+    moved_name = name[:-5] + ".consumed.json"
+    os.link(name, moved_name, src_dir_fd=pending_fd, dst_dir_fd=consumed_fd,
+            follow_symlinks=False)
+    moved = os.stat(moved_name, dir_fd=consumed_fd, follow_symlinks=False)
+    if moved.st_dev != before.st_dev or moved.st_ino != before.st_ino:
+        raise OSError
+    os.fsync(consumed_fd)
+    os.unlink(name, dir_fd=pending_fd)
+    os.fsync(pending_fd)
+    os.close(pending_fd)
+    os.close(consumed_fd)
+except (OSError, ValueError, TypeError, UnicodeError, json.JSONDecodeError):
+    raise SystemExit(1)
+print(str(expires))
 PY
 	)
 	status=$?
 	set -e
-	[ "$status" -eq 0 ] || fail "receipt is invalid, expired, already consumed, replayed, or does not match the exact full-hash-and-nonce confirmation"
-	IFS=$'\t' read -r consumed_receipt consumed_expiry_epoch <<< "$output"
-	[[ $consumed_expiry_epoch =~ ^[0-9]{10}$ ]] || fail "receipt consumer returned an invalid expiry"
+	[ "$status" -eq 0 ] || fail "the internal attempt receipt is invalid, expired, renamed, replayed, or already consumed"
+	consumed_expiry_epoch=$output
+	[[ $consumed_expiry_epoch =~ ^[0-9]+$ ]] || fail "attempt receipt consumer returned an invalid expiry"
 }
 
+complete_read_only_preflight() {
+	preflight_device
+	capture_local_policy
+	verify_helper_identity
+	verify_fastboot_tool
+	prepare_candidate_view
+	verify_candidate_view
+}
+
+capture_helper_identity
 capture_local_policy
-capture_fastboot_tool
-prepare_candidate_view
-verify_candidate_view
+
+case "$mode" in
+	--authorize-session|--execute|--revoke-session) capture_session_scope ;;
+	*) unset CODEX_THREAD_ID ;;
+esac
 
 printf 'claim=%s\n' "$CLAIM"
 printf 'policy_sha256=%s\n' "$TRUSTED_POLICY_SHA256"
@@ -923,35 +1362,56 @@ printf 'fastboot_sha256=%s\n' "$fastboot_sha"
 
 case "$mode" in
 	--dry-run)
+		capture_fastboot_tool
+		prepare_candidate_view
+		verify_candidate_view
 		printf 'dry-run=local-only; no phone query or hardware command\n'
-		printf 'confirmation_format=boot-d110-%s-<fresh-preflight-nonce>\n' "$boot_sha"
+		printf 'session_scope=CODEX_THREAD_ID is required only for authorize, execute, and revoke\n'
 		;;
 	--preflight)
-		preflight_device
-		capture_local_policy
-		verify_fastboot_tool
+		capture_fastboot_tool
 		prepare_candidate_view
 		verify_candidate_view
-		create_receipt
+		complete_read_only_preflight
 		printf 'preflight=passed-read-only\n'
-		printf 'receipt=%s\n' "$pending_receipt"
-		printf 'receipt_ttl_seconds=%s\n' "$receipt_ttl"
-		printf 'required_confirmation=boot-d110-%s-%s\n' "$boot_sha" "$challenge_nonce"
+		printf 'session_grant=not-created\n'
 		printf 'No action was attempted. %s\n' "$CLAIM"
 		;;
-	--execute)
-		consume_receipt
-		execute_deadline_epoch=$consumed_expiry_epoch
-		printf 'receipt=consumed-before-execution\n'
-		preflight_device
-		bound_timeout_to_execute_deadline "$READ_ONLY_TIMEOUT"
-		capture_local_policy
-		bound_timeout_to_execute_deadline "$READ_ONLY_TIMEOUT"
-		verify_fastboot_tool
-		bound_timeout_to_execute_deadline "$READ_ONLY_TIMEOUT"
+	--authorize-session)
+		capture_fastboot_tool
 		prepare_candidate_view
-		bound_timeout_to_execute_deadline "$READ_ONLY_TIMEOUT"
 		verify_candidate_view
+		complete_read_only_preflight
+		# No state is created until the complete read-only preflight above passes.
+		prepare_session_storage create
+		acquire_session_lock
+		verify_helper_identity
+		create_session_grant
+		release_session_lock
+		printf 'authorization=session-grant-%s-after-complete-read-only-preflight\n' "$grant_result"
+		printf 'session_scope=current-CODEX_THREAD_ID-hash; raw identifier not stored or printed\n'
+		printf 'session_max_seconds=%s\n' "$session_max_seconds"
+		printf 'No boot action was attempted. %s\n' "$CLAIM"
+		;;
+	--execute)
+		prepare_session_storage validate
+		acquire_session_lock
+		capture_fastboot_tool
+		verify_session_grant
+		prepare_candidate_view
+		verify_candidate_view
+		complete_read_only_preflight
+		verify_session_grant
+		create_attempt_receipt
+		consume_attempt_receipt
+		execute_deadline_epoch=$consumed_expiry_epoch
+		printf 'authorization=same-thread-session-grant-verified-under-exclusive-lock\n'
+		printf 'attempt_receipt=created-and-consumed-internally-before-execution\n'
+		# The internal receipt is already consumed. Every device and local gate is
+		# now repeated within its 30-second deadline before the single action.
+		complete_read_only_preflight
+		bound_timeout_to_execute_deadline "$READ_ONLY_TIMEOUT"
+		verify_session_grant
 		require_action_deadline_margin
 		set +e
 		/usr/bin/timeout "$action_deadline_timeout" "$fastboot_bin" -s "$device_serial" boot "$fastboot_candidate_path" >/dev/null 2>&1
@@ -962,19 +1422,33 @@ case "$mode" in
 		# fastboot build could echo a raw serial. The exit status is sufficient
 		# for this one-shot gate, and no retry is made.
 		capture_local_policy
+		verify_helper_identity
 		verify_fastboot_tool
 		prepare_candidate_view
 		verify_candidate_view
-		[ "$action_status" -eq 0 ] || fail "the single fastboot boot action failed; the receipt remains consumed and no retry was attempted"
+		verify_session_grant
+		[ "$action_status" -eq 0 ] || fail "the single fastboot boot action failed; the internal attempt receipt remains consumed and no retry was attempted"
+		release_session_lock
 		printf 'fastboot_boot_attempts=1\n'
 		printf 'result=single-pinned-fastboot-boot-command-accepted\n'
 		printf 'No automatic retry. %s\n' "$CLAIM"
 		;;
+	--revoke-session)
+		prepare_session_storage validate
+		acquire_session_lock
+		revoke_session_grant
+		release_session_lock
+		printf 'revocation=current-CODEX_THREAD_ID-session-grant-atomically-revoked\n'
+		printf 'No phone query or boot action was attempted. %s\n' "$CLAIM"
+		;;
 esac
 
-# Residual boundary: a process already running as this same EUID can modify the
-# helper or race private pathnames, and Windows consumes a pathname rather than
-# a retained Linux file descriptor. File-descriptor hashing, exact modes,
-# one-link checks, before/after identity checks, fixed absolute interpreters,
-# PowerShell re-hashing, and atomic receipt claiming narrow but cannot remove
-# that same-EUID/WSL-Windows pathname trust boundary.
+# Residual boundary: CODEX_THREAD_ID distinguishes the current Codex thread but
+# is not itself a cryptographic authentication principal; user authority comes
+# from the Codex session/tool approval boundary. A process already running as
+# this same EUID can modify the helper or race private pathnames, and Windows
+# consumes a pathname rather than a retained Linux file descriptor. Helper and
+# host-boot binding, file-descriptor hashing, exact modes, one-link checks,
+# before/after identity checks, fixed absolute interpreters, PowerShell
+# re-hashing, atomic grant/receipt operations, and the global execution lock
+# narrow but cannot remove that same-EUID/WSL-Windows pathname trust boundary.

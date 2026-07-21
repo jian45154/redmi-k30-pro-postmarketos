@@ -1,5 +1,9 @@
 # Xiaomi lmi r6 boot write result - 2026-06-24
 
+> **Archived evidence — do not execute commands from this file.**
+> This completed result is historical evidence. Any suggested next step or
+> approval language below has expired and is not present authorization.
+
 This records the approved boot write that was executed after the r6 rootfs
 write and fastbootd preflight passed. It is not an approval to reboot.
 

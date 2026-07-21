@@ -1,0 +1,35 @@
+{
+  "schema": "lmi-weston-sixrow-source-lock/v1",
+  "architecture": "aarch64",
+  "package": "lmi-weston-sixrow-clients",
+  "weston": {
+    "version": "14.0.2",
+    "url": "https://gitlab.freedesktop.org/wayland/weston/-/releases/14.0.2/downloads/weston-14.0.2.tar.xz",
+    "sha256": "b47216b3530da76d02a3a1acbf1846a9cd41d24caa86448f9c46f78f20b6e0ac",
+    "sha512": "e8214ec893e6c3ae94eb3c92feba104b0201843e9143f726a3e9a4d396d02523c94da706c1348cf934bc339fb1a4bc1fecdb865f0ea914115fd346d9eda091f5"
+  },
+  "reviewed_reference": {
+    "reference_name": "Windows evidence archive: weston/lmi-phone-input-safearea.patch",
+    "sha256": "1870c410a3d65be44d8a7afe132db849b06df03c63cf24d1b86271177203682b",
+    "build_dependency": false,
+    "included_subset": "clients/keyboard.c, clients/meson.build, clients/terminal.c"
+  },
+  "patches": [
+    {
+      "path": "files/lmi-weston-sixrow/0001-phone-input-terminal-text-input.patch",
+      "sha256": "9690cb0f7e9203c1e7fbf8dfef078bb7535f3fb93d0bafad10efd77f48f880fd"
+    },
+    {
+      "path": "files/lmi-weston-sixrow/0002-sixrow-control.patch",
+      "sha256": "b9cc986b3e4ca52d2615ce3c096dedee15275c101c5197fd2f5bb3a1a315b0b1"
+    }
+  ],
+  "install_paths": [
+    "/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow",
+    "/usr/libexec/lmi-p2-d114/weston-terminal-sixrow"
+  ],
+  "forbidden_install_paths": [
+    "/usr/bin/weston-terminal",
+    "/usr/libexec/weston-keyboard"
+  ]
+}

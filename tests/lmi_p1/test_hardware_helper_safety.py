@@ -21,6 +21,7 @@ CLAIM = (
     "the booted OS may mutate persisted userdata."
 )
 PRODUCTION_RECEIPT_TTL_SECONDS = 30
+PRODUCTION_SESSION_MAX_SECONDS = 43_200
 LEGACY_TRUST_ENV = (
     "REPO",
     "FASTBOOT",
@@ -40,6 +41,7 @@ LEGACY_TRUST_ENV = (
 
 class D110GateFixture:
     serial = "SYNTHETIC-LMI-01"
+    thread_id = "codex-thread-fixture-A"
     boot_uuid = "11111111-2222-4333-8444-555555555555"
     root_uuid = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
 
@@ -126,17 +128,27 @@ action=$3
 if [ "$selected" != "${FAKE_SERIAL:-SYNTHETIC-LMI-01}" ]; then
     exit 41
 fi
+if [ "${FAKE_REJECT_THREAD_ENV:-}" = 1 ] && [ -n "${CODEX_THREAD_ID:-}" ]; then
+    exit 47
+fi
 
 case "$action" in
     getvar)
         key=${4:-}
         if [ -n "${FAKE_QUERY_DELAY:-}" ] && \
-            { [ -z "${FAKE_DELAY_KEY:-}" ] || [ "$FAKE_DELAY_KEY" = "$key" ]; }; then
+            { [ -z "${FAKE_DELAY_KEY:-}" ] || [ "$FAKE_DELAY_KEY" = "$key" ]; } && \
+            { [ -z "${FAKE_DELAY_AFTER_MARKER:-}" ] || [ -e "$FAKE_STATE_MARKER" ]; }; then
             /bin/sleep "$FAKE_QUERY_DELAY"
         fi
         case "$key" in
             serialno) value=${FAKE_GETVAR_SERIAL:-${FAKE_SERIAL:-SYNTHETIC-LMI-01}} ;;
-            product) value=${FAKE_PRODUCT:-lmi} ;;
+            product)
+                value=${FAKE_PRODUCT:-lmi}
+                if [ -n "${FAKE_STATE_MARKER:-}" ] && [ -e "$FAKE_STATE_MARKER" ] && \
+                    [ -n "${FAKE_PRODUCT_AFTER_MARKER:-}" ]; then
+                    value=$FAKE_PRODUCT_AFTER_MARKER
+                fi
+                ;;
             unlocked) value=${FAKE_UNLOCKED:-yes} ;;
             is-userspace) value=${FAKE_USERSPACE:-no} ;;
             battery-voltage) value=${FAKE_BATTERY_VOLTAGE:-4200} ;;
@@ -152,9 +164,15 @@ case "$action" in
         if [ "${FAKE_MUTATE_ON_GETVAR:-}" = "$key" ]; then
             printf 'mutation\n' >> "$FAKE_MUTATE_PATH"
         fi
+        if [ "${FAKE_MARK_ON_GETVAR:-}" = "$key" ]; then
+            : > "$FAKE_STATE_MARKER"
+        fi
         ;;
     boot)
         [ "$#" -eq 4 ] || exit 43
+        if [ -n "${FAKE_BOOT_DELAY:-}" ]; then
+            /bin/sleep "$FAKE_BOOT_DELAY"
+        fi
         [ "${FAKE_ACTION_FAIL:-}" != 1 ] || exit 44
         ;;
     flash|erase|format)
@@ -326,7 +344,7 @@ esac
             r"C:\Pinned\fastboot.exe" if host_kind == "windows" else str(self.fake_fastboot)
         )
         return {
-            "schema": "lmi-d110-recovery-policy/v1",
+            "schema": "lmi-d110-recovery-policy/v2",
             "policy_id": "fixture-pinned-policy",
             "claim": CLAIM,
             "historical_identity": {
@@ -371,6 +389,16 @@ esac
                 "minimum_battery_mv": 3800,
                 "battery_soc_ok": "yes",
                 "minimum_max_download_size": self.boot.stat().st_size,
+            },
+            "approval": {
+                "mode": "codex-thread-session",
+                "session_id_environment": "CODEX_THREAD_ID",
+                "grant_dir": str(
+                    (self.base / "d110-session-grants").relative_to(self.repo)
+                ),
+                "explicit_revocation": True,
+                "host_boot_id_path": "/proc/sys/kernel/random/boot_id",
+                "session_max_seconds": PRODUCTION_SESSION_MAX_SECONDS,
             },
             "execution": {
                 "operation": "fastboot boot",
@@ -456,7 +484,7 @@ printf '%s %s\\r\\n' '{self.boot.stat().st_size}' '{self.digest(self.boot)}'
         )
         self.fake_powershell.chmod(0o755)
 
-    def env(self, **updates: str) -> dict[str, str]:
+    def env(self, **updates: str | None) -> dict[str, str]:
         env = os.environ.copy()
         for key in LEGACY_TRUST_ENV:
             env.pop(key, None)
@@ -464,31 +492,33 @@ printf '%s %s\\r\\n' '{self.boot.stat().st_size}' '{self.digest(self.boot)}'
             {
                 "FAKE_FASTBOOT_LOG": str(self.fastboot_log),
                 "LC_ALL": "C",
+                "CODEX_THREAD_ID": self.thread_id,
             }
         )
-        env.update(updates)
+        for key, value in updates.items():
+            if value is None:
+                env.pop(key, None)
+            else:
+                env[key] = value
         return env
 
     def run(
         self,
         mode: str,
         *,
-        receipt: str | None = None,
-        confirmation: str | None = None,
-        extra_env: dict[str, str] | None = None,
+        extra_args: tuple[str, ...] = (),
+        extra_env: dict[str, str | None] | None = None,
+        timeout: float = 15,
     ) -> subprocess.CompletedProcess[str]:
         args = [str(self.stage_script), "--stage", "ramboot", mode]
-        if receipt is not None:
-            args.extend(("--receipt", receipt))
-        if confirmation is not None:
-            args.extend(("--confirm", confirmation))
+        args.extend(extra_args)
         return subprocess.run(
             args,
             cwd=self.repo,
             env=self.env(**(extra_env or {})),
             text=True,
             capture_output=True,
-            timeout=15,
+            timeout=timeout,
             check=False,
         )
 
@@ -498,16 +528,15 @@ printf '%s %s\\r\\n' '{self.boot.stat().st_size}' '{self.digest(self.boot)}'
     def calls(self) -> str:
         return self.fastboot_log.read_text(encoding="utf-8")
 
-    def preflight(self, **env: str) -> tuple[str, str, subprocess.CompletedProcess[str]]:
-        result = self.run("--preflight", extra_env=env)
-        receipt = ""
-        confirmation = ""
-        for line in result.stdout.splitlines():
-            if line.startswith("receipt="):
-                receipt = line.split("=", 1)[1]
-            elif line.startswith("required_confirmation="):
-                confirmation = line.split("=", 1)[1]
-        return receipt, confirmation, result
+    def preflight(self, **env: str | None) -> subprocess.CompletedProcess[str]:
+        return self.run("--preflight", extra_env=env)
+
+    def authorize(self, **env: str | None) -> subprocess.CompletedProcess[str]:
+        return self.run("--authorize-session", extra_env=env)
+
+    def grant_files(self, subdir: str = "active") -> list[Path]:
+        directory = self.base / "d110-session-grants" / subdir
+        return sorted(directory.glob("grant-*.json")) if directory.exists() else []
 
 
 class DownstreamStageSafetyTests(unittest.TestCase):
@@ -527,6 +556,10 @@ class DownstreamStageSafetyTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("--stage ramboot --preflight", result.stdout)
+        self.assertIn("--stage ramboot --authorize-session", result.stdout)
+        self.assertIn("--stage ramboot --revoke-session", result.stdout)
+        self.assertNotIn("--receipt <", result.stdout)
+        self.assertIn("not an independent cryptographic authentication factor", result.stdout)
         self.assertNotIn("--stage rootfs", result.stdout)
         self.assertIn(CLAIM, result.stdout)
 
@@ -547,144 +580,306 @@ class DownstreamStageSafetyTests(unittest.TestCase):
         self.assertEqual(refused.returncode, 2)
         self.assertEqual(self.fixture.calls(), "")
 
-    def test_preflight_creates_private_short_lived_receipt_and_no_action(self) -> None:
-        receipt, confirmation, result = self.fixture.preflight()
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertTrue(receipt)
-        self.assertEqual(
-            confirmation,
-            "boot-d110-" + self.fixture.digest(self.fixture.boot) + "-" + confirmation.rsplit("-", 1)[1],
-        )
-        path = Path(receipt)
-        self.assertEqual(path.stat().st_mode & 0o777, 0o600)
-        self.assertEqual(path.parent.stat().st_mode & 0o777, 0o700)
-        record = json.loads(path.read_text(encoding="ascii"))
+    def test_preflight_is_read_only_and_authorize_creates_private_bound_grant(self) -> None:
+        preflight = self.fixture.preflight()
+        self.assertEqual(preflight.returncode, 0, preflight.stderr)
+        self.assertIn("session_grant=not-created", preflight.stdout)
+        self.assertFalse(self.fixture.grant_files())
+        self.assertNotIn("<boot>", self.fixture.calls())
+
+        self.fixture.clear_log()
+        authorized = self.fixture.authorize(FAKE_REJECT_THREAD_ENV="1")
+        self.assertEqual(authorized.returncode, 0, authorized.stderr)
+        self.assertIn("session-grant-created", authorized.stdout)
+        self.assertNotIn(self.fixture.thread_id, authorized.stdout + authorized.stderr)
+        self.assertNotIn("<boot>", self.fixture.calls())
+        grants = self.fixture.grant_files()
+        self.assertEqual(len(grants), 1)
+        grant = grants[0]
+        self.assertEqual(grant.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(grant.parent.stat().st_mode & 0o777, 0o700)
+        self.assertEqual(grant.parent.parent.stat().st_mode & 0o777, 0o700)
+        payload = grant.read_text(encoding="ascii")
+        record = json.loads(payload)
+        self.assertNotIn(self.fixture.thread_id, payload)
+        self.assertEqual(record["schema"], "lmi-d110-codex-session-grant/v1")
+        self.assertEqual(record["stage"], "ramboot")
+        self.assertEqual(record["operation"], "fastboot boot")
+        self.assertEqual(record["helper_sha256"], self.fixture.digest(self.fixture.stage_script))
+        self.assertEqual(record["fastboot_sha256"], self.fixture.digest(self.fixture.fake_fastboot))
         self.assertEqual(
             record["expires_at_epoch"] - record["issued_at_epoch"],
-            PRODUCTION_RECEIPT_TTL_SECONDS,
+            PRODUCTION_SESSION_MAX_SECONDS,
         )
-        self.assertNotIn(self.fixture.serial, path.read_text(encoding="ascii"))
-        self.assertNotIn("<boot><", self.fixture.calls())
 
-    def test_execute_consumes_receipt_before_exactly_one_boot_and_replay_fails(self) -> None:
-        receipt, confirmation, preflight = self.fixture.preflight()
-        self.assertEqual(preflight.returncode, 0, preflight.stderr)
+    def test_authorize_failure_creates_no_grant_and_never_boots(self) -> None:
+        refused = self.fixture.authorize(FAKE_PRODUCT="other")
+        self.assertEqual(refused.returncode, 2)
+        self.assertFalse((self.fixture.base / "d110-session-grants").exists())
+        self.assertNotIn("<boot>", self.fixture.calls())
+
+    def test_execute_needs_no_long_token_and_uses_one_internal_attempt(self) -> None:
+        authorized = self.fixture.authorize()
+        self.assertEqual(authorized.returncode, 0, authorized.stderr)
         self.fixture.clear_log()
         result = self.fixture.run(
-            "--execute", receipt=receipt, confirmation=confirmation
+            "--execute", extra_env={"FAKE_REJECT_THREAD_ENV": "1"}
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("receipt=consumed-before-execution", result.stdout)
+        self.assertIn("same-thread-session-grant-verified", result.stdout)
+        self.assertIn("created-and-consumed-internally", result.stdout)
         self.assertIn("fastboot_boot_attempts=1", result.stdout)
+        self.assertNotIn(self.fixture.thread_id, result.stdout + result.stderr)
         calls = self.fixture.calls()
         self.assertEqual(calls.count("<boot>"), 1)
         self.assertNotIn("<flash>", calls)
-        self.fixture.clear_log()
-        replay = self.fixture.run(
-            "--execute", receipt=receipt, confirmation=confirmation
+        receipts = sorted(
+            (self.fixture.base / "d110-recovery-receipts/consumed").glob("*.json")
         )
-        self.assertEqual(replay.returncode, 2)
+        self.assertEqual(len(receipts), 1)
+        self.assertFalse(
+            list((self.fixture.base / "d110-recovery-receipts/pending").glob("*.json"))
+        )
+        receipt = json.loads(receipts[0].read_text(encoding="ascii"))
+        self.assertEqual(
+            receipt["expires_at_epoch"] - receipt["issued_at_epoch"],
+            PRODUCTION_RECEIPT_TTL_SECONDS,
+        )
+        receipt_id = hashlib.sha256(
+            (receipt["policy_sha256"] + "\0" + receipt["challenge_nonce"]).encode("ascii")
+        ).hexdigest()
+        self.assertEqual(receipts[0].name, f"receipt-{receipt_id}.consumed.json")
+        source = self.fixture.stage_script.read_text(encoding="utf-8")
+        self.assertIn('if name != "receipt-" + receipt_id + ".json":', source)
+
+    def test_failed_action_is_exactly_one_attempt_without_automatic_retry(self) -> None:
+        self.assertEqual(self.fixture.authorize().returncode, 0)
+        self.fixture.clear_log()
+        failed = self.fixture.run(
+            "--execute", extra_env={"FAKE_ACTION_FAIL": "1"}
+        )
+        self.assertEqual(failed.returncode, 2)
+        self.assertIn("no retry", failed.stderr)
+        self.assertEqual(self.fixture.calls().count("<boot>"), 1)
+        self.assertEqual(len(self.fixture.grant_files()), 1)
+
+    def test_same_session_reuses_grant_and_reauthorization_does_not_extend_it(self) -> None:
+        first = self.fixture.authorize()
+        self.assertEqual(first.returncode, 0, first.stderr)
+        grant = self.fixture.grant_files()[0]
+        before = grant.read_bytes()
+        before_inode = grant.stat().st_ino
+        second = self.fixture.authorize()
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertEqual(grant.read_bytes(), before)
+        self.assertEqual(grant.stat().st_ino, before_inode)
+
+        for _ in range(2):
+            self.fixture.clear_log()
+            executed = self.fixture.run("--execute")
+            self.assertEqual(executed.returncode, 0, executed.stderr)
+            self.assertEqual(self.fixture.calls().count("<boot>"), 1)
+        self.assertEqual(len(self.fixture.grant_files()), 1)
+
+    def test_missing_or_different_thread_cannot_use_grant(self) -> None:
+        self.assertEqual(self.fixture.authorize().returncode, 0)
+        for thread in (None, "codex-thread-fixture-B"):
+            with self.subTest(thread=thread):
+                self.fixture.clear_log()
+                refused = self.fixture.run(
+                    "--execute", extra_env={"CODEX_THREAD_ID": thread}
+                )
+                self.assertEqual(refused.returncode, 2)
+                self.assertNotIn("<boot>", self.fixture.calls())
+                self.assertNotIn(self.fixture.thread_id, refused.stdout + refused.stderr)
+
+    def test_grant_tamper_helper_policy_and_fastboot_identity_changes_invalidate(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = D110GateFixture(Path(temporary))
+            self.assertEqual(fixture.authorize().returncode, 0)
+            grant = fixture.grant_files()[0]
+            record = json.loads(grant.read_text(encoding="ascii"))
+            record["action_digest"] = "0" * 64
+            fixture.private_write(
+                grant, json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n"
+            )
+            fixture.clear_log()
+            self.assertEqual(fixture.run("--execute").returncode, 2)
+            self.assertNotIn("<boot>", fixture.calls())
+
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = D110GateFixture(Path(temporary))
+            self.assertEqual(fixture.authorize().returncode, 0)
+            fixture.stage_script.write_text(
+                fixture.stage_script.read_text(encoding="utf-8") + "\n",
+                encoding="utf-8",
+            )
+            fixture.stage_script.chmod(0o755)
+            self.assertEqual(fixture.run("--execute").returncode, 2)
+            self.assertNotIn("<boot>", fixture.calls())
+
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = D110GateFixture(Path(temporary))
+            self.assertEqual(fixture.authorize().returncode, 0)
+            data = fixture.fake_fastboot.read_bytes()
+            fixture.fake_fastboot.unlink()
+            fixture.fake_fastboot.write_bytes(data)
+            fixture.fake_fastboot.chmod(0o755)
+            fixture.clear_log()
+            self.assertEqual(fixture.run("--execute").returncode, 2)
+            self.assertEqual(fixture.calls(), "")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = D110GateFixture(Path(temporary))
+            self.assertEqual(fixture.authorize().returncode, 0)
+            policy = json.loads(fixture.policy.read_text(encoding="utf-8"))
+            policy["policy_id"] = "changed-policy"
+            fixture.private_write(
+                fixture.policy, json.dumps(policy, indent=2, sort_keys=True) + "\n"
+            )
+            fixture.repin_script()
+            fixture.clear_log()
+            self.assertEqual(fixture.run("--execute").returncode, 2)
+            self.assertNotIn("<boot>", fixture.calls())
+            # The stale path cannot be silently renewed; explicit local archive
+            # is required before the changed policy can create a new grant.
+            self.assertEqual(fixture.authorize().returncode, 2)
+            self.assertEqual(fixture.run("--revoke-session").returncode, 0)
+            self.assertEqual(fixture.authorize().returncode, 0)
+
+    def test_revoke_is_local_atomic_and_execute_then_refuses(self) -> None:
+        self.assertEqual(self.fixture.authorize().returncode, 0)
+        self.fixture.clear_log()
+        revoked = self.fixture.run("--revoke-session")
+        self.assertEqual(revoked.returncode, 0, revoked.stderr)
+        self.assertEqual(self.fixture.calls(), "")
+        self.assertFalse(self.fixture.grant_files())
+        self.assertEqual(len(self.fixture.grant_files("revoked")), 1)
+        refused = self.fixture.run("--execute")
+        self.assertEqual(refused.returncode, 2)
+        self.assertNotIn("<boot>", self.fixture.calls())
+
+    def test_expired_or_hardlinked_grant_fails_and_requires_revoke(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = D110GateFixture(Path(temporary))
+            self.assertEqual(fixture.authorize().returncode, 0)
+            grant = fixture.grant_files()[0]
+            record = json.loads(grant.read_text(encoding="ascii"))
+            record["issued_at_epoch"] = int(time.time()) - PRODUCTION_SESSION_MAX_SECONDS - 1
+            record["expires_at_epoch"] = record["issued_at_epoch"] + PRODUCTION_SESSION_MAX_SECONDS
+            fixture.private_write(
+                grant, json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n"
+            )
+            os.utime(grant, (record["issued_at_epoch"], record["issued_at_epoch"]))
+            self.assertEqual(fixture.run("--execute").returncode, 2)
+            self.assertEqual(fixture.authorize().returncode, 2)
+            self.assertEqual(fixture.run("--revoke-session").returncode, 0)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = D110GateFixture(Path(temporary))
+            self.assertEqual(fixture.authorize().returncode, 0)
+            grant = fixture.grant_files()[0]
+            os.link(grant, fixture.root / "grant-hardlink.json")
+            fixture.clear_log()
+            self.assertEqual(fixture.run("--execute").returncode, 2)
+            self.assertEqual(fixture.calls(), "")
+
+    def test_concurrent_execute_has_one_global_nonblocking_lock(self) -> None:
+        self.assertEqual(self.fixture.authorize().returncode, 0)
+        self.fixture.clear_log()
+        args = [str(self.fixture.stage_script), "--stage", "ramboot", "--execute"]
+        first = subprocess.Popen(
+            args,
+            cwd=self.fixture.repo,
+            env=self.fixture.env(
+                FAKE_QUERY_DELAY="2", FAKE_DELAY_KEY="serialno"
+            ),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.addCleanup(lambda: first.kill() if first.poll() is None else None)
+        deadline = time.monotonic() + 5
+        while "<serialno>" not in self.fixture.calls() and time.monotonic() < deadline:
+            time.sleep(0.02)
+        self.assertIn("<serialno>", self.fixture.calls())
+        before = self.fixture.calls()
+        second = self.fixture.run("--execute")
+        self.assertEqual(second.returncode, 2)
+        self.assertIn("already in progress", second.stderr)
+        self.assertEqual(self.fixture.calls(), before)
+        stdout, stderr = first.communicate(timeout=12)
+        self.assertEqual(first.returncode, 0, stderr + stdout)
+        self.assertEqual(self.fixture.calls().count("<boot>"), 1)
+
+    def test_legacy_approval_args_and_non_ramboot_stages_fail_closed(self) -> None:
+        for args in (("--receipt", "x"), ("--confirm", "x"), ("--session-id", "x")):
+            with self.subTest(args=args):
+                refused = self.fixture.run("--execute", extra_args=args)
+                self.assertEqual(refused.returncode, 2)
+                self.assertEqual(self.fixture.calls(), "")
+        refused = subprocess.run(
+            [str(self.fixture.stage_script), "--stage", "rootfs", "--execute"],
+            cwd=self.fixture.repo,
+            env=self.fixture.env(),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(refused.returncode, 2)
         self.assertEqual(self.fixture.calls(), "")
 
-    def test_receipt_is_consumed_when_post_claim_gate_fails_and_never_retried(self) -> None:
-        receipt, confirmation, preflight = self.fixture.preflight()
-        self.assertEqual(preflight.returncode, 0, preflight.stderr)
+    def test_post_receipt_device_recheck_failure_consumes_attempt_without_boot(self) -> None:
+        self.assertEqual(self.fixture.authorize().returncode, 0)
+        marker = self.fixture.root / "device-state-marker"
         self.fixture.clear_log()
         failed = self.fixture.run(
             "--execute",
-            receipt=receipt,
-            confirmation=confirmation,
-            extra_env={"FAKE_PRODUCT": "other"},
-        )
-        self.assertEqual(failed.returncode, 2)
-        self.assertFalse(Path(receipt).exists())
-        self.assertTrue(list((Path(receipt).parents[1] / "consumed").glob("*.json")))
-        self.assertNotIn("<boot>", self.fixture.calls())
-        self.fixture.clear_log()
-        replay = self.fixture.run(
-            "--execute", receipt=receipt, confirmation=confirmation
-        )
-        self.assertEqual(replay.returncode, 2)
-        self.assertEqual(self.fixture.calls(), "")
-
-    def test_action_failure_is_one_attempt_and_receipt_stays_consumed(self) -> None:
-        receipt, confirmation, preflight = self.fixture.preflight()
-        self.assertEqual(preflight.returncode, 0, preflight.stderr)
-        self.fixture.clear_log()
-        result = self.fixture.run(
-            "--execute",
-            receipt=receipt,
-            confirmation=confirmation,
-            extra_env={"FAKE_ACTION_FAIL": "1"},
-        )
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("no retry", result.stderr)
-        self.assertEqual(self.fixture.calls().count("<boot>"), 1)
-        self.assertFalse(Path(receipt).exists())
-
-    def test_slow_execute_query_crossing_receipt_expiry_never_boots(self) -> None:
-        receipt, confirmation, preflight = self.fixture.preflight()
-        self.assertEqual(preflight.returncode, 0, preflight.stderr)
-        record = json.loads(Path(receipt).read_text(encoding="ascii"))
-        now = int(time.time())
-        record["issued_at_epoch"] = now - (
-            PRODUCTION_RECEIPT_TTL_SECONDS - 2
-        )
-        record["expires_at_epoch"] = now + 2
-        Path(receipt).write_text(
-            json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n",
-            encoding="ascii",
-        )
-        Path(receipt).chmod(0o600)
-        os.utime(receipt, (record["issued_at_epoch"], record["issued_at_epoch"]))
-        self.fixture.clear_log()
-        result = self.fixture.run(
-            "--execute",
-            receipt=receipt,
-            confirmation=confirmation,
             extra_env={
-                "FAKE_QUERY_DELAY": "4",
-                "FAKE_DELAY_KEY": "serialno",
+                "FAKE_STATE_MARKER": str(marker),
+                "FAKE_MARK_ON_GETVAR": "max-download-size",
+                "FAKE_PRODUCT_AFTER_MARKER": "other",
             },
         )
-        self.assertEqual(result.returncode, 2)
-        self.assertFalse(Path(receipt).exists())
-        self.assertTrue(
-            list((Path(receipt).parents[1] / "consumed").glob("*.json"))
-        )
+        self.assertEqual(failed.returncode, 2)
         self.assertNotIn("<boot>", self.fixture.calls())
-        self.assertIn("expired", result.stderr)
+        consumed = list(
+            (self.fixture.base / "d110-recovery-receipts/consumed").glob("*.json")
+        )
+        self.assertEqual(len(consumed), 1)
 
-    def test_full_hash_and_nonce_confirmation_and_ttl_are_enforced(self) -> None:
-        receipt, confirmation, preflight = self.fixture.preflight()
-        self.assertEqual(preflight.returncode, 0, preflight.stderr)
-        self.fixture.clear_log()
-        wrong = self.fixture.run(
-            "--execute",
-            receipt=receipt,
-            confirmation=confirmation[:-1]
-            + ("0" if confirmation[-1] != "0" else "1"),
-        )
-        self.assertEqual(wrong.returncode, 2)
-        self.assertTrue(Path(receipt).exists())
-        self.assertEqual(self.fixture.calls(), "")
-
-        record = json.loads(Path(receipt).read_text(encoding="ascii"))
-        record["issued_at_epoch"] = int(time.time()) - 100
-        record["expires_at_epoch"] = (
-            record["issued_at_epoch"] + PRODUCTION_RECEIPT_TTL_SECONDS
-        )
-        Path(receipt).write_text(
-            json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n",
-            encoding="ascii",
-        )
-        Path(receipt).chmod(0o600)
-        os.utime(receipt, (record["issued_at_epoch"], record["issued_at_epoch"]))
-        expired = self.fixture.run(
-            "--execute", receipt=receipt, confirmation=confirmation
-        )
-        self.assertEqual(expired.returncode, 2)
-        self.assertEqual(self.fixture.calls(), "")
+    def test_internal_attempt_deadline_covers_all_post_receipt_queries(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = D110GateFixture(Path(temporary))
+            policy = json.loads(fixture.policy.read_text(encoding="utf-8"))
+            policy["execution"]["receipt_ttl_seconds"] = 3
+            fixture.private_write(
+                fixture.policy, json.dumps(policy, indent=2, sort_keys=True) + "\n"
+            )
+            script = fixture.stage_script.read_text(encoding="utf-8").replace(
+                'ttl = integer(execution["receipt_ttl_seconds"], 30, 300)',
+                'ttl = integer(execution["receipt_ttl_seconds"], 2, 300)',
+            )
+            fixture.stage_script.write_text(script, encoding="utf-8")
+            fixture.stage_script.chmod(0o755)
+            fixture.repin_script()
+            self.assertEqual(fixture.authorize().returncode, 0)
+            marker = fixture.root / "deadline-marker"
+            fixture.clear_log()
+            failed = fixture.run(
+                "--execute",
+                extra_env={
+                    "FAKE_STATE_MARKER": str(marker),
+                    "FAKE_MARK_ON_GETVAR": "max-download-size",
+                    "FAKE_QUERY_DELAY": "4",
+                    "FAKE_DELAY_KEY": "serialno",
+                    "FAKE_DELAY_AFTER_MARKER": "1",
+                },
+                timeout=10,
+            )
+            self.assertEqual(failed.returncode, 2)
+            self.assertNotIn("<boot>", fixture.calls())
+            self.assertIn("expired", failed.stderr)
 
     def test_devices_counts_every_nonempty_line_and_normalizes_crlf(self) -> None:
         bad_outputs = (
@@ -702,9 +897,8 @@ class DownstreamStageSafetyTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2)
                 self.assertNotIn("<getvar>", self.fixture.calls())
         self.fixture.clear_log()
-        receipt, _, valid = self.fixture.preflight(FAKE_CRLF="1")
+        valid = self.fixture.preflight(FAKE_CRLF="1")
         self.assertEqual(valid.returncode, 0, valid.stderr)
-        self.assertTrue(receipt)
 
     def test_enumerated_serial_getvar_and_private_history_must_all_match(self) -> None:
         cases = (
@@ -829,14 +1023,11 @@ class DownstreamStageSafetyTests(unittest.TestCase):
     def test_windows_exe_powershell_unc_and_crlf_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             fixture = D110GateFixture(Path(temporary), windows=True)
-            receipt, confirmation, preflight = fixture.preflight(FAKE_CRLF="1")
-            self.assertEqual(preflight.returncode, 0, preflight.stderr)
-            self.assertTrue(receipt)
+            authorized = fixture.authorize(FAKE_CRLF="1")
+            self.assertEqual(authorized.returncode, 0, authorized.stderr)
             fixture.clear_log()
             execute = fixture.run(
                 "--execute",
-                receipt=receipt,
-                confirmation=confirmation,
                 extra_env={"FAKE_CRLF": "1"},
             )
             self.assertEqual(execute.returncode, 0, execute.stderr)
@@ -956,14 +1147,19 @@ class DownstreamStageSafetyTests(unittest.TestCase):
             + ", ".join(sorted(matching_paths)),
         )
 
-    def test_real_policy_fixture_and_attestation_pin_the_same_30_second_ttl(self) -> None:
+    def test_real_and_fixture_policy_pin_v2_session_and_internal_attempt_limits(self) -> None:
         base = REPO / "private/lmi-p1/recovery/d110-d114"
         policy_path = base / "d110-recovery-policy.json"
         policy = json.loads(policy_path.read_text(encoding="utf-8"))
-        fixture_policy = self.fixture.make_policy(host_kind="linux")
         attestation = json.loads(
             (base / "recovery-attestation.json").read_text(encoding="utf-8")
         )
+        fixture_policy = self.fixture.make_policy(host_kind="linux")
+        self.assertEqual(policy["schema"], "lmi-d110-recovery-policy/v2")
+        self.assertEqual(policy["approval"], fixture_policy["approval"])
+        self.assertEqual(policy["approval"]["mode"], "codex-thread-session")
+        self.assertEqual(policy["approval"]["session_max_seconds"], PRODUCTION_SESSION_MAX_SECONDS)
+        self.assertTrue(policy["approval"]["explicit_revocation"])
         self.assertEqual(
             policy["execution"]["receipt_ttl_seconds"],
             PRODUCTION_RECEIPT_TTL_SECONDS,
@@ -972,22 +1168,27 @@ class DownstreamStageSafetyTests(unittest.TestCase):
             fixture_policy["execution"]["receipt_ttl_seconds"],
             policy["execution"]["receipt_ttl_seconds"],
         )
+        gate = attestation["execution_gate"]
+        self.assertEqual(attestation["schema"], "lmi-p1-recovery-attestation/v2")
+        self.assertEqual(gate["approval_mode"], policy["approval"]["mode"])
         self.assertEqual(
-            attestation["execution_gate"]["receipt_ttl_seconds"],
-            PRODUCTION_RECEIPT_TTL_SECONDS,
+            gate["session_id_environment"],
+            policy["approval"]["session_id_environment"],
         )
         self.assertEqual(
-            attestation["execution_gate"]["recovery_policy_sha256"],
-            hashlib.sha256(policy_path.read_bytes()).hexdigest(),
+            gate["session_grant_max_seconds"],
+            policy["approval"]["session_max_seconds"],
         )
-        self.assertTrue(
-            attestation["execution_gate"][
-                "receipt_expiry_rechecked_immediately_before_action"
-            ]
+        self.assertEqual(
+            gate["attempt_receipt_ttl_seconds"],
+            policy["execution"]["receipt_ttl_seconds"],
         )
-        self.assertTrue(
-            attestation["execution_gate"]["execute_queries_share_receipt_deadline"]
+        self.assertEqual(
+            gate["recovery_policy_sha256"], hashlib.sha256(policy_path.read_bytes()).hexdigest()
         )
+        self.assertEqual(gate["only_allowed_host_command"], "fastboot boot")
+        self.assertFalse(gate["explicit_fastboot_partition_flash"])
+        self.assertFalse(gate["automatic_retry_allowed"])
 
 
 class MainlineProgressPasswordTests(unittest.TestCase):

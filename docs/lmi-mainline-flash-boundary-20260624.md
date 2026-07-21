@@ -1,5 +1,9 @@
 # LMI mainline flash boundary - 2026-06-24
 
+> **Archived evidence — do not execute commands from this file.**
+> This record predates the final M-r6/M-r7 results. Its command blocks and
+> "current" labels are historical evidence, not present authorization.
+
 ## Decision update
 
 RAM-only `fastboot boot` is useful as a reversible diagnostic, but it is not

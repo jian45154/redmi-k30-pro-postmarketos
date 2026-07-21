@@ -1,5 +1,9 @@
 # LMI mainline overlay build record - 2026-06-23
 
+> **Archived evidence — do not execute commands from this file.**
+> This record preserves commands and observations from a completed historical
+> experiment; it is not a current device-action workflow.
+
 ## Purpose
 
 Validate the external lmi mainline pmaports overlay as a hardware enablement

@@ -1,0 +1,112 @@
+{
+  "accepted_residual_risks": [
+    "official-exact-r37-source-commit-and-build-manifest-unavailable",
+    "windows-system-and-runtime-module-closure-not-attested"
+  ],
+  "archive": {
+    "filename": "platform-tools_r37.0.0-win.zip",
+    "locally_derived_sha256": "4fe305812db074cea32903a489d061eb4454cbc90a49e8fea677f4b7af764918",
+    "retained_path": "private/lmi-p1/recovery/d110-d114/third-party/platform-tools-r37.0.0/platform-tools_r37.0.0-win.zip",
+    "size": 8092164,
+    "url": "https://dl.google.com/android/repository/platform-tools_r37.0.0-win.zip",
+    "zip_validation": {
+      "allowed_compression_methods": [
+        "store",
+        "deflate"
+      ],
+      "case_collisions": false,
+      "duplicate_paths": false,
+      "encrypted_entries": false,
+      "entry_count": 15,
+      "path_traversal_entries": false,
+      "unsupported_entries": false
+    }
+  },
+  "authenticode": {
+    "all_three_files_embed_pkcs7": true,
+    "runtime_revocation_policy": "online-entire-chain-no-ignore-flags-for-signer-and-timestamp",
+    "runtime_gate": "require-windows-status-valid-before-any-device-query",
+    "signer_leaf_certificate_sha256": "2029505d14baf18af60a0d1a7d8b56447db643b32faa849d4c08d2ab1ff3a4fd",
+    "signer_subject_cn": "Google LLC",
+    "static_validation_status": "unverified"
+  },
+  "closure_scope": {
+    "asserted": "application-local-non-system-payload-only",
+    "production_claim": false,
+    "reproducibility_claim": false,
+    "windows_system_modules_in_scope": false
+  },
+  "limitations": [
+    "Google repository metadata publishes SHA-1 and size but no SHA-256 or detached archive signature was found.",
+    "The locally derived archive SHA-256 binds the retained bytes but is not a Google-published digest.",
+    "Runtime Authenticode and online revocation checks remain execution-host observations and must pass afresh before every device query."
+  ],
+  "members": [
+    {
+      "path": "platform-tools/fastboot.exe",
+      "sha256": "dd55fef77ab2753b6423f37f39d91cb00ce53ab4539a2431577f07c4abcaa32a",
+      "size": 2199704
+    },
+    {
+      "path": "platform-tools/AdbWinApi.dll",
+      "sha256": "120bef587119c6cb926b86b9be90fdfbce38937588eae28cd91a94ce63c7b965",
+      "size": 108184
+    },
+    {
+      "path": "platform-tools/AdbWinUsbApi.dll",
+      "sha256": "6ca69a2ca0e31309c087d288f058977d421ad03500e4c3e1dbd981241a069c60",
+      "size": 73368
+    }
+  ],
+  "official_repository_metadata": {
+    "archive_checksum": "f29bfb58d0d6f9a57d7dbcba6cc259f9ca6f58f1",
+    "archive_checksum_type": "sha1",
+    "archive_size": 8092164,
+    "detached_archive_signature_found": false,
+    "official_sha256_found": false,
+    "package": "platform-tools",
+    "revision": "37.0.0",
+    "url": "https://dl.google.com/android/repository/repository2-3.xml"
+  },
+  "pe_closure": {
+    "AdbWinApi.dll": {
+      "delay_imports": [],
+      "dynamic_edge": {
+        "binary_evidence": [
+          "UTF-16 string AdbWinUsbApi.dll",
+          "imports GetProcAddress",
+          "imports LoadLibraryW"
+        ],
+        "source_corroboration": "https://android.googlesource.com/platform/development/+/main/host/windows/usb/api/AdbWinApi.cpp",
+        "source_is_exact_r37_build_attestation": false,
+        "target": "AdbWinUsbApi.dll"
+      },
+      "static_imports": [
+        "KERNEL32.dll",
+        "ole32.dll",
+        "SETUPAPI.dll"
+      ]
+    },
+    "AdbWinUsbApi.dll": {
+      "delay_imports": [],
+      "static_imports": [
+        "AdbWinApi.DLL",
+        "KERNEL32.dll",
+        "ole32.dll",
+        "WINUSB.DLL"
+      ]
+    },
+    "fastboot.exe": {
+      "delay_imports": [],
+      "non_system_static_imports": [
+        "AdbWinApi.dll"
+      ]
+    },
+    "runtime_bundled_dll_closure": [
+      "AdbWinApi.dll",
+      "AdbWinUsbApi.dll"
+    ],
+    "tool": "GNU objdump -p on exact archive-identical installed PE files"
+  },
+  "schema": "lmi-p2-d114-fastboot-windows-provenance/v2"
+}

@@ -1,0 +1,641 @@
+#!/bin/sh
+set -eu
+
+# NO-GO: the handoff implementation is retained for read-only review only.
+# An independent review found a PID-reuse signal race in the already-running
+# legacy stock session's own cleanup path. Do not remove this fail-closed gate
+# without replacing that legacy process and completing a new safety review.
+echo "lmi-weston-sixrow transient trial: NO-GO; execution disabled after PID-signal-race review" >&2
+exit 125
+
+stage=@REMOTE_ROOT@
+active_stock_session=@ACTIVE_STOCK_SESSION@
+active_stock_session_sha256=@ACTIVE_STOCK_SESSION_SHA256@
+candidate_session=$stage/candidate-session
+candidate_session_sha256=@CANDIDATE_SESSION_SHA256@
+fallback_session=$stage/stock-session
+fallback_session_sha256=@FALLBACK_SESSION_SHA256@
+candidate_config=$stage/weston.ini
+candidate_config_sha256=@CONFIG_SHA256@
+candidate_keyboard=$stage/weston-keyboard-sixrow
+candidate_keyboard_sha256=@KEYBOARD_SHA256@
+candidate_terminal=$stage/weston-terminal-sixrow
+candidate_terminal_sha256=@TERMINAL_SHA256@
+candidate_ready=$stage/candidate-ready
+fallback_ready=$stage/stock-ready
+busybox_sha256=@BUSYBOX_SHA256@
+setsid_sha256=@SETSID_SHA256@
+stock_weston_sha256=@STOCK_WESTON_SHA256@
+stock_terminal_sha256=@STOCK_TERMINAL_SHA256@
+stock_keyboard_sha256=@STOCK_KEYBOARD_SHA256@
+status_file=$stage/status
+takeover_lock=/run/user/10000/lmi-weston-sixrow-r1-takeover.lock
+stock_lock=/run/user/10000/lmi-p2-d114-session.lock
+candidate_lock=/run/user/10000/lmi-weston-sixrow-r1-session.lock
+trial_ticks=600
+stable_ticks=60
+restore_stable_ticks=60
+session_ready_ticks=350
+
+candidate_pid=
+candidate_starttime=
+fallback_pid=
+fallback_starttime=
+stock_pid=
+stock_starttime=
+own_starttime=
+takeover_lock_owned=0
+handoff_started=0
+cleanup_running=0
+
+fail() {
+	echo "lmi six-row transient supervisor: $*" >&2
+	exit 1
+}
+
+sha256_of() {
+	sha_line=$(sha256sum "$1") || return 1
+	sha_value=${sha_line%% *}
+	case "$sha_value" in
+		*[!0-9a-f]*|'') return 1 ;;
+	esac
+	[ "${#sha_value}" -eq 64 ] || return 1
+	printf '%s\n' "$sha_value"
+}
+
+child_alive() {
+	child_pid=$1
+	case "$child_pid" in
+		''|*[!0-9]*) return 1 ;;
+	esac
+	kill -0 "$child_pid" 2>/dev/null || return 1
+	[ -r "/proc/$child_pid/stat" ] || return 1
+	child_state=$(awk '{ print $3 }' "/proc/$child_pid/stat" 2>/dev/null) ||
+		return 1
+	case "$child_state" in
+		Z|X|x) return 1 ;;
+	esac
+	return 0
+}
+
+process_starttime() {
+	start_pid=$1
+	[ -r "/proc/$start_pid/stat" ] || return 1
+	start_line=$(cat "/proc/$start_pid/stat") || return 1
+	start_rest=${start_line##*) }
+	[ "$start_rest" != "$start_line" ] || return 1
+	set -- $start_rest
+	[ "$#" -ge 20 ] || return 1
+	shift 19
+	start_value=$1
+	case "$start_value" in
+		''|*[!0-9]*) return 1 ;;
+	esac
+	printf '%s\n' "$start_value"
+}
+
+validate_owned_directory() {
+	directory=$1
+	mode=$2
+	[ -d "$directory" ] && [ ! -L "$directory" ] || return 1
+	[ "$(stat -c %u "$directory")" = 10000 ] || return 1
+	[ "$(stat -c %g "$directory")" = 10000 ] || return 1
+	[ "$(stat -c %a "$directory")" = "$mode" ] || return 1
+}
+
+validate_owned_regular() {
+	regular=$1
+	mode=$2
+	expected_sha256=$3
+	[ -f "$regular" ] && [ ! -L "$regular" ] || return 1
+	[ "$(stat -c %u "$regular")" = 10000 ] || return 1
+	[ "$(stat -c %g "$regular")" = 10000 ] || return 1
+	[ "$(stat -c %a "$regular")" = "$mode" ] || return 1
+	[ "$(sha256_of "$regular")" = "$expected_sha256" ] || return 1
+}
+
+validate_root_regular() {
+	regular=$1
+	mode=$2
+	expected_sha256=$3
+	[ -f "$regular" ] && [ ! -L "$regular" ] || return 1
+	[ "$(stat -c %u "$regular")" = 0 ] || return 1
+	[ "$(stat -c %g "$regular")" = 0 ] || return 1
+	[ "$(stat -c %a "$regular")" = "$mode" ] || return 1
+	[ "$(sha256_of "$regular")" = "$expected_sha256" ] || return 1
+}
+
+validate_status_file() {
+	[ -f "$status_file" ] && [ ! -L "$status_file" ] || return 1
+	[ "$(stat -c %u "$status_file")" = 10000 ] || return 1
+	[ "$(stat -c %g "$status_file")" = 10000 ] || return 1
+	[ "$(stat -c %a "$status_file")" = 600 ]
+}
+
+write_status() {
+	status_text=$1
+	validate_owned_directory "$stage" 700 || return 1
+	status_tmp=$stage/.status.$$.tmp
+	[ ! -e "$status_tmp" ] && [ ! -L "$status_tmp" ] || return 1
+	(
+		set -C
+		umask 077
+		printf '%s\n' "$status_text" > "$status_tmp"
+	) || return 1
+	[ -f "$status_tmp" ] && [ ! -L "$status_tmp" ] || return 1
+	[ "$(stat -c %u "$status_tmp")" = 10000 ] || return 1
+	[ "$(stat -c %g "$status_tmp")" = 10000 ] || return 1
+	[ "$(stat -c %a "$status_tmp")" = 600 ] || return 1
+	mv "$status_tmp" "$status_file" || return 1
+	validate_status_file
+}
+
+validate_script_runner_identity() {
+	runner_pid=$1
+	runner_script=$2
+	runner_parent=$3
+	runner_expected_starttime=$4
+	child_alive "$runner_pid" || return 1
+	[ -r "/proc/$runner_pid/status" ] || return 1
+	runner_uids=$(awk '$1 == "Uid:" { print $2, $3, $4, $5; exit }' "/proc/$runner_pid/status") ||
+		return 1
+	runner_gids=$(awk '$1 == "Gid:" { print $2, $3, $4, $5; exit }' "/proc/$runner_pid/status") ||
+		return 1
+	[ "$runner_uids" = "10000 10000 10000 10000" ] || return 1
+	[ "$runner_gids" = "10000 10000 10000 10000" ] || return 1
+	runner_actual_parent=$(awk '$1 == "PPid:" { print $2; exit }' "/proc/$runner_pid/status") ||
+		return 1
+	[ "$runner_actual_parent" = "$runner_parent" ] || return 1
+	[ "$(cat "/proc/$runner_pid/comm")" = sh ] || return 1
+	runner_exe=$(readlink "/proc/$runner_pid/exe" 2>/dev/null) || return 1
+	case "$runner_exe" in
+		/bin/busybox|/usr/bin/busybox) ;;
+		*) return 1 ;;
+	esac
+	runner_cmd0=$(tr '\000' '\n' < "/proc/$runner_pid/cmdline" | sed -n '1p') ||
+		return 1
+	runner_cmd1=$(tr '\000' '\n' < "/proc/$runner_pid/cmdline" | sed -n '2p') ||
+		return 1
+	runner_cmd2=$(tr '\000' '\n' < "/proc/$runner_pid/cmdline" | sed -n '3p') ||
+		return 1
+	[ "$runner_cmd0" = /bin/sh ] || return 1
+	[ "$runner_cmd1" = "$runner_script" ] || return 1
+	[ -z "$runner_cmd2" ] || return 1
+	runner_actual_starttime=$(process_starttime "$runner_pid") || return 1
+	if [ "$runner_expected_starttime" != - ]; then
+		[ "$runner_actual_starttime" = "$runner_expected_starttime" ] || return 1
+	fi
+}
+
+validate_script_runner_full() {
+	runner_pid=$1
+	runner_script=$2
+	runner_script_sha256=$3
+	runner_parent=$4
+	runner_expected_starttime=$5
+	validate_script_runner_identity \
+		"$runner_pid" "$runner_script" "$runner_parent" "$runner_expected_starttime" ||
+		return 1
+	[ "$(sha256_of "$runner_script")" = "$runner_script_sha256" ] || return 1
+	[ "$(sha256_of "/proc/$runner_pid/exe")" = "$busybox_sha256" ] || return 1
+}
+
+validate_process_full() {
+	process_pid=$1
+	process_parent=$2
+	process_exe_expected=$3
+	process_sha256_expected=$4
+	process_starttime_expected=$5
+	child_alive "$process_pid" || return 1
+	[ -r "/proc/$process_pid/status" ] || return 1
+	process_uids=$(awk '$1 == "Uid:" { print $2, $3, $4, $5; exit }' "/proc/$process_pid/status") ||
+		return 1
+	process_gids=$(awk '$1 == "Gid:" { print $2, $3, $4, $5; exit }' "/proc/$process_pid/status") ||
+		return 1
+	[ "$process_uids" = "10000 10000 10000 10000" ] || return 1
+	[ "$process_gids" = "10000 10000 10000 10000" ] || return 1
+	[ "$(awk '$1 == "PPid:" { print $2; exit }' "/proc/$process_pid/status")" = "$process_parent" ] ||
+		return 1
+	[ "$(readlink "/proc/$process_pid/exe" 2>/dev/null)" = "$process_exe_expected" ] ||
+		return 1
+	[ "$(process_starttime "$process_pid")" = "$process_starttime_expected" ] ||
+		return 1
+	[ "$(sha256_of "/proc/$process_pid/exe")" = "$process_sha256_expected" ]
+}
+
+ready_numeric_value() {
+	ready_file=$1
+	ready_key=$2
+	awk -F= -v wanted="$ready_key" '
+		$1 == wanted { count += 1; value = $2 }
+		END {
+			if (count != 1 || value !~ /^[0-9]+$/) exit 1
+			print value
+		}' "$ready_file"
+}
+
+validate_ready_file() {
+	ready_file=$1
+	ready_session_pid_expected=$2
+	ready_session_starttime_expected=$3
+	ready_terminal_exe=$4
+	ready_terminal_sha256=$5
+	ready_keyboard_exe=$6
+	ready_keyboard_sha256=$7
+	[ -f "$ready_file" ] && [ ! -L "$ready_file" ] || return 1
+	[ "$(stat -c %u "$ready_file")" = 10000 ] || return 1
+	[ "$(stat -c %g "$ready_file")" = 10000 ] || return 1
+	[ "$(stat -c %a "$ready_file")" = 600 ] || return 1
+	[ "$(awk 'END { print NR }' "$ready_file")" = 8 ] || return 1
+	ready_session_pid=$(ready_numeric_value "$ready_file" session_pid) || return 1
+	ready_session_starttime=$(ready_numeric_value "$ready_file" session_starttime) || return 1
+	ready_weston_pid=$(ready_numeric_value "$ready_file" weston_pid) || return 1
+	ready_weston_starttime=$(ready_numeric_value "$ready_file" weston_starttime) || return 1
+	ready_terminal_pid=$(ready_numeric_value "$ready_file" terminal_pid) || return 1
+	ready_terminal_starttime=$(ready_numeric_value "$ready_file" terminal_starttime) || return 1
+	ready_keyboard_pid=$(ready_numeric_value "$ready_file" keyboard_pid) || return 1
+	ready_keyboard_starttime=$(ready_numeric_value "$ready_file" keyboard_starttime) || return 1
+	[ "$ready_session_pid" = "$ready_session_pid_expected" ] || return 1
+	[ "$ready_session_starttime" = "$ready_session_starttime_expected" ] || return 1
+	validate_process_full \
+		"$ready_weston_pid" "$ready_session_pid" /usr/bin/weston \
+		"$stock_weston_sha256" "$ready_weston_starttime" || return 1
+	validate_process_full \
+		"$ready_terminal_pid" "$ready_session_pid" "$ready_terminal_exe" \
+		"$ready_terminal_sha256" "$ready_terminal_starttime" || return 1
+	validate_process_full \
+		"$ready_keyboard_pid" "$ready_weston_pid" "$ready_keyboard_exe" \
+		"$ready_keyboard_sha256" "$ready_keyboard_starttime"
+}
+
+validate_lock_pid() {
+	lock_dir=$1
+	lock_pid_path=$lock_dir/pid
+	validate_owned_directory "$lock_dir" 700 || return 1
+	[ -f "$lock_pid_path" ] && [ ! -L "$lock_pid_path" ] || return 1
+	[ "$(stat -c %u "$lock_pid_path")" = 10000 ] || return 1
+	[ "$(stat -c %g "$lock_pid_path")" = 10000 ] || return 1
+	[ "$(stat -c %a "$lock_pid_path")" = 600 ] || return 1
+	lock_pid=$(cat "$lock_pid_path") || return 1
+	case "$lock_pid" in
+		''|*[!0-9]*) return 1 ;;
+	esac
+	[ "$lock_pid" -gt 1 ] || return 1
+	printf '%s\n' "$lock_pid"
+}
+
+acquire_takeover_lock() {
+	[ ! -e "$takeover_lock" ] && [ ! -L "$takeover_lock" ] || return 1
+	mkdir "$takeover_lock" 2>/dev/null || return 1
+	takeover_lock_owned=1
+	chmod 700 "$takeover_lock" || return 1
+	printf '%s\n' "$$" > "$takeover_lock/pid" || return 1
+	printf '%s\n' "$own_starttime" > "$takeover_lock/starttime" || return 1
+	chmod 600 "$takeover_lock/pid" "$takeover_lock/starttime" || return 1
+}
+
+release_takeover_lock() {
+	[ "$takeover_lock_owned" -eq 1 ] || return 0
+	validate_owned_directory "$takeover_lock" 700 || return 1
+	for lock_item in pid starttime; do
+		lock_path=$takeover_lock/$lock_item
+		[ -f "$lock_path" ] && [ ! -L "$lock_path" ] || return 1
+		[ "$(stat -c %u "$lock_path")" = 10000 ] || return 1
+		[ "$(stat -c %g "$lock_path")" = 10000 ] || return 1
+		[ "$(stat -c %a "$lock_path")" = 600 ] || return 1
+	done
+	[ "$(cat "$takeover_lock/pid")" = "$$" ] || return 1
+	[ "$(cat "$takeover_lock/starttime")" = "$own_starttime" ] || return 1
+	rm -f "$takeover_lock/pid" "$takeover_lock/starttime" || return 1
+	rmdir "$takeover_lock" || return 1
+	takeover_lock_owned=0
+}
+
+wait_for_runner_identity() {
+	wait_pid=$1
+	wait_script=$2
+	wait_script_sha256=$3
+	wait_parent=$4
+	wait_tick=0
+	while [ "$wait_tick" -lt 50 ]; do
+		child_alive "$wait_pid" || return 1
+		if validate_script_runner_full \
+			"$wait_pid" "$wait_script" "$wait_script_sha256" "$wait_parent" -; then
+			return 0
+		fi
+		sleep 0.1
+		wait_tick=$((wait_tick + 1))
+	done
+	return 1
+}
+
+wait_for_display_disabled() {
+	disable_tick=0
+	while [ "$disable_tick" -lt 100 ]; do
+		if [ "$(cat /sys/class/drm/card0-DSI-1/enabled 2>/dev/null || true)" = disabled ] &&
+		   [ ! -e "$candidate_lock" ] && [ ! -L "$candidate_lock" ] &&
+		   [ ! -e "$candidate_ready" ] && [ ! -L "$candidate_ready" ]; then
+			return 0
+		fi
+		sleep 0.1
+		disable_tick=$((disable_tick + 1))
+	done
+	return 1
+}
+
+stop_candidate() {
+	case "$candidate_pid" in
+		''|*[!0-9]*) return 0 ;;
+	esac
+	if child_alive "$candidate_pid"; then
+		validate_script_runner_full \
+			"$candidate_pid" "$candidate_session" "$candidate_session_sha256" \
+			"$$" "$candidate_starttime" || return 1
+		kill -TERM "$candidate_pid" 2>/dev/null || return 1
+	fi
+	stop_tick=0
+	while child_alive "$candidate_pid" && [ "$stop_tick" -lt 100 ]; do
+		validate_script_runner_identity \
+			"$candidate_pid" "$candidate_session" "$$" "$candidate_starttime" ||
+			return 1
+		sleep 0.1
+		stop_tick=$((stop_tick + 1))
+	done
+	if child_alive "$candidate_pid"; then
+		validate_script_runner_full \
+			"$candidate_pid" "$candidate_session" "$candidate_session_sha256" \
+			"$$" "$candidate_starttime" || return 1
+		kill -KILL "$candidate_pid" 2>/dev/null || return 1
+	fi
+	wait "$candidate_pid" 2>/dev/null || true
+	candidate_pid=
+	candidate_starttime=
+	wait_for_display_disabled
+}
+
+restore_stock() {
+	validate_owned_regular "$fallback_session" 700 "$fallback_session_sha256" || return 1
+	[ ! -e "$stock_lock" ] && [ ! -L "$stock_lock" ] || return 1
+	[ ! -e "$candidate_lock" ] && [ ! -L "$candidate_lock" ] || return 1
+	[ ! -e "$fallback_ready" ] && [ ! -L "$fallback_ready" ] || return 1
+	[ "$(cat /sys/class/drm/card0-DSI-1/enabled 2>/dev/null || true)" = disabled ] ||
+		return 1
+
+	/usr/bin/setsid /bin/sh "$fallback_session" &
+	fallback_pid=$!
+	fallback_starttime=$(process_starttime "$fallback_pid") || return 1
+	wait_for_runner_identity \
+		"$fallback_pid" "$fallback_session" "$fallback_session_sha256" "$$" ||
+		return 1
+	validate_script_runner_full \
+		"$fallback_pid" "$fallback_session" "$fallback_session_sha256" \
+		"$$" "$fallback_starttime" || return 1
+
+	restore_tick=0
+	while [ "$restore_tick" -lt "$session_ready_ticks" ]; do
+		validate_script_runner_identity \
+			"$fallback_pid" "$fallback_session" "$$" "$fallback_starttime" ||
+			return 1
+		fallback_lock_pid=$(validate_lock_pid "$stock_lock" 2>/dev/null || true)
+		if [ "$fallback_lock_pid" = "$fallback_pid" ] &&
+		   [ "$(cat /sys/class/drm/card0-DSI-1/enabled 2>/dev/null || true)" = enabled ] &&
+		   validate_ready_file \
+			"$fallback_ready" "$fallback_pid" "$fallback_starttime" \
+			/usr/bin/weston-terminal "$stock_terminal_sha256" \
+			/usr/libexec/weston-keyboard "$stock_keyboard_sha256"; then
+			break
+		fi
+		sleep 0.1
+		restore_tick=$((restore_tick + 1))
+	done
+	[ "$restore_tick" -lt "$session_ready_ticks" ] || return 1
+
+	restore_tick=0
+	while [ "$restore_tick" -lt "$restore_stable_ticks" ]; do
+		validate_script_runner_identity \
+			"$fallback_pid" "$fallback_session" "$$" "$fallback_starttime" ||
+			return 1
+		fallback_lock_pid=$(validate_lock_pid "$stock_lock") || return 1
+		[ "$fallback_lock_pid" = "$fallback_pid" ] || return 1
+		[ "$(cat /sys/class/drm/card0-DSI-1/enabled 2>/dev/null || true)" = enabled ] ||
+			return 1
+		validate_ready_file \
+			"$fallback_ready" "$fallback_pid" "$fallback_starttime" \
+			/usr/bin/weston-terminal "$stock_terminal_sha256" \
+			/usr/libexec/weston-keyboard "$stock_keyboard_sha256" || return 1
+		if [ $((restore_tick % 25)) -eq 0 ]; then
+			validate_script_runner_full \
+				"$fallback_pid" "$fallback_session" "$fallback_session_sha256" \
+				"$$" "$fallback_starttime" || return 1
+		fi
+		sleep 0.2
+		restore_tick=$((restore_tick + 1))
+	done
+	write_status "stock-restored-and-stable" || return 1
+	release_takeover_lock || return 1
+	return 0
+}
+
+cleanup() {
+	cleanup_status=$?
+	[ "$cleanup_running" -eq 0 ] || exit "$cleanup_status"
+	cleanup_running=1
+	trap - EXIT HUP INT TERM
+
+	if [ "$handoff_started" -eq 0 ]; then
+		write_status "aborted-before-stock-handoff" 2>/dev/null || true
+		release_takeover_lock 2>/dev/null || true
+		exit "$cleanup_status"
+	fi
+
+	if [ -n "$candidate_pid" ] && ! stop_candidate; then
+		write_status "manual-recovery-required-candidate-stop-failed" 2>/dev/null || true
+		exit 1
+	fi
+
+	if child_alive "$stock_pid"; then
+		if validate_script_runner_full \
+			"$stock_pid" "$active_stock_session" "$active_stock_session_sha256" \
+			1 "$stock_starttime" &&
+		   [ "$(cat /sys/class/drm/card0-DSI-1/enabled 2>/dev/null || true)" = enabled ]; then
+			write_status "original-stock-remained-active" 2>/dev/null || true
+			release_takeover_lock 2>/dev/null || true
+			exit "$cleanup_status"
+		fi
+		write_status "manual-recovery-required-stock-identity-changed" 2>/dev/null || true
+		exit 1
+	fi
+
+	if ! wait_for_display_disabled; then
+		write_status "manual-recovery-required-display-not-disabled" 2>/dev/null || true
+		exit 1
+	fi
+	if ! restore_stock; then
+		write_status "manual-recovery-required-stock-restore-failed" 2>/dev/null || true
+		exit 1
+	fi
+	exit "$cleanup_status"
+}
+
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+[ "$#" -eq 0 ] || fail "arguments are not accepted"
+[ "$(id -u)" = 10000 ] && [ "$(id -g)" = 10000 ] ||
+	fail "supervisor must run as uid:gid 10000:10000"
+export PATH=/usr/bin:/bin
+export HOME=$stage/home
+export USER=lmi
+export LOGNAME=lmi
+export SHELL=/bin/ash
+export XDG_RUNTIME_DIR=/run/user/10000
+export HISTFILE=/dev/null
+unset LD_PRELOAD LD_LIBRARY_PATH ENV BASH_ENV CDPATH GCONV_PATH LOCPATH
+umask 077
+ulimit -c 0
+cd "$stage"
+
+own_starttime=$(process_starttime $$) || fail "could not bind supervisor start time"
+validate_owned_directory "$stage" 700 || fail "stage directory metadata changed"
+for temporary_dir in home state cache config tmp stock-home stock-state \
+		stock-cache stock-config stock-tmp; do
+	validate_owned_directory "$stage/$temporary_dir" 700 ||
+		fail "temporary directory metadata changed: $temporary_dir"
+done
+validate_owned_regular "$active_stock_session" 700 "$active_stock_session_sha256" ||
+	fail "active stock session source changed"
+validate_owned_regular "$candidate_session" 700 "$candidate_session_sha256" ||
+	fail "candidate session changed"
+validate_owned_regular "$fallback_session" 700 "$fallback_session_sha256" ||
+	fail "fallback session changed"
+validate_owned_regular "$candidate_config" 600 "$candidate_config_sha256" ||
+	fail "candidate config changed"
+validate_owned_regular "$candidate_keyboard" 700 "$candidate_keyboard_sha256" ||
+	fail "candidate keyboard changed"
+validate_owned_regular "$candidate_terminal" 700 "$candidate_terminal_sha256" ||
+	fail "candidate terminal changed"
+validate_root_regular /usr/bin/setsid 755 "$setsid_sha256" ||
+	fail "setsid runtime component changed"
+validate_status_file || fail "status file metadata changed"
+
+[ "$(cat /sys/class/drm/card0-DSI-1/status 2>/dev/null || true)" = connected ] ||
+	fail "DSI-1 is not connected"
+[ "$(cat /sys/class/drm/card0-DSI-1/enabled 2>/dev/null || true)" = enabled ] ||
+	fail "the expected stock display is not active"
+stock_pid=$(validate_lock_pid "$stock_lock") || fail "stock session lock is invalid"
+validate_script_runner_full \
+	"$stock_pid" "$active_stock_session" "$active_stock_session_sha256" 1 - ||
+	fail "active stock runner identity changed"
+stock_starttime=$(process_starttime "$stock_pid") || fail "stock start time is unavailable"
+[ ! -e "$candidate_lock" ] && [ ! -L "$candidate_lock" ] ||
+	fail "candidate session lock path is occupied"
+[ ! -e "$candidate_ready" ] && [ ! -L "$candidate_ready" ] ||
+	fail "candidate readiness path is occupied"
+[ ! -e "$fallback_ready" ] && [ ! -L "$fallback_ready" ] ||
+	fail "fallback readiness path is occupied"
+
+acquire_takeover_lock || fail "atomic takeover lock is unavailable"
+write_status "takeover-locked-preparing-handoff" || fail "could not update status"
+validate_script_runner_full \
+	"$stock_pid" "$active_stock_session" "$active_stock_session_sha256" \
+	1 "$stock_starttime" || fail "stock identity changed before signal"
+
+handoff_started=1
+kill -TERM "$stock_pid" || fail "could not request stock session cleanup"
+handoff_tick=0
+while child_alive "$stock_pid" && [ "$handoff_tick" -lt 100 ]; do
+	validate_script_runner_identity \
+		"$stock_pid" "$active_stock_session" 1 "$stock_starttime" ||
+		fail "stock identity changed during cleanup"
+	sleep 0.1
+	handoff_tick=$((handoff_tick + 1))
+done
+child_alive "$stock_pid" && fail "stock session did not exit within 10 seconds"
+wait_for_display_disabled || fail "stock display cleanup did not complete"
+
+/bin/sh "$candidate_session" &
+candidate_pid=$!
+candidate_starttime=$(process_starttime "$candidate_pid") ||
+	fail "candidate start time is unavailable"
+wait_for_runner_identity \
+	"$candidate_pid" "$candidate_session" "$candidate_session_sha256" "$$" ||
+	fail "candidate runner identity did not stabilize"
+validate_script_runner_full \
+	"$candidate_pid" "$candidate_session" "$candidate_session_sha256" \
+	"$$" "$candidate_starttime" || fail "candidate identity changed after startup"
+
+ready_tick=0
+while [ "$ready_tick" -lt "$session_ready_ticks" ]; do
+	validate_script_runner_identity \
+		"$candidate_pid" "$candidate_session" "$$" "$candidate_starttime" ||
+		fail "candidate identity changed before full readiness"
+	candidate_lock_pid=$(validate_lock_pid "$candidate_lock" 2>/dev/null || true)
+	if [ "$candidate_lock_pid" = "$candidate_pid" ] &&
+	   [ "$(cat /sys/class/drm/card0-DSI-1/enabled 2>/dev/null || true)" = enabled ] &&
+	   validate_ready_file \
+		"$candidate_ready" "$candidate_pid" "$candidate_starttime" \
+		"$candidate_terminal" "$candidate_terminal_sha256" \
+		"$candidate_keyboard" "$candidate_keyboard_sha256"; then
+		break
+	fi
+	sleep 0.1
+	ready_tick=$((ready_tick + 1))
+done
+[ "$ready_tick" -lt "$session_ready_ticks" ] ||
+	fail "candidate terminal and keyboard readiness timed out"
+
+stable_tick=0
+while [ "$stable_tick" -lt "$stable_ticks" ]; do
+	validate_script_runner_identity \
+		"$candidate_pid" "$candidate_session" "$$" "$candidate_starttime" ||
+		fail "candidate identity changed during stability window"
+	if [ $((stable_tick % 25)) -eq 0 ]; then
+		validate_script_runner_full \
+			"$candidate_pid" "$candidate_session" "$candidate_session_sha256" \
+			"$$" "$candidate_starttime" ||
+			fail "candidate digest changed during stability window"
+	fi
+	candidate_lock_pid=$(validate_lock_pid "$candidate_lock") ||
+		fail "candidate session lock changed during stability window"
+	[ "$candidate_lock_pid" = "$candidate_pid" ] ||
+		fail "candidate lock owner changed during stability window"
+	[ "$(cat /sys/class/drm/card0-DSI-1/enabled 2>/dev/null || true)" = enabled ] ||
+		fail "candidate display changed during stability window"
+	validate_ready_file \
+		"$candidate_ready" "$candidate_pid" "$candidate_starttime" \
+		"$candidate_terminal" "$candidate_terminal_sha256" \
+		"$candidate_keyboard" "$candidate_keyboard_sha256" ||
+		fail "candidate process tree changed during stability window"
+	sleep 0.2
+	stable_tick=$((stable_tick + 1))
+done
+candidate_lock_pid=$(validate_lock_pid "$candidate_lock") ||
+	fail "candidate session lock is invalid"
+[ "$candidate_lock_pid" = "$candidate_pid" ] || fail "candidate lock owner mismatch"
+[ "$(cat /sys/class/drm/card0-DSI-1/enabled 2>/dev/null || true)" = enabled ] ||
+	fail "candidate did not enable DSI-1"
+write_status "candidate-stable-trial-running" || fail "could not update status"
+
+trial_tick=0
+while [ "$trial_tick" -lt "$trial_ticks" ]; do
+	validate_script_runner_identity \
+		"$candidate_pid" "$candidate_session" "$$" "$candidate_starttime" ||
+		fail "candidate identity changed during trial"
+	if [ $((trial_tick % 25)) -eq 0 ]; then
+		validate_script_runner_full \
+			"$candidate_pid" "$candidate_session" "$candidate_session_sha256" \
+			"$$" "$candidate_starttime" ||
+			fail "candidate digest changed during trial"
+	fi
+	validate_ready_file \
+		"$candidate_ready" "$candidate_pid" "$candidate_starttime" \
+		"$candidate_terminal" "$candidate_terminal_sha256" \
+		"$candidate_keyboard" "$candidate_keyboard_sha256" ||
+		fail "candidate process tree changed during trial"
+	sleep 0.2
+	trial_tick=$((trial_tick + 1))
+done
+write_status "trial-complete-restoring-stock" || fail "could not update status"
+exit 0
