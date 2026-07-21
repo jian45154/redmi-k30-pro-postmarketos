@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+exec python3 -I -B "$script_dir/lmi_cli_installer.py" "$@"
