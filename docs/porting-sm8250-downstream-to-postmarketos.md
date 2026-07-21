@@ -130,10 +130,14 @@ deviceinfo_dtb="qcom/kona-v2.1"
 
 ## Gotcha 7 — talking to the device over USB from Windows
 
-`fastboot boot boot.img` (RAM only, writes nothing) is the safe first test. After
-it, the postmarketOS gadget enumerates as **`18d1:d001 POSTMARKETOS`**, a
-**CDC-NCM** network gadget — but Windows binds an "ADB interface" and exposes no
-network adapter.
+A temporary boot avoids an explicit partition flash, but the booted operating
+system may still modify persisted userdata. Never pass an arbitrary image to
+fastboot. For the reviewed D110 recovery image, use the repository's guarded
+authorize/execute workflow described in
+[`lmi-d110-session-approval.md`](lmi-d110-session-approval.md). After boot, the
+postmarketOS gadget enumerates as **`18d1:d001 POSTMARKETOS`**, a **CDC-NCM**
+network gadget — but Windows binds an "ADB interface" and exposes no network
+adapter.
 
 **Fix:** pass the USB device into WSL with **usbipd-win**; Linux supports CDC-NCM
 natively:
@@ -225,8 +229,19 @@ pmbootstrap checksum device-xiaomi-lmi
 pmbootstrap build    device-xiaomi-lmi
 pmbootstrap install  --no-fde
 pmbootstrap export                              # -> /tmp/postmarketOS-export/boot.img
-fastboot boot /tmp/postmarketOS-export/boot.img # RAM only; writes nothing
 ```
+
+Do not boot that arbitrary export directly. A candidate must first be reviewed
+and pinned. From the repository root, the existing reviewed D110 recovery image
+uses only this guarded flow:
+
+```bash
+scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --authorize-session
+scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --execute
+```
+
+See [`lmi-d110-session-approval.md`](lmi-d110-session-approval.md) for scope,
+revocation, and the residual persisted-userdata risk.
 
 ## Status
 

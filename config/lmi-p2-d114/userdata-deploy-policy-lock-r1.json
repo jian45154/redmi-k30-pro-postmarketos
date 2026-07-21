@@ -1,0 +1,159 @@
+{
+  "acquisition": {
+    "archive": {
+      "official_sha1": "f29bfb58d0d6f9a57d7dbcba6cc259f9ca6f58f1",
+      "path": "private/lmi-p1/recovery/d110-d114/third-party/platform-tools-r37.0.0/platform-tools_r37.0.0-win.zip",
+      "sha256": "4fe305812db074cea32903a489d061eb4454cbc90a49e8fea677f4b7af764918",
+      "size": 8092164,
+      "url": "https://dl.google.com/android/repository/platform-tools_r37.0.0-win.zip"
+    },
+    "evidence": {
+      "path": "private/lmi-p1/recovery/d110-d114/d110-fastboot-official-acquisition-attestation.json",
+      "sha256": "d38963e86dc7069cd56767c7ff2dbb3b593206bdd52cac54f0111783b6e2b1bd",
+      "size": 1006
+    },
+    "evidence_scope": "fastboot-exe-member-only-does-not-attest-the-two-dll-members",
+    "schema": "lmi-d110-fastboot-official-acquisition/v1"
+  },
+  "fastboot": {
+    "authenticode": {
+      "applies_to": "all-three-extracted-members",
+      "revocation_policy": "online-entire-chain-no-ignore-flags-for-signer-and-timestamp",
+      "runtime_gate": "require-windows-status-valid-before-any-device-query",
+      "signer_leaf_certificate_sha256": "2029505d14baf18af60a0d1a7d8b56447db643b32faa849d4c08d2ab1ff3a4fd",
+      "signer_subject_cn": "Google LLC"
+    },
+    "executable": {
+      "path": "localappdata/lmi-p2-d114/fastboot-r37.0.0/fastboot.exe",
+      "sha256": "dd55fef77ab2753b6423f37f39d91cb00ce53ab4539a2431577f07c4abcaa32a",
+      "size": 2199704
+    },
+    "bundled_android_dll_closure": [
+      {
+        "archive_member": "platform-tools/AdbWinApi.dll",
+        "filename": "AdbWinApi.dll",
+        "sha256": "120bef587119c6cb926b86b9be90fdfbce38937588eae28cd91a94ce63c7b965",
+        "size": 108184
+      },
+      {
+        "archive_member": "platform-tools/AdbWinUsbApi.dll",
+        "filename": "AdbWinUsbApi.dll",
+        "sha256": "6ca69a2ca0e31309c087d288f058977d421ad03500e4c3e1dbd981241a069c60",
+        "size": 73368
+      }
+    ],
+    "closure_scope": "application-local-non-system-payload-only"
+  },
+  "hardware_test_only": true,
+  "helper": {
+    "path": "scripts/lmi_p2_d114/deploy_userdata_helper.ps1",
+    "sha256": "759aa7e6f336cb9c3fcf9aff45a224886654b5f77d5fa6a139640e9a19969339",
+    "size": 94276
+  },
+  "native_staging": {
+    "acl_policy": "protected-current-user-and-local-system-full-control-only",
+    "identity_semantics": "profile-sha256/candidate-sha256/fixed-filename",
+    "lifecycle": "preflight-prepare-or-reuse-execute-revalidate-only",
+    "filename": "userdata.android-sparse.img",
+    "report_path_policy": "semantic-only-no-absolute-user-path",
+    "root_semantics": "localappdata/lmi-p2-d114/userdata-staging",
+    "volume_policy": "fixed-ntfs-without-reparse-directory-ancestors"
+  },
+  "hardware_test_readiness": {
+    "accepted_residual_risks": [
+      "official-exact-r37-source-commit-and-build-manifest-unavailable",
+      "windows-system-and-runtime-module-closure-not-attested",
+      "d110-is-an-operator-owned-external-compatibility-prerequisite-not-a-release-asset",
+      "d110-boot-is-separately-approved-ram-boot-only-never-flash-boot"
+    ],
+    "blocking_gates": [],
+    "closure_scope": "application-local-non-system-payload-only",
+    "production_claim": false,
+    "reproducibility_claim": false,
+    "status": "ready-for-explicitly-approved-hardware-test-only"
+  },
+  "repo_bindings": {
+    "apk_build_attestation": {
+      "path": "config/lmi-p2-d114/apk-build-attestation.json",
+      "sha256": "2a1b4dde55fe1544811337252d34c04acfb1438180d5589c0c5315d545748b61",
+      "size": 3253
+    },
+    "assembler": {
+      "path": "scripts/lmi_p2_d114/assemble_userdata_image.py",
+      "sha256": "e96a62ef4aea25704f4fbf1bbe35855750d7fb8d0dc8d520b4accbafe87d6977",
+      "size": 84878
+    },
+    "candidate_rebuild_lock": {
+      "path": "config/lmi-p2-d114/candidate-rebuild-lock.json",
+      "sha256": "1122fae16487ab77406fe444f1fc96da4848fcfb277fd4ad71dc51d81da01489",
+      "size": 5112
+    },
+    "fastboot_windows_provenance_lock": {
+      "path": "config/lmi-p2-d114/fastboot-windows-provenance-lock.json",
+      "sha256": "26b1882c1c2e7e9baeea86676a83eb39f1e3b77d81f6970a3ea2c96ba5a13afb",
+      "size": 3921
+    },
+    "injection_policy_lock": {
+      "path": "config/lmi-p2-d114/injection-policy-lock.json",
+      "sha256": "a4841057d49f5a9932b666e4312ac125dfd87ccd3c49da8f97b5f4044f78d3c1",
+      "size": 7440
+    },
+    "injector": {
+      "path": "scripts/lmi_p2_d114/inject_rootfs_candidate.sh",
+      "sha256": "f3f029c533a00747fd8d895d844f217649649edafc3a4a07c566dc962574af15",
+      "size": 124735
+    },
+    "injector_launcher": {
+      "path": "scripts/lmi_p2_d114/launch_inject_rootfs_candidate.sh",
+      "sha256": "024c7e383fdd883837552ac801f5019f433a44be5241e9d5722c83beefd8cbc5",
+      "size": 12807
+    },
+    "injector_runtime_lock": {
+      "path": "config/lmi-p2-d114/injector-runtime-lock.json",
+      "sha256": "11d2cc4e8c327193f2acb23869376cb93838f7d9e775ead24f4755704263ed73",
+      "size": 3149
+    },
+    "physical_userdata_mapping": {
+      "path": "config/lmi-p2-d114/physical-userdata-mapping.json",
+      "sha256": "59f27854ac595a9b615bddeb91aa72e6bf1e0dacd9341cda2783a19bb050014f",
+      "size": 3879
+    },
+    "public_key": {
+      "path": "config/lmi-p2-d114/pmos@local-6a5d38f2.rsa.pub",
+      "sha256": "c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79e936736",
+      "size": 800
+    },
+    "sixrow_apk_build_attestation": {
+      "path": "config/lmi-weston-sixrow/build-attestation.json",
+      "sha256": "b4642db49c85e31a3b0b388968e1af94f4820d02ee712f09baa625c456e43e99",
+      "size": 3021
+    },
+    "sixrow_public_key": {
+      "path": "config/lmi-p2-d114/pmos@local-6a5fb853.rsa.pub",
+      "sha256": "0d4b877df515c5a202abefc4d15f7b839ea0d1615045f9a7f656d5aef0496c52",
+      "size": 800
+    },
+    "sparse_tools_lock": {
+      "path": "config/lmi-p2-d114/sparse-tools-lock.json",
+      "sha256": "e8258f018496761191a4643bd3c516ae277c65b1a8b1ec2eedeff59cc1f386d0",
+      "size": 1746
+    },
+    "userdata_deploy_profile_template": {
+      "path": "config/lmi-p2-d114/userdata-deploy-profile.template.json",
+      "sha256": "ce5aab9def53a84da97a06e5d95f262aa6c36bc0224e8d263e7663dc7f03d82a",
+      "size": 3512
+    }
+  },
+  "schema": "lmi-p2-d114-userdata-deploy-policy-lock/v4",
+  "tool_staging": {
+    "acl_policy": "protected-current-user-and-local-system-full-control-only",
+    "contents": [
+      "AdbWinApi.dll",
+      "AdbWinUsbApi.dll",
+      "fastboot.exe"
+    ],
+    "reuse_policy": "reuse-only-after-full-revalidation-and-read-lock",
+    "root_semantics": "localappdata/lmi-p2-d114/fastboot-r37.0.0",
+    "volume_policy": "fixed-ntfs-without-reparse-directory-ancestors"
+  }
+}

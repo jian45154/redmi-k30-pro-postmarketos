@@ -1,0 +1,704 @@
+--- a/clients/keyboard.c
++++ b/clients/keyboard.c
+@@ -51,6 +51,7 @@
+ 	uint32_t preedit_style;
+ 	struct {
+ 		xkb_mod_mask_t shift_mask;
++		xkb_mod_mask_t control_mask;
+ 	} keysym;
+ 	uint32_t serial;
+ 	uint32_t content_hint;
+@@ -66,7 +67,9 @@
+ 
+ enum key_type {
+ 	keytype_default,
++	keytype_escape,
+ 	keytype_backspace,
++	keytype_control,
+ 	keytype_enter,
+ 	keytype_space,
+ 	keytype_switch,
+@@ -101,49 +104,69 @@
+ };
+ 
+ static const struct key normal_keys[] = {
+-	{ keytype_default, "q", "Q", "1", 1},
+-	{ keytype_default, "w", "W", "2", 1},
+-	{ keytype_default, "e", "E", "3", 1},
+-	{ keytype_default, "r", "R", "4", 1},
+-	{ keytype_default, "t", "T", "5", 1},
+-	{ keytype_default, "y", "Y", "6", 1},
+-	{ keytype_default, "u", "U", "7", 1},
+-	{ keytype_default, "i", "I", "8", 1},
+-	{ keytype_default, "o", "O", "9", 1},
+-	{ keytype_default, "p", "P", "0", 1},
+-	{ keytype_backspace, "<--", "<--", "<--", 2},
+-
+-	{ keytype_tab, "->|", "->|", "->|", 1},
+-	{ keytype_default, "a", "A", "-", 1},
+-	{ keytype_default, "s", "S", "@", 1},
+-	{ keytype_default, "d", "D", "*", 1},
+-	{ keytype_default, "f", "F", "^", 1},
+-	{ keytype_default, "g", "G", ":", 1},
+-	{ keytype_default, "h", "H", ";", 1},
+-	{ keytype_default, "j", "J", "(", 1},
+-	{ keytype_default, "k", "K", ")", 1},
+-	{ keytype_default, "l", "L", "~", 1},
+-	{ keytype_enter, "Enter", "Enter", "Enter", 2},
+-
+-	{ keytype_switch, "ABC", "abc", "ABC", 2},
+-	{ keytype_default, "z", "Z", "/", 1},
+-	{ keytype_default, "x", "X", "\'", 1},
+-	{ keytype_default, "c", "C", "\"", 1},
+-	{ keytype_default, "v", "V", "+", 1},
+-	{ keytype_default, "b", "B", "=", 1},
+-	{ keytype_default, "n", "N", "?", 1},
+-	{ keytype_default, "m", "M", "!", 1},
+-	{ keytype_default, ",", ",", "\\", 1},
+-	{ keytype_default, ".", ".", "|", 1},
+-	{ keytype_switch, "ABC", "abc", "ABC", 1},
+-
+-	{ keytype_symbols, "?123", "?123", "abc", 1},
+-	{ keytype_space, "", "", "", 5},
+-	{ keytype_arrow_up, "/\\", "/\\", "/\\", 1},
+-	{ keytype_arrow_left, "<", "<", "<", 1},
+-	{ keytype_arrow_right, ">", ">", ">", 1},
+-	{ keytype_arrow_down, "\\/", "\\/", "\\/", 1},
+-	{ keytype_style, "", "", "", 2}
++	{ keytype_escape, "Esc", "Esc", "Esc", 2 },
++	{ keytype_tab, "Tab", "Tab", "Tab", 2 },
++	{ keytype_control, "Ctrl", "Ctrl", "Ctrl", 2 },
++	{ keytype_switch, "Shift", "Shift", "Shift", 2 },
++	{ keytype_backspace, "Backspace", "Backspace", "Backspace", 4 },
++
++	{ keytype_default, "1", "!", "!", 1 },
++	{ keytype_default, "2", "@", "@", 1 },
++	{ keytype_default, "3", "#", "#", 1 },
++	{ keytype_default, "4", "$", "$", 1 },
++	{ keytype_default, "5", "%", "%", 1 },
++	{ keytype_default, "6", "^", "^", 1 },
++	{ keytype_default, "7", "&", "&", 1 },
++	{ keytype_default, "8", "*", "*", 1 },
++	{ keytype_default, "9", "(", "(", 1 },
++	{ keytype_default, "0", ")", ")", 1 },
++	{ keytype_default, "-", "_", "_", 1 },
++	{ keytype_default, "=", "+", "+", 1 },
++
++	{ keytype_default, "q", "Q", "Q", 1 },
++	{ keytype_default, "w", "W", "W", 1 },
++	{ keytype_default, "e", "E", "E", 1 },
++	{ keytype_default, "r", "R", "R", 1 },
++	{ keytype_default, "t", "T", "T", 1 },
++	{ keytype_default, "y", "Y", "Y", 1 },
++	{ keytype_default, "u", "U", "U", 1 },
++	{ keytype_default, "i", "I", "I", 1 },
++	{ keytype_default, "o", "O", "O", 1 },
++	{ keytype_default, "p", "P", "P", 1 },
++	{ keytype_default, "[", "{", "{", 1 },
++	{ keytype_default, "]", "}", "}", 1 },
++
++	{ keytype_default, "a", "A", "A", 1 },
++	{ keytype_default, "s", "S", "S", 1 },
++	{ keytype_default, "d", "D", "D", 1 },
++	{ keytype_default, "f", "F", "F", 1 },
++	{ keytype_default, "g", "G", "G", 1 },
++	{ keytype_default, "h", "H", "H", 1 },
++	{ keytype_default, "j", "J", "J", 1 },
++	{ keytype_default, "k", "K", "K", 1 },
++	{ keytype_default, "l", "L", "L", 1 },
++	{ keytype_default, ";", ":", ":", 1 },
++	{ keytype_default, "'", "\"", "\"", 1 },
++	{ keytype_enter, "Enter", "Enter", "Enter", 1 },
++
++	{ keytype_default, "z", "Z", "Z", 1 },
++	{ keytype_default, "x", "X", "X", 1 },
++	{ keytype_default, "c", "C", "C", 1 },
++	{ keytype_default, "v", "V", "V", 1 },
++	{ keytype_default, "b", "B", "B", 1 },
++	{ keytype_default, "n", "N", "N", 1 },
++	{ keytype_default, "m", "M", "M", 1 },
++	{ keytype_default, ",", "<", "<", 1 },
++	{ keytype_default, ".", ">", ">", 1 },
++	{ keytype_default, "/", "?", "?", 1 },
++	{ keytype_default, "\\", "|", "|", 1 },
++	{ keytype_switch, "Shift", "Shift", "Shift", 1 },
++
++	{ keytype_space, "Space", "Space", "Space", 8 },
++	{ keytype_arrow_left, "←", "←", "←", 1 },
++	{ keytype_arrow_up, "↑", "↑", "↑", 1 },
++	{ keytype_arrow_down, "↓", "↓", "↓", 1 },
++	{ keytype_arrow_right, "→", "→", "→", 1 }
+ };
+ 
+ static const struct key numeric_keys[] = {
+@@ -221,7 +244,7 @@
+ 	normal_keys,
+ 	sizeof(normal_keys) / sizeof(*normal_keys),
+ 	12,
+-	4,
++	6,
+ 	"en",
+ 	ZWP_TEXT_INPUT_V1_TEXT_DIRECTION_LTR
+ };
+@@ -256,10 +279,10 @@
+ };
+ 
+ static const double key_width = 60;
+-static const double key_height = 50;
++static const double key_height = 60;
+ /* DSI-1 is 540 logical pixels wide at the phone's configured scale. */
+-static const double keyboard_scale_x = 0.90;
+-static const double keyboard_scale_y = 1.05;
++static const double keyboard_scale_x = 0.75;
++static const double keyboard_scale_y = 1.0;
+ 
+ static int
+ keyboard_width(const struct layout *layout)
+@@ -285,6 +308,7 @@
+ 	struct widget *widget;
+ 
+ 	enum keyboard_state state;
++	bool control_latched;
+ };
+ 
+ static void __attribute__ ((format (printf, 1, 2)))
+@@ -338,6 +362,11 @@
+ 	cairo_rectangle(cr,
+ 			col * key_width, row * key_height,
+ 			key->width * key_width, key_height);
++	if (key->key_type == keytype_control && keyboard->control_latched) {
++		cairo_set_source_rgba(cr, 0.15, 0.40, 0.85, 0.45);
++		cairo_fill_preserve(cr);
++	}
++	cairo_set_source_rgb(cr, 0, 0, 0);
+ 	cairo_set_line_width(cr, 3);
+ 	cairo_stroke(cr);
+ 
+@@ -568,28 +597,59 @@
+ 	}
+ 
+ 	xkb_mod_mask_t mod_mask = keyboard->state == KEYBOARD_STATE_DEFAULT ? 0 : keyboard->keyboard->keysym.shift_mask;
++	bool consume_control = keyboard->control_latched &&
++		key->key_type != keytype_control &&
++		key->key_type != keytype_switch &&
++		key->key_type != keytype_symbols &&
++		key->key_type != keytype_style;
+ 	uint32_t key_state = (state == WL_POINTER_BUTTON_STATE_PRESSED) ? WL_KEYBOARD_KEY_STATE_PRESSED : WL_KEYBOARD_KEY_STATE_RELEASED;
++	if (consume_control)
++		mod_mask |= keyboard->keyboard->keysym.control_mask;
+ 
+ 	switch (key->key_type) {
+ 		case keytype_default:
+ 			if (state != WL_POINTER_BUTTON_STATE_PRESSED)
+ 				break;
++			if (consume_control) {
++				xkb_keysym_t keysym = (unsigned char)label[0];
++
++				virtual_keyboard_commit_preedit(keyboard->keyboard);
++				zwp_input_method_context_v1_keysym(
++					keyboard->keyboard->context,
++					display_get_serial(keyboard->keyboard->display),
++					time, keysym,
++					WL_KEYBOARD_KEY_STATE_PRESSED, mod_mask);
++				zwp_input_method_context_v1_keysym(
++					keyboard->keyboard->context,
++					display_get_serial(keyboard->keyboard->display),
++					time, keysym,
++					WL_KEYBOARD_KEY_STATE_RELEASED, mod_mask);
++				keyboard->control_latched = false;
++				break;
++			}
+ 
+ 			keyboard->keyboard->preedit_string =
+ 				append(keyboard->keyboard->preedit_string,
+ 				       label);
+ 			virtual_keyboard_send_preedit(keyboard->keyboard, -1);
+ 			break;
++		case keytype_escape:
++			virtual_keyboard_commit_preedit(keyboard->keyboard);
++			zwp_input_method_context_v1_keysym(keyboard->keyboard->context,
++							   display_get_serial(keyboard->keyboard->display),
++							   time,
++							   XKB_KEY_Escape, key_state, mod_mask);
++			break;
+ 		case keytype_backspace:
+-			if (state != WL_POINTER_BUTTON_STATE_PRESSED)
+-				break;
+-
+-			if (strlen(keyboard->keyboard->preedit_string) == 0) {
+-				delete_before_cursor(keyboard->keyboard);
+-			} else {
+-				keyboard->keyboard->preedit_string[strlen(keyboard->keyboard->preedit_string) - 1] = '\0';
+-				virtual_keyboard_send_preedit(keyboard->keyboard, -1);
+-			}
++			virtual_keyboard_commit_preedit(keyboard->keyboard);
++			zwp_input_method_context_v1_keysym(keyboard->keyboard->context,
++							   display_get_serial(keyboard->keyboard->display),
++							   time,
++							   XKB_KEY_BackSpace, key_state, mod_mask);
++			break;
++		case keytype_control:
++			if (state == WL_POINTER_BUTTON_STATE_PRESSED)
++				keyboard->control_latched = !keyboard->control_latched;
+ 			break;
+ 		case keytype_enter:
+ 			virtual_keyboard_commit_preedit(keyboard->keyboard);
+@@ -601,6 +661,21 @@
+ 		case keytype_space:
+ 			if (state != WL_POINTER_BUTTON_STATE_PRESSED)
+ 				break;
++			if (consume_control) {
++				virtual_keyboard_commit_preedit(keyboard->keyboard);
++				zwp_input_method_context_v1_keysym(
++					keyboard->keyboard->context,
++					display_get_serial(keyboard->keyboard->display),
++					time, XKB_KEY_space,
++					WL_KEYBOARD_KEY_STATE_PRESSED, mod_mask);
++				zwp_input_method_context_v1_keysym(
++					keyboard->keyboard->context,
++					display_get_serial(keyboard->keyboard->display),
++					time, XKB_KEY_space,
++					WL_KEYBOARD_KEY_STATE_RELEASED, mod_mask);
++				keyboard->control_latched = false;
++				break;
++			}
+ 			keyboard->keyboard->preedit_string =
+ 				append(keyboard->keyboard->preedit_string, " ");
+ 			virtual_keyboard_commit_preedit(keyboard->keyboard);
+@@ -674,9 +749,15 @@
+ 			if (state != WL_POINTER_BUTTON_STATE_PRESSED)
+ 				break;
+ 			keyboard->keyboard->preedit_style = (keyboard->keyboard->preedit_style + 1) % 8; /* TODO */
+-			virtual_keyboard_send_preedit(keyboard->keyboard, -1);
+-			break;
++				virtual_keyboard_send_preedit(keyboard->keyboard, -1);
++				break;
+ 	}
++
++	if (consume_control &&
++	    state == WL_POINTER_BUTTON_STATE_RELEASED &&
++	    key->key_type != keytype_default &&
++	    key->key_type != keytype_space)
++		keyboard->control_latched = false;
+ }
+ 
+ static void
+@@ -893,6 +974,7 @@
+ 	const struct layout *layout;
+ 
+ 	keyboard->keyboard->state = KEYBOARD_STATE_DEFAULT;
++	keyboard->keyboard->control_latched = false;
+ 
+ 	if (keyboard->context)
+ 		zwp_input_method_context_v1_destroy(keyboard->context);
+@@ -921,13 +1003,14 @@
+ 	keysym_modifiers_add(&modifiers_map, "Mod1");
+ 	zwp_input_method_context_v1_modifiers_map(context, &modifiers_map);
+ 	keyboard->keysym.shift_mask = keysym_modifiers_get_mask(&modifiers_map, "Shift");
++	keyboard->keysym.control_mask = keysym_modifiers_get_mask(&modifiers_map, "Control");
+ 	wl_array_release(&modifiers_map);
+ 
+ 	layout = get_current_layout(keyboard);
+ 
+ 	window_schedule_resize(keyboard->keyboard->window,
+-			       layout->columns * key_width,
+-			       layout->rows * key_height);
++			       keyboard_width(layout),
++			       keyboard_height(layout));
+ 
+ 	zwp_input_method_context_v1_language(context,
+ 					     keyboard->serial,
+--- a/clients/terminal.c
++++ b/clients/terminal.c
+@@ -489,6 +489,9 @@
+ 	struct zwp_text_input_v1 *text_input;
+ 	uint32_t text_input_serial;
+ 	char *text_input_preedit;
++	xkb_mod_mask_t text_input_shift_mask;
++	xkb_mod_mask_t text_input_alt_mask;
++	xkb_mod_mask_t text_input_control_mask;
+ };
+ 
+ /* Create default tab stops, every 8 characters */
+@@ -1223,59 +1226,180 @@
+ 		terminal_write(terminal, "\177", 1);
+ }
+ 
+-static void
+-terminal_text_input_keysym(void *data, struct zwp_text_input_v1 *text_input,
+-			   uint32_t serial, uint32_t time, uint32_t key,
+-			   uint32_t state, uint32_t modifiers)
++static int
++terminal_encode_key(struct terminal *terminal, uint32_t sym,
++		    uint32_t modifiers, char *response)
+ {
+-	struct terminal *terminal = data;
+-	const char *sequence = NULL;
+-	char text[8];
+-	int length;
+-
+-	if (state != WL_KEYBOARD_KEY_STATE_RELEASED)
+-		return;
++	int ret, len = 0;
++	bool convert_utf8 = true;
+ 
+-	switch (key) {
++	switch (sym) {
++	case XKB_KEY_BackSpace:
++		if (modifiers & MOD_ALT_MASK)
++			response[len++] = 0x1b;
++		response[len++] = 0x7f;
++		break;
++	case XKB_KEY_Tab:
++	case XKB_KEY_Linefeed:
++	case XKB_KEY_Clear:
++	case XKB_KEY_Pause:
++	case XKB_KEY_Scroll_Lock:
++	case XKB_KEY_Sys_Req:
++	case XKB_KEY_Escape:
++		response[len++] = sym & 0x7f;
++		break;
+ 	case XKB_KEY_Return:
+ 	case XKB_KEY_KP_Enter:
+-		sequence = (terminal->mode & MODE_LF_NEWLINE) ? "\r\n" : "\r";
++		if (terminal->mode & MODE_LF_NEWLINE) {
++			response[len++] = 0x0d;
++			response[len++] = 0x0a;
++		} else {
++			response[len++] = 0x0d;
++		}
+ 		break;
+-	case XKB_KEY_Tab:
+-		sequence = "\t";
++	case XKB_KEY_Shift_L:
++	case XKB_KEY_Shift_R:
++	case XKB_KEY_Control_L:
++	case XKB_KEY_Control_R:
++	case XKB_KEY_Alt_L:
++	case XKB_KEY_Alt_R:
++	case XKB_KEY_Meta_L:
++	case XKB_KEY_Meta_R:
++	case XKB_KEY_Super_L:
++	case XKB_KEY_Super_R:
++	case XKB_KEY_Hyper_L:
++	case XKB_KEY_Hyper_R:
+ 		break;
+-	case XKB_KEY_Escape:
+-		sequence = "\033";
++	case XKB_KEY_Insert:
++		len = function_key_response('[', 2, modifiers, '~', response);
+ 		break;
+-	case XKB_KEY_Left:
+-		sequence = "\033[D";
++	case XKB_KEY_Delete:
++		if (terminal->mode & MODE_DELETE_SENDS_DEL)
++			response[len++] = '\x04';
++		else
++			len = function_key_response('[', 3, modifiers, '~', response);
+ 		break;
+-	case XKB_KEY_Right:
+-		sequence = "\033[C";
++	case XKB_KEY_Page_Up:
++		len = function_key_response('[', 5, modifiers, '~', response);
+ 		break;
+-	case XKB_KEY_Up:
+-		sequence = "\033[A";
++	case XKB_KEY_Page_Down:
++		len = function_key_response('[', 6, modifiers, '~', response);
+ 		break;
+-	case XKB_KEY_Down:
+-		sequence = "\033[B";
++	case XKB_KEY_F1:
++		len = function_key_response('O', 1, modifiers, 'P', response);
+ 		break;
+-	case XKB_KEY_Home:
+-		sequence = "\033[H";
++	case XKB_KEY_F2:
++		len = function_key_response('O', 1, modifiers, 'Q', response);
+ 		break;
+-	case XKB_KEY_End:
+-		sequence = "\033[F";
++	case XKB_KEY_F3:
++		len = function_key_response('O', 1, modifiers, 'R', response);
+ 		break;
+-	case XKB_KEY_Delete:
+-		sequence = "\033[3~";
++	case XKB_KEY_F4:
++		len = function_key_response('O', 1, modifiers, 'S', response);
++		break;
++	case XKB_KEY_F5:
++		len = function_key_response('[', 15, modifiers, '~', response);
++		break;
++	case XKB_KEY_F6:
++		len = function_key_response('[', 17, modifiers, '~', response);
++		break;
++	case XKB_KEY_F7:
++		len = function_key_response('[', 18, modifiers, '~', response);
++		break;
++	case XKB_KEY_F8:
++		len = function_key_response('[', 19, modifiers, '~', response);
++		break;
++	case XKB_KEY_F9:
++		len = function_key_response('[', 20, modifiers, '~', response);
++		break;
++	case XKB_KEY_F10:
++		len = function_key_response('[', 21, modifiers, '~', response);
++		break;
++	case XKB_KEY_F12:
++		len = function_key_response('[', 24, modifiers, '~', response);
+ 		break;
+ 	default:
+-		length = xkb_keysym_to_utf8(key, text, sizeof text);
+-		if (length > 0)
+-			terminal_write(terminal, text, length);
++		len = apply_key_map(terminal->key_mode, sym, modifiers, response);
++		if (len != 0)
++			break;
++
++		if (modifiers & MOD_CONTROL_MASK) {
++			if (sym >= '3' && sym <= '7')
++				sym = (sym & 0x1f) + 8;
++
++			if (!((sym >= '!' && sym <= '/') ||
++			      (sym >= '8' && sym <= '?') ||
++			      (sym >= '0' && sym <= '2')))
++				sym &= 0x1f;
++			else if (sym == '2')
++				sym = 0x00;
++			else if (sym == '/')
++				sym = 0x1f;
++			else if (sym == '8' || sym == '?')
++				sym = 0x7f;
++		}
++		if (modifiers & MOD_ALT_MASK) {
++			if (terminal->mode & MODE_ALT_SENDS_ESC) {
++				response[len++] = 0x1b;
++			} else {
++				sym |= 0x80;
++				convert_utf8 = false;
++			}
++		}
++
++		if (sym < 128 || (!convert_utf8 && sym < 256)) {
++			response[len++] = sym;
++		} else {
++			ret = xkb_keysym_to_utf8(sym, response + len,
++						 MAX_RESPONSE - len);
++			if (ret < 0)
++				fprintf(stderr,
++					"Warning: buffer too small to encode "
++					"UTF8 character\n");
++			else
++				len += ret;
++		}
++		break;
++	}
++
++	return len;
++}
++
++static void
++terminal_text_input_keysym(void *data, struct zwp_text_input_v1 *text_input,
++			   uint32_t serial, uint32_t time, uint32_t key,
++			   uint32_t state, uint32_t modifiers)
++{
++	struct terminal *terminal = data;
++	char response[MAX_RESPONSE];
++	uint32_t terminal_modifiers = 0;
++	int d, length;
++
++	if (state != WL_KEYBOARD_KEY_STATE_RELEASED)
+ 		return;
++
++	if (modifiers & terminal->text_input_shift_mask)
++		terminal_modifiers |= MOD_SHIFT_MASK;
++	if (modifiers & terminal->text_input_alt_mask)
++		terminal_modifiers |= MOD_ALT_MASK;
++	if (modifiers & terminal->text_input_control_mask)
++		terminal_modifiers |= MOD_CONTROL_MASK;
++
++	length = terminal_encode_key(terminal, key, terminal_modifiers, response);
++	if (length <= 0)
++		return;
++
++	if (terminal->scrolling) {
++		d = terminal->saved_start - terminal->start;
++		terminal->row -= d;
++		terminal->selection_start_row -= d;
++		terminal->selection_end_row -= d;
++		terminal->start = terminal->saved_start;
++		terminal->scrolling = 0;
++		widget_schedule_redraw(terminal->widget);
+ 	}
+ 
+-	terminal_write(terminal, sequence, strlen(sequence));
++	terminal_write(terminal, response, length);
+ }
+ 
+ static void
+@@ -1294,6 +1418,18 @@
+ 				  struct zwp_text_input_v1 *text_input,
+ 				  struct wl_array *map)
+ {
++	struct terminal *terminal = data;
++	xkb_mod_mask_t mask;
++
++	mask = keysym_modifiers_get_mask(map, "Shift");
++	terminal->text_input_shift_mask =
++		mask == (xkb_mod_mask_t)XKB_MOD_INVALID ? 0 : mask;
++	mask = keysym_modifiers_get_mask(map, "Mod1");
++	terminal->text_input_alt_mask =
++		mask == (xkb_mod_mask_t)XKB_MOD_INVALID ? 0 : mask;
++	mask = keysym_modifiers_get_mask(map, "Control");
++	terminal->text_input_control_mask =
++		mask == (xkb_mod_mask_t)XKB_MOD_INVALID ? 0 : mask;
+ }
+ 
+ static void
+@@ -2596,8 +2732,7 @@
+ 	struct terminal *terminal = data;
+ 	char ch[MAX_RESPONSE];
+ 	uint32_t modifiers, serial;
+-	int ret, len = 0, d;
+-	bool convert_utf8 = true;
++	int len, d;
+ 
+ 	modifiers = input_get_modifiers(input);
+ 	if ((modifiers & MOD_CONTROL_MASK) &&
+@@ -2669,135 +2804,7 @@
+ 		break;
+ 	}
+ 
+-	switch (sym) {
+-	case XKB_KEY_BackSpace:
+-		if (modifiers & MOD_ALT_MASK)
+-			ch[len++] = 0x1b;
+-		ch[len++] = 0x7f;
+-		break;
+-	case XKB_KEY_Tab:
+-	case XKB_KEY_Linefeed:
+-	case XKB_KEY_Clear:
+-	case XKB_KEY_Pause:
+-	case XKB_KEY_Scroll_Lock:
+-	case XKB_KEY_Sys_Req:
+-	case XKB_KEY_Escape:
+-		ch[len++] = sym & 0x7f;
+-		break;
+-
+-	case XKB_KEY_Return:
+-		if (terminal->mode & MODE_LF_NEWLINE) {
+-			ch[len++] = 0x0D;
+-			ch[len++] = 0x0A;
+-		} else {
+-			ch[len++] = 0x0D;
+-		}
+-		break;
+-
+-	case XKB_KEY_Shift_L:
+-	case XKB_KEY_Shift_R:
+-	case XKB_KEY_Control_L:
+-	case XKB_KEY_Control_R:
+-	case XKB_KEY_Alt_L:
+-	case XKB_KEY_Alt_R:
+-	case XKB_KEY_Meta_L:
+-	case XKB_KEY_Meta_R:
+-	case XKB_KEY_Super_L:
+-	case XKB_KEY_Super_R:
+-	case XKB_KEY_Hyper_L:
+-	case XKB_KEY_Hyper_R:
+-		break;
+-
+-	case XKB_KEY_Insert:
+-		len = function_key_response('[', 2, modifiers, '~', ch);
+-		break;
+-	case XKB_KEY_Delete:
+-		if (terminal->mode & MODE_DELETE_SENDS_DEL) {
+-			ch[len++] = '\x04';
+-		} else {
+-			len = function_key_response('[', 3, modifiers, '~', ch);
+-		}
+-		break;
+-	case XKB_KEY_Page_Up:
+-		len = function_key_response('[', 5, modifiers, '~', ch);
+-		break;
+-	case XKB_KEY_Page_Down:
+-		len = function_key_response('[', 6, modifiers, '~', ch);
+-		break;
+-	case XKB_KEY_F1:
+-		len = function_key_response('O', 1, modifiers, 'P', ch);
+-		break;
+-	case XKB_KEY_F2:
+-		len = function_key_response('O', 1, modifiers, 'Q', ch);
+-		break;
+-	case XKB_KEY_F3:
+-		len = function_key_response('O', 1, modifiers, 'R', ch);
+-		break;
+-	case XKB_KEY_F4:
+-		len = function_key_response('O', 1, modifiers, 'S', ch);
+-		break;
+-	case XKB_KEY_F5:
+-		len = function_key_response('[', 15, modifiers, '~', ch);
+-		break;
+-	case XKB_KEY_F6:
+-		len = function_key_response('[', 17, modifiers, '~', ch);
+-		break;
+-	case XKB_KEY_F7:
+-		len = function_key_response('[', 18, modifiers, '~', ch);
+-		break;
+-	case XKB_KEY_F8:
+-		len = function_key_response('[', 19, modifiers, '~', ch);
+-		break;
+-	case XKB_KEY_F9:
+-		len = function_key_response('[', 20, modifiers, '~', ch);
+-		break;
+-	case XKB_KEY_F10:
+-		len = function_key_response('[', 21, modifiers, '~', ch);
+-		break;
+-	case XKB_KEY_F12:
+-		len = function_key_response('[', 24, modifiers, '~', ch);
+-		break;
+-	default:
+-		/* Handle special keys with alternate mappings */
+-		len = apply_key_map(terminal->key_mode, sym, modifiers, ch);
+-		if (len != 0) break;
+-
+-		if (modifiers & MOD_CONTROL_MASK) {
+-			if (sym >= '3' && sym <= '7')
+-				sym = (sym & 0x1f) + 8;
+-
+-			if (!((sym >= '!' && sym <= '/') ||
+-				(sym >= '8' && sym <= '?') ||
+-				(sym >= '0' && sym <= '2'))) sym = sym & 0x1f;
+-			else if (sym == '2') sym = 0x00;
+-			else if (sym == '/') sym = 0x1F;
+-			else if (sym == '8' || sym == '?') sym = 0x7F;
+-		}
+-		if (modifiers & MOD_ALT_MASK) {
+-			if (terminal->mode & MODE_ALT_SENDS_ESC) {
+-				ch[len++] = 0x1b;
+-			} else {
+-				sym = sym | 0x80;
+-				convert_utf8 = false;
+-			}
+-		}
+-
+-		if ((sym < 128) ||
+-		    (!convert_utf8 && sym < 256)) {
+-			ch[len++] = sym;
+-		} else {
+-			ret = xkb_keysym_to_utf8(sym, ch + len,
+-						 MAX_RESPONSE - len);
+-			if (ret < 0)
+-				fprintf(stderr,
+-					"Warning: buffer too small to encode "
+-					"UTF8 character\n");
+-			else
+-				len += ret;
+-		}
+-
+-		break;
+-	}
++	len = terminal_encode_key(terminal, sym, modifiers, ch);
+ 
+ 	if (state == WL_KEYBOARD_KEY_STATE_PRESSED && len > 0) {
+ 		if (terminal->scrolling) {

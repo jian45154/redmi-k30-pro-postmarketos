@@ -1,0 +1,96 @@
+{
+  "evidence": {
+    "d198_contract": {
+      "path": "private/lmi-p1/recovery/d110-d114/d198-userdata-d114-splash-recursion-fix.json",
+      "sha256": "f1f8bcc26a338b7ee2b8249b96eadf71ac4859d11ca20f0f349346729f12d956",
+      "size": 8702
+    },
+    "d198_write_report": {
+      "path": "private/lmi-p1/recovery/d110-d114/d198-write-report.txt",
+      "sha256": "89672675810ca65acf515efd9efeb91db0a6205563b32d13ae2271cd0698af89",
+      "size": 2506
+    },
+    "d199_preflight_report": {
+      "path": "private/lmi-p1/recovery/d110-d114/d199-preflight-report.txt",
+      "sha256": "f40582c341d02442a1fc13e762c37cbe26f112f7dddd754b302d1b4f8cfdca20",
+      "size": 919
+    },
+    "d199_replug_attestation": {
+      "path": "private/lmi-p1/recovery/d110-d114/d199-d114-postwrite-replug-fastboot-attestation.json",
+      "sha256": "0dbf05d7d5c84ec285cc0199966a5d0146fe8e2df9e355ed7a296c22d2067f55",
+      "size": 6337
+    },
+    "private_identity_policy": {
+      "path": "private/lmi-p1/recovery/d110-d114/d110-recovery-policy.json",
+      "sha256": "18d3efc57152f297784e0b97af221789e4d508a73d5485e3fac3c5ba94c232cd",
+      "size": 3431
+    },
+    "runtime_storage_log": {
+      "path": "logs/repair-http-debug-v21-2026-06-23.redacted.txt",
+      "sha256": "5e83605fa1ad4e72f107696472c3674e81bb4209ffcf6aca89b53507c3b78a7f",
+      "size": 39216
+    }
+  },
+  "cross_bindings": {
+    "d198": {
+      "artifact_sha256": "e8a30dc37cb4b75508d89725a9603bc15a985f4e51af77384e8d43c2928f8d68",
+      "evidence_report_path": "logs/deploy-d114-splash-recursion-fix-d110-prebuilt-sparse-writeuserdata-20260716-172509956.txt",
+      "evidence_report_sha256": "89672675810ca65acf515efd9efeb91db0a6205563b32d13ae2271cd0698af89",
+      "evidence_route_status": "DEPLOY_USERDATA_WRITE_COMPLETED_POSTVERIFY_FAILED_STAY_IN_BOOTLOADER",
+      "experiment_id": "d198-userdata-d114-splash-recursion-fix",
+      "target": "userdata"
+    },
+    "d199": {
+      "evidence_report_path": "logs/d199-d114-postwrite-replug-fastboot-attestation-20260716-r1.txt",
+      "evidence_report_sha256": "f40582c341d02442a1fc13e762c37cbe26f112f7dddd754b302d1b4f8cfdca20",
+      "evidence_route_status": "DEPLOY_PREFLIGHT_PASSED_NO_STATE_CHANGE",
+      "execution_profile_sha256": "bf5076df4283da8b2227d1742380fae2cbd42923d4650a440dfb028a1902f9e4",
+      "experiment_id": "d199-d114-postwrite-replug-fastboot-attestation",
+      "prior_d198_write_report_sha256": "89672675810ca65acf515efd9efeb91db0a6205563b32d13ae2271cd0698af89"
+    },
+    "runtime": {
+      "block_device": "/dev/sda34",
+      "block_major": 259,
+      "block_minor": 61,
+      "capacity_bytes": 114898743296,
+      "logical_sector_size": 4096,
+      "partlabel": "userdata"
+    }
+  },
+  "identity_binding": {
+    "current_device_must_match_nonce_scoped_private_policy": true,
+    "public_stable_fingerprint_forbidden": true
+  },
+  "override": {
+    "allowed_getvar_result": "unsupported",
+    "fastboot_mode": "bootloader",
+    "partition": "userdata",
+    "partition_type": "f2fs",
+    "super_or_fastbootd_fallback_allowed": false
+  },
+  "schema": "lmi-d114-physical-userdata-mapping/v2",
+  "userdata": {
+    "backup_gpt_entries": {
+      "first_lba": 28051446,
+      "last_lba": 28051449,
+      "sector_count": 4
+    },
+    "backup_gpt_header_lba": 28051450,
+    "block_device": "/dev/sda34",
+    "block_major": 259,
+    "block_minor": 61,
+    "by_name_path": "/dev/block/by-name/userdata",
+    "by_name_target": "../../sda34",
+    "by_partlabel_path": "/dev/disk/by-partlabel/userdata",
+    "by_partlabel_target": "../../sda34",
+    "capacity_bytes": 114898743296,
+    "disk_sector_count": 28051451,
+    "gpt_logical_sector_size": 4096,
+    "last_lba": 28051450,
+    "loop_backing_device": "/dev/sda34",
+    "partlabel": "userdata",
+    "partition_entry_count": 128,
+    "partition_entry_size": 128,
+    "reported_512_byte_sectors": 224411608
+  }
+}

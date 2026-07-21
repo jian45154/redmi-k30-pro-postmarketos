@@ -1,0 +1,3 @@
+# D114 P2 private hardware-test session; package removal restores the baseline.
+cfgfile="/etc/lmi-p2-d114/greetd.toml"
+rc_need="lmi-seatd"

@@ -1,0 +1,410 @@
+--- a/clients/keyboard.c
++++ b/clients/keyboard.c
+@@ -257,6 +257,21 @@
+ 
+ static const double key_width = 60;
+ static const double key_height = 50;
++/* DSI-1 is 540 logical pixels wide at the phone's configured scale. */
++static const double keyboard_scale_x = 0.90;
++static const double keyboard_scale_y = 1.05;
++
++static int
++keyboard_width(const struct layout *layout)
++{
++	return (int)(layout->columns * key_width * keyboard_scale_x + 0.5);
++}
++
++static int
++keyboard_height(const struct layout *layout)
++{
++	return (int)(layout->rows * key_height * keyboard_scale_y + 0.5);
++}
+ 
+ enum keyboard_state {
+ 	KEYBOARD_STATE_DEFAULT,
+@@ -381,6 +396,7 @@
+ 	cairo_set_font_size(cr, 16);
+ 
+ 	cairo_translate(cr, allocation.x, allocation.y);
++	cairo_scale(cr, keyboard_scale_x, keyboard_scale_y);
+ 
+ 	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+ 	cairo_set_source_rgba(cr, 1, 1, 1, 0.75);
+@@ -687,6 +703,8 @@
+ 	widget_get_allocation(keyboard->widget, &allocation);
+ 	x -= allocation.x;
+ 	y -= allocation.y;
++	x /= keyboard_scale_x;
++	y /= keyboard_scale_y;
+ 
+ 	row = y / key_height;
+ 	col = x / key_width + row * layout->columns;
+@@ -717,6 +735,8 @@
+ 
+ 	x -= allocation.x;
+ 	y -= allocation.y;
++	x /= keyboard_scale_x;
++	y /= keyboard_scale_y;
+ 
+ 	row = (int)y / key_height;
+ 	col = (int)x / key_width + row * layout->columns;
+@@ -825,8 +845,8 @@
+ 		dbg("Surrounding text updated: %s\n", keyboard->surrounding_text);
+ 
+ 	window_schedule_resize(keyboard->keyboard->window,
+-			       layout->columns * key_width,
+-			       layout->rows * key_height);
++			       keyboard_width(layout),
++			       keyboard_height(layout));
+ 
+ 	zwp_input_method_context_v1_language(context,
+ 					     keyboard->serial,
+@@ -1019,8 +1039,8 @@
+ 	widget_set_touch_up_handler(keyboard->widget, touch_up_handler);
+ 
+ 	window_schedule_resize(keyboard->window,
+-			       layout->columns * key_width,
+-			       layout->rows * key_height);
++			       keyboard_width(layout),
++			       keyboard_height(layout));
+ 
+ 	display_set_output_configure_handler(virtual_keyboard->display,
+ 					     display_output_handler);
+--- a/clients/meson.build
++++ b/clients/meson.build
+@@ -237,7 +237,11 @@
+ 	},
+ 	{
+ 		'name': 'terminal',
+-		'sources': [ 'terminal.c' ],
++		'sources': [
++			'terminal.c',
++			text_input_unstable_v1_client_protocol_h,
++			text_input_unstable_v1_protocol_c,
++		],
+ 		'deps': [ dep_toytoolkit ],
+ 	},
+ 	{
+--- a/clients/terminal.c
++++ b/clients/terminal.c
+@@ -49,6 +49,7 @@
+ #include "shared/helpers.h"
+ #include "shared/xalloc.h"
+ #include "window.h"
++#include "text-input-unstable-v1-client-protocol.h"
+ 
+ static bool option_fullscreen;
+ static bool option_maximize;
+@@ -58,6 +59,7 @@
+ static char *option_shell;
+ 
+ static struct wl_list terminal_list;
++static struct zwp_text_input_manager_v1 *text_input_manager;
+ 
+ static struct terminal *
+ terminal_create(struct display *display);
+@@ -484,6 +486,9 @@
+ 	int selection_end_row, selection_end_col;
+ 	struct wl_list link;
+ 	int pace_pipe;
++	struct zwp_text_input_v1 *text_input;
++	uint32_t text_input_serial;
++	char *text_input_preedit;
+ };
+ 
+ /* Create default tab stops, every 8 characters */
+@@ -1177,6 +1182,222 @@
+ }
+ 
+ static void
++terminal_text_input_commit_string(void *data,
++				  struct zwp_text_input_v1 *text_input,
++				  uint32_t serial, const char *text)
++{
++	struct terminal *terminal = data;
++
++	size_t preedit_length;
++
++	if (terminal->text_input_preedit && text) {
++		preedit_length = strlen(terminal->text_input_preedit);
++		if (strlen(text) >= preedit_length &&
++		    strncmp(terminal->text_input_preedit, text,
++			    preedit_length) == 0) {
++			if (text[preedit_length])
++				terminal_write(terminal, text + preedit_length,
++					       strlen(text + preedit_length));
++			free(terminal->text_input_preedit);
++			terminal->text_input_preedit = NULL;
++			return;
++		}
++	}
++
++	free(terminal->text_input_preedit);
++	terminal->text_input_preedit = NULL;
++
++	if (text && text[0])
++		terminal_write(terminal, text, strlen(text));
++}
++
++static void
++terminal_text_input_delete_surrounding_text(void *data,
++					       struct zwp_text_input_v1 *text_input,
++					       int32_t index, uint32_t length)
++{
++	struct terminal *terminal = data;
++
++	(void)index;
++	while (length-- > 0)
++		terminal_write(terminal, "\177", 1);
++}
++
++static void
++terminal_text_input_keysym(void *data, struct zwp_text_input_v1 *text_input,
++			   uint32_t serial, uint32_t time, uint32_t key,
++			   uint32_t state, uint32_t modifiers)
++{
++	struct terminal *terminal = data;
++	const char *sequence = NULL;
++	char text[8];
++	int length;
++
++	if (state != WL_KEYBOARD_KEY_STATE_RELEASED)
++		return;
++
++	switch (key) {
++	case XKB_KEY_Return:
++	case XKB_KEY_KP_Enter:
++		sequence = (terminal->mode & MODE_LF_NEWLINE) ? "\r\n" : "\r";
++		break;
++	case XKB_KEY_Tab:
++		sequence = "\t";
++		break;
++	case XKB_KEY_Escape:
++		sequence = "\033";
++		break;
++	case XKB_KEY_Left:
++		sequence = "\033[D";
++		break;
++	case XKB_KEY_Right:
++		sequence = "\033[C";
++		break;
++	case XKB_KEY_Up:
++		sequence = "\033[A";
++		break;
++	case XKB_KEY_Down:
++		sequence = "\033[B";
++		break;
++	case XKB_KEY_Home:
++		sequence = "\033[H";
++		break;
++	case XKB_KEY_End:
++		sequence = "\033[F";
++		break;
++	case XKB_KEY_Delete:
++		sequence = "\033[3~";
++		break;
++	default:
++		length = xkb_keysym_to_utf8(key, text, sizeof text);
++		if (length > 0)
++			terminal_write(terminal, text, length);
++		return;
++	}
++
++	terminal_write(terminal, sequence, strlen(sequence));
++}
++
++static void
++terminal_text_input_enter(void *data, struct zwp_text_input_v1 *text_input,
++			  struct wl_surface *surface)
++{
++}
++
++static void
++terminal_text_input_leave(void *data, struct zwp_text_input_v1 *text_input)
++{
++}
++
++static void
++terminal_text_input_modifiers_map(void *data,
++				  struct zwp_text_input_v1 *text_input,
++				  struct wl_array *map)
++{
++}
++
++static void
++terminal_text_input_input_panel_state(void *data,
++				       struct zwp_text_input_v1 *text_input,
++				       uint32_t state)
++{
++}
++
++static void
++terminal_text_input_preedit_string(void *data,
++				   struct zwp_text_input_v1 *text_input,
++				   uint32_t serial, const char *text, const char *commit)
++{
++	struct terminal *terminal = data;
++	const char *previous = terminal->text_input_preedit ?
++		terminal->text_input_preedit : "";
++	size_t old_length = strlen(previous);
++	size_t new_length = strlen(text);
++	size_t common = 0;
++
++	while (common < old_length && common < new_length &&
++	       previous[common] == text[common])
++		common++;
++
++	while (old_length > common) {
++		terminal_write(terminal, "\177", 1);
++		old_length--;
++	}
++	if (text[common])
++		terminal_write(terminal, text + common, new_length - common);
++
++	free(terminal->text_input_preedit);
++	terminal->text_input_preedit = strdup(text);
++}
++
++static void
++terminal_text_input_preedit_styling(void *data,
++				    struct zwp_text_input_v1 *text_input,
++				    uint32_t index, uint32_t length, uint32_t style)
++{
++}
++
++static void
++terminal_text_input_preedit_cursor(void *data,
++				   struct zwp_text_input_v1 *text_input, int32_t index)
++{
++}
++
++static void
++terminal_text_input_cursor_position(void *data,
++				    struct zwp_text_input_v1 *text_input,
++				    int32_t index, int32_t anchor)
++{
++}
++
++static void
++terminal_text_input_language(void *data, struct zwp_text_input_v1 *text_input,
++				     uint32_t serial, const char *language)
++{
++}
++
++static void
++terminal_text_input_text_direction(void *data,
++				   struct zwp_text_input_v1 *text_input,
++				   uint32_t serial, uint32_t direction)
++{
++}
++
++static const struct zwp_text_input_v1_listener terminal_text_input_listener = {
++	terminal_text_input_enter,
++	terminal_text_input_leave,
++	terminal_text_input_modifiers_map,
++	terminal_text_input_input_panel_state,
++	terminal_text_input_preedit_string,
++	terminal_text_input_preedit_styling,
++	terminal_text_input_preedit_cursor,
++	terminal_text_input_commit_string,
++	terminal_text_input_cursor_position,
++	terminal_text_input_delete_surrounding_text,
++	terminal_text_input_keysym,
++	terminal_text_input_language,
++	terminal_text_input_text_direction
++};
++
++static void
++terminal_text_input_activate(struct terminal *terminal, struct input *input)
++{
++	if (!terminal->text_input)
++		return;
++
++	zwp_text_input_v1_show_input_panel(terminal->text_input);
++	zwp_text_input_v1_activate(terminal->text_input, input_get_seat(input),
++				   window_get_wl_surface(terminal->window));
++	zwp_text_input_v1_set_content_type(terminal->text_input,
++				   ZWP_TEXT_INPUT_V1_CONTENT_HINT_NONE,
++				   ZWP_TEXT_INPUT_V1_CONTENT_PURPOSE_NORMAL);
++	zwp_text_input_v1_set_surrounding_text(terminal->text_input, "", 0, 0);
++	zwp_text_input_v1_set_cursor_rectangle(terminal->text_input, 0, 0, 1, 1);
++	zwp_text_input_v1_commit_state(terminal->text_input,
++				 terminal->text_input_serial++);
++}
++
++static void
+ terminal_data(struct terminal *terminal, const char *data, size_t length);
+ 
+ static void
+@@ -2793,6 +3014,7 @@
+ 	case BTN_LEFT:
+ 		if (state == WL_POINTER_BUTTON_STATE_PRESSED) {
+ 			input_get_position(input, &x, &y);
++			terminal_text_input_activate(terminal, input);
+ 			click_handler(widget, terminal, input, x, y, time);
+ 		} else {
+ 			terminal->dragging = SELECT_NONE;
+@@ -2898,8 +3120,10 @@
+ {
+ 	struct terminal *terminal = data;
+ 
+-	if (id == 0)
++	if (id == 0) {
++		terminal_text_input_activate(terminal, input);
+ 		click_handler(widget, terminal, input, x, y, time);
++	}
+ }
+ 
+ static void
+@@ -2948,6 +3172,12 @@
+ 	terminal->window = window_create(display);
+ 	terminal->widget = window_frame_create(terminal->window, terminal);
+ 	terminal->title = xstrdup("Wayland Terminal");
++	if (text_input_manager) {
++		terminal->text_input =
++			zwp_text_input_manager_v1_create_text_input(text_input_manager);
++		zwp_text_input_v1_add_listener(terminal->text_input,
++					       &terminal_text_input_listener, terminal);
++	}
+ 	window_set_title(terminal->window, terminal->title);
+ 	window_set_appid(terminal->window,
+ 			 "org.freedesktop.weston.wayland-terminal");
+@@ -3025,6 +3255,12 @@
+ 	display_unwatch_fd(terminal->display, terminal->master);
+ 	close(terminal->master);
+ 
++	if (terminal->text_input) {
++		zwp_text_input_v1_hide_input_panel(terminal->text_input);
++		zwp_text_input_v1_destroy(terminal->text_input);
++	}
++	free(terminal->text_input_preedit);
++
+ 	cairo_scaled_font_destroy(terminal->font_bold);
+ 	cairo_scaled_font_destroy(terminal->font_normal);
+ 
+@@ -3136,6 +3372,17 @@
+ 	{ WESTON_OPTION_STRING, "shell", 0, &option_shell },
+ };
+ 
++static void
++global_handler(struct display *display, uint32_t name,
++	       const char *interface, uint32_t version, void *data)
++{
++	if (!strcmp(interface, "zwp_text_input_manager_v1")) {
++		text_input_manager =
++			display_bind(display, name,
++				     &zwp_text_input_manager_v1_interface, 1);
++	}
++}
++
+ int main(int argc, char *argv[])
+ {
+ 	struct display *d;
+@@ -3187,6 +3434,7 @@
+ 		return -1;
+ 	}
+ 
++	display_set_global_handler(d, global_handler);
+ 	wl_list_init(&terminal_list);
+ 	terminal = terminal_create(d);
+ 	if (terminal_run(terminal, option_shell))

@@ -1,5 +1,9 @@
 # Xiaomi lmi r6 bootmem execution checklist - 2026-06-24
 
+> **Archived evidence — do not execute commands from this file.**
+> This snapshot preserves the M-r6 state recorded on 2026-06-24. Any "current"
+> wording below is historical and does not describe the present device route.
+
 This checklist is a compact handoff for the current persistent fastbootd route.
 It is not an approval and does not make any hardware command safe by itself.
 

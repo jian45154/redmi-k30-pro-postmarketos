@@ -1,0 +1,257 @@
+#!/bin/sh
+set -eu
+
+original_sha256=6523d36fa3490b4f518184bb0d5a1dd025f14e93ead2b0f9a80f82d685a953f0
+active_sha256=5be125043d60ff2d3b98624191769efd06320b81262b5552489d93076e85e6a4
+marker_value=lmi-p2-d114-greetd-confd/v1
+
+fail() {
+	echo "lmi-p2-d114 config lifecycle: $*" >&2
+	exit 1
+}
+
+[ "$#" -eq 1 ] || fail "expected exactly one of: install, upgrade, remove"
+operation=$1
+case "$operation" in
+	install|upgrade|remove) ;;
+	*) fail "unknown operation: $operation" ;;
+esac
+
+runner_uid=$(id -u)
+runner_gid=$(id -g)
+case "$runner_uid:$runner_gid" in
+	*[!0-9:]*) fail "caller identity is malformed" ;;
+esac
+
+root=
+expected_owner=0
+expected_group=0
+test_mode=0
+if [ -n "${LMI_P2_D114_TEST_ROOT-}" ]; then
+	[ "$runner_uid" -ne 0 ] || fail "test-root redirection is forbidden for root"
+	case "$LMI_P2_D114_TEST_ROOT" in
+		/*) ;;
+		*) fail "test root must be absolute" ;;
+	esac
+	[ "$LMI_P2_D114_TEST_ROOT" != / ] || fail "test root may not be /"
+	[ -d "$LMI_P2_D114_TEST_ROOT" ] && [ ! -L "$LMI_P2_D114_TEST_ROOT" ] ||
+		fail "test root must be one real directory"
+	root=$(CDPATH= cd "$LMI_P2_D114_TEST_ROOT" && pwd -P) ||
+		fail "could not resolve test root"
+	[ "$root" = "$LMI_P2_D114_TEST_ROOT" ] ||
+		fail "test root must already be canonical"
+	expected_owner=$runner_uid
+	expected_group=$runner_gid
+	test_mode=1
+else
+	[ "$runner_uid" -eq 0 ] || fail "this operation requires root"
+	export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+fi
+
+target_parent=$root/etc/conf.d
+target=$target_parent/greetd
+packaged=$root/usr/share/lmi-p2-d114/greetd.confd
+state=$root/var/lib/lmi-p2-d114
+backup=$state/greetd-confd.original
+marker=$state/config-v1
+pending=$state/config-v1.pending
+removing=$state/config-v1.removing
+replacement=$target_parent/.greetd.lmi-p2-d114-new
+
+sha256_of() {
+	sha_line=$(sha256sum "$1") || return 1
+	sha_value=${sha_line%% *}
+	case "$sha_value" in
+		*[!0-9a-f]*|'') return 1 ;;
+	esac
+	[ "${#sha_value}" -eq 64 ] || return 1
+	printf '%s\n' "$sha_value"
+}
+
+validate_regular() {
+	regular_path=$1
+	regular_mode=$2
+	[ -f "$regular_path" ] && [ ! -L "$regular_path" ] || return 1
+	[ "$(stat -c %u "$regular_path")" = "$expected_owner" ] || return 1
+	[ "$(stat -c %g "$regular_path")" = "$expected_group" ] || return 1
+	[ "$(stat -c %a "$regular_path")" = "$regular_mode" ] || return 1
+}
+
+validate_parent() {
+	[ -d "$target_parent" ] && [ ! -L "$target_parent" ] ||
+		fail "target parent is not one real directory"
+	[ "$(stat -c %u "$target_parent")" = "$expected_owner" ] &&
+		[ "$(stat -c %g "$target_parent")" = "$expected_group" ] &&
+		[ "$(stat -c %a "$target_parent")" = 755 ] ||
+		fail "target parent ownership or mode changed"
+}
+
+set_root_metadata() {
+	metadata_path=$1
+	metadata_mode=$2
+	chmod "$metadata_mode" "$metadata_path"
+	if [ "$test_mode" -eq 0 ]; then
+		chown 0:0 "$metadata_path"
+	fi
+}
+
+copy_replacement() {
+	[ ! -e "$replacement" ] && [ ! -L "$replacement" ] ||
+		fail "replacement staging path is occupied"
+	cp "$packaged" "$replacement"
+	set_root_metadata "$replacement" 644
+	[ "$(sha256_of "$replacement")" = "$active_sha256" ] ||
+		fail "staged active configuration digest mismatch"
+	mv -f "$replacement" "$target"
+}
+
+restore_original() {
+	if [ -e "$replacement" ] || [ -L "$replacement" ]; then
+		validate_regular "$replacement" 644 ||
+			fail "restore staging path is unsafe"
+		[ "$(sha256_of "$replacement")" = "$original_sha256" ] ||
+			fail "restore staging digest mismatch"
+	else
+		cp "$backup" "$replacement"
+		set_root_metadata "$replacement" 644
+		[ "$(sha256_of "$replacement")" = "$original_sha256" ] ||
+			fail "restore staging digest mismatch"
+	fi
+	mv -f "$replacement" "$target"
+}
+
+write_marker() {
+	marker_tmp=$state/.config-v1.new
+	[ ! -e "$marker_tmp" ] && [ ! -L "$marker_tmp" ] ||
+		fail "marker staging path is occupied"
+	printf '%s\n' "$marker_value" > "$marker_tmp"
+	set_root_metadata "$marker_tmp" 600
+	mv -f "$marker_tmp" "$marker"
+}
+
+write_removing_marker() {
+	removing_tmp=$state/.config-v1.removing.new
+	[ ! -e "$removing_tmp" ] && [ ! -L "$removing_tmp" ] ||
+		fail "remove-marker staging path is occupied"
+	printf '%s\n' "$marker_value" > "$removing_tmp"
+	set_root_metadata "$removing_tmp" 600
+	mv -f "$removing_tmp" "$removing"
+}
+
+validate_marker_file() {
+	marker_path=$1
+	marker_label=$2
+	validate_regular "$marker_path" 600 || fail "$marker_label is unsafe"
+	[ "$(cat "$marker_path")" = "$marker_value" ] ||
+		fail "$marker_label changed"
+}
+
+validate_parent
+validate_regular "$packaged" 644 || fail "packaged configuration is unsafe"
+[ "$(sha256_of "$packaged")" = "$active_sha256" ] ||
+	fail "packaged configuration digest mismatch"
+
+if [ "$operation" = install ] && [ ! -e "$state" ] && [ ! -L "$state" ]; then
+	validate_regular "$target" 644 || fail "D114 greetd baseline metadata changed"
+	[ "$(sha256_of "$target")" = "$original_sha256" ] ||
+		fail "D114 greetd baseline digest changed"
+	mkdir "$state"
+	set_root_metadata "$state" 700
+	printf '%s\n' "$marker_value" > "$pending"
+	set_root_metadata "$pending" 600
+	cp "$target" "$backup"
+	set_root_metadata "$backup" 600
+	[ "$(sha256_of "$backup")" = "$original_sha256" ] ||
+		fail "original configuration backup failed"
+	copy_replacement
+	write_marker
+	rm -f "$pending"
+	exit 0
+fi
+
+[ -d "$state" ] && [ ! -L "$state" ] || fail "lifecycle state is unavailable"
+[ "$(stat -c %u "$state")" = "$expected_owner" ] &&
+	[ "$(stat -c %g "$state")" = "$expected_group" ] &&
+	[ "$(stat -c %a "$state")" = 700 ] ||
+	fail "lifecycle state ownership or mode changed"
+
+if [ -e "$removing" ] || [ -L "$removing" ]; then
+	validate_marker_file "$removing" "removing marker"
+	[ "$operation" = remove ] ||
+		fail "an interrupted removal must be recovered before $operation"
+	validate_regular "$target" 644 || fail "removal target is unsafe"
+	current_sha256=$(sha256_of "$target") || fail "removal target is unreadable"
+	case "$current_sha256" in
+		"$active_sha256")
+			validate_marker_file "$marker" "installed marker"
+			validate_regular "$backup" 600 || fail "original backup is unsafe"
+			[ "$(sha256_of "$backup")" = "$original_sha256" ] ||
+				fail "original backup digest changed"
+			restore_original
+			;;
+		"$original_sha256")
+			if [ -e "$marker" ] || [ -L "$marker" ]; then
+				validate_marker_file "$marker" "installed marker"
+			fi
+			if [ -e "$backup" ] || [ -L "$backup" ]; then
+				validate_regular "$backup" 600 || fail "original backup is unsafe"
+				[ "$(sha256_of "$backup")" = "$original_sha256" ] ||
+					fail "original backup digest changed"
+			fi
+			;;
+		*) fail "interrupted removal target has an unknown digest" ;;
+	esac
+	rm -f "$marker" "$backup" "$removing"
+	rmdir "$state"
+	exit 0
+fi
+
+if [ -e "$pending" ] || [ -L "$pending" ]; then
+	validate_marker_file "$pending" "pending marker"
+	if [ ! -e "$backup" ] && [ ! -L "$backup" ]; then
+		validate_regular "$target" 644 || fail "interrupted target is unsafe"
+		[ "$(sha256_of "$target")" = "$original_sha256" ] ||
+			fail "cannot reconstruct the original backup"
+		cp "$target" "$backup"
+		set_root_metadata "$backup" 600
+	fi
+	validate_regular "$backup" 600 || fail "original backup is unsafe"
+	[ "$(sha256_of "$backup")" = "$original_sha256" ] ||
+		fail "original backup digest changed"
+	current_sha256=$(sha256_of "$target") || fail "interrupted target is unreadable"
+	case "$current_sha256" in
+		"$original_sha256")
+			[ "$operation" != remove ] || {
+				rm -f "$pending" "$backup"
+				rmdir "$state"
+				exit 0
+			}
+			copy_replacement
+			;;
+		"$active_sha256") ;;
+		*) fail "interrupted target has an unknown digest" ;;
+	esac
+	write_marker
+	rm -f "$pending"
+fi
+
+validate_regular "$marker" 600 || fail "installed marker is unsafe"
+[ "$(cat "$marker")" = "$marker_value" ] || fail "installed marker changed"
+validate_regular "$backup" 600 || fail "original backup is unsafe"
+[ "$(sha256_of "$backup")" = "$original_sha256" ] ||
+	fail "original backup digest changed"
+validate_regular "$target" 644 || fail "active greetd configuration is unsafe"
+[ "$(sha256_of "$target")" = "$active_sha256" ] ||
+	fail "active greetd configuration was changed externally"
+
+case "$operation" in
+	install|upgrade)
+		exit 0
+		;;
+	remove)
+		write_removing_marker
+		restore_original
+		rm -f "$marker" "$backup" "$removing"
+		rmdir "$state"
+		;;
+esac

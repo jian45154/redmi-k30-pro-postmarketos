@@ -1,0 +1,15 @@
+[terminal]
+vt = 7
+switch = true
+
+[general]
+source_profile = false
+runfile = "/run/greetd-lmi-p2-d114.run"
+
+[default_session]
+command = "/usr/libexec/lmi-p2-d114/session"
+user = "lmi"
+
+[initial_session]
+command = "/usr/libexec/lmi-p2-d114/session"
+user = "lmi"

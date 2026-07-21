@@ -1,5 +1,9 @@
 # Xiaomi lmi r6 post-reboot result - 2026-06-24
 
+> **Archived evidence — do not execute commands from this file.**
+> This completed result is historical evidence. Any suggested next step or
+> approval language below has expired and is not present authorization.
+
 This records the approved reboot after the r6 rootfs and boot writes. It is not
 an approval for rollback, another reboot, or any additional partition write.
 

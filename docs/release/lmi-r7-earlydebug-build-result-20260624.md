@@ -1,5 +1,9 @@
 # Xiaomi lmi r7 earlydebug build result - 2026-06-24
 
+> **Archived evidence — do not execute commands from this file.**
+> This completed result is historical evidence. Any suggested next step or
+> approval language below has expired and is not present authorization.
+
 ## Context
 
 After the r6 persistent rootfs and boot writes, the device rebooted only to the
