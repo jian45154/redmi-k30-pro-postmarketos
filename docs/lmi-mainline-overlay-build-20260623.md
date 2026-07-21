@@ -1,5 +1,9 @@
 # LMI mainline overlay build record - 2026-06-23
 
+> **Archived evidence — do not execute commands from this file.**
+> This record preserves commands and observations from a completed historical
+> experiment; it is not a current device-action workflow.
+
 ## Purpose
 
 Validate the external lmi mainline pmaports overlay as a hardware enablement
@@ -285,7 +289,7 @@ Rootfs sparse image validation:
 Device state check after this build was read-only only:
 
 ```text
-fastboot devices: 8336ded7 fastboot
+fastboot devices: <redacted-device-serial> fastboot
 lsusb: 18d1:d00d Google Inc. Xiaomi Mi/Redmi 2 (fastboot)
 ```
 
@@ -362,7 +366,7 @@ Rootfs sparse image validation:
 Read-only device state check after this build:
 
 ```text
-fastboot devices: 8336ded7 fastboot
+fastboot devices: <redacted-device-serial> fastboot
 lsusb: 18d1:d00d Google Inc. Xiaomi Mi/Redmi 2 (fastboot)
 ```
 

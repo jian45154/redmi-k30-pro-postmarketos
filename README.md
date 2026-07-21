@@ -21,6 +21,17 @@ or profile and is not a ready-to-flash package. This version is strictly
 verification-only: `install` is always a no-device dry-run, and the CLI exposes
 no command that changes device state.
 
+## D114 six-row terminal candidate
+
+The exact six-row keyboard source, package locks, offline image tooling, and
+host tests are documented in
+[`docs/release/lmi-d114-r1-sixrow-readiness-20260722.md`](docs/release/lmi-d114-r1-sixrow-readiness-20260722.md).
+The source/tooling review is green, but the historical D114 userdata is still a
+private hardware-test baseline and is not a public ready-to-flash image. Its
+dirty-source kernel/package lineage must be replaced by a clean, matching
+boot/userdata rebuild and exact-hash hardware validation before a binary
+prerelease is created.
+
 ## Status
 
 - ✅ **Kernel + DTBs + full image build** (Clang/LLVM, pmbootstrap).
@@ -72,14 +83,16 @@ documented in:
 - [`docs/release/lmi-r7-earlydebug-build-result-20260624.md`](docs/release/lmi-r7-earlydebug-build-result-20260624.md)
 
 The `lmi-r6-current-handoff-20260624.md` file is older than the r6/r7 result
-documents; prefer the per-result release records when judging current state.
+documents. Use those result files only for historical outcomes and
+[`docs/tracks/mainline.md`](docs/tracks/mainline.md) for current status.
 
-Static release checks can be run locally with
-`scripts/59_release_static_ci.sh`. A GitHub Actions workflow template is kept at
+Static release checks, including the installer and P1, P2, P2-D114, and P3 host
+test suites, can be run locally with `scripts/59_release_static_ci.sh`. A GitHub
+Actions workflow template is kept at
 [`docs/release/edge-release-checks.workflow.yml`](docs/release/edge-release-checks.workflow.yml);
 copy it to `.github/workflows/` only with a token that has workflow scope.
-To refresh all local r6 release reports and docs, run
-`scripts/62_refresh_lmi_release_docs.sh --quick`.
+The old r6 refresh helper is retained only to reconstruct its dated records;
+it is not a current release workflow.
 
 The reusable host-side automation loop is documented in
 [`docs/mainline-automation-loop-20260624.md`](docs/mainline-automation-loop-20260624.md).
@@ -120,12 +133,28 @@ pmbootstrap checksum device-xiaomi-lmi
 pmbootstrap build    device-xiaomi-lmi
 pmbootstrap install  --no-fde
 pmbootstrap export                              # -> /tmp/postmarketOS-export/
-fastboot boot /tmp/postmarketOS-export/boot.img # RAM only; writes nothing
 ```
 
-For the mainline/copydown r6 route, use the release checklist instead of the
-downstream quick recipe. The staged persistent path is documented in
-[`docs/release/lmi-r6-bootmem-execution-checklist-20260624.md`](docs/release/lmi-r6-bootmem-execution-checklist-20260624.md).
+Do not pass an arbitrary export directly to `fastboot`. A candidate must first
+be reviewed and pinned by hash, manifests, boot semantics, tool identity, and
+device policy. For the existing known-good D110 recovery image, authorize the
+exact current Codex session once and then request a guarded RAM boot:
+
+```bash
+scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --authorize-session
+scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot --execute
+```
+
+This gate never issues a partition flash, but the booted operating system may
+modify persisted userdata. It rechecks the handset for every execution and
+never retries a failed boot automatically. See
+[`docs/lmi-d110-session-approval.md`](docs/lmi-d110-session-approval.md) for the
+scope, revocation command, and residual trust boundary.
+
+The mainline/copydown r6 checklist is historical evidence, not a current route.
+Do not run its fastboot or flash commands. Use
+[`docs/tracks/mainline.md`](docs/tracks/mainline.md) to judge current mainline
+status, and require a fresh reviewed release plan for any future device write.
 
 ## Repo layout
 
@@ -143,6 +172,9 @@ downstream quick recipe. The staged persistent path is documented in
 - `scripts/` — current WSL/device helper scripts for rebuilding v27/v28,
   checking exported images, collecting hardware evidence, and staging guarded
   mainline/copydown operations; see [`scripts/README.md`](scripts/README.md).
+- `config/lmi-p1/root-boundary/` — deployment guide, exact launcher-only
+  sudoers policy, and offline validator for the sealed P1 root boundary; see
+  [`config/lmi-p1/root-boundary/README.md`](config/lmi-p1/root-boundary/README.md).
 
 ## Current hardware focus
 

@@ -10,6 +10,7 @@ Static safety lint for the lmi r6 release helpers. It checks that persistent
 write/reboot helpers stay within the documented allowlist:
 
 - rootfs stage: pmbootstrap flasher flash_rootfs --partition userdata
+- D110 recovery stage: fastboot -s <verified lmi> boot <hash-bound image>
 - boot stage: fastboot flash boot <copydown boot image>
 - rollback stage: fastboot flash boot <rollback boot image>
 - fastbootd entry: fastboot reboot fastboot
@@ -65,6 +66,7 @@ reject_pattern() {
 echo "lmi release safety lint: expected command allowlist"
 require_line scripts/53_stage_lmi_fastbootd_flash.sh 'rootfs_command=("$pmbootstrap_bin" flasher flash_rootfs --partition userdata)'
 require_line scripts/53_stage_lmi_fastbootd_flash.sh 'boot_command=("$fastboot_bin" flash boot "$boot_img")'
+require_line scripts/72_stage_downstream_ssh_wifi_test.sh $'\t\t/usr/bin/timeout "$action_deadline_timeout" "$fastboot_bin" -s "$device_serial" boot "$fastboot_candidate_path" >/dev/null 2>&1'
 require_line scripts/55_stage_lmi_rollback_boot.sh '"$fastboot_bin" flash boot "$rollback_boot" 2>&1 | tee -a "$report"'
 require_line scripts/60_stage_lmi_enter_fastbootd.sh '"$fastboot_bin" reboot fastboot 2>&1 | tee -a "$report"'
 require_line scripts/61_stage_lmi_reboot_after_flash.sh '"$fastboot_bin" reboot 2>&1 | tee -a "$report"'

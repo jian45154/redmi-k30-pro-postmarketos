@@ -1,0 +1,463 @@
+#!/bin/sh
+set -eu
+
+# This helper owns one deliberately narrow system identity.  It never adopts a
+# pre-existing identity and it never repairs changed account data: either the
+# package marker and every invariant agree, or the operation stops before
+# account-database mutation.
+
+account=lmi-p2-gui
+account_group=lmi-p2-gui
+account_home=/var/lib/lmi-p2/home
+account_shell=/bin/false
+marker_value=lmi-p2-gui/v1
+
+fail() {
+	echo "lmi-p2 account lifecycle: $*" >&2
+	exit 1
+}
+
+[ "$#" -eq 1 ] || fail "expected exactly one of: install, upgrade, remove"
+operation=$1
+case "$operation" in
+	install|upgrade|remove) ;;
+	*) fail "unknown operation: $operation" ;;
+esac
+
+# LMI_P2_TEST_ROOT exists solely for the unprivileged database fixture.  A
+# privileged caller may not redirect lifecycle work through the environment.
+[ -x /usr/bin/id ] || fail "fixed id utility is unavailable"
+runner_uid=$(/usr/bin/id -u) || fail "could not determine caller uid"
+runner_gid=$(/usr/bin/id -g) || fail "could not determine caller gid"
+case "$runner_uid:$runner_gid" in
+	*[!0-9:]*) fail "caller identity is malformed" ;;
+esac
+
+root=
+test_mode=0
+if [ -n "${LMI_P2_TEST_ROOT-}" ]; then
+	[ "$runner_uid" -ne 0 ] ||
+		fail "LMI_P2_TEST_ROOT is forbidden for a privileged caller"
+	case "$LMI_P2_TEST_ROOT" in
+		/*) ;;
+		*) fail "LMI_P2_TEST_ROOT must be an absolute path" ;;
+	esac
+	[ "$LMI_P2_TEST_ROOT" != / ] || fail "refusing / as LMI_P2_TEST_ROOT"
+	[ -d "$LMI_P2_TEST_ROOT" ] && [ ! -L "$LMI_P2_TEST_ROOT" ] ||
+		fail "LMI_P2_TEST_ROOT is not a real directory"
+	root=$(CDPATH= cd "$LMI_P2_TEST_ROOT" && pwd -P) ||
+		fail "could not resolve LMI_P2_TEST_ROOT"
+	[ "$root" = "$LMI_P2_TEST_ROOT" ] ||
+		fail "LMI_P2_TEST_ROOT must already be canonical"
+	test_mode=1
+else
+	[ "$runner_uid" -eq 0 ] || fail "this operation requires root"
+	PATH=/usr/sbin:/usr/bin:/sbin:/bin
+	export PATH
+fi
+
+for required_tool in getent id addgroup adduser passwd deluser delgroup; do
+	command -v "$required_tool" >/dev/null 2>&1 ||
+		fail "required account utility is missing: $required_tool"
+done
+
+state_dir=$root/var/lib/lmi-p2
+home_dir=$root$account_home
+marker=$state_dir/account-v1
+pending_marker=$state_dir/account-v1.pending
+shell_path=$root$account_shell
+service_init=$root/etc/init.d/lmi-display
+service_runtime=$root/run/lmi-p2
+service_pid=$service_runtime/display.pid
+user_runtime=$root/run/user
+display_log=$root/var/log/lmi-p2-display.log
+proc_root=$root/proc
+
+if [ "$test_mode" -eq 1 ]; then
+	root_owner=$runner_uid
+	account_fs_owner=$runner_uid
+else
+	root_owner=0
+	account_fs_owner=
+fi
+
+parse_passwd_entry() {
+	pw_rest=$1
+	case "$pw_rest" in
+		*'
+'*) return 1 ;;
+	esac
+	pw_name=${pw_rest%%:*}; [ "$pw_rest" != "$pw_name" ] || return 1
+	pw_rest=${pw_rest#*:}
+	pw_password=${pw_rest%%:*}; [ "$pw_rest" != "$pw_password" ] || return 1
+	pw_rest=${pw_rest#*:}
+	pw_uid=${pw_rest%%:*}; [ "$pw_rest" != "$pw_uid" ] || return 1
+	pw_rest=${pw_rest#*:}
+	pw_gid=${pw_rest%%:*}; [ "$pw_rest" != "$pw_gid" ] || return 1
+	pw_rest=${pw_rest#*:}
+	pw_gecos=${pw_rest%%:*}; [ "$pw_rest" != "$pw_gecos" ] || return 1
+	pw_rest=${pw_rest#*:}
+	pw_home=${pw_rest%%:*}; [ "$pw_rest" != "$pw_home" ] || return 1
+	pw_shell=${pw_rest#*:}
+	[ "$pw_rest" != "$pw_shell" ] || return 1
+	case "$pw_shell" in *:*) return 1 ;; esac
+	case "$pw_uid:$pw_gid" in
+		*[!0-9:]*) return 1 ;;
+	esac
+	[ -n "$pw_uid" ] && [ -n "$pw_gid" ]
+}
+
+parse_group_entry() {
+	gr_rest=$1
+	case "$gr_rest" in
+		*'
+'*) return 1 ;;
+	esac
+	gr_name=${gr_rest%%:*}; [ "$gr_rest" != "$gr_name" ] || return 1
+	gr_rest=${gr_rest#*:}
+	gr_password=${gr_rest%%:*}; [ "$gr_rest" != "$gr_password" ] || return 1
+	gr_rest=${gr_rest#*:}
+	gr_gid=${gr_rest%%:*}; [ "$gr_rest" != "$gr_gid" ] || return 1
+	gr_members=${gr_rest#*:}
+	[ "$gr_rest" != "$gr_members" ] || return 1
+	case "$gr_members" in *:*) return 1 ;; esac
+	case "$gr_gid" in ''|*[!0-9]*) return 1 ;; esac
+}
+
+parse_shadow_entry() {
+	sp_rest=$1
+	case "$sp_rest" in
+		*'
+'*) return 1 ;;
+	esac
+	sp_name=${sp_rest%%:*}; [ "$sp_rest" != "$sp_name" ] || return 1
+	sp_rest=${sp_rest#*:}
+	sp_password=${sp_rest%%:*}
+	[ "$sp_rest" != "$sp_password" ] || return 1
+}
+
+lookup_account() {
+	account_entry=$(getent passwd "$account") || return 1
+	parse_passwd_entry "$account_entry" || return 1
+}
+
+lookup_account_group() {
+	account_group_entry=$(getent group "$account_group") || return 1
+	parse_group_entry "$account_group_entry" || return 1
+}
+
+is_group_member() {
+	member_user=$1
+	member_group=$2
+	member_groups=$(id -nG "$member_user" 2>/dev/null) || return 1
+	for candidate_group in $member_groups; do
+		[ "$candidate_group" != "$member_group" ] || return 0
+	done
+	return 1
+}
+
+validate_marker() {
+	[ -f "$marker" ] && [ ! -L "$marker" ] || return 1
+	[ "$(stat -c %u "$marker")" = "$root_owner" ] || return 1
+	[ "$(cat "$marker")" = "$marker_value" ] || return 1
+	[ ! -e "$pending_marker" ] && [ ! -L "$pending_marker" ] || return 1
+}
+
+validate_account_core() {
+	lookup_account || return 1
+	[ "$pw_name" = "$account" ] && [ "$pw_uid" -ne 0 ] &&
+		[ "$pw_gid" -ne 0 ] && [ "$pw_home" = "$account_home" ] &&
+		[ "$pw_shell" = "$account_shell" ] || return 1
+	account_uid=$pw_uid
+	account_gid=$pw_gid
+	lookup_account_group || return 1
+	[ "$gr_name" = "$account_group" ] && [ "$gr_gid" = "$account_gid" ] ||
+		return 1
+	shadow_entry=$(getent shadow "$account") || return 1
+	parse_shadow_entry "$shadow_entry" || return 1
+	[ "$sp_name" = "$account" ] || return 1
+	case "$sp_password" in
+		'!'*|'*'*) ;;
+		*) return 1 ;;
+	esac
+}
+
+validate_account_groups() {
+	account_groups=$(id -nG "$account" 2>/dev/null) || return 1
+	found_primary=0
+	found_seat=0
+	group_count=0
+	for candidate_group in $account_groups; do
+		group_count=$((group_count + 1))
+		case "$candidate_group" in
+			"$account_group")
+				[ "$found_primary" -eq 0 ] || return 1
+				found_primary=1
+				;;
+			seat)
+				[ "$found_seat" -eq 0 ] || return 1
+				found_seat=1
+				;;
+			*) return 1 ;;
+		esac
+	done
+	[ "$group_count" -eq 2 ] && [ "$found_primary" -eq 1 ] &&
+		[ "$found_seat" -eq 1 ]
+}
+
+validate_no_other_primary_gid_users() {
+	allowed_name=$1
+	passwd_database=$(getent passwd) || return 1
+	[ -n "$passwd_database" ] || return 1
+	while IFS= read -r passwd_line; do
+		[ -n "$passwd_line" ] || return 1
+		parse_passwd_entry "$passwd_line" || return 1
+		if [ "$pw_gid" = "$account_gid" ] && [ "$pw_name" != "$allowed_name" ]; then
+			return 1
+		fi
+	done <<-EOF
+	$passwd_database
+	EOF
+}
+
+validate_owned_directory() {
+	directory_path=$1
+	directory_owner=$2
+	[ -d "$directory_path" ] && [ ! -L "$directory_path" ] || return 1
+	[ "$(stat -c %u "$directory_path")" = "$directory_owner" ] || return 1
+}
+
+revoke_legacy_seat_access() {
+	if id lmi >/dev/null 2>&1 && is_group_member lmi seat; then
+		delgroup lmi seat ||
+			fail "could not revoke seat membership from the recovery identity"
+	fi
+	if id lmi >/dev/null 2>&1 && is_group_member lmi seat; then
+		fail "recovery identity still has seat membership"
+	fi
+}
+
+validate_existing_install() {
+	validate_marker || fail "refusing an unmarked or incomplete GUI identity"
+	validate_owned_directory "$state_dir" "$root_owner" ||
+		fail "GUI state directory ownership or type changed"
+	validate_account_core || fail "GUI account, group, or password lock changed"
+	[ -z "$gr_members" ] ||
+		fail "GUI primary group has supplementary members"
+	validate_account_groups ||
+		fail "GUI account supplementary groups changed"
+	validate_no_other_primary_gid_users "$account" ||
+		fail "GUI primary group is referenced by another account"
+	if [ "$test_mode" -eq 1 ]; then
+		account_fs_owner=$runner_uid
+	else
+		account_fs_owner=$account_uid
+	fi
+	validate_owned_directory "$home_dir" "$account_fs_owner" ||
+		fail "GUI home ownership or type changed"
+}
+
+rollback_install() {
+	rollback_status=$?
+	trap - EXIT HUP INT TERM
+	rollback_failed=0
+
+	if [ "${created_account-0}" -eq 1 ]; then
+		if id "$account" >/dev/null 2>&1 &&
+			is_group_member "$account" seat; then
+			delgroup "$account" seat >/dev/null 2>&1 || rollback_failed=1
+		fi
+		deluser "$account" >/dev/null 2>&1 || rollback_failed=1
+	fi
+	if [ "${created_group-0}" -eq 1 ] &&
+		getent group "$account_group" >/dev/null 2>&1; then
+		delgroup "$account_group" >/dev/null 2>&1 || rollback_failed=1
+	fi
+	if [ "${created_state-0}" -eq 1 ] && [ "$rollback_failed" -eq 0 ]; then
+		rm -rf -- "$state_dir" || rollback_failed=1
+	fi
+	if [ "$rollback_failed" -ne 0 ]; then
+		echo "lmi-p2 account lifecycle: install rollback was incomplete" >&2
+	fi
+	exit "$rollback_status"
+}
+
+create_install() {
+	[ ! -e "$state_dir" ] && [ ! -L "$state_dir" ] ||
+		fail "refusing a pre-existing unmarked GUI state directory"
+	if id "$account" >/dev/null 2>&1 ||
+		getent passwd "$account" >/dev/null 2>&1 ||
+		getent group "$account_group" >/dev/null 2>&1; then
+		fail "refusing a pre-existing GUI account or group without its marker"
+	fi
+	getent group seat >/dev/null 2>&1 || fail "required seat group is missing"
+	[ -x "$shell_path" ] || fail "dedicated GUI account shell is unavailable"
+
+	# Revoke the legacy capability first.  A later failure deliberately does
+	# not re-grant access to the recovery account.
+	revoke_legacy_seat_access
+
+	created_state=0
+	created_group=0
+	created_account=0
+	mkdir "$state_dir"
+	created_state=1
+	trap rollback_install EXIT
+	trap 'exit 1' HUP INT TERM
+	if [ "$test_mode" -eq 0 ]; then
+		chown 0:0 "$state_dir"
+	fi
+	chmod 0755 "$state_dir"
+	umask 077
+	printf '%s\n' "$marker_value" > "$pending_marker"
+
+	addgroup -S "$account_group"
+	created_group=1
+	adduser -S -D -H -h "$account_home" -s "$account_shell" \
+		-G "$account_group" "$account"
+	created_account=1
+	passwd -l "$account" >/dev/null
+	addgroup "$account" seat
+
+	validate_account_core ||
+		fail "created GUI account does not match the fixed identity"
+	validate_account_groups ||
+		fail "created GUI account has unexpected supplementary groups"
+	validate_no_other_primary_gid_users "$account" ||
+		fail "created GUI group is shared by another account"
+
+	mkdir "$home_dir"
+	if [ "$test_mode" -eq 0 ]; then
+		chown "$account_uid:$account_gid" "$home_dir"
+		account_fs_owner=$account_uid
+	else
+		account_fs_owner=$runner_uid
+	fi
+	chmod 0700 "$home_dir"
+	validate_owned_directory "$home_dir" "$account_fs_owner" ||
+		fail "created GUI home has unsafe ownership or type"
+
+	mv "$pending_marker" "$marker"
+	validate_marker || fail "could not commit the GUI account marker"
+	trap - EXIT HUP INT TERM
+}
+
+install_or_upgrade() {
+	getent group seat >/dev/null 2>&1 || fail "required seat group is missing"
+	[ -x "$shell_path" ] || fail "dedicated GUI account shell is unavailable"
+	if [ -e "$marker" ] || [ -L "$marker" ] ||
+		[ -e "$pending_marker" ] || [ -L "$pending_marker" ]; then
+		validate_existing_install
+		revoke_legacy_seat_access
+	else
+		create_install
+	fi
+}
+
+validate_removal_paths() {
+	if [ "$test_mode" -eq 1 ]; then
+		account_fs_owner=$runner_uid
+	else
+		account_fs_owner=$account_uid
+	fi
+	validate_owned_directory "$state_dir" "$root_owner" ||
+		fail "refusing unsafe GUI state cleanup"
+	validate_owned_directory "$home_dir" "$account_fs_owner" ||
+		fail "refusing unsafe GUI home cleanup"
+
+	user_runtime_dir=$user_runtime/$account_uid
+	if [ -e "$user_runtime_dir" ] || [ -L "$user_runtime_dir" ]; then
+		validate_owned_directory "$user_runtime_dir" "$account_fs_owner" ||
+			fail "refusing unsafe GUI user-runtime cleanup"
+	fi
+	if [ -e "$service_runtime" ] || [ -L "$service_runtime" ]; then
+		validate_owned_directory "$service_runtime" "$root_owner" ||
+			fail "refusing unsafe GUI service-runtime cleanup"
+	fi
+	if [ -e "$display_log" ] || [ -L "$display_log" ]; then
+		[ -f "$display_log" ] && [ ! -L "$display_log" ] &&
+			[ "$(stat -c %u "$display_log")" = "$root_owner" ] ||
+			fail "refusing unsafe GUI log cleanup"
+	fi
+	if [ -e "$service_pid" ] || [ -L "$service_pid" ]; then
+		[ -f "$service_pid" ] && [ ! -L "$service_pid" ] &&
+			[ "$(stat -c %u "$service_pid")" = "$root_owner" ] ||
+			fail "refusing unsafe GUI service pid"
+		display_pid=$(cat "$service_pid")
+		case "$display_pid" in
+			''|*[!0-9]*) fail "refusing malformed GUI service pid" ;;
+		esac
+	fi
+}
+
+remove_install() {
+	validate_marker || fail "refusing to remove an unmarked GUI identity"
+	validate_account_core || fail "refusing to remove a changed GUI account/group"
+	validate_account_groups ||
+		fail "refusing to remove an account with changed supplementary groups"
+	# These two checks intentionally precede service shutdown and every
+	# account/filesystem mutation.
+	[ -z "$gr_members" ] ||
+		fail "refusing to remove a GUI group with supplementary members"
+	validate_no_other_primary_gid_users "$account" ||
+		fail "refusing to remove a GUI group used as another account's primary group"
+	validate_removal_paths
+
+	if [ -x "$service_init" ]; then
+		command -v rc-service >/dev/null 2>&1 ||
+			fail "rc-service is unavailable"
+		if rc-service lmi-display status >/dev/null 2>&1; then
+			rc-service lmi-display stop >/dev/null 2>&1 ||
+				fail "could not stop the GUI service before account cleanup"
+		fi
+	fi
+	if [ -f "$service_pid" ] && kill -0 "$display_pid" 2>/dev/null; then
+		fail "GUI service is still running; refusing account cleanup"
+	fi
+
+	for status_path in "$proc_root"/[0-9]*/status; do
+		[ -r "$status_path" ] || continue
+		process_uid=$(sed -n 's/^Uid:[[:space:]]*\([0-9][0-9]*\).*/\1/p' \
+			"$status_path")
+		if [ "$process_uid" = "$account_uid" ]; then
+			fail "GUI identity still owns a live process; refusing cleanup"
+		fi
+	done
+
+	# deluser removes supplementary memberships.  All ambiguity was rejected
+	# above, before this first account-database mutation.
+	deluser "$account"
+	if getent passwd "$account" >/dev/null 2>&1 || id "$account" >/dev/null 2>&1; then
+		fail "GUI account still exists after deluser"
+	fi
+	validate_no_other_primary_gid_users "" ||
+		fail "GUI group gained a primary-GID reference during removal"
+
+	if getent group "$account_group" >/dev/null 2>&1; then
+		lookup_account_group || fail "could not re-read the GUI primary group"
+		[ "$gr_gid" = "$account_gid" ] && [ -z "$gr_members" ] ||
+			fail "GUI primary group changed during removal"
+		delgroup "$account_group"
+	fi
+	getent group "$account_group" >/dev/null 2>&1 &&
+		fail "GUI primary group still exists after delgroup"
+
+	user_runtime_dir=$user_runtime/$account_uid
+	if [ -d "$user_runtime_dir" ]; then
+		rm -rf -- "$user_runtime_dir"
+	fi
+	rm -rf -- "$state_dir"
+	if [ -d "$service_runtime" ]; then
+		rm -rf -- "$service_runtime"
+	fi
+	if [ -f "$display_log" ]; then
+		rm -f -- "$display_log"
+	fi
+}
+
+case "$operation" in
+	install|upgrade) install_or_upgrade ;;
+	remove) remove_install ;;
+esac
+
+exit 0

@@ -1,0 +1,94 @@
+#!/bin/sh
+set -eu
+
+[ "$#" -eq 0 ] || {
+	echo "lmi-weston-user-session accepts no arguments" >&2
+	exit 64
+}
+
+gui_uid=$(id -u lmi-p2-gui)
+gui_gid=$(id -g lmi-p2-gui)
+[ "$(id -u)" = "$gui_uid" ] && [ "$(id -g)" = "$gui_gid" ] &&
+	[ "$gui_uid" -ne 0 ] || {
+	echo "lmi-weston-user-session did not drop to lmi-p2-gui" >&2
+	exit 77
+}
+seat_gid=$(getent group seat | cut -d: -f3)
+set -- $(sed -n 's/^Groups:[[:space:]]*//p' /proc/self/status)
+[ "$#" -eq 1 ] && [ "$1" = "$seat_gid" ] || {
+	echo "lmi-weston-user-session requires exactly the seat supplementary group" >&2
+	exit 77
+}
+
+export HOME=/var/lib/lmi-p2/home
+export USER=lmi-p2-gui
+export LOGNAME=lmi-p2-gui
+export XDG_RUNTIME_DIR="/run/user/$gui_uid"
+export XDG_SESSION_TYPE=wayland
+export WAYLAND_DISPLAY=wayland-lmi-p2
+export LIBSEAT_BACKEND=seatd
+export PATH=/usr/local/bin:/usr/bin:/bin
+umask 077
+
+[ -d "$XDG_RUNTIME_DIR" ] && [ -O "$XDG_RUNTIME_DIR" ] || {
+	echo "lmi runtime directory is absent or not user-owned" >&2
+	exit 78
+}
+
+mkdir -p "$HOME/.local/state/lmi-p2"
+rm -f "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" \
+	"$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY.lock"
+
+/usr/bin/weston \
+	--socket=wayland-lmi-p2 \
+	--backend=drm-backend.so \
+	--renderer=pixman \
+	--shell=desktop-shell.so \
+	--config=/etc/lmi-p2/weston.ini \
+	--tty=7 \
+	--idle-time=0 \
+	--log="$HOME/.local/state/lmi-p2/weston.log" &
+weston_pid=$!
+
+terminate_weston() {
+	kill -TERM "$weston_pid" 2>/dev/null || true
+	attempt=0
+	while kill -0 "$weston_pid" 2>/dev/null && [ "$attempt" -lt 30 ]; do
+		sleep 0.1
+		attempt=$((attempt + 1))
+	done
+	if kill -0 "$weston_pid" 2>/dev/null; then
+		kill -KILL "$weston_pid" 2>/dev/null || true
+	fi
+	wait "$weston_pid" 2>/dev/null || true
+}
+
+stop_session() {
+	trap - HUP INT TERM
+	terminate_weston
+	exit 143
+}
+trap stop_session HUP INT TERM
+
+attempt=0
+while [ "$attempt" -lt 100 ]; do
+	[ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] && break
+	kill -0 "$weston_pid" 2>/dev/null || wait "$weston_pid"
+	sleep 0.1
+	attempt=$((attempt + 1))
+done
+[ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] || {
+	echo "Weston did not publish its socket within 10 seconds" >&2
+	terminate_weston
+	exit 75
+}
+
+# Stock weston-terminal has no compositor-authenticated text-input focus.
+# Physical keyboard input remains available; touch OSK routing to the terminal
+# stays disabled until native compositor/client integration exists.
+if wait "$weston_pid"; then
+	weston_status=0
+else
+	weston_status=$?
+fi
+exit "$weston_status"

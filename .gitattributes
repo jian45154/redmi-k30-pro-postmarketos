@@ -1,0 +1,4 @@
+# These are hash-locked payload patches. Preserve their source whitespace and
+# do not reinterpret embedded added-line indentation as repository whitespace.
+files/lmi-weston-sixrow/*.patch whitespace=-blank-at-eol,-space-before-tab
+patches/postmarketos-initramfs/*.patch whitespace=-blank-at-eol,-space-before-tab

@@ -2,6 +2,10 @@
 
 Date: 2026-06-23
 
+> **Archived evidence — do not execute commands from this file.**
+> This plan predates the recorded M-r6/M-r7 write results and the current D110
+> guarded RAM-boot policy. Its action language is retained only as history.
+
 ## Goal
 
 Use the existing xiaomi-lmi mainline work as the primary source for basic
@@ -73,8 +77,9 @@ packaging resources:
   committed without license review.
 - The modem patch enables SDX55 over PCIe for mainline. It does not apply to
   the current downstream boot path.
-- Persistent flash commands from the external README are not approved for this
-  project. Continue using RAM-only `fastboot boot` for validation.
+- Persistent flash commands from the external README were not approved for
+  this historical plan. Do not reuse its old direct RAM-boot guidance; current
+  candidates require a newly reviewed and pinned device-action workflow.
 
 ## Migration steps
 

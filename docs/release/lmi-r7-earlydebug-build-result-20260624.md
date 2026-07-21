@@ -1,5 +1,9 @@
 # Xiaomi lmi r7 earlydebug build result - 2026-06-24
 
+> **Archived evidence — do not execute commands from this file.**
+> This completed result is historical evidence. Any suggested next step or
+> approval language below has expired and is not present authorization.
+
 ## Context
 
 After the r6 persistent rootfs and boot writes, the device rebooted only to the
@@ -79,7 +83,7 @@ After reattaching USB from Windows to WSL with `usbipd.exe attach --wsl --busid
 2-5`, WSL sees the phone again:
 
 ```text
-fastboot devices: 8336ded7 fastboot
+fastboot devices: <redacted-device-serial> fastboot
 product: lmi
 unlocked: yes
 is-userspace: no
@@ -122,7 +126,7 @@ LMI_FASTBOOTD_REBOOT_CONFIRM=enter-fastbootd-xiaomi-lmi scripts/60_stage_lmi_ent
 The command completed after WSL USB reattach. The device then reported:
 
 ```text
-fastboot devices: 8336ded7 fastboot
+fastboot devices: <redacted-device-serial> fastboot
 product: lmi
 unlocked: yes
 is-userspace: yes
@@ -180,7 +184,7 @@ Finished. Total time: 1.298s
 Post-write read-only state:
 
 ```text
-fastboot devices: 8336ded7 fastboot
+fastboot devices: <redacted-device-serial> fastboot
 product: lmi
 unlocked: yes
 is-userspace: yes
@@ -261,7 +265,7 @@ host checks were repeated. Windows saw the phone again as an Android Bootloader
 Interface, and after reattaching `2-5` to WSL the device reported:
 
 ```text
-fastboot devices: 8336ded7 fastboot
+fastboot devices: <redacted-device-serial> fastboot
 product: lmi
 unlocked: yes
 is-userspace: no
@@ -313,7 +317,7 @@ fastboot reboot fastboot: OKAY
 After WSL USB reattach, the device reported:
 
 ```text
-fastboot devices: 8336ded7 fastboot
+fastboot devices: <redacted-device-serial> fastboot
 product: lmi
 unlocked: yes
 is-userspace: yes
@@ -360,7 +364,7 @@ Finished. Total time: 18.551s
 Post-write read-only state:
 
 ```text
-fastboot devices: 8336ded7 fastboot
+fastboot devices: <redacted-device-serial> fastboot
 product: lmi
 unlocked: yes
 is-userspace: yes

@@ -13,9 +13,14 @@
   approval.
 - `D-v27` remains the rollback/control baseline, not the strongest current
   hardware milestone.
-- `D-v46` is the verified downstream Wi-Fi cleanup baseline. Live evidence
-  shows SSH reachable, `wlan0` up with a default route, and `p2p0` plus
-  `wifi-aware0` present. `D-v43` remains the earlier Wi-Fi baseline.
+- `D-v43` is the strongest directly correlated downstream Wi-Fi baseline: its
+  archived build and hardware evidence records SSH plus Wi-Fi interfaces and
+  scan success. `D-v46` is a later cleanup build with the same recorded kernel
+  hash, but no separate `D-v46` runtime verification was found. Later read-only
+  reports classify the then-running rootfs as `D-v46` and observe SSH plus
+  Wi-Fi state; without an independent artifact-to-runtime chain, those reports
+  do not promote the complete `D-v46` image above the verified `D-v43`
+  milestone.
 - Display has moved past pure discovery: DRM/KGSL/DSI are present, direct
   `kmscube -D /dev/dri/card0` exits successfully, and dmesg records
   `dsi_display_set_mode` for `1080x2400@60`. A later passive sample shows
@@ -111,7 +116,8 @@
   rootfs verifier proves `/usr/bin/pd-mapper`, `/etc/init.d/pd-mapper`,
   `/etc/runlevels/default/pd-mapper`, `pd-mapper`, and `pd-mapper-openrc` are
   present with conservative OpenRC ordering. The 2026-07-09 18:44:04 UTC
-  passive P2 service-chain refresh on the current D-v46 runtime again recorded
+  passive P2 service-chain refresh on the runtime classified as D-v46 again
+  recorded
   `dev_subsys_adsp=present`, `dev_qrtr=missing`, `proc_net_qrtr=missing`, and
   missing `pd-mapper` service. The combined redacted evidence audit now records
   P2 service-chain evidence for ADSP visibility, read-only service status,
@@ -125,10 +131,11 @@
   runtime-verified. `D-v51` remains an older target-gate artifact at `1-r112`
   and should not be used to claim D-v52 service-foundation changes on hardware.
   `D-v49` remains an older service-state gate artifact and should not be used
-  to claim the newer hardening on hardware. The currently running device is
-  `D-v46` and lacks `/usr/sbin/lmi-rootctl`, `/usr/sbin/lmi-display-probe`, and
-  the rootctl sudoers drop-in; the host wrapper now reports this mismatch before
-  attempting sudo/rootctl. The following D-v51 USB/fastboot records are
+  to claim the newer hardening on hardware. Runtime identity checks classify
+  the then-running device as `D-v46`; it lacks `/usr/sbin/lmi-rootctl`,
+  `/usr/sbin/lmi-display-probe`, and the rootctl sudoers drop-in; the host
+  wrapper now reports this mismatch before attempting sudo/rootctl. The
+  following D-v51 USB/fastboot records are
   retained as historical evidence only. The D-v51 bootloader-fastboot preflight
   route used
   `DOWNSTREAM_BOOTLOADER_PREFLIGHT_CONFIRM=bootloader-readonly-preflight-xiaomi-lmi`;
@@ -164,8 +171,9 @@
   TCP 23 not reachable, with
   `RNDIS_CONNECTIVITY_SSH22_REACHABLE_REMOTE_PREFLIGHT_ELIGIBLE`. The following
   remote rootctl preflight over SSH reported `sudo=present`, `rootctl=missing`,
-  and `REMOTE_ROOTCTL_PREFLIGHT_ROOTCTL_MISSING`, matching the current D-v46
-  runtime. The 2026-07-09 17:04:58 UTC D-v51 runtime identity read-only check
+  and `REMOTE_ROOTCTL_PREFLIGHT_ROOTCTL_MISSING`, matching the runtime
+  classified as D-v46. The 2026-07-09 17:04:58 UTC D-v51 runtime identity
+  read-only check
   then reported `device_pkg_version=device-xiaomi-lmi-1-r107`,
   `d51_cmdline_uuid_status=differs`, missing rootctl/display-probe/sudoers, and
   `D51_RUNTIME_IDENTITY_D46_ROOTCTL_MISSING`. Do not run rootctl commands until

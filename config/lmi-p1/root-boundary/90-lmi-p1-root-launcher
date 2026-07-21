@@ -1,0 +1,4 @@
+# lmi P1 sealed builder: the only delegated root command.
+Cmnd_Alias LMI_P1_ROOT_LAUNCHER = /usr/bin/python3 -I -S -B /usr/local/sbin/lmi-p1-root-launcher
+Defaults!LMI_P1_ROOT_LAUNCHER !use_pty
+%lmi-p1-builders ALL=(root:root) NOPASSWD: NOSETENV: LMI_P1_ROOT_LAUNCHER

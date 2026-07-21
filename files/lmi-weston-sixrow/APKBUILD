@@ -1,0 +1,79 @@
+# Maintainer: Local lmi port work <noreply@example.invalid>
+pkgname=lmi-weston-sixrow-clients
+pkgver=14.0.2
+pkgrel=1
+pkgdesc="Hash-locked six-row Weston keyboard and text-input terminal for xiaomi-lmi"
+url="https://gitlab.freedesktop.org/wayland/weston"
+arch="aarch64"
+license="MIT"
+makedepends="
+	cairo-dev
+	eudev-dev
+	libdrm-dev
+	libevdev-dev
+	libinput-dev
+	libpng-dev
+	libxkbcommon-dev
+	meson
+	pango-dev
+	pixman-dev
+	wayland-dev
+	wayland-protocols
+	"
+options="!check"
+source="
+	https://gitlab.freedesktop.org/wayland/weston/-/releases/$pkgver/downloads/weston-$pkgver.tar.xz
+	0001-phone-input-terminal-text-input.patch
+	0002-sixrow-control.patch
+	"
+builddir="$srcdir/weston-$pkgver"
+
+build() {
+	abuild-meson \
+		-Dbackend-default=headless \
+		-Dbackend-drm=false \
+		-Dbackend-drm-screencast-vaapi=false \
+		-Dbackend-headless=true \
+		-Dbackend-pipewire=false \
+		-Dbackend-rdp=false \
+		-Dbackend-vnc=false \
+		-Dbackend-wayland=false \
+		-Dbackend-x11=false \
+		-Dcolor-management-lcms=false \
+		-Ddemo-clients=false \
+		-Ddoc=false \
+		-Dimage-jpeg=false \
+		-Dimage-webp=false \
+		-Dpipewire=false \
+		-Drenderer-gl=false \
+		-Dremoting=false \
+		-Dscreenshare=false \
+		-Dshell-desktop=true \
+		-Dshell-fullscreen=false \
+		-Dshell-ivi=false \
+		-Dshell-kiosk=false \
+		-Dsimple-clients=[] \
+		-Dsystemd=false \
+		-Dtests=false \
+		-Dtools=terminal \
+		-Dwcap-decode=false \
+		-Dxwayland=false \
+		build
+
+	# Do not run the default/all target: only these two client executables
+	# are compiled, and package() below intentionally does not run meson install.
+	meson compile -C build weston-keyboard weston-terminal
+}
+
+package() {
+	install -Dm755 build/clients/weston-keyboard \
+		"$pkgdir/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"
+	install -Dm755 build/clients/weston-terminal \
+		"$pkgdir/usr/libexec/lmi-p2-d114/weston-terminal-sixrow"
+}
+
+sha512sums="
+e8214ec893e6c3ae94eb3c92feba104b0201843e9143f726a3e9a4d396d02523c94da706c1348cf934bc339fb1a4bc1fecdb865f0ea914115fd346d9eda091f5  weston-14.0.2.tar.xz
+a8c826ebfeff56045b8c3a2b76d9a0566a38c29811d1a52a0e3c32088195d1f9f050f1276460923e238ac6c67ccbde58126402ea2fa249d77fc06a7f7237b769  0001-phone-input-terminal-text-input.patch
+8599e58650359f9d6b247bbccf46cbce11f528521b956e70e07e1d42518c040f58bf371ced688ac0bd636101b5ae11b2ec2ca80ee7c43b87a637999969e6246b  0002-sixrow-control.patch
+"

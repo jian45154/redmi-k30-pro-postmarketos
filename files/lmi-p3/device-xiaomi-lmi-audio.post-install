@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+
+ROUTE_GUARD=/usr/libexec/lmi-p3-route-guard
+
+[ "$#" -le 1 ] || {
+	printf '%s\n' 'device-xiaomi-lmi-audio: unexpected post-install arguments' >&2
+	exit 64
+}
+[ -x "$ROUTE_GUARD" ] || {
+	printf '%s\n' 'device-xiaomi-lmi-audio: route guard is missing' >&2
+	exit 1
+}
+
+"$ROUTE_GUARD"
+printf '%s\n' 'device-xiaomi-lmi-audio: installed disabled; firmware review remains local and explicit'

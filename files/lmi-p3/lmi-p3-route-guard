@@ -1,0 +1,102 @@
+#!/bin/sh
+set -eu
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+LC_ALL=C
+export PATH LC_ALL
+
+ROOTCTL=/usr/sbin/lmi-rootctl
+SUDOERS=/etc/sudoers
+SUDOERS_DIRECTORY=/etc/sudoers.d
+ROOTCTL_RULE=/etc/sudoers.d/90-lmi-rootctl
+DOAS_CONF=/etc/doas.conf
+DOAS_DIRECTORY=/etc/doas.d
+INIT_DIRECTORY=/etc/init.d
+RUNLEVEL_DIRECTORY=/etc/runlevels
+SYSTEMD_ETC_DIRECTORY=/etc/systemd/system
+SYSTEMD_USR_DIRECTORY=/usr/lib/systemd/system
+ID=/usr/bin/id
+SHA256SUM=/usr/bin/sha256sum
+STAT=/usr/bin/stat
+
+ROOTCTL_SHA256=0a9ad28b21dd5adc66304f54f1ebaf6b0fd1876cf206f7583cd8fa1465e3f239
+SUDOERS_SHA256=1bca048389b53b5d6ca5690eabe05580a334f05d793684fad37c8b6840fcd303
+ROOTCTL_RULE_SHA256=8b74be55d83c2e77723911aaf65216c68bbb829d99a73167295577147d19f02d
+
+fail() {
+	printf 'lmi-p3-route-guard: %s\n' "$1" >&2
+	return 1
+}
+
+check_exact_file() {
+	path=$1
+	mode=$2
+	digest=$3
+	label=$4
+
+	[ -f "$path" ] && [ ! -L "$path" ] && [ -r "$path" ] ||
+		fail "$label is not one readable regular file: $path" || return 1
+	metadata=$($STAT -c '%u:%g:%a:%h:%F' "$path") ||
+		fail "could not stat $label: $path" || return 1
+	[ "$metadata" = "0:0:$mode:1:regular file" ] ||
+		fail "$label ownership, mode, link count, or type drifted" || return 1
+	actual_digest=$($SHA256SUM "$path") ||
+		fail "could not hash $label: $path" || return 1
+	actual_digest=${actual_digest%% *}
+	[ "$actual_digest" = "$digest" ] ||
+		fail "$label digest does not match the active P1 r107 contract" || return 1
+}
+
+check_absent() {
+	label=$1
+	shift
+	for path do
+		if [ -e "$path" ] || [ -L "$path" ]; then
+			fail "$label is present: $path"
+			return 1
+		fi
+	done
+}
+
+[ "$#" -eq 0 ] || fail 'usage: lmi-p3-route-guard' || exit 64
+[ -x "$ID" ] && [ -x "$SHA256SUM" ] && [ -x "$STAT" ] ||
+	fail 'required absolute-path inspection tools are unavailable' || exit 1
+[ "$($ID -u)" = 0 ] || fail 'route inspection requires explicit uid 0' || exit 1
+
+check_exact_file "$ROOTCTL" 755 "$ROOTCTL_SHA256" lmi-rootctl
+check_exact_file "$SUDOERS" 440 "$SUDOERS_SHA256" sudoers
+check_exact_file "$ROOTCTL_RULE" 440 "$ROOTCTL_RULE_SHA256" rootctl-sudoers-rule
+
+sudoers_entries=0
+for entry in "$SUDOERS_DIRECTORY"/* "$SUDOERS_DIRECTORY"/.[!.]* \
+	"$SUDOERS_DIRECTORY"/..?*; do
+	[ -e "$entry" ] || [ -L "$entry" ] || continue
+	[ "$entry" = "$ROOTCTL_RULE" ] ||
+		fail "unexpected sudoers entry could bypass the P1 root boundary: $entry" ||
+		exit 1
+	sudoers_entries=$((sudoers_entries + 1))
+done
+[ "$sudoers_entries" -eq 1 ] ||
+	fail 'the exact P1 rootctl sudoers rule is not unique' || exit 1
+
+check_absent 'doas policy' "$DOAS_CONF"
+for entry in "$DOAS_DIRECTORY"/* "$DOAS_DIRECTORY"/.[!.]* \
+	"$DOAS_DIRECTORY"/..?*; do
+	[ -e "$entry" ] || [ -L "$entry" ] || continue
+	fail "doas policy could bypass the P1 root boundary: $entry"
+	exit 1
+done
+
+check_absent 'legacy unguarded ADSP init service' \
+	"$INIT_DIRECTORY/adsp-audio"
+for entry in "$RUNLEVEL_DIRECTORY"/*/adsp-audio \
+	"$RUNLEVEL_DIRECTORY"/*/lmi-adsp-boot \
+	"$SYSTEMD_ETC_DIRECTORY"/*/adsp-audio.service \
+	"$SYSTEMD_ETC_DIRECTORY"/adsp-audio.service \
+	"$SYSTEMD_USR_DIRECTORY"/adsp-audio.service; do
+	[ -e "$entry" ] || [ -L "$entry" ] || continue
+	fail "an enabled or alternate ADSP boot route is present: $entry"
+	exit 1
+done
+
+printf '%s\n' 'lmi-p3-route-guard: exact P1 boundary present; no packaged ADSP bypass found'
