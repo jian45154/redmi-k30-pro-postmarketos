@@ -1,5 +1,7 @@
 # lmi D114 P2 r1 six-row readiness — 2026-07-22
 
+> **Archived evidence — do not execute commands from this file.**
+
 ## Current verdict
 
 The source, package recipes, offline injector, userdata assembler, and guarded
