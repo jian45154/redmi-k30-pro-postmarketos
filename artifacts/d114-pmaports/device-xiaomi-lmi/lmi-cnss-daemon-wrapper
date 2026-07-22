@@ -1,0 +1,3 @@
+#!/bin/sh
+export LD_PRELOAD=/usr/lib/lmi/liblmi_android_prop_shim.so
+exec /vendor/bin/cnss-daemon

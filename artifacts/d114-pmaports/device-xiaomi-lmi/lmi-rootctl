@@ -1,0 +1,243 @@
+#!/bin/sh
+set -eu
+
+usage() {
+	cat >&2 <<'EOF'
+Usage:
+  lmi-rootctl reboot --confirm reboot-xiaomi-lmi
+  lmi-rootctl poweroff --confirm poweroff-xiaomi-lmi
+  lmi-rootctl rc-status [args...]
+  lmi-rootctl service <name> status
+  lmi-rootctl service <name> <start|stop|restart|zap> --confirm service-state-change-xiaomi-lmi
+  lmi-rootctl bluetooth-rfkill <block|unblock> --confirm bluetooth-rfkill-xiaomi-lmi
+  lmi-rootctl adsp-boot --confirm adsp-boot-d70-android-init-trigger-xiaomi-lmi
+  lmi-rootctl wifi-start --confirm wifi-start-xiaomi-lmi [--fs-ready-only] [--boarddata FILE] [--pre-on-delay N] [--post-on-delay N]
+  lmi-rootctl display-probe
+  lmi-rootctl display-probe --active|--active-kmscube|--active-weston|--active-all
+  lmi-rootctl display-takeover --confirm display-takeover-d67-clear129-plane58-then-weston-dsi-only-xiaomi-lmi
+
+This helper is intentionally narrow. It exists so remote SSH sessions can use
+sudo -n for common xiaomi-lmi hardware-debug actions without granting a root
+shell or passwordless sudo for arbitrary commands.
+EOF
+	exit 2
+}
+
+is_uint() {
+	case "$1" in
+		""|*[!0-9]*) return 1 ;;
+		*) return 0 ;;
+	esac
+}
+
+is_safe_token() {
+	case "$1" in
+		""|*/*|*..*|*[!A-Za-z0-9._-]*) return 1 ;;
+		*) return 0 ;;
+	esac
+}
+
+require_service() {
+	case "$1" in
+		lmi-firmware-mount|lmi-qrtr-ns|lmi-cnss-daemon|lmi-cnss-fs-ready|lmi-wlan-on|pd-mapper|lmi-seatd|rmtfs|tqftpserv|wpa_supplicant|networkmanager|bluetooth|sshd)
+			return 0
+			;;
+		*)
+			echo "service is not in lmi-rootctl allowlist: $1" >&2
+			exit 2
+			;;
+	esac
+}
+
+require_service_action() {
+	case "$1" in
+		start|stop|restart|status|zap) return 0 ;;
+		*)
+			echo "service action is not in lmi-rootctl allowlist: $1" >&2
+			exit 2
+			;;
+	esac
+}
+
+require_exact_confirm() {
+	expected=$1
+	shift
+	[ "$#" -eq 2 ] && [ "$1" = "--confirm" ] && [ "$2" = "$expected" ] || usage
+}
+
+run_self_test() {
+	for expected in \
+		reboot-xiaomi-lmi \
+		poweroff-xiaomi-lmi \
+		service-state-change-xiaomi-lmi \
+		bluetooth-rfkill-xiaomi-lmi \
+		wifi-start-xiaomi-lmi
+	do
+		if (require_exact_confirm "$expected" --confirm wrong-token); then
+			echo "self-test accepted wrong confirmation token: $expected" >&2
+			exit 1
+		fi
+		(require_exact_confirm "$expected" --confirm "$expected")
+	done
+	echo 'lmi-rootctl exact confirmation self-test: OK'
+}
+
+set_bluetooth_rfkill() {
+	desired=$1
+	found=0
+	for node in /sys/class/rfkill/rfkill*; do
+		[ -d "$node" ] || continue
+		[ "$(cat "$node/type" 2>/dev/null || true)" = bluetooth ] || continue
+		printf '%s\n' "$desired" > "$node/state"
+		found=1
+	done
+	[ "$found" -eq 1 ] || {
+		echo "no Bluetooth rfkill node found" >&2
+		exit 1
+	}
+}
+
+rc_service=/sbin/rc-service
+[ -x /usr/sbin/rc-service ] && rc_service=/usr/sbin/rc-service
+rc_status=/sbin/rc-status
+[ -x /usr/bin/rc-status ] && rc_status=/usr/bin/rc-status
+
+[ "$#" -gt 0 ] || usage
+cmd=$1
+shift
+
+case "$cmd" in
+	--self-test)
+		[ "$#" -eq 0 ] || usage
+		run_self_test
+		exit 0
+		;;
+	reboot)
+		require_exact_confirm reboot-xiaomi-lmi "$@"
+		exec /sbin/reboot
+		;;
+	poweroff)
+		require_exact_confirm poweroff-xiaomi-lmi "$@"
+		exec /sbin/poweroff
+		;;
+	rc-status)
+		exec "$rc_status" "$@"
+		;;
+	service)
+		[ "$#" -ge 2 ] || usage
+		service_name=$1
+		service_action=$2
+		require_service "$service_name"
+		require_service_action "$service_action"
+		case "$service_action" in
+			status)
+				[ "$#" -eq 2 ] || usage
+				;;
+			start|stop|restart|zap)
+				shift 2
+				require_exact_confirm service-state-change-xiaomi-lmi "$@"
+				;;
+		esac
+		exec "$rc_service" "$service_name" "$service_action"
+		;;
+	bluetooth-rfkill)
+		[ "$#" -ge 1 ] || usage
+		case "$1" in
+			block) desired=0 ;;
+			unblock) desired=1 ;;
+			*) usage ;;
+		esac
+		shift
+		require_exact_confirm bluetooth-rfkill-xiaomi-lmi "$@"
+		set_bluetooth_rfkill "$desired"
+		;;
+	adsp-boot)
+		[ "$#" -eq 2 ] && [ "$1" = "--confirm" ] &&
+			[ "$2" = "adsp-boot-d70-android-init-trigger-xiaomi-lmi" ] || usage
+		boot=/sys/kernel/boot_adsp/boot
+		state=/sys/bus/msm_subsys/devices/subsys2/state
+		[ -w "$boot" ] && [ -r "$state" ] || {
+			echo 'ADSP boot interface is unavailable' >&2
+			exit 1
+		}
+		before=$(cat "$state")
+		case "$before" in OFFLINING|OFFLINE) ;; *) echo "ADSP is not offline: $before" >&2; exit 1;; esac
+		echo "adsp_state_before=$before"
+		printf 1 > "$boot"
+		echo 'adsp_boot_write=1'
+		for _wait in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+			after=$(cat "$state")
+			printf 'adsp_state_sample=%s\n' "$after"
+			[ "$after" = ONLINE ] && { echo 'adsp_boot_status=online'; exit 0; }
+			sleep 1
+		done
+		echo 'adsp_boot_status=online-timeout' >&2
+		exit 1
+		;;
+	wifi-start)
+		wifi_args=
+		require_exact_confirm wifi-start-xiaomi-lmi "$@"
+		shift 2
+		while [ "$#" -gt 0 ]; do
+			case "$1" in
+				--fs-ready-only)
+					wifi_args="--fs-ready-only"
+					shift
+					;;
+				--boarddata)
+					[ "$#" -ge 2 ] || usage
+					is_safe_token "$2" || {
+						echo "unsafe boarddata token: $2" >&2
+						exit 2
+					}
+					export LMI_WLAN_BOARDDATA=$2
+					shift 2
+					;;
+				--pre-on-delay)
+					[ "$#" -ge 2 ] || usage
+					is_uint "$2" || {
+						echo "pre-on delay must be an integer: $2" >&2
+						exit 2
+					}
+					export LMI_WLAN_PRE_ON_DELAY=$2
+					shift 2
+					;;
+				--post-on-delay)
+					[ "$#" -ge 2 ] || usage
+					is_uint "$2" || {
+						echo "post-on delay must be an integer: $2" >&2
+						exit 2
+					}
+					export LMI_WLAN_POST_ON_DELAY=$2
+					shift 2
+					;;
+				*)
+					usage
+					;;
+			esac
+		done
+		# shellcheck disable=SC2086
+		exec /usr/sbin/lmi-wifi-start $wifi_args
+		;;
+	display-probe)
+		case "${1:-}" in
+			"") exec /usr/sbin/lmi-display-probe ;;
+			--active|--active-kmscube|--active-weston|--active-all)
+				active_mode=$1
+				shift
+				[ "$#" -eq 2 ] && [ "$1" = "--confirm" ] &&
+					[ "$2" = "display-takeover-d62-openvt-cleanup-xiaomi-lmi" ] || usage
+				exec /usr/sbin/lmi-display-probe "$active_mode"
+				;;
+			*) usage ;;
+		esac
+		;;
+	display-takeover)
+		[ "$#" -eq 2 ] && [ "$1" = "--confirm" ] &&
+			[ "$2" = "display-takeover-d67-clear129-plane58-then-weston-dsi-only-xiaomi-lmi" ] || usage
+		exec /usr/sbin/lmi-display-takeover
+		;;
+	*)
+		usage
+		;;
+esac

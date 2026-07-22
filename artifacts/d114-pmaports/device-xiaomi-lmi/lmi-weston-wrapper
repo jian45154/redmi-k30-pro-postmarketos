@@ -1,0 +1,164 @@
+#!/bin/sh
+set -eu
+
+log=/run/lmi-weston.log
+runtime=/run/lmi-weston
+lockdir=/run/lmi-weston.lock
+work=
+fifo=
+feeder_pid=
+modetest_pid=
+launcher_pid=
+weston_pid=
+client_pid=
+editor_pid=
+
+exec >>"$log" 2>&1
+echo "lmi-weston: start $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+reap_child_if_done() {
+	pid=$1
+	case "$pid" in
+		''|*[!0-9]*) return 0 ;;
+	esac
+	state=$(awk '{ print $3 }' "/proc/$pid/stat" 2>/dev/null || true)
+	if [ -e "/proc/$pid" ] && [ "$state" != Z ]; then
+		return 1
+	fi
+	wait "$pid" 2>/dev/null || true
+	return 0
+}
+
+terminate_child() {
+	pid=$1
+	reap_child_if_done "$pid" && return 0
+	kill "$pid" 2>/dev/null || true
+	for _wait in 1 2 3; do
+		reap_child_if_done "$pid" && return 0
+		sleep 1
+	done
+	kill -9 "$pid" 2>/dev/null || true
+	sleep 1
+	reap_child_if_done "$pid"
+}
+
+cleanup() {
+	status=$?
+	trap - EXIT HUP INT TERM
+	set +e
+	if [ -r "$runtime/weston.pid" ]; then
+		weston_pid=$(cat "$runtime/weston.pid" 2>/dev/null || true)
+	fi
+	terminate_child "$editor_pid" || status=1
+	terminate_child "$client_pid" || status=1
+	terminate_child "$weston_pid" || status=1
+	terminate_child "$launcher_pid" || status=1
+	terminate_child "$modetest_pid" || status=1
+	terminate_child "$feeder_pid" || status=1
+	[ -z "$work" ] || rm -rf -- "$work"
+	rm -f "$runtime/weston.pid"
+	rmdir "$runtime" 2>/dev/null || true
+	rmdir "$lockdir" 2>/dev/null || status=1
+	echo "lmi-weston: exit status=$status"
+	exit "$status"
+}
+
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+for command in awk cat grep mkfifo modetest openvt pgrep sleep tail timeout weston weston-editor weston-terminal; do
+	command -v "$command" >/dev/null 2>&1 || {
+		echo "lmi-weston: missing command $command"
+		exit 1
+	}
+done
+
+[ "$(id -u)" = 0 ] || { echo 'lmi-weston: root required'; exit 1; }
+[ -S /run/seatd.sock ] || { echo 'lmi-weston: seatd socket missing'; exit 1; }
+[ -r /dev/dri/card0 ] && [ -w /dev/dri/card0 ] || { echo 'lmi-weston: card0 unavailable'; exit 1; }
+[ "$(cat /sys/class/drm/card0-DSI-1/status 2>/dev/null || true)" = connected ] || {
+	echo 'lmi-weston: DSI-1 disconnected'
+	exit 1
+}
+[ ! -e /run/lmi-display-takeover.lock ] || { echo 'lmi-weston: manual takeover active'; exit 1; }
+if pgrep -x weston >/dev/null 2>&1 || pgrep -x openvt >/dev/null 2>&1 ||
+	pgrep -x kmscube >/dev/null 2>&1 || pgrep -x modetest >/dev/null 2>&1; then
+	echo 'lmi-weston: another display process is active'
+	exit 1
+fi
+mkdir "$lockdir" 2>/dev/null || { echo 'lmi-weston: lock busy'; exit 1; }
+mkdir "$runtime"
+chmod 700 "$runtime"
+
+# The boot firmware owns CRTC 129 / plane 58 until this one-shot atomic clear.
+work=$(mktemp -d /tmp/lmi-weston.XXXXXX)
+fifo=$work/input
+mkfifo "$fifo"
+tail -f /dev/null > "$fifo" &
+feeder_pid=$!
+modetest -a -s '29@129:#0@XR24' -P '58@129:1080x2400@XR24' < "$fifo" &
+modetest_pid=$!
+sleep 3
+terminate_child "$feeder_pid" || { echo 'lmi-weston: splash feeder cleanup failed'; exit 1; }
+feeder_pid=
+set +e
+wait "$modetest_pid"
+modetest_exit=$?
+set -e
+modetest_pid=
+[ "$modetest_exit" -eq 0 ] || { echo "lmi-weston: splash clear failed exit=$modetest_exit"; exit 1; }
+
+post_clear=$(timeout -k 1 5 modetest -p 2>&1) || {
+	echo 'lmi-weston: post-clear query failed'
+	exit 1
+}
+printf '%s\n' "$post_clear" | grep -Eq '^129[[:space:]]+0[[:space:]]+\(0,0\)[[:space:]]+\(0x0\)' || {
+	echo 'lmi-weston: CRTC 129 is still occupied'
+	exit 1
+}
+printf '%s\n' "$post_clear" | grep -Eq '^58[[:space:]]+0[[:space:]]+0[[:space:]]' || {
+	echo 'lmi-weston: plane 58 is still occupied'
+	exit 1
+}
+rm -rf -- "$work"
+work=
+
+echo 'lmi-weston: splash released; starting DRM backend'
+openvt -s -w -- sh -c '
+	echo "$$" > "$1"
+	exec env XDG_RUNTIME_DIR="$2" weston --config=/etc/xdg/weston/weston.ini \
+		--backend=drm-backend.so --drm-device=card0 \
+		--renderer=pixman --socket=wayland-0 --idle-time=0 --continue-without-input --log="$3"
+' sh "$runtime/weston.pid" "$runtime" "$log" &
+launcher_pid=$!
+
+socket_ready=0
+wait_seconds=0
+while [ "$wait_seconds" -lt 15 ]; do
+	if [ -r "$runtime/weston.pid" ]; then
+		weston_pid=$(cat "$runtime/weston.pid" 2>/dev/null || true)
+		if [ -S "$runtime/wayland-0" ] &&
+			! reap_child_if_done "$launcher_pid" &&
+			! reap_child_if_done "$weston_pid"; then
+			socket_ready=1
+			break
+		fi
+	fi
+	wait_seconds=$((wait_seconds + 1))
+	sleep 1
+done
+[ "$socket_ready" -eq 1 ] || { echo 'lmi-weston: compositor socket readiness failed'; exit 1; }
+
+echo 'lmi-weston: launching maximized weston-terminal'
+XDG_RUNTIME_DIR="$runtime" WAYLAND_DISPLAY=wayland-0 weston-terminal --maximized --font-size=16 &
+client_pid=$!
+echo 'lmi-weston: launching weston-editor input panel client'
+XDG_RUNTIME_DIR="$runtime" WAYLAND_DISPLAY=wayland-0 weston-editor &
+editor_pid=$!
+wait "$launcher_pid"
+launcher_status=$?
+launcher_pid=
+echo "lmi-weston: openvt exited status=$launcher_status"
+exit "$launcher_status"

@@ -1,0 +1,6 @@
+[terminal]
+vt = 7
+
+[initial_session]
+command = "/usr/local/bin/lmi-phosh-session-log"
+user = "lmi"

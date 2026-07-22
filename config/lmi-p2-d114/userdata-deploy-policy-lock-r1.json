@@ -23,11 +23,6 @@
       "signer_leaf_certificate_sha256": "2029505d14baf18af60a0d1a7d8b56447db643b32faa849d4c08d2ab1ff3a4fd",
       "signer_subject_cn": "Google LLC"
     },
-    "executable": {
-      "path": "localappdata/lmi-p2-d114/fastboot-r37.0.0/fastboot.exe",
-      "sha256": "dd55fef77ab2753b6423f37f39d91cb00ce53ab4539a2431577f07c4abcaa32a",
-      "size": 2199704
-    },
     "bundled_android_dll_closure": [
       {
         "archive_member": "platform-tools/AdbWinApi.dll",
@@ -42,23 +37,14 @@
         "size": 73368
       }
     ],
-    "closure_scope": "application-local-non-system-payload-only"
+    "closure_scope": "application-local-non-system-payload-only",
+    "executable": {
+      "path": "localappdata/lmi-p2-d114/fastboot-r37.0.0/fastboot.exe",
+      "sha256": "dd55fef77ab2753b6423f37f39d91cb00ce53ab4539a2431577f07c4abcaa32a",
+      "size": 2199704
+    }
   },
   "hardware_test_only": true,
-  "helper": {
-    "path": "scripts/lmi_p2_d114/deploy_userdata_helper.ps1",
-    "sha256": "759aa7e6f336cb9c3fcf9aff45a224886654b5f77d5fa6a139640e9a19969339",
-    "size": 94276
-  },
-  "native_staging": {
-    "acl_policy": "protected-current-user-and-local-system-full-control-only",
-    "identity_semantics": "profile-sha256/candidate-sha256/fixed-filename",
-    "lifecycle": "preflight-prepare-or-reuse-execute-revalidate-only",
-    "filename": "userdata.android-sparse.img",
-    "report_path_policy": "semantic-only-no-absolute-user-path",
-    "root_semantics": "localappdata/lmi-p2-d114/userdata-staging",
-    "volume_policy": "fixed-ntfs-without-reparse-directory-ancestors"
-  },
   "hardware_test_readiness": {
     "accepted_residual_risks": [
       "official-exact-r37-source-commit-and-build-manifest-unavailable",
@@ -72,6 +58,20 @@
     "reproducibility_claim": false,
     "status": "ready-for-explicitly-approved-hardware-test-only"
   },
+  "helper": {
+    "path": "scripts/lmi_p2_d114/deploy_userdata_helper.ps1",
+    "sha256": "759aa7e6f336cb9c3fcf9aff45a224886654b5f77d5fa6a139640e9a19969339",
+    "size": 94276
+  },
+  "native_staging": {
+    "acl_policy": "protected-current-user-and-local-system-full-control-only",
+    "filename": "userdata.android-sparse.img",
+    "identity_semantics": "profile-sha256/candidate-sha256/fixed-filename",
+    "lifecycle": "preflight-prepare-or-reuse-execute-revalidate-only",
+    "report_path_policy": "semantic-only-no-absolute-user-path",
+    "root_semantics": "localappdata/lmi-p2-d114/userdata-staging",
+    "volume_policy": "fixed-ntfs-without-reparse-directory-ancestors"
+  },
   "repo_bindings": {
     "apk_build_attestation": {
       "path": "config/lmi-p2-d114/apk-build-attestation.json",
@@ -80,8 +80,8 @@
     },
     "assembler": {
       "path": "scripts/lmi_p2_d114/assemble_userdata_image.py",
-      "sha256": "c39e3187388d9275accc64934e40bcd7ef10b197f87b55c34473686ad5707908",
-      "size": 84878
+      "sha256": "020cc51c08dfe85f57d368fd744ff7f56c64fff699aae8688a6d1c4f2ba30ccd",
+      "size": 84880
     },
     "candidate_rebuild_lock": {
       "path": "config/lmi-p2-d114/candidate-rebuild-lock.json",
@@ -95,17 +95,17 @@
     },
     "injection_policy_lock": {
       "path": "config/lmi-p2-d114/injection-policy-lock.json",
-      "sha256": "0d9fc7bdd82e58d6bece646873124b7b9258a6e7bbd94661c5f845623b49105b",
-      "size": 7440
+      "sha256": "f8bb5c57ccd8f2196e30be870e040a8fb9dde24de77fd94e4363947bdc35fdc0",
+      "size": 7442
     },
     "injector": {
       "path": "scripts/lmi_p2_d114/inject_rootfs_candidate.sh",
-      "sha256": "dd85c28a013a766e4efb2e9f93f0f8a2c9cd9b291dd10d93ef3d555fa21a41c2",
-      "size": 124735
+      "sha256": "15acd9bc663a33816344c37dbdb5f3a6d8b4d461df25dbd9f75d658a98b2e6a2",
+      "size": 124552
     },
     "injector_launcher": {
       "path": "scripts/lmi_p2_d114/launch_inject_rootfs_candidate.sh",
-      "sha256": "189a6dd5be847594a4f508098e0120afb6dc2d1b4da3af2bb6fcb46590b518f5",
+      "sha256": "3e8117ef6f72b3d25a9d04b89ab3686c4e86df0a674f48c073763517b38eff08",
       "size": 20108
     },
     "injector_runtime_lock": {
