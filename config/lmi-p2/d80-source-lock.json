@@ -1,0 +1,18 @@
+{
+  "schema": "lmi-source-lock/v2",
+  "d80": {
+    "url": "https://github.com/jian45154/redmi-k30-pro-postmarketos/releases/download/d80-minimal-gui-osk-20260712/d80-minimal-gui-osk-20260712.tar.gz",
+    "size": 19451357,
+    "sha256": "f380eb275ef4ba8854dd3bc389f7113a701a29ab3fd302684b729e6ad64286ca",
+    "inner_sha256sums_sha256": "561efa3a0e311e4bb5118f661f897da1c54838e2746f18e94665e711e0f85c33",
+    "required_members": {
+      "device-xiaomi-lmi-1-r139.apk": "ac00f22751607ae736cc26fbe72c1ede9c7d4d26f3af887ab0af800d5d9a3934",
+      "linux-xiaomi-lmi-4.19.325-r9.apk": "678a94cb0d309c69e56e697533ad7f6fe9e9cbfc7dea5a5109ca55b36ee72f50",
+      "weston-14.0.2-r10.apk": "d62a5b63fb1d4a35cec06dedf62c86d7da67b4d796ea7c973ea92035622bf2e7",
+      "weston-backend-drm-14.0.2-r10.apk": "53e95028082b3ddecb5460aa100557971b368451f1f51f0b92b9484a6b76bc1b",
+      "weston-clients-14.0.2-r10.apk": "1301346e110d7363a5fbe611f3ee282a3074ec2c52d884485ca961bb63835476",
+      "weston-shell-desktop-14.0.2-r10.apk": "b7bd061487f7ede3ebd102a3552d5596c87091146cf1d60a1a93c6ada847083e",
+      "weston-terminal-14.0.2-r10.apk": "868eadb0171214945a34cec73da00a6b78d4a4e3e115611545f56bdb25a3d877"
+    }
+  }
+}

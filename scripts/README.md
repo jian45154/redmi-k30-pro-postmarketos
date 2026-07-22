@@ -29,5 +29,12 @@ Prefer explicit track names in new scripts:
 - `downstream_vNN_<action>.sh` for downstream work.
 - `mainline_rNN_<action>.sh` for mainline/copydown work.
 
-Keep destructive or hardware-state-changing commands behind an explicit
-environment confirmation token, matching the existing staged helpers.
+Keep destructive or hardware-state-changing commands behind an explicit,
+exact-scope approval gate. Persistent partition writes retain their fresh
+per-action confirmation. The D110 RAM-boot helper instead uses one approval
+bound to the current Codex thread, helper, policy, image, tool, host boot, and
+device; every execute invocation still performs a fresh read-only preflight
+and an internal single-use attempt ticket.
+
+The complete D110 authorization and revocation contract is documented in
+[`docs/lmi-d110-session-approval.md`](../docs/lmi-d110-session-approval.md).

@@ -1,0 +1,33 @@
+{
+  "compatibility_only": [
+    {
+      "artifact_sha256": "2b264d64d2ed22f0ab5c3c2615b0bda9ed821fa5d8d5d691ea513e5d2f071487",
+      "artifact_size": 52944896,
+      "authorization": false,
+      "claim_kind": "boot",
+      "description": "D110 boot is compatibility evidence only and always needs a separate immediate hardware approval"
+    }
+  ],
+  "completed_userdata_actions": [
+    {
+      "authorization": false,
+      "candidate_sha256": "39d45c6de7d2708f59154b1dd9352573849fc0a51434ebfd9d0f493c36841583",
+      "candidate_size": 2211708940,
+      "operation": "flash",
+      "partition": "userdata",
+      "transport_completed": true,
+      "write_report": {
+        "path": "private/lmi-p1/recovery/d110-d114/p2-d114-build-20260720/deploy-reports/flash-userdata-39d45c6d-20260721.json",
+        "sha256": "ba0da95faa2197f498a58b0e3d3a58534c9ab3badbec47d20e1771ebac1265b9",
+        "size": 4927
+      }
+    }
+  ],
+  "policy": {
+    "boot_claims_forbidden": true,
+    "completed_candidate_reauthorization": false,
+    "new_candidate_precompleted": false,
+    "same_claim_retry": false
+  },
+  "schema": "lmi-p2-d114-completed-userdata-actions-lock/v1"
+}

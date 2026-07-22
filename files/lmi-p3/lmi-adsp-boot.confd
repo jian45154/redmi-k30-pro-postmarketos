@@ -1,0 +1,7 @@
+# This package never enables lmi-adsp-boot in a runlevel.
+# Leave all values empty for the fail-closed source-only default. Immediately
+# before one locally approved attempt, root may set the reviewed exact token and
+# the SHA-256 digests of the separately reviewed local inventory/provenance files.
+lmi_adsp_boot_confirmation=""
+lmi_adsp_inventory_sha256=""
+lmi_adsp_provenance_sha256=""

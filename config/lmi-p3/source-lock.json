@@ -1,0 +1,104 @@
+{
+  "baseline": {
+    "audio_implementation": "built-in-vendor-techpack-apr-kona-tfa9874",
+    "device_dependency": "device-xiaomi-lmi=1-r107",
+    "kernel_change_policy": "no-kernel-changes",
+    "kernel_dependency": "linux-xiaomi-lmi=4.19.325-r8",
+    "kernel_apk_sha256": "67cbc5a543b425d3602ffa33b722fbf0379dcdbf184c5996c960576f16c91610",
+    "pmaports_commit": "6fb3a1e5eb21c809891645a2ba5ae11fa788e032",
+    "rootctl_sha256": "0a9ad28b21dd5adc66304f54f1ebaf6b0fd1876cf206f7583cd8fa1465e3f239",
+    "rootctl_sudoers_sha256": "8b74be55d83c2e77723911aaf65216c68bbb829d99a73167295577147d19f02d",
+    "running_kernel_release": "4.19.325-cip128-st12-perf",
+    "sudoers_sha256": "1bca048389b53b5d6ca5690eabe05580a334f05d793684fad37c8b6840fcd303",
+    "track": "p1-p2-composable-source"
+  },
+  "dependencies": [
+    "!adsp-audio",
+    "!adsp-audio-openrc",
+    "alsa-utils",
+    "device-xiaomi-lmi=1-r107",
+    "linux-xiaomi-lmi=4.19.325-r8",
+    "openrc",
+    "pd-mapper",
+    "rmtfs",
+    "tqftpserv"
+  ],
+  "distribution": {
+    "proprietary_firmware_included": false,
+    "ucm_profile_included": false
+  },
+  "package": {
+    "arch": "aarch64",
+    "name": "device-xiaomi-lmi-audio",
+    "pkgrel": 0,
+    "pkgver": "0.2.0",
+    "status": "host-source-only-candidate"
+  },
+  "runtime": {
+    "allowed_subsystem_names": [
+      "a650_zap",
+      "adsp",
+      "cdsp",
+      "cvpss",
+      "esoc0",
+      "ipa_fws",
+      "ipa_uc",
+      "npu",
+      "slpi",
+      "spss",
+      "venus",
+      "wlan"
+    ],
+    "attempt_latch": "/run/lmi-p3/adsp-boot-attempted",
+    "boot_control": "/sys/kernel/boot_adsp/boot",
+    "boot_control_metadata": "0:0:220:regular file",
+    "confirmation": "lmi-p3:boot-adsp=1",
+    "deviceinfo_codename": "xiaomi-lmi",
+    "deviceinfo_dtb": "qcom/kona-v2.1-lmi",
+    "dt_compatible": [
+      "qcom,kona-mtp",
+      "qcom,kona",
+      "qcom,mtp"
+    ],
+    "dt_model": "Qualcomm Technologies, Inc. xiaomi lmi",
+    "firmware_inventory": "/etc/lmi-p3/adsp-firmware.inventory",
+    "firmware_manifest_schema": "lmi-p3-adsp-firmware-inventory/v1",
+    "firmware_provenance": "/etc/lmi-p3/adsp-firmware.provenance",
+    "firmware_provenance_schema": "lmi-p3-adsp-firmware-provenance/v1",
+    "firmware_review_status": "unverified-blocked",
+    "firmware_source_root": "/mnt/vendor/firmware_mnt/image",
+    "ordering_directive": "need",
+    "postcheck_attempts": 50,
+    "postcheck_interval_seconds": "0.1",
+    "postcheck_state": "ONLINE",
+    "prewrite_state": "OFFLINE",
+    "probe_default": "readonly-static-only",
+    "probe_private_archive_directory": "/var/log/lmi-p3",
+    "probe_private_file_mode": "0600",
+    "probe_shareable_suffix": ".redacted",
+    "probe_stdout": "redacted-only",
+    "required_started_services": [
+      "lmi-firmware-mount",
+      "lmi-qrtr-ns",
+      "pd-mapper",
+      "rmtfs",
+      "tqftpserv"
+    ],
+    "route_guard": "/usr/libexec/lmi-p3-route-guard",
+    "runlevel_enablement": false,
+    "runtime_directory": "/run/lmi-p3",
+    "subsystem_bus": "/sys/bus/msm_subsys/devices",
+    "subsystem_firmware_name": "adsp",
+    "subsystem_name": "adsp",
+    "transition_lock": "/run/lmi-p3/adsp-transition.lock"
+  },
+  "schema": "lmi-p3-audio-source-lock/v2",
+  "source_files": {
+    "device-xiaomi-lmi-audio.post-install": "23af7c1e8bb55196f7b4a59e443428d4c1bb0782536eacbd9f0ebaf80747b166",
+    "lmi-adsp-boot.confd": "f605c19f0311be51235c06dd6c01ffa52cb077c08fd944d7e6509c06b0a35842",
+    "lmi-adsp-boot.initd": "15fd6327458abf44be042522c42febb7516a848d92e4eda019c57a96264a6998",
+    "lmi-adsp-control": "627d37ff88ff7ce6b991ff7568a8ccaed4721cd07ba66e2d65b16472e14a26d7",
+    "lmi-audio-probe": "6c2320484380d049f4a8e783532b652fa261233324597cfa8dbe6ddf3c48396c",
+    "lmi-p3-route-guard": "be56333d79ec8a570986cf2f6b64224fdd9217b2d94875c124315ef17c61a697"
+  }
+}

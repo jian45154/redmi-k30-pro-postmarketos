@@ -1,0 +1,99 @@
+{
+  "_template_status": "NOT_EXECUTABLE_D114_USERDATA_ONLY_HARDWARE_TEST_REQUIRES_OPERATOR_OWNED_EXACT_D110_SEPARATELY_APPROVED_RAM_BOOT_ONLY_NEVER_FLASH_BOOT",
+  "artifacts": {
+    "assembly_attestation": {
+      "path": "__PRIVATE_FINAL_BUNDLE__/assembly-attestation.json",
+      "sha256": "__64_LOWERCASE_HEX_REQUIRED__",
+      "size": 0
+    },
+    "candidate": {
+      "logical_size": 3339714560,
+      "path": "__PRIVATE_FINAL_BUNDLE__/userdata.android-sparse.img",
+      "representation": "android-sparse",
+      "roundtrip_raw_sha256": "__64_LOWERCASE_HEX_REQUIRED__",
+      "sha256": "__64_LOWERCASE_HEX_REQUIRED__",
+      "size": 0
+    },
+    "candidate_raw": {
+      "path": "__PRIVATE_FINAL_BUNDLE__/userdata.raw",
+      "sha256": "__64_LOWERCASE_HEX_REQUIRED__",
+      "size": 3339714560
+    },
+    "deploy_policy_lock": {
+      "path": "config/lmi-p2-d114/userdata-deploy-policy-lock-r1.json",
+      "sha256": "__CURRENT_DEPLOY_POLICY_SHA256_REQUIRED__",
+      "size": 0
+    },
+    "p2_injection_attestation": {
+      "path": "__PRIVATE_FINAL_BUNDLE__/injection-attestation.json",
+      "sha256": "__64_LOWERCASE_HEX_REQUIRED__",
+      "size": 0
+    },
+    "physical_mapping_evidence": {
+      "path": "config/lmi-p2-d114/physical-userdata-mapping.json",
+      "sha256": "59f27854ac595a9b615bddeb91aa72e6bf1e0dacd9341cda2783a19bb050014f",
+      "size": 3879
+    },
+    "rollback": {
+      "logical_size": 3339714560,
+      "path": "__PRIVATE_REVIEWED_ROLLBACK__.android-sparse.img",
+      "representation": "android-sparse",
+      "roundtrip_raw_sha256": "61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6",
+      "sha256": "e8a30dc37cb4b75508d89725a9603bc15a985f4e51af77384e8d43c2928f8d68",
+      "size": 2192400084
+    },
+    "source_lock": {
+      "path": "config/lmi-p2-d114/source-lock.json",
+      "sha256": "96513219a6f1267edd7762a5206aca6b6bdf344f340decc5676198ac2373ab8f",
+      "size": 5680
+    }
+  },
+  "compatibility": {
+    "d110": {
+      "boot_sha256": "2b264d64d2ed22f0ab5c3c2615b0bda9ed821fa5d8d5d691ea513e5d2f071487",
+      "boot_size": 52944896,
+      "boot_uuid": "d4f78f7d-f5b5-4edc-94d5-ba5e6c877888",
+      "root_uuid": "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f"
+    },
+    "d114": {
+      "baseline_raw_sha256": "61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6",
+      "baseline_raw_size": 3339714560,
+      "logical_sector_size": 4096,
+      "root_uuid": "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f"
+    },
+    "p2": {
+      "injected_ext4_sha256": "__FINAL_INJECTION_OUTPUT_SHA256_REQUIRED__",
+      "injected_ext4_size": 2826960896,
+      "root_uuid": "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f"
+    }
+  },
+  "device": {
+    "expected_product": "lmi",
+    "expected_userdata_capacity": 114898743296,
+    "minimum_battery_mv": 3800,
+    "minimum_max_download_size": 52944896,
+    "partition_type": "f2fs",
+    "require_soc_ok": true
+  },
+  "execution": {
+    "automatic_retry": false,
+    "command": [
+      "-s",
+      "<identity-policy-matched-device>",
+      "flash",
+      "userdata",
+      "<candidate-path>"
+    ],
+    "max_attempts": 1,
+    "operation": "flash",
+    "partition": "userdata",
+    "write_timeout_seconds": 300
+  },
+  "fastboot": {
+    "path": "localappdata/lmi-p2-d114/fastboot-r37.0.0/fastboot.exe",
+    "sha256": "dd55fef77ab2753b6423f37f39d91cb00ce53ab4539a2431577f07c4abcaa32a",
+    "size": 2199704
+  },
+  "profile_id": "__PRIVATE_FINAL_HARDWARE_TEST_PROFILE_ID_REQUIRED__",
+  "schema": "lmi-p2-d114-userdata-deploy-profile/v2"
+}

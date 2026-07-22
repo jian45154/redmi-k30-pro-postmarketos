@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+
+exec /usr/libexec/lmi-p2/lmi-account-lifecycle remove

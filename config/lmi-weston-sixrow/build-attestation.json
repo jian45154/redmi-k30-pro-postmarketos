@@ -1,0 +1,66 @@
+{
+  "schema": "lmi-weston-sixrow-build-attestation/v1",
+  "generated_at": "2026-07-21T18:43:46Z",
+  "status": "BUILT_STATIC_AUDIT_PASSED_NOT_DEVICE_TESTED",
+  "device": "xiaomi-lmi",
+  "architecture": "aarch64",
+  "source": {
+    "weston_version": "14.0.2",
+    "source_lock": "config/lmi-weston-sixrow/source-lock.json",
+    "source_lock_sha256": "049c9d0a73ad29f404f07ade3c6702a8d79153d9d8eb33466649f68b70f44bbb",
+    "apkbuild": "files/lmi-weston-sixrow/APKBUILD",
+    "apkbuild_sha256": "e36dca3fe0d083d65c0f72ff4431647449f2100af11bb92e82e8a678fe451e75",
+    "verification_sources": [
+      {
+        "path": "scripts/lmi_weston_sixrow/verify.py",
+        "sha256": "0a2b5701c8ff11e62b3f7586269350ab3a0c2b26738ad580fbdebec268056b78"
+      },
+      {
+        "path": "tests/lmi_weston_sixrow/test_static.py",
+        "sha256": "d076458921b7ea5f113f5a50a3925340fff33808436e835a33c833b51db24729"
+      }
+    ],
+    "pmaports_head": "6fb3a1e5eb21c809891645a2ba5ae11fa788e032",
+    "pmbootstrap_version": "3.11.1"
+  },
+  "artifact": {
+    "path": ".work/pmbootstrap-sixrow/packages/edge/aarch64/lmi-weston-sixrow-clients-14.0.2-r1.apk",
+    "sha256": "ff8dbb02208959db4af9f1da735cb7b4f8765138388b6f7daebabce161fe208b",
+    "compressed_size": 120891,
+    "installed_size": 335416,
+    "package_version": "14.0.2-r1",
+    "payload": {
+      "/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow": "88d06d99f7c2d3eb1da64e7f89a0f5e37b87bc4c93f8b6778b1ca6491bf1dba6",
+      "/usr/libexec/lmi-p2-d114/weston-terminal-sixrow": "6602f7ac8e0c11892eec1d9db0411397e95f704a1655b94e0885a1220962a8cf"
+    }
+  },
+  "elf": {
+    "class": "ELF64",
+    "endianness": "little",
+    "machine": "AArch64",
+    "type": "PIE",
+    "interpreter": "/lib/ld-musl-aarch64.so.1",
+    "required_sonames_present_in_recorded_d114_rootfs": true
+  },
+  "verification": {
+    "unit_tests": "4 passed",
+    "official_tarball_sha256_and_sha512_verified": true,
+    "patches_applied_with_fuzz_zero": true,
+    "layout_and_shift_map_verified": true,
+    "ctrl_next_non_modifier_latch_verified": true,
+    "ctrl_space_nul_path_verified": true,
+    "shared_physical_and_text_input_key_encoder_verified": true,
+    "normal_and_application_cursor_paths_verified": true,
+    "apk_content_whitelist_verified": true,
+    "stock_paths_overwritten": false,
+    "phone_connected_or_modified": false,
+    "persistent_install_performed": false,
+    "physical_touch_test_performed": false
+  },
+  "supersedes": {
+    "artifact": ".work/pmbootstrap-sixrow/packages/edge/aarch64/lmi-weston-sixrow-clients-14.0.2-r0.apk",
+    "sha256": "26100021d30b026a419e655cf07cd300f058ea9d8d070147a182857c01953aaa",
+    "status": "NO_GO_CTRL_LATCH_AND_CURSOR_MODE_DEFECTS"
+  },
+  "claim_limit": "This attests one exact local APK and its static checks. It does not prove runtime loading, physical key geometry, touch behavior, terminal byte semantics on the phone, persistence, or release readiness. Rebuilds may differ in package metadata or signature even when source inputs are unchanged."
+}

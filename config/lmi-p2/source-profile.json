@@ -1,0 +1,338 @@
+{
+  "baseline": {
+    "device_dependency": "device-xiaomi-lmi=1-r107",
+    "kernel_config_blocker": "CONFIG_VT is not set",
+    "kernel_dependency": "linux-xiaomi-lmi=4.19.325-r8",
+    "pmaports_commit": "6fb3a1e5eb21c809891645a2ba5ae11fa788e032"
+  },
+  "build_dependencies": [
+    "build-base",
+    "cairo-dev",
+    "linux-headers",
+    "pango-dev",
+    "pkgconf",
+    "wayland-dev",
+    "wayland-protocols",
+    "xkbcommon-dev"
+  ],
+  "display": {
+    "connector": "DSI-1",
+    "height": 2400,
+    "logical_height": 420,
+    "logical_width": 540,
+    "renderer": "pixman",
+    "scale": 2,
+    "tty": 7,
+    "width": 1080
+  },
+  "keyboard": {
+    "gap": 4,
+    "layers": [
+      {
+        "name": "lower",
+        "rows": [
+          [
+            {"action": "text", "label": "q", "value": "q", "weight": 10},
+            {"action": "text", "label": "w", "value": "w", "weight": 10},
+            {"action": "text", "label": "e", "value": "e", "weight": 10},
+            {"action": "text", "label": "r", "value": "r", "weight": 10},
+            {"action": "text", "label": "t", "value": "t", "weight": 10},
+            {"action": "text", "label": "y", "value": "y", "weight": 10},
+            {"action": "text", "label": "u", "value": "u", "weight": 10},
+            {"action": "text", "label": "i", "value": "i", "weight": 10},
+            {"action": "text", "label": "o", "value": "o", "weight": 10},
+            {"action": "text", "label": "p", "value": "p", "weight": 10}
+          ],
+          [
+            {"action": "text", "label": "a", "value": "a", "weight": 10},
+            {"action": "text", "label": "s", "value": "s", "weight": 10},
+            {"action": "text", "label": "d", "value": "d", "weight": 10},
+            {"action": "text", "label": "f", "value": "f", "weight": 10},
+            {"action": "text", "label": "g", "value": "g", "weight": 10},
+            {"action": "text", "label": "h", "value": "h", "weight": 10},
+            {"action": "text", "label": "j", "value": "j", "weight": 10},
+            {"action": "text", "label": "k", "value": "k", "weight": 10},
+            {"action": "text", "label": "l", "value": "l", "weight": 10}
+          ],
+          [
+            {"action": "layer", "label": "Shift", "value": "upper", "weight": 15},
+            {"action": "text", "label": "z", "value": "z", "weight": 10},
+            {"action": "text", "label": "x", "value": "x", "weight": 10},
+            {"action": "text", "label": "c", "value": "c", "weight": 10},
+            {"action": "text", "label": "v", "value": "v", "weight": 10},
+            {"action": "text", "label": "b", "value": "b", "weight": 10},
+            {"action": "text", "label": "n", "value": "n", "weight": 10},
+            {"action": "text", "label": "m", "value": "m", "weight": 10},
+            {"action": "keysym", "label": "Backspace", "value": "BackSpace", "weight": 15}
+          ],
+          [
+            {"action": "layer", "label": "Symbols", "value": "symbols", "weight": 18},
+            {"action": "text", "label": ",", "value": ",", "weight": 10},
+            {"action": "text", "label": ".", "value": ".", "weight": 10},
+            {"action": "text", "label": "/", "value": "/", "weight": 10},
+            {"action": "text", "label": "Space", "value": " ", "weight": 30},
+            {"action": "keysym", "label": "Enter", "value": "Return", "weight": 22}
+          ],
+          [
+            {"action": "keysym", "label": "Esc", "value": "Escape", "weight": 12},
+            {"action": "keysym", "label": "Tab", "value": "Tab", "weight": 12},
+            {"action": "modifier", "label": "Ctrl", "value": "control", "weight": 14},
+            {"action": "modifier", "label": "Alt", "value": "alt", "weight": 14},
+            {"action": "layer", "label": "Nav", "value": "nav", "weight": 14},
+            {"action": "keysym", "label": "Left", "value": "Left", "weight": 11},
+            {"action": "keysym", "label": "Down", "value": "Down", "weight": 11},
+            {"action": "keysym", "label": "Up", "value": "Up", "weight": 11},
+            {"action": "keysym", "label": "Right", "value": "Right", "weight": 11}
+          ]
+        ]
+      },
+      {
+        "name": "upper",
+        "rows": [
+          [
+            {"action": "text", "label": "Q", "value": "Q", "weight": 10},
+            {"action": "text", "label": "W", "value": "W", "weight": 10},
+            {"action": "text", "label": "E", "value": "E", "weight": 10},
+            {"action": "text", "label": "R", "value": "R", "weight": 10},
+            {"action": "text", "label": "T", "value": "T", "weight": 10},
+            {"action": "text", "label": "Y", "value": "Y", "weight": 10},
+            {"action": "text", "label": "U", "value": "U", "weight": 10},
+            {"action": "text", "label": "I", "value": "I", "weight": 10},
+            {"action": "text", "label": "O", "value": "O", "weight": 10},
+            {"action": "text", "label": "P", "value": "P", "weight": 10}
+          ],
+          [
+            {"action": "text", "label": "A", "value": "A", "weight": 10},
+            {"action": "text", "label": "S", "value": "S", "weight": 10},
+            {"action": "text", "label": "D", "value": "D", "weight": 10},
+            {"action": "text", "label": "F", "value": "F", "weight": 10},
+            {"action": "text", "label": "G", "value": "G", "weight": 10},
+            {"action": "text", "label": "H", "value": "H", "weight": 10},
+            {"action": "text", "label": "J", "value": "J", "weight": 10},
+            {"action": "text", "label": "K", "value": "K", "weight": 10},
+            {"action": "text", "label": "L", "value": "L", "weight": 10}
+          ],
+          [
+            {"action": "layer", "label": "lower", "value": "lower", "weight": 15},
+            {"action": "text", "label": "Z", "value": "Z", "weight": 10},
+            {"action": "text", "label": "X", "value": "X", "weight": 10},
+            {"action": "text", "label": "C", "value": "C", "weight": 10},
+            {"action": "text", "label": "V", "value": "V", "weight": 10},
+            {"action": "text", "label": "B", "value": "B", "weight": 10},
+            {"action": "text", "label": "N", "value": "N", "weight": 10},
+            {"action": "text", "label": "M", "value": "M", "weight": 10},
+            {"action": "keysym", "label": "Backspace", "value": "BackSpace", "weight": 15}
+          ],
+          [
+            {"action": "layer", "label": "Symbols", "value": "symbols", "weight": 18},
+            {"action": "text", "label": ",", "value": ",", "weight": 10},
+            {"action": "text", "label": ".", "value": ".", "weight": 10},
+            {"action": "text", "label": "/", "value": "/", "weight": 10},
+            {"action": "text", "label": "Space", "value": " ", "weight": 30},
+            {"action": "keysym", "label": "Enter", "value": "Return", "weight": 22}
+          ],
+          [
+            {"action": "keysym", "label": "Esc", "value": "Escape", "weight": 12},
+            {"action": "keysym", "label": "Tab", "value": "Tab", "weight": 12},
+            {"action": "modifier", "label": "Ctrl", "value": "control", "weight": 14},
+            {"action": "modifier", "label": "Alt", "value": "alt", "weight": 14},
+            {"action": "layer", "label": "Nav", "value": "nav", "weight": 14},
+            {"action": "keysym", "label": "Left", "value": "Left", "weight": 11},
+            {"action": "keysym", "label": "Down", "value": "Down", "weight": 11},
+            {"action": "keysym", "label": "Up", "value": "Up", "weight": 11},
+            {"action": "keysym", "label": "Right", "value": "Right", "weight": 11}
+          ]
+        ]
+      },
+      {
+        "name": "symbols",
+        "rows": [
+          [
+            {"action": "text", "label": "1", "value": "1", "weight": 10},
+            {"action": "text", "label": "2", "value": "2", "weight": 10},
+            {"action": "text", "label": "3", "value": "3", "weight": 10},
+            {"action": "text", "label": "4", "value": "4", "weight": 10},
+            {"action": "text", "label": "5", "value": "5", "weight": 10},
+            {"action": "text", "label": "6", "value": "6", "weight": 10},
+            {"action": "text", "label": "7", "value": "7", "weight": 10},
+            {"action": "text", "label": "8", "value": "8", "weight": 10},
+            {"action": "text", "label": "9", "value": "9", "weight": 10},
+            {"action": "text", "label": "0", "value": "0", "weight": 10}
+          ],
+          [
+            {"action": "text", "label": "-", "value": "-", "weight": 10},
+            {"action": "text", "label": "_", "value": "_", "weight": 10},
+            {"action": "text", "label": "/", "value": "/", "weight": 10},
+            {"action": "text", "label": "\\", "value": "\\", "weight": 10},
+            {"action": "text", "label": "|", "value": "|", "weight": 10},
+            {"action": "text", "label": "<", "value": "<", "weight": 10},
+            {"action": "text", "label": ">", "value": ">", "weight": 10},
+            {"action": "text", "label": "=", "value": "=", "weight": 10},
+            {"action": "text", "label": "+", "value": "+", "weight": 10},
+            {"action": "text", "label": "*", "value": "*", "weight": 10}
+          ],
+          [
+            {"action": "text", "label": "?", "value": "?", "weight": 10},
+            {"action": "text", "label": ".", "value": ".", "weight": 10},
+            {"action": "text", "label": ",", "value": ",", "weight": 10},
+            {"action": "text", "label": ":", "value": ":", "weight": 10},
+            {"action": "text", "label": ";", "value": ";", "weight": 10},
+            {"action": "text", "label": "'", "value": "'", "weight": 10},
+            {"action": "text", "label": "\"", "value": "\"", "weight": 10},
+            {"action": "text", "label": "(", "value": "(", "weight": 10},
+            {"action": "text", "label": ")", "value": ")", "weight": 10}
+          ],
+          [
+            {"action": "text", "label": "[", "value": "[", "weight": 10},
+            {"action": "text", "label": "]", "value": "]", "weight": 10},
+            {"action": "text", "label": "{", "value": "{", "weight": 10},
+            {"action": "text", "label": "}", "value": "}", "weight": 10},
+            {"action": "text", "label": "$", "value": "$", "weight": 10},
+            {"action": "text", "label": "#", "value": "#", "weight": 10},
+            {"action": "text", "label": "@", "value": "@", "weight": 10},
+            {"action": "text", "label": "!", "value": "!", "weight": 10},
+            {"action": "text", "label": "%", "value": "%", "weight": 10},
+            {"action": "text", "label": "&", "value": "&", "weight": 10}
+          ],
+          [
+            {"action": "text", "label": "~", "value": "~", "weight": 10},
+            {"action": "text", "label": "^", "value": "^", "weight": 10},
+            {"action": "text", "label": "`", "value": "`", "weight": 10},
+            {"action": "layer", "label": "ABC", "value": "lower", "weight": 12},
+            {"action": "layer", "label": "Nav", "value": "nav", "weight": 12},
+            {"action": "text", "label": "Space", "value": " ", "weight": 24},
+            {"action": "keysym", "label": "Backspace", "value": "BackSpace", "weight": 16},
+            {"action": "keysym", "label": "Enter", "value": "Return", "weight": 16}
+          ]
+        ]
+      },
+      {
+        "name": "nav",
+        "rows": [
+          [
+            {"action": "keysym", "label": "Esc", "value": "Escape", "weight": 10},
+            {"action": "keysym", "label": "Tab", "value": "Tab", "weight": 10},
+            {"action": "keysym", "label": "Home", "value": "Home", "weight": 10},
+            {"action": "keysym", "label": "End", "value": "End", "weight": 10},
+            {"action": "keysym", "label": "PgUp", "value": "Prior", "weight": 10},
+            {"action": "keysym", "label": "PgDn", "value": "Next", "weight": 10},
+            {"action": "keysym", "label": "Delete", "value": "Delete", "weight": 12}
+          ],
+          [
+            {"action": "modifier", "label": "Shift", "value": "shift", "weight": 12},
+            {"action": "modifier", "label": "Ctrl", "value": "control", "weight": 12},
+            {"action": "modifier", "label": "Alt", "value": "alt", "weight": 12},
+            {"action": "keysym", "label": "Left", "value": "Left", "weight": 10},
+            {"action": "keysym", "label": "Down", "value": "Down", "weight": 10},
+            {"action": "keysym", "label": "Up", "value": "Up", "weight": 10},
+            {"action": "keysym", "label": "Right", "value": "Right", "weight": 10}
+          ],
+          [
+            {"action": "layer", "label": "ABC", "value": "lower", "weight": 15},
+            {"action": "layer", "label": "Symbols", "value": "symbols", "weight": 15},
+            {"action": "text", "label": "Space", "value": " ", "weight": 30},
+            {"action": "keysym", "label": "Backspace", "value": "BackSpace", "weight": 20},
+            {"action": "keysym", "label": "Enter", "value": "Return", "weight": 20}
+          ]
+        ]
+      }
+    ],
+    "margin": 4,
+    "minimum_touch_height": 44,
+    "minimum_touch_width": 36
+  },
+  "kernel_delta": {
+    "base_commit": "a5b3099017ae581aae8bf597b2f9c8c765026af1",
+    "base_package": "linux-xiaomi-lmi=4.19.325-r8",
+    "delta_commit": "UNVERIFIED",
+    "patch_sha256": "UNVERIFIED",
+    "required_symbols": [
+      "CONFIG_DRM=y",
+      "CONFIG_DRM_KMS_HELPER=y",
+      "CONFIG_INPUT_EVDEV=y",
+      "CONFIG_UNIX98_PTYS=y",
+      "CONFIG_VT=y",
+      "CONFIG_VT_CONSOLE=y",
+      "CONFIG_VT_HW_CONSOLE_BINDING=y"
+    ]
+  },
+  "package": {
+    "arch": "aarch64",
+    "name": "device-xiaomi-lmi-gui",
+    "pkgrel": 0,
+    "pkgver": "1"
+  },
+  "package_pins": [
+    {"artifact_sha256": "UNVERIFIED", "name": "device-xiaomi-lmi", "repository": "local-p1", "source_commit": "6fb3a1e5eb21c809891645a2ba5ae11fa788e032", "version": "1-r107"},
+    {"artifact_sha256": "UNVERIFIED", "name": "font-dejavu", "repository": "alpine-edge-main", "source_commit": "59420f440b2e664f7be1a6e135a3175aab56cd51", "version": "2.37-r6"},
+    {"artifact_sha256": "UNVERIFIED", "name": "kbd", "repository": "alpine-edge-main", "source_commit": "8b9313df10ed04f8840a6437d3187341a1cbdaa5", "version": "2.8.0-r0"},
+    {"artifact_sha256": "UNVERIFIED", "name": "libdrm-tests", "repository": "alpine-edge-main", "source_commit": "2015800769b781bef45917b668d10bffe2ac538f", "version": "2.4.134-r0"},
+    {"artifact_sha256": "UNVERIFIED", "name": "libseat", "repository": "alpine-edge-community", "source_commit": "493aed10300970781e9df821a418b91cf3aa6af2", "version": "0.9.3-r0"},
+    {"artifact_sha256": "UNVERIFIED", "name": "libweston", "repository": "alpine-edge-community", "source_commit": "d17cb894a1d4eb6c810dd6b6dc9e678eb48a1901", "version": "14.0.2-r5"},
+    {"artifact_sha256": "UNVERIFIED", "name": "linux-xiaomi-lmi", "repository": "local-p1", "source_commit": "a5b3099017ae581aae8bf597b2f9c8c765026af1", "version": "4.19.325-r8"},
+    {"artifact_sha256": "UNVERIFIED", "name": "openrc", "repository": "alpine-edge-main", "source_commit": "ec72b2b622241418671d1805bf004d00f953d51a", "version": "0.63.2-r0"},
+    {"artifact_sha256": "UNVERIFIED", "name": "seatd", "repository": "alpine-edge-community", "source_commit": "493aed10300970781e9df821a418b91cf3aa6af2", "version": "0.9.3-r0"},
+    {"artifact_sha256": "UNVERIFIED", "name": "seatd-openrc", "repository": "alpine-edge-community", "source_commit": "493aed10300970781e9df821a418b91cf3aa6af2", "version": "0.9.3-r0"},
+    {"artifact_sha256": "UNVERIFIED", "name": "weston", "repository": "alpine-edge-community", "source_commit": "d17cb894a1d4eb6c810dd6b6dc9e678eb48a1901", "version": "14.0.2-r5"},
+    {"artifact_sha256": "UNVERIFIED", "name": "weston-backend-drm", "repository": "alpine-edge-community", "source_commit": "d17cb894a1d4eb6c810dd6b6dc9e678eb48a1901", "version": "14.0.2-r5"},
+    {"artifact_sha256": "UNVERIFIED", "name": "weston-clients", "repository": "alpine-edge-community", "source_commit": "d17cb894a1d4eb6c810dd6b6dc9e678eb48a1901", "version": "14.0.2-r5"},
+    {"artifact_sha256": "UNVERIFIED", "name": "weston-shell-desktop", "repository": "alpine-edge-community", "source_commit": "d17cb894a1d4eb6c810dd6b6dc9e678eb48a1901", "version": "14.0.2-r5"},
+    {"artifact_sha256": "UNVERIFIED", "name": "weston-terminal", "repository": "alpine-edge-community", "source_commit": "d17cb894a1d4eb6c810dd6b6dc9e678eb48a1901", "version": "14.0.2-r5"}
+  ],
+  "primary_sources": [
+    "https://gitlab.postmarketos.org/postmarketOS/pmaports/-/commit/6fb3a1e5eb21c809891645a2ba5ae11fa788e032",
+    "https://pkgs.alpinelinux.org/package/edge/community/aarch64/weston",
+    "https://pkgs.alpinelinux.org/package/edge/community/aarch64/weston-backend-drm",
+    "https://pkgs.alpinelinux.org/package/edge/community/aarch64/libweston",
+    "https://pkgs.alpinelinux.org/package/edge/community/aarch64/seatd",
+    "https://pkgs.alpinelinux.org/package/edge/main/aarch64/libdrm-tests",
+    "https://pkgs.alpinelinux.org/package/edge/main/aarch64/kbd",
+    "https://pkgs.alpinelinux.org/package/edge/main/aarch64/font-dejavu",
+    "https://wiki.alpinelinux.org/wiki/Seatd",
+    "https://gitlab.freedesktop.org/wayland/wayland-protocols/-/blob/main/unstable/input-method/input-method-unstable-v1.xml",
+    "https://gitlab.freedesktop.org/wayland/weston/-/blob/14.0/clients/keyboard.c",
+    "https://gitlab.freedesktop.org/wayland/weston/-/blob/14.0/clients/editor.c",
+    "https://gitlab.freedesktop.org/wayland/weston/-/blob/14.0/clients/simple-im.c",
+    "https://gitlab.freedesktop.org/wayland/weston/-/blob/14.0/clients/terminal.c",
+    "https://gitlab.freedesktop.org/wayland/weston/-/blob/14.0/desktop-shell/input-panel.c"
+  ],
+  "release": {
+    "blockers": [
+      "alpine-edge-libseat-runtime-requires-libelogind",
+      "hardware-display-and-touch-validation-not-run",
+      "linux-xiaomi-lmi-r8-vt-delta-unverified",
+      "native-osk-not-built-in-pinned-aarch64-chroot",
+      "repository-index-and-apk-digests-unverified",
+      "stock-weston-terminal-native-focus-integration-unavailable"
+    ],
+    "eligible": false,
+    "reason": "source-only profile; the enumerated build, dependency-closure, kernel, hardware and native terminal-focus integration gates are unresolved"
+  },
+  "repository_index_sha256": "UNVERIFIED",
+  "schema": "lmi-p2-source-profile/v1",
+  "source_files": {
+    "device-xiaomi-lmi-gui.post-install": "2ee4c3aa9f470b2819a2a77633cd3a2961512a8b3f0a9b3bad3dd4eef97c8559",
+    "device-xiaomi-lmi-gui.post-upgrade": "546997bf0611cdf329b2cec55e55c01274c272e22c2699219339cbbd243b3496",
+    "device-xiaomi-lmi-gui.pre-deinstall": "fcf31633340f3ee804bea188898eb889e62b82818e72fb7d3474980f9ea11fdb",
+    "lmi-account-lifecycle": "46eae02f7be3ffc17c23ca93a74ca8cfae7d0fac19d7334e733b09a5be6990d0",
+    "lmi-child-supervisor.c": "d8d59e0bb942786a5311682971af458d403757f74656e8fb8c342b70239e0cf6",
+    "lmi-child-supervisor.h": "f42149ab9bea1fe85150ead2827af12336f7f3dcce64ddd0282f1c238d211108",
+    "lmi-display-handoff.c": "18bc7b56b7ff5989af20bf5e12aebe9001a48b19082d9400b252ffc50d9057f2",
+    "lmi-display.initd": "27b9dcfdc2b6bafe24bafb0a56f2246a8346da768c75af2ae3d2630384e57e3b",
+    "lmi-editor": "c087c797029c7880928274b7f98f0e8a54dcbc85bf3496b33cdfb9d2ba3ba1aa",
+    "lmi-input-state.c": "1d4e0c57830af8832f549b70b305aca208119efc7da6d14d4c3bba611389b2dc",
+    "lmi-input-state.h": "085775141df6a65291ceca2717424dab08daa20d1a40b36b77f8933c147e3d18",
+    "lmi-layer-state.c": "8a83b5bd3dab83a9c33777452fd139409e2df9f78c87ed0a300d701eb1ac09b4",
+    "lmi-layer-state.h": "9253f76fc4c3c1dbbc37022ca91bcd5eab0a3e6d34d5573fa3bed49912d33b6f",
+    "lmi-session-launcher.c": "088e72216ae7dc94f2ad8c2bf20c34627bca61842cf3091ee8342eb615f51043",
+    "lmi-terminal": "f3e4ed0a9f8e3ba40bae61057cd94274d9507ce569e7234ae247cd9589c7924f",
+    "lmi-terminal-bridge.c": "248802cec8820f5b2b722c1bdb97022eb06884ac7244b3b87247db07019cc423",
+    "lmi-weston-osk.c": "eeb22e3d84d70e0f14b25966ad255d990eaaf48a0f5d285ae72187b36b157b78",
+    "lmi-weston-user-session": "4e6d8677433081038458b9c1442aedadd92a881de5fde6df9aa9cf4f38ac2bf5",
+    "weston.ini": "27f37a2a7604f57062dafa04695e0c745b8d860c7ac4240a636aa66c0b13b555"
+  },
+  "weston": {
+    "abi": 14,
+    "version": "14.0.2-r5"
+  }
+}

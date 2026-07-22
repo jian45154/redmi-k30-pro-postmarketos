@@ -1,0 +1,178 @@
+{
+  "attestation_schema": "lmi-p2-d114-rootfs-injection-attestation/v3",
+  "claims": {
+    "hardware_test_only": true,
+    "production": false,
+    "release_eligible": false
+  },
+  "commands": {
+    "apk": [
+      "bubblewrap:unshare-user,pid,uts,ipc;outer-private-net",
+      "source-bindings:checked-root-owned-run-bridge;outer-private-mountns",
+      "cap-drop=ALL;child-verified-no-new-privs-and-zero-capability-sets",
+      "env:clear;HOME=/root;LANG=C;LC_ALL=C;PATH=/usr/sbin:/usr/bin:/sbin:/bin;PWD=/;TZ=UTC",
+      "--root=/image",
+      "--arch=aarch64",
+      "--keys-dir=/keys",
+      "--no-logfile",
+      "--no-network",
+      "--no-cache",
+      "--no-scripts",
+      "--repositories-file=/dev/null",
+      "--force-non-repository",
+      "add",
+      "/tools/sixrow.apk",
+      "/tools/p2.apk"
+    ],
+    "lifecycle": [
+      "bubblewrap:unshare-user,pid,uts,ipc;outer-private-net",
+      "source-bindings:checked-root-owned-run-bridge;outer-private-mountns",
+      "cap-drop=ALL;child-verified-no-new-privs-and-zero-capability-sets",
+      "env:clear;HOME=/root;LANG=C;LC_ALL=C;PATH=/usr/sbin:/usr/bin:/sbin:/bin;PROOT_NO_SECCOMP=1;PWD=/;TZ=UTC",
+      "loader:--library-path=/runtime",
+      "proot:-r=/image,-q=/tools/qemu-aarch64,-w=/",
+      "/usr/libexec/lmi-p2-d114/config-lifecycle",
+      "install"
+    ]
+  },
+  "input": {
+    "apks": {
+      "p2": {
+        "build_attestation_sha256": "2a1b4dde55fe1544811337252d34c04acfb1438180d5589c0c5315d545748b61",
+        "sandbox_path": "/tools/p2.apk",
+        "sha256": "7cab262bd73b0bed23b5cc2b5b62d38c66ea715f49afa6b0ad7dd24246dd1db1",
+        "source_path": "private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722/run2-device-xiaomi-lmi-terminal-0.1.0-r1.apk"
+      },
+      "sixrow": {
+        "build_attestation_sha256": "b4642db49c85e31a3b0b388968e1af94f4820d02ee712f09baa625c456e43e99",
+        "sandbox_path": "/tools/sixrow.apk",
+        "sha256": "ff8dbb02208959db4af9f1da735cb7b4f8765138388b6f7daebabce161fe208b",
+        "source_path": "private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722/lmi-weston-sixrow-clients-14.0.2-r1.apk"
+      }
+    },
+    "base_sha256": "76f032775b110855a5984b1ed45b10f9653c59af69b070ceac0e73e7216eb96c",
+    "candidate_rebuild_lock_schema": "lmi-p2-d114-candidate-rebuild-lock/v1",
+    "candidate_rebuild_lock_sha256": "1122fae16487ab77406fe444f1fc96da4848fcfb277fd4ad71dc51d81da01489",
+    "candidate_sha256": "90b9f0ab94198f78eb251cff0d4c521f7b4bb47fb50967a7c661eacc026e0e82",
+    "candidate_size": 2826960896,
+    "candidate_uuid": "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f",
+    "keys": {
+      "p2_sha256": "c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79e936736",
+      "sixrow_sha256": "0d4b877df515c5a202abefc4d15f7b839ea0d1615045f9a7f656d5aef0496c52"
+    },
+    "raw_sha256": "61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6",
+    "repair_epoch": 1784551824,
+    "repair_log_sha256": "9a3b20f3e422ee80cb6615158f1cc8b08fd71dda9a2e49745642404decf60837",
+    "sparse_sha256": "e8a30dc37cb4b75508d89725a9603bc15a985f4e51af77384e8d43c2928f8d68",
+    "verify_log_sha256": "4e23b50bc020fddde6daacf5b5a9a4f5472bcc156e7c58c5c932a8ba4c6ffc4f"
+  },
+  "normalization": {
+    "fixed": {
+      "allocated_only_command": [
+        "e2image",
+        "-r",
+        "-a",
+        "-p"
+      ],
+      "all_free_blocks_zero": true,
+      "inactive_journal": {
+        "block_count": 16383,
+        "first_block": 327681,
+        "sha256": "40b4947fd669bcb849e47705c797e2484a4d406a596017fa889987d2614008b3"
+      },
+      "journal_extent": {
+        "block_count": 16384,
+        "first_block": 327680
+      },
+      "proof": "second-e2image-byte-identical",
+      "reviewed_freed_blocks": [
+        586227,
+        661606
+      ]
+    },
+    "positive_integer_fields": [
+      "sparse_st_blocks"
+    ],
+    "sha256_fields": [
+      "pre_normalization_sha256",
+      "proof_sha256",
+      "tree_identity_sha256"
+    ]
+  },
+  "output": {
+    "caller_primary_group_fields": [
+      "owner"
+    ],
+    "fixed": {
+      "mode": "0640",
+      "packages": [
+        "device-xiaomi-lmi-terminal=0.1.0-r1",
+        "lmi-weston-sixrow-clients=14.0.2-r1"
+      ],
+      "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722/lmi-d114-rootfs-p2-r1-sixrow-injected-20260722.bundle/rootfs.ext4",
+      "size": 2826960896,
+      "triggers_sha256": "ee66cbf049c70c6c992f27da83d45166a02c9b16c1efcf4b2206791a0adcacf7",
+      "uuid": "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f",
+      "world_sha256": "00a770856b6f2a1d15063c9e5085a3fea7e0e2d5ee5f421138ee90a06217a465"
+    },
+    "sha256_fields": [
+      "filesystem_delta_sha256",
+      "geometry_sha256",
+      "installed_db_sha256",
+      "key_inventory_sha256",
+      "p2_package_record_sha256",
+      "scripts_db_sha256",
+      "sha256",
+      "sixrow_package_record_sha256"
+    ]
+  },
+  "runtime": {
+    "fixed": {
+      "injector_runtime_lock_schema": "lmi-p2-d114-injector-runtime-lock/v1",
+      "injector_runtime_lock_sha256": "11d2cc4e8c327193f2acb23869376cb93838f7d9e775ead24f4755704263ed73",
+      "sandbox_entry_sha256": "9c587c1f521a453fd0d1b14de22cf801dead7ec3935eb73dfc0576f9a74c8a06"
+    },
+    "mount_required_options": [
+      "rw",
+      "nosuid",
+      "nodev"
+    ],
+    "namespace_fields": [
+      "ipc",
+      "mnt",
+      "net",
+      "pid",
+      "uts"
+    ],
+    "sealed_injector_script_sha256": "dd85c28a013a766e4efb2e9f93f0f8a2c9cd9b291dd10d93ef3d555fa21a41c2"
+  },
+  "sanitization": {
+    "apk_cache": "exact-four-index-members-removed",
+    "apk_log": "empty",
+    "authorized_keys": "removed",
+    "machine_id": "empty",
+    "resolv_conf": "empty",
+    "shadow_backup": "exact-copy-of-locked-active-shadow",
+    "ssh_password_authentication": "disabled-by-locked-drop-in"
+  },
+  "schema": "lmi-p2-d114-injection-policy-lock/v2",
+  "tools": {
+    "apk_static_sha256": "a6542dc1fdb6214be1ef462668241bfe91f301e9249c99c0c6c327269d5e5ce4",
+    "bash_sha256": "3efccc187bafa75ff1e37d246270ab3e7aa559f242c7a52bf3ec2a1b5450bdbd",
+    "bubblewrap_sha256": "0abea81db798ebf6b4742ac0664802d97521547a353c2a0dbdc21d76cbbfd2c0",
+    "debugfs_sha256": "864e1d7b445e7b5bfc831da78330dbcafc590fa82b89ea9de60b7527f989954f",
+    "dumpe2fs_sha256": "a3761403c5075e6af52f3c2ad7d8c35591751ba997fd2377895fc2fe88b5a774",
+    "e2fsck_sha256": "2e51f521c676729920eaba694933d9d4048645f1a5789556fd0027e62d11ecc8",
+    "e2image_sha256": "08377ede318c65ef308246cfd2cd8bb7047c829d9997fb2b85c9e922d5205759",
+    "getfattr_sha256": "19b08ed0130464b5565205cf8b02cb39a5c656a7e55b0a4130080025f8bf4e14",
+    "host_libc_sha256": "d763925433ff9b757390549e1b20c085f5e6de27ae700fe89194178d96a8a2b0",
+    "host_loader_sha256": "223b94a42758f2434da331cc0aa62db1af5b456481762c5caceefa1a2d1eb8fb",
+    "lsattr_libcom_err_sha256": "6fb3115b11fe7e14c26f3e086c4dc1fb41061130869a66c976e0ea69fdb912d6",
+    "lsattr_libe2p_sha256": "78b962737fc0df9fdd6b77ed284958065ff4c3ee0776251967f434b764204377",
+    "lsattr_sha256": "a302ce5655825f7eec323b106d91b582cc1c231936acb927dbfd360f815b5b99",
+    "proot_libtalloc_sha256": "261d4fd32e2341567eeafba6d4d75684c8eeaedb9bcda04f1fd69792e6197634",
+    "proot_sha256": "e95e0da51b8948c38743704a0e751276faf95b176e11dc4f1f99bca7157fb2ab",
+    "qemu_aarch64_sha256": "4a2fd0e1fb9c1ba3f63f81113ead9e96e0cdb513c64c83bb2ecfc94e1df05e4c",
+    "simg2img_sha256": "449872690de38e40848c4d781f9e9829d3e65610ceea448cb24a9f70cd738fac"
+  }
+}

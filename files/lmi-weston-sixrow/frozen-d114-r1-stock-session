@@ -1,0 +1,341 @@
+#!/bin/sh
+set -eu
+
+backoff_required=0
+signal_exit=0
+weston_pid=
+terminal_pid=
+keyboard_pid=
+session_lock=
+session_lock_owned=0
+
+fail() {
+	backoff_required=1
+	echo "lmi-p2-d114 session: $*" >&2
+	exit 1
+}
+
+child_alive() {
+	child_pid=$1
+	case "$child_pid" in
+		''|*[!0-9]*) return 1 ;;
+	esac
+	kill -0 "$child_pid" 2>/dev/null || return 1
+	[ -r "/proc/$child_pid/stat" ] || return 1
+	child_state=$(awk '{ print $3 }' "/proc/$child_pid/stat" 2>/dev/null) ||
+		return 1
+	case "$child_state" in
+		Z|X|x) return 1 ;;
+	esac
+	return 0
+}
+
+keyboard_child_valid() {
+	keyboard_check_pid=$1
+	child_alive "$keyboard_check_pid" || return 1
+	keyboard_status_path=/proc/$keyboard_check_pid/status
+	[ -r "$keyboard_status_path" ] || return 1
+	keyboard_uid=$(awk '$1 == "Uid:" { print $2; exit }' \
+		"$keyboard_status_path" 2>/dev/null) || return 1
+	keyboard_parent=$(awk '$1 == "PPid:" { print $2; exit }' \
+		"$keyboard_status_path" 2>/dev/null) || return 1
+	[ "$keyboard_uid" = 10000 ] || return 1
+	[ "$keyboard_parent" = "$weston_pid" ] || return 1
+	keyboard_exe=$(readlink "/proc/$keyboard_check_pid/exe" 2>/dev/null) ||
+		return 1
+	[ "$keyboard_exe" = /usr/libexec/weston-keyboard ]
+}
+
+find_keyboard_child() {
+	for keyboard_comm_path in /proc/[0-9]*/comm; do
+		[ -r "$keyboard_comm_path" ] || continue
+		IFS= read -r keyboard_comm < "$keyboard_comm_path" || continue
+		[ "$keyboard_comm" = weston-keyboard ] || continue
+		keyboard_candidate=${keyboard_comm_path#/proc/}
+		keyboard_candidate=${keyboard_candidate%/comm}
+		keyboard_child_valid "$keyboard_candidate" || continue
+		printf '%s\n' "$keyboard_candidate"
+		return 0
+	done
+	return 1
+}
+
+check_core_children() {
+	check_context=$1
+	if ! child_alive "$weston_pid"; then
+		weston_status=0
+		wait "$weston_pid" || weston_status=$?
+		weston_pid=
+		fail "Weston exited $check_context (status $weston_status)"
+	fi
+	if [ -n "$terminal_pid" ] && ! child_alive "$terminal_pid"; then
+		terminal_status=0
+		wait "$terminal_pid" || terminal_status=$?
+		terminal_pid=
+		fail "weston-terminal exited $check_context (status $terminal_status)"
+	fi
+}
+
+wait_for_keyboard() {
+	keyboard_max_attempts=$1
+	keyboard_context=$2
+	keyboard_attempt=0
+	keyboard_stable_polls=0
+	while [ "$keyboard_attempt" -lt "$keyboard_max_attempts" ]; do
+		check_core_children "$keyboard_context"
+		if keyboard_candidate=$(find_keyboard_child); then
+			if [ "$keyboard_candidate" = "$keyboard_pid" ]; then
+				keyboard_stable_polls=$((keyboard_stable_polls + 1))
+			else
+				keyboard_pid=$keyboard_candidate
+				keyboard_stable_polls=1
+			fi
+			[ "$keyboard_stable_polls" -lt 5 ] || return 0
+		else
+			keyboard_pid=
+			keyboard_stable_polls=0
+		fi
+		sleep 0.1
+		keyboard_attempt=$((keyboard_attempt + 1))
+	done
+	fail "weston-keyboard child $keyboard_context timed out"
+}
+
+stop_child() {
+	stop_pid=$1
+	case "$stop_pid" in
+		''|*[!0-9]*) return 0 ;;
+	esac
+	kill -TERM "$stop_pid" 2>/dev/null || true
+	stop_attempt=0
+	while child_alive "$stop_pid" && [ "$stop_attempt" -lt 30 ]; do
+		sleep 0.1
+		stop_attempt=$((stop_attempt + 1))
+	done
+	if child_alive "$stop_pid"; then
+		kill -KILL "$stop_pid" 2>/dev/null || true
+	fi
+	wait "$stop_pid" 2>/dev/null || true
+}
+
+release_session_lock() {
+	[ "$session_lock_owned" -eq 1 ] || return 0
+	lock_pid_path=$session_lock/pid
+	if [ -f "$lock_pid_path" ] && [ ! -L "$lock_pid_path" ]; then
+		lock_owner=$(cat "$lock_pid_path" 2>/dev/null || true)
+		if [ "$lock_owner" = "$$" ]; then
+			rm -f "$lock_pid_path"
+			rmdir "$session_lock" 2>/dev/null || true
+		fi
+	fi
+	rmdir "$session_lock" 2>/dev/null || true
+	session_lock_owned=0
+}
+
+acquire_session_lock() {
+	session_lock=$XDG_RUNTIME_DIR/lmi-p2-d114-session.lock
+	lock_pid_path=$session_lock/pid
+	if mkdir "$session_lock" 2>/dev/null; then
+		session_lock_owned=1
+		chmod 700 "$session_lock"
+		printf '%s\n' "$$" > "$lock_pid_path"
+		chmod 600 "$lock_pid_path"
+		return 0
+	fi
+	[ -d "$session_lock" ] && [ ! -L "$session_lock" ] ||
+		fail "the session lock path is unsafe"
+	[ "$(stat -c %u "$session_lock")" = 10000 ] &&
+		[ "$(stat -c %g "$session_lock")" = 10000 ] &&
+		[ "$(stat -c %a "$session_lock")" = 700 ] ||
+		fail "the session lock metadata changed"
+	[ -f "$lock_pid_path" ] && [ ! -L "$lock_pid_path" ] ||
+		fail "the session lock pid file is unsafe"
+	[ "$(stat -c %u "$lock_pid_path")" = 10000 ] &&
+		[ "$(stat -c %g "$lock_pid_path")" = 10000 ] &&
+		[ "$(stat -c %a "$lock_pid_path")" = 600 ] ||
+		fail "the session lock pid metadata changed"
+	locked_pid=$(cat "$lock_pid_path") || fail "the session lock pid is unreadable"
+	case "$locked_pid" in
+		''|*[!0-9]*) fail "the session lock pid is malformed" ;;
+	esac
+	[ "$locked_pid" -gt 1 ] || fail "the session lock pid is invalid"
+	if kill -0 "$locked_pid" 2>/dev/null; then
+		fail "another D114 terminal session is active"
+	fi
+	rm -f "$lock_pid_path"
+	rmdir "$session_lock" || fail "could not clear the stale session lock"
+	mkdir "$session_lock" || fail "could not acquire the session lock"
+	session_lock_owned=1
+	chmod 700 "$session_lock"
+	printf '%s\n' "$$" > "$lock_pid_path"
+	chmod 600 "$lock_pid_path"
+}
+
+cleanup() {
+	cleanup_status=$?
+	trap - EXIT HUP INT TERM
+	stop_child "$terminal_pid"
+	stop_child "$weston_pid"
+	release_session_lock
+	if [ "$backoff_required" -eq 1 ] || {
+		[ "$cleanup_status" -ne 0 ] && [ "$signal_exit" -eq 0 ]
+	}; then
+		sleep 5
+	fi
+	exit "$cleanup_status"
+}
+
+trap cleanup EXIT
+trap 'signal_exit=1; exit 129' HUP
+trap 'signal_exit=1; exit 130' INT
+trap 'signal_exit=1; exit 143' TERM
+
+[ "$#" -eq 0 ] || fail "arguments are not accepted"
+
+export PATH=/usr/bin:/bin
+export HOME=/home/lmi
+export USER=lmi
+export LOGNAME=lmi
+export XDG_SESSION_TYPE=wayland
+export XDG_RUNTIME_DIR=/run/user/10000
+export WAYLAND_DISPLAY=wayland-lmi-p2-d114
+export LIBSEAT_BACKEND=seatd
+umask 077
+
+[ "$(id -u)" = 10000 ] && [ "$(id -g)" = 10000 ] ||
+	fail "the session must run as uid:gid 10000:10000"
+[ "$(id -u lmi)" = 10000 ] && [ "$(id -g lmi)" = 10000 ] ||
+	fail "the frozen lmi account identity changed"
+[ "$(getent passwd lmi)" = "lmi:x:10000:10000::/home/lmi:/bin/ash" ] ||
+	fail "the frozen lmi passwd record changed"
+
+[ -d "$XDG_RUNTIME_DIR" ] && [ ! -L "$XDG_RUNTIME_DIR" ] ||
+	fail "the elogind runtime directory is unavailable"
+[ "$(stat -c %u "$XDG_RUNTIME_DIR")" = 10000 ] &&
+	[ "$(stat -c %g "$XDG_RUNTIME_DIR")" = 10000 ] &&
+	[ "$(stat -c %a "$XDG_RUNTIME_DIR")" = 700 ] ||
+	fail "the elogind runtime directory ownership or mode changed"
+
+[ -S /run/seatd.sock ] && [ ! -L /run/seatd.sock ] ||
+	fail "the lmi-seatd socket is unavailable"
+[ "$(stat -c %u /run/seatd.sock)" = 0 ] &&
+	[ "$(stat -c %g /run/seatd.sock)" = 10000 ] &&
+	[ "$(stat -c %a /run/seatd.sock)" = 770 ] ||
+	fail "the lmi-seatd socket ownership or mode changed"
+
+check_sha256() {
+	check_path=$1
+	check_expected=$2
+	[ -f "$check_path" ] && [ ! -L "$check_path" ] ||
+		fail "missing regular runtime component: $check_path"
+	check_actual=$(sha256sum "$check_path") ||
+		fail "could not hash runtime component: $check_path"
+	check_actual=${check_actual%% *}
+	[ "$check_actual" = "$check_expected" ] ||
+		fail "runtime component digest changed: $check_path"
+}
+
+check_sha256 /usr/bin/weston \
+	191703aa8da1d965fe7a2e7b4ec7ad7316c484cdc26ac77f31c015d6ee4bd45e
+check_sha256 /usr/bin/weston-terminal \
+	1bdeb6070eab5bb05eb2bece2803812e9824fb1a9c76a820352abb880bd1e118
+check_sha256 /usr/libexec/weston-keyboard \
+	4649049a9793172cc592bc8c1a07eef6eb387fb42f5ee4039aab09a4808d99d3
+check_sha256 /usr/lib/libweston-14.so.0.0.2 \
+	2c7565771a3e4097cdaf3e240d5e1dece2cdff78227967153df6088164bde9cd
+check_sha256 /usr/lib/libweston-14/drm-backend.so \
+	3d74572726b4c7cbbdf1abad75dbeeee6d76f08af766a8bba06f30aeaf617a2f
+check_sha256 /usr/lib/weston/desktop-shell.so \
+	e4996ef148957fbeaafd1c374611a4831a7afe74b6014e47869e445c88b6cf67
+check_sha256 /etc/lmi-p2-d114/weston.ini \
+	19a872670debc8c81bcb64b16f5e49b8958709d8150fcf3634c63cab25ac67f4
+
+[ "$(cat /sys/class/drm/card0-DSI-1/status 2>/dev/null || true)" = connected ] ||
+	fail "DSI-1 is not connected"
+[ "$(cat /sys/class/drm/card0-DSI-1/enabled 2>/dev/null || true)" = disabled ] ||
+	fail "DSI-1 is already owned by another display path"
+
+for comm_path in /proc/[0-9]*/comm; do
+	[ -r "$comm_path" ] || continue
+	IFS= read -r comm_name < "$comm_path" || continue
+	case "$comm_name" in
+		weston|phoc|phosh|kmscube|modetest)
+			fail "another display process is active: $comm_name"
+			;;
+	esac
+done
+
+takeover_lock=/run/lmi-display-takeover.lock
+[ ! -e "$takeover_lock" ] && [ ! -L "$takeover_lock" ] ||
+	fail "the system display takeover lock is active"
+
+socket_path=$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY
+lock_path=$socket_path.lock
+[ ! -e "$socket_path" ] && [ ! -L "$socket_path" ] ||
+	fail "the dedicated Wayland socket path is occupied"
+[ ! -e "$lock_path" ] && [ ! -L "$lock_path" ] ||
+	fail "the dedicated Wayland lock path is occupied"
+
+acquire_session_lock
+
+state_dir=$HOME/.local/state/lmi-p2-d114
+mkdir -p "$state_dir"
+[ -d "$state_dir" ] && [ ! -L "$state_dir" ] ||
+	fail "the session state path is unsafe"
+log_path=$state_dir/weston.log
+
+/usr/bin/weston \
+	--socket="$WAYLAND_DISPLAY" \
+	--backend=drm-backend.so \
+	--drm-device=card0 \
+	--renderer=pixman \
+	--shell=desktop-shell.so \
+	--config=/etc/lmi-p2-d114/weston.ini \
+	--idle-time=0 \
+	--log="$log_path" &
+weston_pid=$!
+
+socket_ready=0
+socket_attempt=0
+while [ "$socket_attempt" -lt 150 ]; do
+	if [ -S "$socket_path" ] && child_alive "$weston_pid"; then
+		socket_ready=1
+		break
+	fi
+	if ! child_alive "$weston_pid"; then
+		weston_status=0
+		wait "$weston_pid" || weston_status=$?
+		weston_pid=
+		fail "Weston exited before publishing its socket (status $weston_status)"
+	fi
+	sleep 0.1
+	socket_attempt=$((socket_attempt + 1))
+done
+[ "$socket_ready" -eq 1 ] || fail "Weston socket readiness timed out"
+
+wait_for_keyboard 150 "before keyboard readiness"
+
+/usr/bin/weston-terminal --maximized --font-size=18 &
+terminal_pid=$!
+
+keyboard_restart_count=0
+keyboard_stable_ticks=0
+
+while :; do
+	check_core_children "unexpectedly"
+	if ! keyboard_child_valid "$keyboard_pid"; then
+		keyboard_pid=
+		keyboard_restart_count=$((keyboard_restart_count + 1))
+		[ "$keyboard_restart_count" -le 5 ] ||
+			fail "weston-keyboard exceeded its bounded restart budget"
+		wait_for_keyboard 50 "while recovering after exit"
+		keyboard_stable_ticks=0
+	else
+		keyboard_stable_ticks=$((keyboard_stable_ticks + 1))
+		if [ "$keyboard_stable_ticks" -ge 50 ]; then
+			keyboard_restart_count=0
+			keyboard_stable_ticks=0
+		fi
+	fi
+	sleep 0.2
+done

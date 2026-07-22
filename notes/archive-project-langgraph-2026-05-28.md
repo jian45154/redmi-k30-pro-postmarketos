@@ -1,4 +1,10 @@
-# Project LangGraph
+# Project LangGraph (archived 2026-07-22)
+
+> **Superseded.** This is the original 2026-05-28 workflow contract, kept as a
+> dated historical record. Its "Current Phase" blockers were all resolved long
+> ago. The live governance rules now live in the root
+> [`AGENTS.md`](../AGENTS.md).
+
 签名：codex_ian | 2026-05-28 13:10:00 +10:00 Australia/Sydney
 
 This graph is the execution model for the lmi Linux porting project. It is a
