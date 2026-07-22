@@ -100,9 +100,17 @@ def dump_file(image: Path, path: str, destination: Path) -> None:
 
 
 def file_facts(image: Path, path: str, scratch: Path) -> dict | None:
-    stat_output = debugfs(image, f'stat "{path}"')
-    if "File not found" in stat_output:
+    result = subprocess.run(
+        [DEBUGFS, "-R", f'stat "{path}"', str(image)],
+        capture_output=True,
+        text=True,
+    )
+    combined = result.stdout + result.stderr
+    if "File not found" in combined:
         return None
+    if result.returncode != 0:
+        raise SystemExit(f"debugfs stat of {path} failed: {result.stderr.strip()}")
+    stat_output = result.stdout
     mode_match = re.search(r"Mode:\s+(0[0-7]+)", stat_output)
     links_match = re.search(r"Links:\s+(\d+)", stat_output)
     size_match = re.search(r"Size:\s+(\d+)", stat_output)
