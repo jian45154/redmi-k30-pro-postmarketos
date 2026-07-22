@@ -1,0 +1,6 @@
+#!/bin/sh
+log=/run/lmi-greetd.log
+: > "$log"
+exec >> "$log" 2>&1
+echo 'lmi-greetd diagnostic wrapper: begin'
+exec /usr/sbin/greetd "$@"

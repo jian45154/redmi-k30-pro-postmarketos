@@ -1,0 +1,1 @@
+LMI_VFS_DIAG security_hook lsm=%s key=%s ret=%d

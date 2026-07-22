@@ -1,0 +1,13 @@
+#!/sbin/openrc-run
+
+name="lmi-power-panel"
+description="Power-key panel blank and unblank control for lmi"
+
+command="/usr/sbin/lmi-power-panel"
+command_background="yes"
+pidfile="/run/$RC_SVCNAME.pid"
+
+depend() {
+	need greetd
+	after localmount
+}

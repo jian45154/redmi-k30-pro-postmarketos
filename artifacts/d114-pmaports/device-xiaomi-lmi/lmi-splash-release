@@ -1,0 +1,58 @@
+#!/bin/sh
+set -eu
+
+work=
+fifo=
+feeder_pid=
+modetest_pid=
+
+cleanup() {
+	status=$?
+	trap - EXIT HUP INT TERM
+	set +e
+	[ -z "$feeder_pid" ] || kill "$feeder_pid" 2>/dev/null || true
+	[ -z "$modetest_pid" ] || kill "$modetest_pid" 2>/dev/null || true
+	[ -z "$work" ] || rm -rf -- "$work"
+	exit "$status"
+}
+trap cleanup EXIT HUP INT TERM
+
+[ "$(id -u)" = 0 ] || { echo 'lmi-splash-release: root required' >&2; exit 1; }
+command -v modetest >/dev/null 2>&1 || { echo 'lmi-splash-release: modetest missing' >&2; exit 1; }
+command -v mkfifo >/dev/null 2>&1 || { echo 'lmi-splash-release: mkfifo missing' >&2; exit 1; }
+command -v tail >/dev/null 2>&1 || { echo 'lmi-splash-release: tail missing' >&2; exit 1; }
+[ -r /dev/dri/card0 ] && [ -w /dev/dri/card0 ] || { echo 'lmi-splash-release: card0 unavailable' >&2; exit 1; }
+[ "$(cat /sys/class/drm/card0-DSI-1/status 2>/dev/null || true)" = connected ] || {
+	echo 'lmi-splash-release: DSI-1 disconnected' >&2
+	exit 1
+}
+[ ! -e /run/lmi-display-takeover.lock ] || { echo 'lmi-splash-release: manual takeover active' >&2; exit 1; }
+
+work=$(mktemp -d /tmp/lmi-splash-release.XXXXXX)
+fifo=$work/input
+mkfifo "$fifo"
+tail -f /dev/null > "$fifo" &
+feeder_pid=$!
+modetest -a -s '29@129:#0@XR24' -P '58@129:1080x2400@XR24' < "$fifo" &
+modetest_pid=$!
+sleep 3
+kill "$feeder_pid" 2>/dev/null || true
+wait "$feeder_pid" 2>/dev/null || true
+feeder_pid=
+set +e
+wait "$modetest_pid"
+modetest_exit=$?
+set -e
+modetest_pid=
+[ "$modetest_exit" -eq 0 ] || { echo "lmi-splash-release: clear failed exit=$modetest_exit" >&2; exit 1; }
+
+post_clear=$(modetest -p 2>&1) || { echo 'lmi-splash-release: post-clear query failed' >&2; exit 1; }
+printf '%s\n' "$post_clear" | grep -Eq '^129[[:space:]]+0[[:space:]]+\(0,0\)[[:space:]]+\(0x0\)' || {
+	echo 'lmi-splash-release: CRTC 129 is still occupied' >&2
+	exit 1
+}
+printf '%s\n' "$post_clear" | grep -Eq '^58[[:space:]]+0[[:space:]]+0[[:space:]]' || {
+	echo 'lmi-splash-release: plane 58 is still occupied' >&2
+	exit 1
+}
+echo 'lmi-splash-release: CRTC 129 / plane 58 cleared'

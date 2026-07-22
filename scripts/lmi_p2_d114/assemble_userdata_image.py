@@ -54,7 +54,7 @@ SPARSE_TOOL_LOCK_SHA256 = (
     "e8258f018496761191a4643bd3c516ae277c65b1a8b1ec2eedeff59cc1f386d0"
 )
 INJECTION_POLICY_LOCK_SHA256 = (
-    "0d9fc7bdd82e58d6bece646873124b7b9258a6e7bbd94661c5f845623b49105b"
+    "f8bb5c57ccd8f2196e30be870e040a8fb9dde24de77fd94e4363947bdc35fdc0"
 )
 SOURCE_LOCK_SHA256 = "96513219a6f1267edd7762a5206aca6b6bdf344f340decc5676198ac2373ab8f"
 D110_BOOT_SHA256 = "2b264d64d2ed22f0ab5c3c2615b0bda9ed821fa5d8d5d691ea513e5d2f071487"
@@ -1105,7 +1105,7 @@ def load_injection_policy_lock(
         "apk_cache": "exact-four-index-members-removed",
         "apk_log": "empty",
         "authorized_keys": "removed",
-        "machine_id": "empty",
+        "machine_id": "removed",
         "resolv_conf": "empty",
         "shadow_backup": "exact-copy-of-locked-active-shadow",
         "ssh_password_authentication": "disabled-by-locked-drop-in",
