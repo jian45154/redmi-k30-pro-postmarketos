@@ -144,7 +144,7 @@
       "pid",
       "uts"
     ],
-    "sealed_injector_script_sha256": "f3f029c533a00747fd8d895d844f217649649edafc3a4a07c566dc962574af15"
+    "sealed_injector_script_sha256": "dd85c28a013a766e4efb2e9f93f0f8a2c9cd9b291dd10d93ef3d555fa21a41c2"
   },
   "sanitization": {
     "apk_cache": "exact-four-index-members-removed",

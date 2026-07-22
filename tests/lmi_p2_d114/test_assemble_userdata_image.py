@@ -469,6 +469,11 @@ class AssembleUserdataImageTests(unittest.TestCase):
         self.assertFalse(self.output_bundle.exists())
 
     def test_injection_policy_lock_pin_and_exact_structure_are_enforced(self) -> None:
+        production_payload = assembler.INJECTION_POLICY_LOCK.read_bytes()
+        self.assertEqual(
+            assembler.INJECTION_POLICY_LOCK_SHA256,
+            hashlib.sha256(production_payload).hexdigest(),
+        )
         with self.assertRaisesRegex(AssemblyError, "SHA256 mismatch"):
             load_injection_policy_lock(
                 self.injection_policy_lock,

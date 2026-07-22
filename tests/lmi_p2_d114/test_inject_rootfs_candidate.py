@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import base64
+import copy
 import hashlib
 import io
 import json
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import stat
 import subprocess
@@ -919,18 +921,18 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         self.assertIn(f"readonly INJECTOR_SHA256={injector_hash}", self.launcher)
         copy_at = self.launcher.index('/usr/bin/cp --reflink=never -- "$INJECTOR" "$staged"')
         staged_hash_at = self.launcher.index('"$(sha256_of "$staged")" == "$INJECTOR_SHA256"')
-        first_sudo_at = self.launcher.index("/usr/bin/sudo -n --", self.launcher.index("main()"))
+        first_transport_at = self.launcher.index('"${root_transport[@]}" /usr/bin/env -i')
         root_install_at = self.launcher.index('/usr/bin/install -o root -g root -m 0700 -- "/proc/self/fd/$staged_fd" "$sealed"')
         unshare_at = self.launcher.index("/usr/bin/unshare --mount --net --pid --fork --ipc --uts --mount-proc=/proc")
         self.assertLess(copy_at, staged_hash_at)
-        self.assertLess(staged_hash_at, first_sudo_at)
+        self.assertLess(staged_hash_at, first_transport_at)
         self.assertLess(root_install_at, unshare_at)
         for fragment in (
             "root-owned sealed entry digest mismatch",
             "close_inherited_fds_and_reject_stdio_sockets",
             "/usr/bin/env -i",
             "/bin/bash --noprofile --norc",
-            "launcher accepts no arguments",
+            "launcher accepts no arguments or exactly one --wsl-root argument",
             "caller uid/gid must exactly match repository owner",
             "injector returned without removing its sealed entry",
             "published bundle failed caller-side inode/metadata/hash verification",
@@ -939,6 +941,112 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         self.assertEqual(self.launcher.count("/usr/bin/sudo -n --"), 1)
         cleanup = self.launcher[self.launcher.index("cleanup() {") : self.launcher.index("verify_published_bundle()")]
         self.assertNotIn("sudo", cleanup)
+
+    def test_launcher_root_transport_modes_are_strict_and_share_one_root_block(self) -> None:
+        self.assertEqual(self.launcher.count("/usr/bin/sudo -n --"), 1)
+        self.assertIn("sudo) root_transport=(/usr/bin/sudo -n --) ;;", self.launcher)
+        self.assertIn(
+            'root_transport=("$WSL_ROOT_TRANSPORT" -d "$WSL_ROOT_DISTRO" -u root --exec)',
+            self.launcher,
+        )
+        self.assertNotIn(" -u root -- ", self.launcher)
+        self.assertEqual(self.launcher.count('"${root_transport[@]}" /usr/bin/env -i'), 1)
+        root_block = self.launcher[
+            self.launcher.index('"${root_transport[@]}" /usr/bin/env -i') :
+            self.launcher.index(' lmi-p2-d114-root-wrapper', self.launcher.index('"${root_transport[@]}" /usr/bin/env -i'))
+        ]
+        self.assertIn('"$(/usr/bin/id -ru)" == 0', root_block)
+        self.assertIn('"$(/usr/bin/id -rg)" == 0', root_block)
+        self.assertIn("/usr/bin/install -o root -g root -m 0700", root_block)
+        self.assertIn("/usr/bin/unshare --mount --net --pid --fork --ipc --uts", root_block)
+
+    def test_wsl_root_transport_is_fixed_pinned_nonwritable_and_drvfs_identified(self) -> None:
+        for fragment in (
+            "readonly WSL_ROOT_WINDOWS_DIR=/mnt/c/WINDOWS",
+            "readonly WSL_ROOT_SYSTEM32_DIR=/mnt/c/WINDOWS/system32",
+            "readonly WSL_ROOT_TRANSPORT=/mnt/c/WINDOWS/system32/wsl.exe",
+            "readonly WSL_ROOT_TRANSPORT_SHA256=e27cbfcbd61c44796e2cfdd031663245bda8d6e4a43c1451b1fc505333908126",
+            "readonly WSL_ROOT_TRANSPORT_SIZE=278528",
+            "readonly WSL_ROOT_DISTRO=Ubuntu",
+            "readonly WSL_ROOT_KERNEL=6.6.87.2-microsoft-standard-WSL2",
+            '[[ "$fstype" == 9p ]]',
+            "for required_option in aname=drvfs 'path=C:\\' access=client",
+            '! -w "$WSL_ROOT_TRANSPORT"',
+            "%d:%i:%a:%s:%Y:%Z",
+            '[[ "$transport_digest" == "$WSL_ROOT_TRANSPORT_SHA256" ]]',
+            '[[ "$transport_after" == "$transport_before" ]]',
+        ):
+            self.assertIn(fragment, self.launcher)
+        self.assertNotRegex(self.launcher, r"(?:^|[,;])(?:rfd|wfd|fd)=")
+
+    def test_wsl_transport_ancestors_are_canonical_nonwritable_and_identity_locked(self) -> None:
+        ancestor_gate = self.launcher[
+            self.launcher.index('for ancestor in "$WSL_ROOT_WINDOWS_DIR" "$WSL_ROOT_SYSTEM32_DIR"') :
+            self.launcher.index('[[ -f "$WSL_ROOT_TRANSPORT"', self.launcher.index("verify_wsl_root_transport()"))
+        ]
+        for fragment in (
+            '[[ -d "$ancestor" && ! -L "$ancestor" && ! -w "$ancestor" ]]',
+            'ancestor_canonical="$(/usr/bin/realpath -e -- "$ancestor")"',
+            '[[ "$ancestor_canonical" == "$ancestor" ]]',
+            '[[ "$(/usr/bin/stat -c %F -- "$ancestor")" == directory ]]',
+            'ancestor_identity="$(/usr/bin/stat -c %d:%i:%a:%s:%Y:%Z -- "$ancestor")"',
+            '[[ "$ancestor_identity" == *:555:* ]]',
+            "WSL_ROOT_WINDOWS_IDENTITY=$ancestor_identity",
+            "WSL_ROOT_SYSTEM32_IDENTITY=$ancestor_identity",
+        ):
+            self.assertIn(fragment, ancestor_gate)
+        self.assertIn(
+            "WSL_ROOT_TRANSPORT_TREE_IDENTITY=$WSL_ROOT_TRANSPORT_IDENTITY$'\\n'$WSL_ROOT_WINDOWS_IDENTITY$'\\n'$WSL_ROOT_SYSTEM32_IDENTITY",
+            self.launcher,
+        )
+
+    def test_wsl_transport_is_rehashed_immediately_before_common_execution(self) -> None:
+        preexec_at = self.launcher.index('if [[ "$root_mode" == wsl-root ]]')
+        second_identity_at = self.launcher.index(
+            'transport_current="$(wsl_root_transport_tree_identity)"',
+            preexec_at,
+        )
+        second_digest_at = self.launcher.index(
+            'transport_current="$(sha256_of "$WSL_ROOT_TRANSPORT")"',
+            second_identity_at,
+        )
+        final_identity_at = self.launcher.index(
+            'transport_current="$(wsl_root_transport_tree_identity)"',
+            second_digest_at,
+        )
+        common_execution_at = self.launcher.index('"${root_transport[@]}" /usr/bin/env -i')
+        self.assertLess(second_identity_at, second_digest_at)
+        self.assertLess(second_digest_at, final_identity_at)
+        self.assertLess(final_identity_at, common_execution_at)
+        between_final_stat_and_exec = self.launcher[final_identity_at:common_execution_at]
+        self.assertNotIn("sha256_of", between_final_stat_and_exec)
+        self.assertNotIn("findmnt", between_final_stat_and_exec)
+
+    def test_root_block_requires_transport_namespace_equality_before_sealing(self) -> None:
+        root_block_at = self.launcher.index('"${root_transport[@]}" /usr/bin/env -i')
+        equality_at = self.launcher.index('[[ "$current_value" == "$parent_value" ]]', root_block_at)
+        seal_at = self.launcher.index('/usr/bin/install -d -o root -g root -m 0700 -- "$seal_dir"', root_block_at)
+        unshare_at = self.launcher.index("/usr/bin/unshare --mount --net --pid --fork --ipc --uts", root_block_at)
+        self.assertLess(equality_at, seal_at)
+        self.assertLess(seal_at, unshare_at)
+        self.assertIn("for namespace in mnt net pid ipc uts", self.launcher[root_block_at:seal_at])
+
+    def test_launcher_rejects_every_non_contract_argument_before_transport(self) -> None:
+        for arguments in (("--not-wsl-root",), ("--wsl-root", "extra"), ("extra", "--wsl-root")):
+            result = subprocess.run(
+                [str(LAUNCHER), *arguments],
+                cwd=REPO,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(
+                "launcher accepts no arguments or exactly one --wsl-root argument",
+                result.stderr,
+            )
+            self.assertNotIn("sudo:", result.stderr)
 
     def test_private_input_gate_accepts_only_the_four_exact_old_build_inputs(self) -> None:
         allowed = self.run_helper(
@@ -1028,6 +1136,30 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         derived = self.run_helper('printf "%s\\n" "$REPO"\n')
         self.assertEqual(derived.returncode, 0, derived.stderr)
         self.assertEqual(derived.stdout, f"{REPO}\n")
+
+    def test_launcher_accepts_relative_canonical_invocation(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            scripts = repository / "scripts/lmi_p2_d114"
+            scripts.mkdir(parents=True)
+            launcher = scripts / LAUNCHER.name
+            injector = scripts / SCRIPT.name
+            shutil.copy2(LAUNCHER, launcher)
+            shutil.copy2(SCRIPT, injector)
+            launcher.chmod(0o755)
+            injector.chmod(0o755)
+            result = subprocess.run(
+                [f"./scripts/lmi_p2_d114/{LAUNCHER.name}"],
+                cwd=repository,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("launcher source path is unsafe", result.stderr)
+        self.assertNotIn("could not derive canonical repository root", result.stderr)
+        self.assertNotIn("launcher is not running from its canonical project path", result.stderr)
 
     def test_ext4_normalization_is_allocated_only_zero_proven_and_tree_identical(self) -> None:
         normalization = self.injection_policy_lock["normalization"]
@@ -1716,6 +1848,112 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         self.assertIn('chmod 0640 -- "$PUBLISH_TMP/rootfs.ext4" "$PUBLISH_TMP/attestation.json"', self.source)
         self.assertIn("publish_bundle", self.source)
         self.assertNotIn("publish_pair", self.source)
+
+    def test_complete_producer_payload_is_exact_canonical_json(self) -> None:
+        policy = self.injection_policy_lock
+
+        def fixture_sha(label: str) -> str:
+            return hashlib.sha256(label.encode("ascii")).hexdigest()
+
+        output_hashes = {
+            field: fixture_sha(field) for field in policy["output"]["sha256_fields"]
+        }
+        output = copy.deepcopy(policy["output"]["fixed"])
+        output.update(output_hashes)
+        output["owner"] = f"0:{os.getgid()}"
+
+        normalization = copy.deepcopy(policy["normalization"]["fixed"])
+        normalization.update(
+            {
+                "pre_normalization_sha256": fixture_sha("pre-normalization"),
+                "proof_sha256": output["sha256"],
+                "sparse_st_blocks": 1234,
+                "tree_identity_sha256": fixture_sha("tree-identity"),
+            }
+        )
+        namespaces = {
+            name: os.readlink(f"/proc/self/ns/{name}")
+            for name in policy["runtime"]["namespace_fields"]
+        }
+        runtime = copy.deepcopy(policy["runtime"]["fixed"])
+        runtime.update(
+            {
+                "kernel_release": "6.6.87.2-fixture",
+                "mount_loop": {
+                    "backing_identity": "123:456",
+                    "block_identity": "7:0:1792",
+                    "mount_options": "ext4 rw,nosuid,nodev,relatime",
+                },
+                "namespaces": namespaces,
+                "proc_version_sha256": fixture_sha("proc-version"),
+                "sealed_script_sha256": digest(SCRIPT),
+            }
+        )
+        expected = {
+            "claims": copy.deepcopy(policy["claims"]),
+            "commands": copy.deepcopy(policy["commands"]),
+            "input": copy.deepcopy(policy["input"]),
+            "normalization": normalization,
+            "output": output,
+            "runtime": runtime,
+            "sanitization": copy.deepcopy(policy["sanitization"]),
+            "schema": policy["attestation_schema"],
+            "tools": copy.deepcopy(policy["tools"]),
+        }
+        canonical = (
+            json.dumps(expected, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("ascii")
+
+        shell_values = {
+            "ATTESTED_LOOP_BACKING_ID": runtime["mount_loop"]["backing_identity"],
+            "ATTESTED_LOOP_DEVICE_ID": runtime["mount_loop"]["block_identity"],
+            "CALLER_GID": os.getgid(),
+            "FINAL_SHA256": output["sha256"],
+            "FULL_DELTA_SHA256": output["filesystem_delta_sha256"],
+            "GEOMETRY_SHA256": output["geometry_sha256"],
+            "INSTALLED_DB_FINAL_SHA256": output["installed_db_sha256"],
+            "KEY_INVENTORY_SHA256": output["key_inventory_sha256"],
+            "KERNEL_RELEASE": runtime["kernel_release"],
+            "MOUNT_OPTIONS": runtime["mount_loop"]["mount_options"],
+            "NORMALIZATION_PROOF_SHA256": normalization["proof_sha256"],
+            "NORMALIZATION_TREE_SHA256": normalization["tree_identity_sha256"],
+            "NORMALIZED_ST_BLOCKS": normalization["sparse_st_blocks"],
+            "P2_PACKAGE_RECORD_SHA256": output["p2_package_record_sha256"],
+            "PRE_NORMALIZATION_SHA256": normalization["pre_normalization_sha256"],
+            "PROC_VERSION_SHA256": runtime["proc_version_sha256"],
+            "SANDBOX_ENTRY_SHA256": runtime["sandbox_entry_sha256"],
+            "SCRIPTS_DB_FINAL_SHA256": output["scripts_db_sha256"],
+            "SEALED_SCRIPT_SHA256": runtime["sealed_script_sha256"],
+            "SIXROW_PACKAGE_RECORD_SHA256": output[
+                "sixrow_package_record_sha256"
+            ],
+        }
+        assignments = ["SCRATCH_DIR=$2"]
+        assignments.extend(
+            f"{name}={shlex.quote(str(value))}"
+            for name, value in shell_values.items()
+        )
+        producer_start = self.source.index(
+            '\tATTESTATION_TMP="$SCRATCH_DIR/attestation.json"'
+        )
+        producer_end = self.source.index(
+            '\tATTESTATION_SHA256="$(sha256_of "$ATTESTATION_TMP")"',
+            producer_start,
+        )
+        producer = self.source[producer_start:producer_end]
+
+        with tempfile.TemporaryDirectory() as temporary:
+            result = self.run_helper(
+                "\n".join(assignments)
+                + "\n"
+                + producer
+                + '\ncat -- "$ATTESTATION_TMP"\n',
+                Path(temporary),
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = result.stdout.encode("ascii")
+        self.assertEqual(json.loads(payload), expected)
+        self.assertEqual(payload, canonical)
 
     def test_attestation_tool_fields_are_emitted_in_canonical_json_order(self) -> None:
         attestation_writer = self.source.split(
