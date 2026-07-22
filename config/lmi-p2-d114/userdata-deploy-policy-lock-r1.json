@@ -80,7 +80,7 @@
     },
     "assembler": {
       "path": "scripts/lmi_p2_d114/assemble_userdata_image.py",
-      "sha256": "8648fc3d9ddbb7225bf02b791c81d7c9c4a8fd289c67fec1cf7452a5ff60664c",
+      "sha256": "99586255dcd0743f1c4eccebb2d3fafbd1e2d6e88754add84346979efaf268be",
       "size": 84873
     },
     "candidate_rebuild_lock": {
@@ -95,18 +95,18 @@
     },
     "injection_policy_lock": {
       "path": "config/lmi-p2-d114/injection-policy-lock.json",
-      "sha256": "9c43a31556fc1a4043176add6c56bcc4fbd077452467ecfbe4bfef6c021d4785",
-      "size": 7448
+      "sha256": "e8f21f9af62e954325eae2908535cf33810e6ac5de86fc3d1c32c6b3b82ffa5a",
+      "size": 7451
     },
     "injector": {
       "path": "scripts/lmi_p2_d114/inject_rootfs_candidate.sh",
-      "sha256": "ca3785fd75dd135fde2ae52f8f2fe0a43da166712e019b78b44491e556745d37",
-      "size": 123947
+      "sha256": "50be8d7211e08ecc561002cde10678989f6ab4baa431df5007ce7b10ceea4190",
+      "size": 123939
     },
     "injector_launcher": {
       "path": "scripts/lmi_p2_d114/launch_inject_rootfs_candidate.sh",
-      "sha256": "eddf7ab1dcad732a30cc4edcca635e885649abfa87e5ba5dfbf140d54c21101c",
-      "size": 20122
+      "sha256": "2f7741b2e3e85caa9333b7fe549f9a30c91c640fe8a14662e3fa66f562ebf4a8",
+      "size": 20125
     },
     "injector_runtime_lock": {
       "path": "config/lmi-p2-d114/injector-runtime-lock.json",

@@ -106,11 +106,11 @@
         "device-xiaomi-lmi-terminal=0.1.0-r2",
         "lmi-weston-sixrow-clients=14.0.2-r2"
       ],
-      "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/lmi-d114-rootfs-p2-r2-most-complete-injected-20260723.bundle/rootfs.ext4",
+      "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-injected-20260723/lmi-d114-rootfs-p2-r2-most-complete-injected-20260723.bundle/rootfs.ext4",
       "size": 2923429888,
-      "triggers_sha256": "8847b2f186ea9b5a5806aeb9f00602e5a2f34e4b806b78ceff4fc72f4e0eb32d",
+      "triggers_sha256": "8847b2f186ea9b5a8705a2aa020fd0c00595531f1b25550ced1bc7f803952286",
       "uuid": "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f",
-      "world_sha256": "d2db0f373a095db9c4bd063ee3b678f27717a06663df85f56cf0ad584e939177"
+      "world_sha256": "d2db0f373a095db97676afe6c088ba98cc9ebdf78c3576cae6a3d17b053d02eb"
     },
     "sha256_fields": [
       "filesystem_delta_sha256",
@@ -141,7 +141,7 @@
       "pid",
       "uts"
     ],
-    "sealed_injector_script_sha256": "ca3785fd75dd135fde2ae52f8f2fe0a43da166712e019b78b44491e556745d37"
+    "sealed_injector_script_sha256": "50be8d7211e08ecc561002cde10678989f6ab4baa431df5007ce7b10ceea4190"
   },
   "sanitization": {
     "apk_cache": "exact-four-index-members-removed",

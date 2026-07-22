@@ -152,7 +152,6 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "o:lmi-weston-sixrow-clients",
             "m:Local lmi port work <noreply@example.invalid>",
             "t:1784730238",
-            "c:",
             f"D:{dependencies}",
             "F:usr",
             "F:usr/libexec",
@@ -366,13 +365,13 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_scripts_delta_runs_under_nounset_through_final_inventory_comparison(self) -> None:
         target_sources = {
-            "device-xiaomi-lmi-terminal-0.1.0-r1.post-install": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.post-install": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-install"
             ).read_bytes(),
-            "device-xiaomi-lmi-terminal-0.1.0-r1.post-upgrade": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.post-upgrade": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-upgrade"
             ).read_bytes(),
-            "device-xiaomi-lmi-terminal-0.1.0-r1.pre-deinstall": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.pre-deinstall": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.pre-deinstall"
             ).read_bytes(),
         }
@@ -396,10 +395,10 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_scripts_delta_failure_is_removed_by_exit_cleanup(self) -> None:
         target_sources = {
-            "device-xiaomi-lmi-terminal-0.1.0-r1.post-install": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.post-install": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-install"
             ).read_bytes(),
-            "device-xiaomi-lmi-terminal-0.1.0-r1.post-upgrade": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.post-upgrade": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-upgrade"
             ).read_bytes(),
         }
