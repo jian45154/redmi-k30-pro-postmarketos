@@ -1,0 +1,21 @@
+{
+  "schema_version": 4,
+  "expected_product": "lmi",
+  "battery_floor_mv": 3800,
+  "receipt_ttl_seconds": 900,
+  "partition_targets": ["boot", "userdata", "dtbo", "vbmeta"],
+  "volatile_operations": ["device_reboot"],
+  "ram_rw_operations": ["ram_boot", "runtime_handoff"],
+  "persistent_operations": ["partition_write"],
+  "forbidden_command_words": [
+    "erase",
+    "format",
+    "repartition",
+    "set_active",
+    "--force",
+    "--disable-verity",
+    "--disable-verification",
+    "oem lock",
+    "flashing lock"
+  ]
+}

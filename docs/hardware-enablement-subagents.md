@@ -13,7 +13,7 @@ All agents start from the v27 persistent baseline:
 
 ## Coordinator
 
-Owner: main Codex thread.
+Owner: the main coordinating agent thread.
 
 Responsibilities:
 
