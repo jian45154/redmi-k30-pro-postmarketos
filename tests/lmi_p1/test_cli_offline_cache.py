@@ -17,6 +17,19 @@ import scripts.lmi_p1_cli as cli
 
 REPO = Path(__file__).resolve().parents[2]
 
+_ATTESTATION = REPO / "config/lmi-p1/offline-cache-promotion-attestation.json"
+_ATTESTED_RUNTIME = json.loads(_ATTESTATION.read_bytes())["runtime_trust"][
+    "python_major_minor"
+]
+_RUNTIME_MATCHES_ATTESTATION = (
+    sys.implementation.name == "cpython"
+    and f"{sys.version_info.major}.{sys.version_info.minor}" == _ATTESTED_RUNTIME
+)
+_FOREIGN_RUNTIME_REASON = (
+    f"reviewed promotion attestation binds CPython {_ATTESTED_RUNTIME}; "
+    "the promotion trust gate fails closed on other interpreters"
+)
+
 
 @dataclass(frozen=True)
 class _VerifiedResult:
@@ -94,6 +107,7 @@ class OfflineCacheCliTests(unittest.TestCase):
             cli.main(argv)
         self.assertEqual(error.exception.code, 2)
 
+    @unittest.skipUnless(_RUNTIME_MATCHES_ATTESTATION, _FOREIGN_RUNTIME_REASON)
     def test_clean_process_loads_exact_attested_lazy_promotion_tcb(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

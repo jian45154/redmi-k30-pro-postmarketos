@@ -14,6 +14,11 @@ import unittest
 
 
 REPO = Path(__file__).resolve().parents[2]
+_PRIVATE_RECOVERY = REPO / "private/lmi-p1/recovery/d110-d114"
+_PRIVATE_ABSENT_REASON = (
+    "private operator material is local-only (gitignored) and not present "
+    "in this checkout"
+)
 STAGE_SCRIPT = REPO / "scripts/72_stage_downstream_ssh_wifi_test.sh"
 LOOP_SCRIPT = REPO / "scripts/68_mainline_progress_loop.sh"
 CLAIM = (
@@ -1059,6 +1064,7 @@ class DownstreamStageSafetyTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2)
                 self.assertEqual(fixture.calls(), "")
 
+    @unittest.skipUnless(_PRIVATE_RECOVERY.is_dir(), _PRIVATE_ABSENT_REASON)
     def test_private_policy_has_noncaller_anchor_and_no_raw_serial(self) -> None:
         script = STAGE_SCRIPT.read_text(encoding="utf-8")
         anchor = D110GateFixture.production_anchor(script)
@@ -1106,6 +1112,7 @@ class DownstreamStageSafetyTests(unittest.TestCase):
         self.assertEqual(acquisition_path.stat().st_mode & 0o777, 0o600)
         self.assertEqual(policy_path.stat().st_mode & 0o777, 0o600)
 
+    @unittest.skipUnless(_PRIVATE_RECOVERY.is_dir(), _PRIVATE_ABSENT_REASON)
     def test_public_intended_tree_has_no_private_historical_serial_match(self) -> None:
         base = REPO / "private/lmi-p1/recovery/d110-d114"
         d199 = json.loads(
@@ -1147,6 +1154,7 @@ class DownstreamStageSafetyTests(unittest.TestCase):
             + ", ".join(sorted(matching_paths)),
         )
 
+    @unittest.skipUnless(_PRIVATE_RECOVERY.is_dir(), _PRIVATE_ABSENT_REASON)
     def test_real_and_fixture_policy_pin_v2_session_and_internal_attempt_limits(self) -> None:
         base = REPO / "private/lmi-p1/recovery/d110-d114"
         policy_path = base / "d110-recovery-policy.json"
