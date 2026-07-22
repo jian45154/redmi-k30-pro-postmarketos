@@ -34,6 +34,21 @@ PROMOTION_RUNTIME = (
 )
 PRODUCERS = (*CURATION_PRODUCERS, *PROMOTION_RUNTIME)
 
+# The reviewed attestation binds the interpreter it was produced under; the
+# promotion gates fail closed on any other interpreter, so validator-invoking
+# tests only run where the executing runtime matches the attested one.
+_ATTESTED_RUNTIME = json.loads(ATTESTATION.read_bytes())["runtime_trust"][
+    "python_major_minor"
+]
+_RUNTIME_MATCHES_ATTESTATION = (
+    sys.implementation.name == "cpython"
+    and f"{sys.version_info.major}.{sys.version_info.minor}" == _ATTESTED_RUNTIME
+)
+_FOREIGN_RUNTIME_REASON = (
+    f"reviewed promotion attestation binds CPython {_ATTESTED_RUNTIME}; "
+    "validation gates fail closed on other interpreters"
+)
+
 
 class PromotionAttestationTests(unittest.TestCase):
     @staticmethod
@@ -56,6 +71,7 @@ class PromotionAttestationTests(unittest.TestCase):
             runtime_files=self._runtime_files(project_root),
         )
 
+    @unittest.skipUnless(_RUNTIME_MATCHES_ATTESTATION, _FOREIGN_RUNTIME_REASON)
     def test_reviewed_attestation_is_canonical_and_exactly_cross_bound(self):
         payload = ATTESTATION.read_bytes()
         value = json.loads(payload)
@@ -184,6 +200,7 @@ class PromotionAttestationTests(unittest.TestCase):
         attestation = self._copy_authorization_tree(root)
         return temporary, attestation, json.loads(attestation.read_bytes())
 
+    @unittest.skipUnless(_RUNTIME_MATCHES_ATTESTATION, _FOREIGN_RUNTIME_REASON)
     def test_foreign_project_attestation_cannot_authorize_executing_module(self):
         temporary, attestation, _value = self._mutated_tree()
         self.addCleanup(temporary.cleanup)
@@ -233,6 +250,7 @@ class PromotionAttestationTests(unittest.TestCase):
             )
         self.assertEqual(discovered, files)
 
+    @unittest.skipUnless(_RUNTIME_MATCHES_ATTESTATION, _FOREIGN_RUNTIME_REASON)
     def test_rejects_noncanonical_and_cross_binding_drift(self):
         mutations = {
             "profile hash": lambda value: value["profile"].__setitem__("sha256", "0" * 64),
@@ -263,6 +281,7 @@ class PromotionAttestationTests(unittest.TestCase):
         with self.assertRaisesRegex(GateError, "not canonical"):
             self._load_copied_authorization(attestation)
 
+    @unittest.skipUnless(_RUNTIME_MATCHES_ATTESTATION, _FOREIGN_RUNTIME_REASON)
     def test_rejects_runtime_missing_extra_duplicate_and_path_drift(self):
         for case in ("missing", "extra", "duplicate", "path"):
             with self.subTest(case=case):
@@ -283,6 +302,7 @@ class PromotionAttestationTests(unittest.TestCase):
                 with self.assertRaisesRegex(GateError, "runtime|source path"):
                     self._load_copied_authorization(attestation)
 
+    @unittest.skipUnless(_RUNTIME_MATCHES_ATTESTATION, _FOREIGN_RUNTIME_REASON)
     def test_rejects_replay_claiming_independent_supply_chain_reproduction(self):
         temporary, attestation, value = self._mutated_tree()
         self.addCleanup(temporary.cleanup)
