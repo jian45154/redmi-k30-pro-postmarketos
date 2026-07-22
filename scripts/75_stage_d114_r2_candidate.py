@@ -211,6 +211,7 @@ def main() -> None:
         [E2FSCK, "-f", "-p", str(p1_tmp)], build_dir / "p1-e2fsck-normalize.log", (0, 1)
     )
     assert fs_uuid(p1_tmp) == PMOS_BOOT_UUID
+    stamp_epoch(p1_tmp, epoch)
     splice(raw, p1["byte_offset"], p1_tmp)
     p1_tmp.unlink()
 
