@@ -21,13 +21,14 @@
       }
     ],
     "build_method": "Unprivileged user-namespace aarch64 chroot: apk.static --initdb over the recorded pmbootstrap edge cache_apk_aarch64 package set (199 packages), qemu-aarch64 (static-pie, Alpine 11.0.2-r1) as the registered binfmt interpreter, then abuild -F -d with the locked tarball and patches. Same inputs as the pmbootstrap 3.11.1 chroot flow used for r1; sudo was unavailable in this session.",
-    "signing_key": "noreply@example.invalid-6a60d375",
-    "signing_note": "Signed with a session-generated abuild key because the canonical pmos@local-6a5fb853 private key is root-owned. All downstream consumers verify the payload SHA-256 whitelist below, not the signature; rebuild+re-sign with the canonical key via pmbootstrap for release if signature continuity is wanted."
+    "signing_key": "pmos@local-6a5d38f2",
+    "signing_note": "Built and initially signed with a session-generated abuild key (noreply@example.invalid-6a60d375) because the canonical pmos@local-6a5fb853 private key is root-owned. The session signature segment was then stripped and the untouched control.tar.gz re-signed (abuild-sign, control-segment-only) with the readable canonical P2-track key pmos@local-6a5d38f2; apk verify OK against that key. data.tar.gz and control.tar.gz bytes are unchanged from the session build, so the payload whitelist and datahash chain below still bind the original build.",
+    "resigned_from_sha256": "23756d255515757d67050ad25ca43d07863a6dec7be89136fa22f8f71ac7ac19"
   },
   "artifact": {
-    "path": ".work/sixrow-local-build/packages/edge/aarch64/lmi-weston-sixrow-clients-14.0.2-r2.apk",
-    "sha256": "23756d255515757d67050ad25ca43d07863a6dec7be89136fa22f8f71ac7ac19",
-    "compressed_size": 121829,
+    "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk",
+    "sha256": "8d2f23522eb737432577b33ee7dd012b76d06012f1d6918eac289853f6f015e7",
+    "compressed_size": 121842,
     "installed_size": 335416,
     "package_version": "14.0.2-r2",
     "payload": {
