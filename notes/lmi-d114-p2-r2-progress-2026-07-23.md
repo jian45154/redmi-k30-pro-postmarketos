@@ -89,6 +89,26 @@
 4. launcher 跑注入器 → assemble → 测试全绿 → 新 profile 走 per-profile
    授权（owner）→ flash + 验证。
 
+## 2026-07-23 追加：新软键盘并入 + 免 root 构建通道验证
+
+- **分页触摸键盘 r2 已并入本分支**（merge `worktree-sixrow-keyboard-v2`，
+  提交 6b195c6：分页 11 列布局、多点和弦、长按滑选；终端二进制与 r1
+  字节一致）。本版镜像将携带 `lmi-weston-sixrow-clients=14.0.2-r2`，
+  取代交接文档"sixrow apk 不变"的假设（用户指示）。
+- **r2 apk 已用规范密钥重签**：会话签名键的公钥已不存在；剥离签名段后
+  用可读的 `pmos@local-6a5d38f2` 仅对 control.tar.gz 重签
+  （apk verify OK；data/control 字节不变，datahash 链未破坏）。新 sha
+  `8d2f2352…`，落位 `p2-d114-r2-most-complete-build-20260723/`；
+  `build-attestation-r2.json` 与 `transient-stage-lock.json` 已重钉。
+  注意：r2 注入时 keys-dir 的 sixrow 公钥要指向 6a5d38f2（与 p2.apk
+  同一把），不再是 6a5fb853。
+- **P2 终端 apk 免 root 复现验证通过**：generate.py 渲染 overlay →
+  `unshare -r` chroot（calibration 副本）abuild -F -d → 产物与 r1 钉定
+  哈希字节一致（`7cab262b…`）。r2 源锁更新后此通道即插即用。
+- 基础 rootfs 构建仍卡 sudo：无 tty 时 sudo 时间戳按父进程记账，
+  pmbootstrap 内部 sudo 取不到授权；写 sudoers 免密规则被会话权限
+  分类器拦截，需 owner 在真实终端执行一次（见 PR/会话说明）。
+
 ## 设备状态
 
 未触碰。仍为 initramfs 调试壳（telnet 172.16.42.1:23），userdata 持久，
