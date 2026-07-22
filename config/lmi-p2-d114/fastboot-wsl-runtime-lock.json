@@ -1,0 +1,222 @@
+{
+  "executable": {
+    "dt_needed": [
+      "libbase.so.0",
+      "libcrypto.so.0",
+      "libcutils.so.0",
+      "liblog.so.0",
+      "libprotobuf.so.32",
+      "libsparse.so.0",
+      "libusb-1.0.so.0",
+      "libziparchive.so.0",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "interpreter": "/lib64/ld-linux-x86-64.so.2",
+    "mode": "0755",
+    "path": "/usr/lib/android-sdk/platform-tools/fastboot",
+    "runpath": [
+      "/usr/lib/x86_64-linux-gnu/android"
+    ],
+    "sha256": "4d90c8ff8569476a76ea1f6a2c86e54e833e0e1c0e82af13a10277c7b617c506",
+    "size": 506488
+  },
+  "execution": {
+    "argv_prefix": [
+      "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+      "--inhibit-cache",
+      "--library-path",
+      "/usr/lib/x86_64-linux-gnu/android:/usr/lib/x86_64-linux-gnu",
+      "/usr/lib/android-sdk/platform-tools/fastboot"
+    ],
+    "cleared_loader_environment": [
+      "LD_AUDIT",
+      "LD_DEBUG",
+      "LD_LIBRARY_PATH",
+      "LD_PRELOAD",
+      "LD_PROFILE"
+    ],
+    "shell": false
+  },
+  "interpreter": {
+    "lookup_path": "/lib64/ld-linux-x86-64.so.2",
+    "mode": "0755",
+    "resolved_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+    "sha256": "223b94a42758f2434da331cc0aa62db1af5b456481762c5caceefa1a2d1eb8fb",
+    "size": 254864,
+    "usrmerge_chain": [
+      {
+        "lstat_size": 9,
+        "path": "/lib64",
+        "target": "usr/lib64",
+        "type": "symbolic-link"
+      },
+      {
+        "lstat_size": 44,
+        "path": "/usr/lib64/ld-linux-x86-64.so.2",
+        "target": "../lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+        "type": "symbolic-link"
+      }
+    ]
+  },
+  "libraries": [
+    {
+      "dt_needed": ["liblog.so.0", "libstdc++.so.6", "libm.so.6", "libgcc_s.so.1", "libc.so.6"],
+      "link_target": null,
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/android/libbase.so.0",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/android/libbase.so.0",
+      "sha256": "942943c3ba6a08bc38470e685b0135d13c4e718da5a685bc2151b5ba84909783",
+      "size": 282824,
+      "soname": "libbase.so.0"
+    },
+    {
+      "dt_needed": ["libc.so.6"],
+      "link_target": null,
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/android/libcrypto.so.0",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/android/libcrypto.so.0",
+      "sha256": "74a17c8cc1d425da0a6317e2817d1a9617f033aeb717d250bb0619bd42ee52f5",
+      "size": 1630632,
+      "soname": "libcrypto.so.0"
+    },
+    {
+      "dt_needed": ["libbase.so.0", "liblog.so.0", "libstdc++.so.6", "libm.so.6", "libgcc_s.so.1", "libc.so.6"],
+      "link_target": null,
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/android/libcutils.so.0",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/android/libcutils.so.0",
+      "sha256": "b8c49debf5bacc5053d3757cf5164f09dafe82aff174762b1446669fa4bb02f4",
+      "size": 61240,
+      "soname": "libcutils.so.0"
+    },
+    {
+      "dt_needed": ["libstdc++.so.6", "libm.so.6", "libgcc_s.so.1", "libc.so.6"],
+      "link_target": null,
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/android/liblog.so.0",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/android/liblog.so.0",
+      "sha256": "9f7d5d599b36416a10b414a4df11b5e7ca695ef56b5306810af50eb5000ac843",
+      "size": 49248,
+      "soname": "liblog.so.0"
+    },
+    {
+      "dt_needed": ["libz.so.1", "libstdc++.so.6", "libc.so.6", "ld-linux-x86-64.so.2", "libgcc_s.so.1"],
+      "link_target": "libprotobuf.so.32.0.12",
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/libprotobuf.so.32",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/libprotobuf.so.32.0.12",
+      "sha256": "09a7b17e8f42aac853a4833b37191439442db92fce9da28f690bfa7a34c7ef9f",
+      "size": 3154624,
+      "soname": "libprotobuf.so.32"
+    },
+    {
+      "dt_needed": ["libbase.so.0", "libz.so.1", "libstdc++.so.6", "libm.so.6", "libgcc_s.so.1", "libc.so.6"],
+      "link_target": null,
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/android/libsparse.so.0",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/android/libsparse.so.0",
+      "sha256": "0280b757d5f93da9d52d985565c75b75d1f705530f889ff8443ae2d5e75eb11d",
+      "size": 36832,
+      "soname": "libsparse.so.0"
+    },
+    {
+      "dt_needed": ["libudev.so.1", "libc.so.6", "ld-linux-x86-64.so.2"],
+      "link_target": "libusb-1.0.so.0.5.0",
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/libusb-1.0.so.0",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/libusb-1.0.so.0.5.0",
+      "sha256": "e422dc361a501e8175a94e16228704de7ca6376037fc29a0e7272e8fe2c8edc1",
+      "size": 129272,
+      "soname": "libusb-1.0.so.0"
+    },
+    {
+      "dt_needed": ["libbase.so.0", "liblog.so.0", "libz.so.1", "libstdc++.so.6", "libm.so.6", "libgcc_s.so.1", "libc.so.6"],
+      "link_target": null,
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/android/libziparchive.so.0",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/android/libziparchive.so.0",
+      "sha256": "bc824b05a0aadccd7f98577bc50eb7725eba26bc97d8e9b8126c1f77a7137d9b",
+      "size": 82000,
+      "soname": "libziparchive.so.0"
+    },
+    {
+      "dt_needed": ["libm.so.6", "libc.so.6", "ld-linux-x86-64.so.2", "libgcc_s.so.1"],
+      "link_target": "libstdc++.so.6.0.35",
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35",
+      "sha256": "5bb0d21308f123b6ad46c6f35b42cedfcb8d6d439a53aa3dae04d880aaffdde3",
+      "size": 2735712,
+      "soname": "libstdc++.so.6"
+    },
+    {
+      "dt_needed": ["libc.so.6", "ld-linux-x86-64.so.2"],
+      "link_target": null,
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+      "sha256": "670fb59bd462ee2f833e2ed7c0a1814e0dcdbec0b8bfa048bec46e2e6fd66334",
+      "size": 1198376,
+      "soname": "libm.so.6"
+    },
+    {
+      "dt_needed": ["libc.so.6", "ld-linux-x86-64.so.2"],
+      "link_target": null,
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+      "sha256": "9d339ecb409578d6a5d587e6c537a8f9589b8a13fefba30d167433a4b5758bee",
+      "size": 187120,
+      "soname": "libgcc_s.so.1"
+    },
+    {
+      "dt_needed": ["ld-linux-x86-64.so.2"],
+      "link_target": null,
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+      "mode": "0755",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+      "sha256": "d763925433ff9b757390549e1b20c085f5e6de27ae700fe89194178d96a8a2b0",
+      "size": 2186512,
+      "soname": "libc.so.6"
+    },
+    {
+      "dt_needed": ["libc.so.6"],
+      "link_target": "libz.so.1.3.1",
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/libz.so.1",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1",
+      "sha256": "fbf56b0e59287033b6579bbbeae2f9de2fe86ad5bf2bd44d44aad67a15109318",
+      "size": 121272,
+      "soname": "libz.so.1"
+    },
+    {
+      "dt_needed": ["libc.so.6", "ld-linux-x86-64.so.2"],
+      "link_target": "libudev.so.1.7.12",
+      "lookup_path": "/usr/lib/x86_64-linux-gnu/libudev.so.1",
+      "mode": "0644",
+      "resolved_path": "/usr/lib/x86_64-linux-gnu/libudev.so.1.7.12",
+      "sha256": "b45c00bcc6d89c3e8fcf59dbe1777cfdba3045f28bb3a9bb94286d126dee13d7",
+      "size": 289288,
+      "soname": "libudev.so.1"
+    }
+  ],
+  "package": {
+    "architecture": "amd64",
+    "name": "fastboot",
+    "version": "1:34.0.5-12build1"
+  },
+  "schema": "lmi-p2-d114-fastboot-wsl-runtime-lock/v2",
+  "symlink": {
+    "lstat_size": 42,
+    "path": "/usr/bin/fastboot",
+    "target": "../lib/android-sdk/platform-tools/fastboot",
+    "type": "symbolic-link"
+  },
+  "version_output": [
+    "fastboot version 34.0.5-debian",
+    "Installed as /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+  ]
+}

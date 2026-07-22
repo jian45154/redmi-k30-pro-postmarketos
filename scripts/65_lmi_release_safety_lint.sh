@@ -6,17 +6,20 @@ usage() {
 Usage:
   scripts/65_lmi_release_safety_lint.sh
 
-Static safety lint for the lmi r6 release helpers. It checks that persistent
-write/reboot helpers stay within the documented allowlist:
+Static safety lint (bringup governance v4). Three checks, all read-only:
 
-- rootfs stage: pmbootstrap flasher flash_rootfs --partition userdata
-- D110 recovery stage: fastboot -s <verified lmi> boot <hash-bound image>
-- boot stage: fastboot flash boot <copydown boot image>
-- rollback stage: fastboot flash boot <rollback boot image>
-- fastbootd entry: fastboot reboot fastboot
-- post-flash test reboot: fastboot reboot
+1. Invoker set: fastboot state-change command text (flash/boot/reboot/
+   erase/format) may only appear in the enumerated script set below. Adding
+   a new fastboot-invoking script requires editing this allowlist in review.
+2. Forbidden operations: no live shell script may contain erase/format/
+   relock commands or flash targets outside the governed set.
+3. Governance data: config/governance/constants.json and policy.json must
+   validate against scripts/bringup_loop.py, which asserts that the data
+   file's forbidden_command_words match the engine's hardcoded copy.
 
-This script is read-only and never talks to the phone.
+This script never talks to the phone. Literal-line pinning of individual
+retired scripts was removed with governance v4; the retired r6 stage
+scripts remain listed here only until they are deleted (migration M2').
 EOF
 }
 
@@ -37,13 +40,33 @@ fail() {
 	failures=$((failures + 1))
 }
 
-require_line() {
-	local path=$1
-	local expected=$2
-	if ! grep -Fxq "$expected" "$path"; then
-		fail "missing expected line in $path: $expected"
-	fi
-}
+echo "lmi safety lint: fastboot invoker set"
+# Scripts permitted to contain fastboot state-change command text.
+#   executor (active):  72 — guarded D110 RAM-boot session flow
+#   executor (retired): 53 55 60 61 — mainline r6 stages; evidence only,
+#                       scheduled for deletion in migration M2'
+#   generator/lint:     48 49 57 59 63 65 — emit or check command text,
+#                       never execute device state changes
+allowed_fastboot_scripts='scripts/48_preflight_lmi_fastbootd.sh
+scripts/49_generate_lmi_flash_command_sheet.sh
+scripts/53_stage_lmi_fastbootd_flash.sh
+scripts/55_stage_lmi_rollback_boot.sh
+scripts/57_archive_lmi_release_manifest.sh
+scripts/59_release_static_ci.sh
+scripts/60_stage_lmi_enter_fastbootd.sh
+scripts/61_stage_lmi_reboot_after_flash.sh
+scripts/63_generate_lmi_handoff_status.sh
+scripts/65_lmi_release_safety_lint.sh
+scripts/72_stage_downstream_ssh_wifi_test.sh'
+fastboot_invokers=$(git grep -lE \
+	'(^|[^A-Za-z_"])("\$fastboot_bin"|fastboot(\.exe)?)[[:space:]]+(flash|boot|reboot|erase|format)([[:space:]]|$)' \
+	-- 'scripts/*.sh' | sort || true)
+unexpected=$(comm -23 <(printf '%s\n' "$fastboot_invokers") \
+	<(printf '%s\n' "$allowed_fastboot_scripts" | sort))
+if [ -n "$unexpected" ]; then
+	printf '%s\n' "$unexpected" >&2
+	fail "fastboot state-change text outside the allowlisted invoker set"
+fi
 
 reject_pattern() {
 	local label=$1
@@ -63,15 +86,7 @@ reject_pattern() {
 	fi
 }
 
-echo "lmi release safety lint: expected command allowlist"
-require_line scripts/53_stage_lmi_fastbootd_flash.sh 'rootfs_command=("$pmbootstrap_bin" flasher flash_rootfs --partition userdata)'
-require_line scripts/53_stage_lmi_fastbootd_flash.sh 'boot_command=("$fastboot_bin" flash boot "$boot_img")'
-require_line scripts/72_stage_downstream_ssh_wifi_test.sh $'\t\t/usr/bin/timeout "$action_deadline_timeout" "$fastboot_bin" -s "$device_serial" boot "$fastboot_candidate_path" >/dev/null 2>&1'
-require_line scripts/55_stage_lmi_rollback_boot.sh '"$fastboot_bin" flash boot "$rollback_boot" 2>&1 | tee -a "$report"'
-require_line scripts/60_stage_lmi_enter_fastbootd.sh '"$fastboot_bin" reboot fastboot 2>&1 | tee -a "$report"'
-require_line scripts/61_stage_lmi_reboot_after_flash.sh '"$fastboot_bin" reboot 2>&1 | tee -a "$report"'
-
-echo "lmi release safety lint: forbidden partition targets"
+echo "lmi safety lint: forbidden operations"
 reject_pattern "forbidden fastboot flash target in scripts" \
 	'fastboot.*flash[[:space:]]+(super|dtbo|vbmeta|persist|modem|modemst|fsg|vendor_boot|init_boot|abl|xbl|tz|hyp|devcfg|bluetooth|userdata|system)'
 reject_pattern "forbidden dynamic fastboot flash target in scripts" \
@@ -81,8 +96,13 @@ reject_pattern "forbidden pmbootstrap flasher write helper in scripts" \
 reject_pattern "forbidden erase/format/relock in scripts" \
 	'(fastboot|"\$fastboot_bin")[^[:cntrl:]]*(erase|format|oem[[:space:]]+lock|flashing[[:space:]]+lock)'
 
+echo "lmi safety lint: governance data consistency"
+if ! python3 scripts/bringup_loop.py validate >/dev/null; then
+	fail "bringup governance validation failed (constants/policy/active record)"
+fi
+
 if [ "$failures" -ne 0 ]; then
 	exit 1
 fi
 
-echo "lmi release safety lint: OK"
+echo "lmi safety lint: OK"

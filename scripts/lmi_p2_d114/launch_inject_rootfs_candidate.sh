@@ -9,13 +9,14 @@ unset BASH_ENV CDPATH ENV LD_AUDIT LD_LIBRARY_PATH LD_PRELOAD
 
 readonly LAUNCHER_SUFFIX=/scripts/lmi_p2_d114/launch_inject_rootfs_candidate.sh
 readonly LAUNCHER_SOURCE="${BASH_SOURCE[0]}"
-[[ "$LAUNCHER_SOURCE" == /* && -f "$LAUNCHER_SOURCE" && ! -L "$LAUNCHER_SOURCE" ]] || {
+[[ -n "$LAUNCHER_SOURCE" && -f "$LAUNCHER_SOURCE" && ! -L "$LAUNCHER_SOURCE" ]] || {
 	printf 'D114 injector launcher refused: launcher source path is unsafe\n' >&2
 	exit 1
 }
 LAUNCHER_CANONICAL="$(/usr/bin/realpath -e -- "$LAUNCHER_SOURCE")" || exit 1
 readonly LAUNCHER_CANONICAL
-[[ "$LAUNCHER_CANONICAL" == "$LAUNCHER_SOURCE" && "$LAUNCHER_CANONICAL" == *"$LAUNCHER_SUFFIX" ]] || {
+[[ -f "$LAUNCHER_CANONICAL" && ! -L "$LAUNCHER_CANONICAL" &&
+	"$LAUNCHER_CANONICAL" == *"$LAUNCHER_SUFFIX" ]] || {
 	printf 'D114 injector launcher refused: could not derive canonical repository root\n' >&2
 	exit 1
 }
@@ -24,15 +25,27 @@ readonly REPO="${LAUNCHER_CANONICAL%"$LAUNCHER_SUFFIX"}"
 readonly BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722"
 readonly INJECTOR="$REPO/scripts/lmi_p2_d114/inject_rootfs_candidate.sh"
 # Updated only after the injector passes its focused tests.
-readonly INJECTOR_SHA256=f3f029c533a00747fd8d895d844f217649649edafc3a4a07c566dc962574af15
+readonly INJECTOR_SHA256=dd85c28a013a766e4efb2e9f93f0f8a2c9cd9b291dd10d93ef3d555fa21a41c2
 readonly ROOT_SEAL_DIR=/run/lmi-p2-d114-inject
 readonly OUTPUT_BUNDLE="$BUILD_DIR/lmi-d114-rootfs-p2-r1-sixrow-injected-20260722.bundle"
 readonly OUTPUT="$OUTPUT_BUNDLE/rootfs.ext4"
 readonly ATTESTATION="$OUTPUT_BUNDLE/attestation.json"
+readonly WSL_ROOT_WINDOWS_DIR=/mnt/c/WINDOWS
+readonly WSL_ROOT_SYSTEM32_DIR=/mnt/c/WINDOWS/system32
+readonly WSL_ROOT_TRANSPORT=/mnt/c/WINDOWS/system32/wsl.exe
+readonly WSL_ROOT_TRANSPORT_SHA256=e27cbfcbd61c44796e2cfdd031663245bda8d6e4a43c1451b1fc505333908126
+readonly WSL_ROOT_TRANSPORT_SIZE=278528
+readonly WSL_ROOT_DISTRO=Ubuntu
+readonly WSL_ROOT_KERNEL=6.6.87.2-microsoft-standard-WSL2
 
 STAGE_DIR=
 SEALED_ENTRY=
 RESULT_LOG=
+WSL_ROOT_TRANSPORT_IDENTITY=
+WSL_ROOT_WINDOWS_IDENTITY=
+WSL_ROOT_SYSTEM32_IDENTITY=
+WSL_ROOT_TRANSPORT_TREE_IDENTITY=
+WSL_ROOT_TRANSPORT_DIGEST=
 
 fail() {
 	printf 'D114 injector launcher refused: %s\n' "$*" >&2
@@ -45,6 +58,81 @@ sha256_of() {
 	printf '%s\n' "${line%% *}"
 }
 
+wsl_root_transport_tree_identity() {
+	/usr/bin/stat -c %d:%i:%a:%s:%Y:%Z -- \
+		"$WSL_ROOT_TRANSPORT" "$WSL_ROOT_WINDOWS_DIR" "$WSL_ROOT_SYSTEM32_DIR"
+}
+
+verify_wsl_root_transport() {
+	local ancestor ancestor_canonical ancestor_identity canonical fstype mount_options
+	local normalized_options required_option transport_before transport_after transport_digest tree_after
+	[[ "${WSL_DISTRO_NAME-}" == "$WSL_ROOT_DISTRO" ]] ||
+		fail "--wsl-root requires the pinned Ubuntu WSL distribution"
+	[[ "$(/usr/bin/uname -r)" == "$WSL_ROOT_KERNEL" ]] ||
+		fail "--wsl-root kernel release differs from the reviewed WSL2 release"
+	for ancestor in "$WSL_ROOT_WINDOWS_DIR" "$WSL_ROOT_SYSTEM32_DIR"; do
+		[[ -d "$ancestor" && ! -L "$ancestor" && ! -w "$ancestor" ]] ||
+			fail "--wsl-root transport ancestor is unsafe: $ancestor"
+		ancestor_canonical="$(/usr/bin/realpath -e -- "$ancestor")" ||
+			fail "cannot canonicalize --wsl-root transport ancestor: $ancestor"
+		[[ "$ancestor_canonical" == "$ancestor" ]] ||
+			fail "--wsl-root transport ancestor is not at its canonical fixed path: $ancestor"
+		[[ "$(/usr/bin/stat -c %F -- "$ancestor")" == directory ]] ||
+			fail "--wsl-root transport ancestor is not a directory: $ancestor"
+		ancestor_identity="$(/usr/bin/stat -c %d:%i:%a:%s:%Y:%Z -- "$ancestor")" ||
+			fail "cannot stat --wsl-root transport ancestor: $ancestor"
+		[[ "$ancestor_identity" == *:555:* ]] ||
+			fail "--wsl-root transport ancestor mode differs from the reviewed directory: $ancestor"
+		case "$ancestor" in
+			"$WSL_ROOT_WINDOWS_DIR") WSL_ROOT_WINDOWS_IDENTITY=$ancestor_identity ;;
+			"$WSL_ROOT_SYSTEM32_DIR") WSL_ROOT_SYSTEM32_IDENTITY=$ancestor_identity ;;
+			*) fail "internal --wsl-root transport ancestor is invalid" ;;
+		esac
+	done
+	[[ -f "$WSL_ROOT_TRANSPORT" && ! -L "$WSL_ROOT_TRANSPORT" && -x "$WSL_ROOT_TRANSPORT" &&
+		! -w "$WSL_ROOT_TRANSPORT" ]] ||
+		fail "--wsl-root transport path is unsafe"
+	canonical="$(/usr/bin/realpath -e -- "$WSL_ROOT_TRANSPORT")" ||
+		fail "cannot canonicalize --wsl-root transport"
+	[[ "$canonical" == "$WSL_ROOT_TRANSPORT" ]] ||
+		fail "--wsl-root transport is not at its canonical fixed path"
+	[[ "$(/usr/bin/stat -c %F -- "$WSL_ROOT_TRANSPORT")" == "regular file" ]] ||
+		fail "--wsl-root transport is not a regular file"
+	transport_before="$(/usr/bin/stat -c %d:%i:%a:%s:%Y:%Z -- "$WSL_ROOT_TRANSPORT")" ||
+		fail "cannot stat --wsl-root transport"
+	[[ "$transport_before" == *":555:$WSL_ROOT_TRANSPORT_SIZE:"* ]] ||
+		fail "--wsl-root transport metadata differs from the reviewed executable"
+	transport_digest="$(sha256_of "$WSL_ROOT_TRANSPORT")" ||
+		fail "cannot hash --wsl-root transport"
+	[[ "$transport_digest" == "$WSL_ROOT_TRANSPORT_SHA256" ]] ||
+		fail "--wsl-root transport digest differs from the reviewed executable"
+	transport_after="$(/usr/bin/stat -c %d:%i:%a:%s:%Y:%Z -- "$WSL_ROOT_TRANSPORT")" ||
+		fail "cannot restat --wsl-root transport"
+	[[ "$transport_after" == "$transport_before" ]] ||
+		fail "--wsl-root transport identity changed during verification"
+	fstype="$(/usr/bin/findmnt -n -o FSTYPE -T "$WSL_ROOT_TRANSPORT")" ||
+		fail "cannot identify --wsl-root transport filesystem"
+	[[ "$fstype" == 9p ]] || fail "--wsl-root transport is not on the reviewed 9p mount"
+	mount_options="$(/usr/bin/findmnt -n -o OPTIONS -T "$WSL_ROOT_TRANSPORT")" ||
+		fail "cannot read --wsl-root transport mount options"
+	[[ -n "$mount_options" && "$mount_options" != *$'\n'* ]] ||
+		fail "--wsl-root transport mount options are ambiguous"
+	normalized_options=",${mount_options//;/,},"
+	for required_option in aname=drvfs 'path=C:\' access=client; do
+		case "$normalized_options" in
+			*",$required_option,"*) ;;
+			*) fail "--wsl-root transport mount lacks required $required_option identity" ;;
+		esac
+	done
+	WSL_ROOT_TRANSPORT_IDENTITY=$transport_after
+	WSL_ROOT_TRANSPORT_TREE_IDENTITY=$WSL_ROOT_TRANSPORT_IDENTITY$'\n'$WSL_ROOT_WINDOWS_IDENTITY$'\n'$WSL_ROOT_SYSTEM32_IDENTITY
+	tree_after="$(wsl_root_transport_tree_identity)" ||
+		fail "cannot capture final initial --wsl-root transport tree identity"
+	[[ "$tree_after" == "$WSL_ROOT_TRANSPORT_TREE_IDENTITY" ]] ||
+		fail "--wsl-root transport or an ancestor changed during initial verification"
+	WSL_ROOT_TRANSPORT_DIGEST=$transport_digest
+}
+
 close_inherited_fds_and_reject_stdio_sockets() {
 	local fd_path fd target kind
 	for fd in 0 1 2; do
@@ -55,8 +143,9 @@ close_inherited_fds_and_reject_stdio_sockets() {
 		fd=${fd_path##*/}
 		[[ "$fd" =~ ^[0-9]+$ && "$fd" -gt 2 ]] || continue
 		target="$(/usr/bin/readlink -- "$fd_path")" || continue
-		# Bash keeps the executing script on an internal descriptor.  It is
-		# close-on-exec and is the sole temporary exception before exec(sudo).
+		# Bash keeps the executing script on an internal descriptor. It is
+		# close-on-exec and is the sole temporary exception before the selected
+		# root transport is executed.
 		if [[ "$target" == "$0" || "$target" == "$(/usr/bin/realpath -e -- "$0")" ]]; then
 			continue
 		fi
@@ -100,9 +189,18 @@ verify_published_bundle() {
 }
 
 main() {
-	local launcher uid gid repo_owner source_digest staged status namespace value
+	local launcher uid gid repo_owner source_digest staged status namespace value root_mode transport_current
 	local candidate_line attestation_line candidate_sha attestation_sha
-	[[ "$#" == 0 ]] || fail "launcher accepts no arguments"
+	local -a root_transport
+	case "$#" in
+		0) root_mode=sudo ;;
+		1)
+			[[ "$1" == --wsl-root ]] ||
+				fail "launcher accepts no arguments or exactly one --wsl-root argument"
+			root_mode=wsl-root
+			;;
+		*) fail "launcher accepts no arguments or exactly one --wsl-root argument" ;;
+	esac
 	[[ "$(/usr/bin/id -ru)" != 0 && "$(/usr/bin/id -ru)" == "$(/usr/bin/id -u)" ]] ||
 		fail "launcher must start as one unprivileged real/effective UID"
 	[[ "$(/usr/bin/id -rg)" == "$(/usr/bin/id -g)" ]] || fail "launcher real/effective GID mismatch"
@@ -123,6 +221,14 @@ main() {
 	source_digest="$(sha256_of "$INJECTOR")"
 	[[ "$source_digest" == "$INJECTOR_SHA256" ]] || fail "injector source digest differs from launcher pin"
 	[[ ! -e "$OUTPUT_BUNDLE" && ! -L "$OUTPUT_BUNDLE" ]] || fail "output bundle already exists"
+	case "$root_mode" in
+		sudo) root_transport=(/usr/bin/sudo -n --) ;;
+		wsl-root)
+			verify_wsl_root_transport
+			root_transport=("$WSL_ROOT_TRANSPORT" -d "$WSL_ROOT_DISTRO" -u root --exec)
+			;;
+		*) fail "internal root transport selection is invalid" ;;
+	esac
 
 	STAGE_DIR="$(/usr/bin/mktemp -d "$BUILD_DIR/.inject-launch.XXXXXXXX")"
 	[[ "$(/usr/bin/stat -Lc %a:%u:%g -- "$STAGE_DIR")" == "700:$uid:$gid" ]] || fail "launcher staging metadata mismatch"
@@ -144,12 +250,48 @@ main() {
 	: >"$RESULT_LOG"
 	/usr/bin/chmod 0600 -- "$RESULT_LOG"
 	status=0
-	/usr/bin/sudo -n -- /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin LANG=C LC_ALL=C TZ=UTC \
+	if [[ "$root_mode" == wsl-root ]]; then
+		[[ -n "$WSL_ROOT_TRANSPORT_TREE_IDENTITY" && -n "$WSL_ROOT_TRANSPORT_DIGEST" ]] ||
+			fail "--wsl-root transport has no completed initial verification"
+		transport_current="$(wsl_root_transport_tree_identity)" ||
+			fail "cannot restat --wsl-root transport tree before execution"
+		[[ "$transport_current" == "$WSL_ROOT_TRANSPORT_TREE_IDENTITY" ]] ||
+			fail "--wsl-root transport or an ancestor changed before execution"
+		transport_current="$(sha256_of "$WSL_ROOT_TRANSPORT")" ||
+			fail "cannot rehash --wsl-root transport before execution"
+		[[ "$transport_current" == "$WSL_ROOT_TRANSPORT_DIGEST" &&
+			"$transport_current" == "$WSL_ROOT_TRANSPORT_SHA256" ]] ||
+			fail "--wsl-root transport digest changed before execution"
+		transport_current="$(wsl_root_transport_tree_identity)" ||
+			fail "cannot capture final --wsl-root transport tree identity"
+		[[ "$transport_current" == "$WSL_ROOT_TRANSPORT_TREE_IDENTITY" ]] ||
+			fail "--wsl-root transport or an ancestor changed after final digest verification"
+	fi
+	"${root_transport[@]}" /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin LANG=C LC_ALL=C TZ=UTC \
 		/bin/bash --noprofile --norc -c '
 			set -Eeuo pipefail
 			umask 077
 			staged=$1 sealed=$2 expected_sha=$3 caller_uid=$4 caller_gid=$5
 				parent_mnt=$6 parent_net=$7 parent_pid=$8 parent_ipc=$9 parent_uts=${10} canonical_source=${11}
+			[[ "$(/usr/bin/id -ru)" == 0 && "$(/usr/bin/id -u)" == 0 &&
+				"$(/usr/bin/id -rg)" == 0 && "$(/usr/bin/id -g)" == 0 ]] || {
+				printf "D114 injector launcher: selected transport did not enter one root uid/gid\n" >&2; exit 1;
+			}
+			for namespace in mnt net pid ipc uts; do
+				case "$namespace" in
+					mnt) parent_value=$parent_mnt ;;
+					net) parent_value=$parent_net ;;
+					pid) parent_value=$parent_pid ;;
+					ipc) parent_value=$parent_ipc ;;
+					uts) parent_value=$parent_uts ;;
+				esac
+				current_value="$(/usr/bin/readlink -- "/proc/self/ns/$namespace")" || {
+					printf "D114 injector launcher: root transport cannot read %s namespace\n" "$namespace" >&2; exit 1;
+				}
+				[[ "$current_value" == "$parent_value" ]] || {
+					printf "D114 injector launcher: root transport changed parent %s namespace before seal\n" "$namespace" >&2; exit 1;
+				}
+			done
 			seal_dir=${sealed%/*}
 			sealed_created=0
 			sealed_identity=

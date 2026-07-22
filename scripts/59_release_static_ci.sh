@@ -25,8 +25,8 @@ compile(source, str(path), "exec")
 PY
 done < <(git ls-files 'scripts/*.py' | sort)
 
-echo "release static CI: installer, P1/P2/P2-D114/P3, and six-row host test suites"
-for suite in lmi_installer lmi_p1 lmi_p2 lmi_p2_d114 lmi_p3 lmi_weston_sixrow; do
+echo "release static CI: governance, installer, P1/P2/P2-D114/P3, and six-row host test suites"
+for suite in governance lmi_installer lmi_p1 lmi_p2 lmi_p2_d114 lmi_p3 lmi_weston_sixrow; do
 	echo "  unittest tests/$suite"
 	python3 -m unittest discover -v -s "tests/$suite"
 done
