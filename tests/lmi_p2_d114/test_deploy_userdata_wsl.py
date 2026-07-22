@@ -10,6 +10,8 @@ import stat
 import tempfile
 import threading
 import unittest
+
+from tests.lmi_p2_d114 import host_bound
 from unittest import mock
 
 from scripts.lmi_p2_d114 import deploy_userdata_wsl as deploy
@@ -179,6 +181,7 @@ class DeployUserdataWslTests(unittest.TestCase):
         self.temporary.cleanup()
 
     def test_production_locks_pin_exact_artifacts_runtime_and_timeout(self) -> None:
+        host_bound.require_path("/usr/bin/fastboot")
         root = deploy.REPO
         specs = {
             "fastboot-wsl-runtime-lock.json": (deploy.PRODUCTION.runtime_sha256, deploy.PRODUCTION.runtime_size),
@@ -236,6 +239,7 @@ class DeployUserdataWslTests(unittest.TestCase):
             )
 
     def test_current_wsl_runtime_lock_accepts_exact_usrmerge_without_device_command(self) -> None:
+        host_bound.require_path("/usr/bin/fastboot")
         runtime = json.loads((deploy.REPO / "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json").read_text())
         calls: list[tuple[str, ...]] = []
 
@@ -261,6 +265,7 @@ class DeployUserdataWslTests(unittest.TestCase):
                 item.close()
 
     def test_usrmerge_lock_mutations_fail_closed_before_runner(self) -> None:
+        host_bound.require_path("/usr/bin/fastboot")
         locked = json.loads((deploy.REPO / "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json").read_text())
         variants: list[dict[str, object]] = []
         v1 = copy.deepcopy(locked)
@@ -300,6 +305,7 @@ class DeployUserdataWslTests(unittest.TestCase):
                 runner.assert_not_called()
 
     def test_usrmerge_writable_or_symlink_canonical_ancestor_fails_before_runner(self) -> None:
+        host_bound.require_path("/usr/bin/fastboot")
         runtime = json.loads((deploy.REPO / "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json").read_text())
         original_lstat = Path.lstat
         for replacement_mode in (stat.S_IFDIR | 0o775, stat.S_IFLNK | 0o777):
@@ -318,6 +324,7 @@ class DeployUserdataWslTests(unittest.TestCase):
             runner.assert_not_called()
 
     def test_usrmerge_alias_or_leaf_identity_drift_fails_before_runner(self) -> None:
+        host_bound.require_path("/usr/bin/fastboot")
         runtime = json.loads((deploy.REPO / "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json").read_text())
         original_lstat = Path.lstat
         for drift_path in (

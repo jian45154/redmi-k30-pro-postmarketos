@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+
+from tests.lmi_p2_d114 import host_bound
 from unittest import mock
 
 from scripts.lmi_p2_d114 import deploy_userdata_wsl as deploy
@@ -726,6 +728,7 @@ class PostwriteRevalidateWslTests(unittest.TestCase):
         self.assertEqual(runner.calls, [])
 
     def test_local_audit_opens_only_small_contract_files_and_execute_report(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private")
         root = self.fixture.root
         config = root / "config" / "lmi-p2-d114"
         config.mkdir(parents=True)
@@ -838,6 +841,7 @@ class PostwriteRevalidateWslTests(unittest.TestCase):
             self.assertFalse((root / artifacts[artifact_name]["path"]).exists())
 
     def test_actual_runtime_v2_combines_with_static_postwrite_runner(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private")
         runtime = json.loads(
             (deploy.REPO / "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json").read_text()
         )
