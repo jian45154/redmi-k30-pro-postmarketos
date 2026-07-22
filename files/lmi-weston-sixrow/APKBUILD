@@ -1,7 +1,7 @@
 # Maintainer: Local lmi port work <noreply@example.invalid>
 pkgname=lmi-weston-sixrow-clients
 pkgver=14.0.2
-pkgrel=1
+pkgrel=2
 pkgdesc="Hash-locked six-row Weston keyboard and text-input terminal for xiaomi-lmi"
 url="https://gitlab.freedesktop.org/wayland/weston"
 arch="aarch64"
@@ -25,6 +25,7 @@ source="
 	https://gitlab.freedesktop.org/wayland/weston/-/releases/$pkgver/downloads/weston-$pkgver.tar.xz
 	0001-phone-input-terminal-text-input.patch
 	0002-sixrow-control.patch
+	0003-sixrow-paged-touch.patch
 	"
 builddir="$srcdir/weston-$pkgver"
 
@@ -76,4 +77,5 @@ sha512sums="
 e8214ec893e6c3ae94eb3c92feba104b0201843e9143f726a3e9a4d396d02523c94da706c1348cf934bc339fb1a4bc1fecdb865f0ea914115fd346d9eda091f5  weston-14.0.2.tar.xz
 a8c826ebfeff56045b8c3a2b76d9a0566a38c29811d1a52a0e3c32088195d1f9f050f1276460923e238ac6c67ccbde58126402ea2fa249d77fc06a7f7237b769  0001-phone-input-terminal-text-input.patch
 8599e58650359f9d6b247bbccf46cbce11f528521b956e70e07e1d42518c040f58bf371ced688ac0bd636101b5ae11b2ec2ca80ee7c43b87a637999969e6246b  0002-sixrow-control.patch
+1ddbe54dbdb5227cc4666d9efa68dec74f35936b7799d1052a7b642286215373206bf29c70014c616d8052affc69cbd0fa4d228ec4e44c6e94bea1ae543d234d  0003-sixrow-paged-touch.patch
 "
