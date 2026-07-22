@@ -36,7 +36,7 @@
     },
     {
       "path": "config/lmi-weston-sixrow/build-attestation-r2.json",
-      "sha256": "56e8465e601f8107b8528fa081e0d0596afe232d446ac623ee6fb95164b54f69"
+      "sha256": "5bb55928ae0b4109ad028d1a24e29de0dc74d2078f31d33628fd683cfbbaa0a2"
     }
   ],
   "frozen_baseline": {
