@@ -158,6 +158,8 @@ status, and require a fresh reviewed release plan for any future device write.
 
 ## Repo layout
 
+- [`AGENTS.md`](AGENTS.md) — governance rules for any coding agent working in
+  this repo (safety gates, data hygiene, workflow, multi-agent rules).
 - `docs/` — the porting write-up (EN + 中文) and the pmaports MR notes.
 - `docs/tracks/` — current downstream/mainline split, version labels, features,
   and progress.
@@ -225,7 +227,9 @@ repair notes under [`notes/`](notes/).
 
 Stock/recovery boot images for the device (proprietary third-party binaries),
 full pmOS images, and rejected flash candidates are **not** distributed here —
-they are gitignored. Raw device logs (which contain serial numbers, CPU IDs,
+they are gitignored. Pinned recovery/tool images are archived in an
+owner-only private vault; the full resource tiers and usage rules are in
+[`docs/resource-inventory-and-usage-20260722.md`](docs/resource-inventory-and-usage-20260722.md). Raw device logs (which contain serial numbers, CPU IDs,
 bootloader tokens, and MAC addresses) are gitignored too. Only explicitly
 redacted logs may be committed.
 
