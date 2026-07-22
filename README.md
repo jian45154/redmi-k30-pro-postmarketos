@@ -86,6 +86,14 @@ The `lmi-r6-current-handoff-20260624.md` file is older than the r6/r7 result
 documents. Use those result files only for historical outcomes and
 [`docs/tracks/mainline.md`](docs/tracks/mainline.md) for current status.
 
+Hardware-affecting actions are governed by the bringup governance engine
+(`scripts/bringup_loop.py`): actions are tiered by the irreversibility of
+their consequences, claims consume one-shot receipts recorded in an
+append-only ledger, and partition writes always require a hash-bound
+per-profile owner authorization. The intent summary lives in
+[`AGENTS.md`](AGENTS.md); the landing rationale is recorded in
+[`notes/governance-v4-landing-2026-07-22.md`](notes/governance-v4-landing-2026-07-22.md).
+
 Static release checks, including the installer and P1, P2, P2-D114, and P3 host
 test suites, can be run locally with `scripts/59_release_static_ci.sh`. A GitHub
 Actions workflow template is kept at
