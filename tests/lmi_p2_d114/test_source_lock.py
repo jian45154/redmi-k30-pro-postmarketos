@@ -69,10 +69,10 @@ class SourceLockTests(unittest.TestCase):
 
     def test_rejects_dependency_or_package_weakening(self) -> None:
         for dependency in (
-            "device-xiaomi-lmi=1-r142",
-            "linux-xiaomi-lmi=4.19.325-r9",
-            "lmi-weston-sixrow-clients=14.0.2-r1",
-            "weston=14.0.2-r10",
+            "device-xiaomi-lmi=1-r144",
+            "linux-xiaomi-lmi=4.19.325-r15",
+            "lmi-weston-sixrow-clients=14.0.2-r2",
+            "weston=14.0.2-r5",
             "greetd=0.10.3-r11",
         ):
             with self.subTest(dependency=dependency):

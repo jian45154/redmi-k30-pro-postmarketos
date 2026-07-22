@@ -1,9 +1,9 @@
 {
   "candidate": {
     "filesystem": {
-      "block_count": 690176,
+      "block_count": 713728,
       "block_size": 4096,
-      "free_blocks_after_repair": 127091,
+      "free_blocks_after_repair": 119467,
       "label": "pmOS_root",
       "state_after_repair": "clean",
       "uuid": "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f"
@@ -11,31 +11,31 @@
     "mode": "0600",
     "normalized_superblock": {
       "byte_order": "little-endian",
-      "epoch": 1784551824,
+      "epoch": 1784734606,
       "fields": {
         "s_lastcheck": {
           "absolute_byte_offset": 1088,
-          "bytes_hex": "90195e6a"
+          "bytes_hex": "8ee3606a"
         },
         "s_wtime": {
           "absolute_byte_offset": 1072,
-          "bytes_hex": "90195e6a"
+          "bytes_hex": "8ee3606a"
         }
       },
-      "reason": "e2fsck writes wall-clock time; normalize only these two primary-superblock fields to reproduce the reviewed candidate"
+      "reason": "tune2fs and e2fsck write wall-clock time; normalize only these two primary-superblock fields to reproduce the reviewed candidate"
     },
-    "path": "private/lmi-p1/recovery/d110-d114/p2-d114-build-20260720/lmi-d114-rootfs-p2-candidate-20260720.ext4",
-    "sha256": "90b9f0ab94198f78eb251cff0d4c521f7b4bb47fb50967a7c661eacc026e0e82",
-    "size": 2826960896
+    "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/lmi-d114-rootfs-p2-candidate-20260723.ext4",
+    "sha256": "a5b368da152e52c732d558a9fb4158beec6a079ff9aafb6de073f83f108b435b",
+    "size": 2923429888
   },
   "derivation": {
     "copy": {
       "reflink": false,
-      "sparse": true,
-      "source": "base_ext4"
+      "source": "base_ext4",
+      "sparse": true
     },
     "extract_base": {
-      "byte_length": 2826960896,
+      "byte_length": 2923429888,
       "byte_offset": 511705088,
       "source": "userdata_raw"
     },
@@ -44,30 +44,36 @@
         "-f",
         "-y"
       ],
-      "e2fsck_repair_expected_exit": 1,
+      "e2fsck_repair_expected_exit": 0,
       "e2fsck_verify_args": [
         "-f",
         "-n"
       ],
       "e2fsck_verify_expected_exit": 0,
-      "freed_ext4_block": 44798,
-      "repair_log_path": "private/lmi-p1/recovery/d110-d114/p2-d114-build-20260720/candidate-preinstall-e2fsck-repair.log",
-      "repair_log_sha256": "9a3b20f3e422ee80cb6615158f1cc8b08fd71dda9a2e49745642404decf60837",
-      "verify_log_path": "private/lmi-p1/recovery/d110-d114/p2-d114-build-20260720/candidate-preinstall-e2fsck-verify.log",
-      "verify_log_sha256": "4e23b50bc020fddde6daacf5b5a9a4f5472bcc156e7c58c5c932a8ba4c6ffc4f",
-      "zero_fill_bytes": 4096
+      "freed_ext4_block": 0,
+      "repair_log_path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/candidate-preinstall-e2fsck-repair.log",
+      "repair_log_sha256": "96a42f54078536e361b57a80d73a8199ae62dff4537db4b459eecdc6b16119c4",
+      "verify_log_path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/candidate-preinstall-e2fsck-verify.log",
+      "verify_log_sha256": "96a42f54078536e361b57a80d73a8199ae62dff4537db4b459eecdc6b16119c4",
+      "zero_fill_bytes": 0
+    },
+    "uuid_normalization": {
+      "pmos_boot_uuid": "d4f78f7d-f5b5-4edc-94d5-ba5e6c877888",
+      "pmos_root_uuid": "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f",
+      "reason": "fresh pmbootstrap installs generate random filesystem UUIDs; both subpartition UUIDs are normalized to the hardware-validated D110 normalboot (2b264d64) cmdline pairing before extraction",
+      "tool": "tune2fs -U"
     }
   },
   "geometry": {
     "backup_gpt_entries": {
-      "first_lba": 815355,
-      "last_lba": 815358
+      "first_lba": 838907,
+      "last_lba": 838910
     },
-    "backup_gpt_header_lba": 815359,
-    "disk_sector_count": 815360,
-    "disk_size": 3339714560,
+    "backup_gpt_header_lba": 838911,
+    "disk_sector_count": 838912,
+    "disk_size": 3436183552,
     "first_usable_lba": 6,
-    "last_usable_lba": 815354,
+    "last_usable_lba": 838906,
     "logical_sector_size": 4096,
     "partition_entry_count": 128,
     "partition_entry_size": 128,
@@ -79,12 +85,12 @@
         "sector_count": 122880
       },
       {
-        "byte_length": 2826960896,
+        "byte_length": 2923429888,
         "byte_offset": 511705088,
         "first_lba": 124928,
         "index": 2,
-        "last_lba": 815103,
-        "sector_count": 690176
+        "last_lba": 838655,
+        "sector_count": 713728
       }
     ],
     "primary_gpt_entries": {
@@ -98,34 +104,34 @@
   "inputs": {
     "base_ext4": {
       "mode": "0600",
-      "path": "private/lmi-p1/recovery/d110-d114/p2-d114-build-20260720/lmi-d114-rootfs-base.ext4",
-      "sha256": "76f032775b110855a5984b1ed45b10f9653c59af69b070ceac0e73e7216eb96c",
-      "size": 2826960896
+      "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/lmi-d114-rootfs-base.ext4",
+      "sha256": "7738604558ad38f95316e2f65f99dcd4d6cc222c3ff3469a590b4892da81448d",
+      "size": 2923429888
     },
     "source_lock": {
       "path": "config/lmi-p2-d114/source-lock.json",
-      "sha256": "b55c7b1b9e38d7e066f5627d287387e7b0223d8b0c8b7e94244a610ab21360db"
+      "sha256": "0046a432b961fef3f1c5900ee9b4e26351e87d87bd058ed4824f897a2def04fb"
     },
     "transfer_manifest": {
-      "path": "private/lmi-p1/recovery/d110-d114/pmos-lmi-v114-splash-recursion-fix-d110-sparse-transfer-20260716.manifest",
-      "sha256": "cb61ff6ee223e3b16277363e9b4e8ab619bfde377b9c0cba5d6c3e76923f2a0d",
-      "size": 1100
+      "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/xiaomi-lmi-d114-r2-most-complete-userdata-20260723.manifest",
+      "sha256": "3b68dbcbb00c43ebf0560a89e542ac20a90e6b2a1b888d50fe9cb45ef9b46fe7",
+      "size": 902
     },
     "userdata_raw": {
       "mode": "0600",
-      "path": "private/lmi-p1/recovery/d110-d114/p2-d114-build-20260720/xiaomi-lmi-v114-splash-recursion-fix-userdata-20260716.img",
-      "sha256": "61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6",
-      "size": 3339714560
+      "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/xiaomi-lmi-d114-r2-most-complete-userdata-20260723.normalized.img",
+      "sha256": "b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721",
+      "size": 3436183552
     },
     "userdata_sparse": {
-      "expanded_raw_sha256": "61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6",
-      "expanded_raw_size": 3339714560,
+      "expanded_raw_sha256": "b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721",
+      "expanded_raw_size": 3436183552,
       "mode": "0600",
-      "path": "private/lmi-p1/recovery/d110-d114/p2-d114-build-20260720/xiaomi-lmi-v114-splash-recursion-fix-userdata-20260716.android-sparse.img",
-      "sha256": "e8a30dc37cb4b75508d89725a9603bc15a985f4e51af77384e8d43c2928f8d68",
-      "size": 2192400084,
+      "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/xiaomi-lmi-d114-r2-most-complete-userdata-20260723.android-sparse.img",
+      "sha256": "79276015be7d79ed77494b4bd3aec9e8a0f09325c53c4802eef54fede1022cbc",
+      "size": 2269399372,
       "sparse_block_size": 4096,
-      "sparse_total_blocks": 815360
+      "sparse_total_blocks": 838912
     }
   },
   "schema": "lmi-p2-d114-candidate-rebuild-lock/v1",
@@ -134,19 +140,28 @@
       "resolved_path": "/usr/bin/gnucp",
       "sha256": "ddffb913956d7f8cbdd7722b8c331cea51e9a13c59e92de8c194ae30e5eb0b1e"
     },
-    "dd": {
-      "resolved_path": "/usr/lib/cargo/bin/coreutils/dd",
-      "sha256": "48893b0fb21436b54619db80486e83ef39dfccaf1aefe83dfa00c02d6146e8c0"
-    },
-    "debugfs": {
-      "path": "/usr/sbin/debugfs",
-      "sha256": "864e1d7b445e7b5bfc831da78330dbcafc590fa82b89ea9de60b7527f989954f",
+    "dumpe2fs": {
+      "path": "/usr/sbin/dumpe2fs",
+      "sha256": "a3761403c5075e6af52f3c2ad7d8c35591751ba997fd2377895fc2fe88b5a774",
       "version": "1.47.2"
     },
     "e2fsck": {
       "ext2fs_library_version": "1.47.2",
       "path": "/usr/sbin/e2fsck",
       "sha256": "2e51f521c676729920eaba694933d9d4048645f1a5789556fd0027e62d11ecc8",
+      "version": "1.47.2"
+    },
+    "img2simg": {
+      "path": "/usr/bin/img2simg",
+      "sha256": "f3bc87e8b61b172b898e37d5c8572cdc51c557d26ce4fd5ed79537f66340ff92"
+    },
+    "simg2img": {
+      "path": "/usr/bin/simg2img",
+      "sha256": "449872690de38e40848c4d781f9e9829d3e65610ceea448cb24a9f70cd738fac"
+    },
+    "tune2fs": {
+      "path": "/usr/sbin/tune2fs",
+      "sha256": "a532d11c59afabb2693060e6f46c99be91a4d650bda312cbc1b94df897d3a725",
       "version": "1.47.2"
     }
   }
