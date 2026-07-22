@@ -18,21 +18,49 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 FILES = REPO / "files/lmi-weston-sixrow"
 LOCK_PATH = REPO / "config/lmi-weston-sixrow/source-lock.json"
-BUILD_ATTESTATION_PATH = REPO / "config/lmi-weston-sixrow/build-attestation.json"
+# r2 attestation lives in its own file: the r1 file's bytes are pinned by the
+# frozen D114 r1 deploy/injection chain and must not change.
+BUILD_ATTESTATION_PATH = REPO / "config/lmi-weston-sixrow/build-attestation-r2.json"
 APKBUILD = FILES / "APKBUILD"
-EXPECTED_ROWS = (
-    (("Esc", 2), ("Tab", 2), ("Ctrl", 2), ("Shift", 2), ("Backspace", 4)),
-    tuple((key, 1) for key in "1 2 3 4 5 6 7 8 9 0 - =".split()),
-    tuple((key, 1) for key in "q w e r t y u i o p [ ]".split()),
-    tuple((key, 1) for key in ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'", "Enter"]),
-    tuple((key, 1) for key in ["z", "x", "c", "v", "b", "n", "m", ",", ".", "/", "\\", "Shift"]),
-    (("Space", 8), ("←", 1), ("↑", 1), ("↓", 1), ("→", 1)),
+PATCH_NAMES = (
+    "0001-phone-input-terminal-text-input.patch",
+    "0002-sixrow-control.patch",
+    "0003-sixrow-paged-touch.patch",
+)
+COLUMNS = 11
+# Rows 0 (Esc/arrows/Home/End/PgUp/PgDn/Bksp), 4 (modifiers) and 5
+# (page tag + space) are fixed and identical on both pages; only rows 1-3
+# change when the [ABC/#&] tag is tapped.
+FIXED_NAV_ROW = (
+    ("Esc", 1), ("←", 1), ("↑", 1), ("↓", 1), ("→", 1),
+    ("Hom", 1), ("End", 1), ("PgU", 1), ("PgD", 1), ("Bksp", 2),
+)
+FIXED_MODIFIER_ROW = (("Tab", 2), ("Ctrl", 2), ("Shift", 3), ("Enter", 4))
+FIXED_BOTTOM_ROW = (("ABC/#&", 2), ("Space", 9))
+EXPECTED_LETTER_ROWS = (
+    FIXED_NAV_ROW,
+    tuple((key, 1) for key in "q w e r t y u i o p /".split()),
+    tuple((key, 1) for key in "a s d f g h j k l ; -".split()),
+    tuple((key, 1) for key in ["z", "x", "c", "v", "b", "n", "m", "'", ","]) + ((".", 2),),
+    FIXED_MODIFIER_ROW,
+    FIXED_BOTTOM_ROW,
+)
+EXPECTED_SYMBOL_ROWS = (
+    FIXED_NAV_ROW,
+    tuple((key, 1) for key in "1 2 3 4 5 6 7 8 9 0 _".split()),
+    tuple((key, 1) for key in "~ ! @ # $ % ^ & * ` |".split()),
+    tuple((key, 1) for key in ["(", ")", "[", "]", "{", "}", "\\", "=", "+", "&&", "||"]),
+    FIXED_MODIFIER_ROW,
+    FIXED_BOTTOM_ROW,
 )
 EXPECTED_SHIFTED = {
-    "1": "!", "2": "@", "3": "#", "4": "$", "5": "%", "6": "^",
-    "7": "&", "8": "*", "9": "(", "0": ")", "-": "_", "=": "+",
-    "[": "{", "]": "}", ";": ":", "'": '"', ",": "<", ".": ">",
-    "/": "?", "\\": "|",
+    "/": "?", ";": ":", "-": "_", "'": '"', ",": "<", ".": ">",
+}
+# Terminal high-frequency characters that must be one tap away on the
+# symbol page.
+SYMBOL_PAGE_REQUIRED = {
+    "~", "\\", "|", "_", "#", "$", "@", "&", "(", ")",
+    "[", "]", "{", "}", "&&", "||", "`", "!", "%", "^", "*", "=", "+",
 }
 class VerificationError(RuntimeError):
     """Raised when the locked recipe or patched source violates its contract."""
@@ -54,14 +82,14 @@ def _decode_c_string(value: str) -> str:
     return ast.literal_eval('"' + value + '"')
 
 
-def parse_normal_layout(keyboard_source: str) -> tuple[tuple[tuple[str, str, int], ...], ...]:
+def parse_key_array(keyboard_source: str, array_name: str) -> tuple[tuple[tuple[str, str, int], ...], ...]:
     match = re.search(
-        r"static const struct key normal_keys\[\] = \{\n(?P<body>.*?)\n\};",
+        r"static const struct key " + array_name + r"\[\] = \{\n(?P<body>.*?)\n\};",
         keyboard_source,
         re.DOTALL,
     )
     if not match:
-        raise VerificationError("normal_keys array is missing")
+        raise VerificationError(f"{array_name} array is missing")
 
     rows = []
     entry_pattern = re.compile(
@@ -79,14 +107,34 @@ def parse_normal_layout(keyboard_source: str) -> tuple[tuple[tuple[str, str, int
 
 
 def verify_layout(keyboard_source: str) -> None:
-    rows = parse_normal_layout(keyboard_source)
-    visible = tuple(tuple((label, width) for label, _shifted, width in row) for row in rows)
-    if visible != EXPECTED_ROWS:
-        raise VerificationError(f"six-row layout mismatch: {visible!r}")
-    if any(sum(width for _label, width in row) != 12 for row in visible):
-        raise VerificationError("each keyboard row must total exactly 12 columns")
+    letter_rows = parse_key_array(keyboard_source, "letter_keys")
+    symbol_rows = parse_key_array(keyboard_source, "symbol_keys")
 
-    shifted = {label: upper for row in rows for label, upper, _width in row}
+    for name, rows, expected in (
+        ("letter", letter_rows, EXPECTED_LETTER_ROWS),
+        ("symbol", symbol_rows, EXPECTED_SYMBOL_ROWS),
+    ):
+        visible = tuple(
+            tuple((label, width) for label, _shifted, width in row) for row in rows
+        )
+        if visible != expected:
+            raise VerificationError(f"{name} page layout mismatch: {visible!r}")
+        if any(sum(width for _label, width in row) != COLUMNS for row in visible):
+            raise VerificationError(
+                f"each {name} page row must total exactly {COLUMNS} columns"
+            )
+        if any(not 10 <= len(row) <= 11 for row in visible[1:4]):
+            raise VerificationError(
+                f"{name} page content rows must hold 10-11 keys"
+            )
+
+    for fixed_index in (0, 4, 5):
+        if letter_rows[fixed_index] != symbol_rows[fixed_index]:
+            raise VerificationError(
+                f"fixed row {fixed_index} differs between the two pages"
+            )
+
+    shifted = {label: upper for row in letter_rows for label, upper, _width in row}
     for key in "qwertyuiopasdfghjklzxcvbnm":
         if shifted.get(key) != key.upper():
             raise VerificationError(f"missing uppercase mapping for {key}")
@@ -94,43 +142,74 @@ def verify_layout(keyboard_source: str) -> None:
         if shifted.get(key) != expected:
             raise VerificationError(f"shifted mapping for {key!r} is not {expected!r}")
 
+    symbol_labels = {label for row in symbol_rows for label, _upper, _width in row}
+    missing = SYMBOL_PAGE_REQUIRED - symbol_labels
+    if missing:
+        raise VerificationError(f"symbol page lacks terminal characters: {missing!r}")
+
     required_dimensions = (
         "static const double key_width = 60;",
         "static const double key_height = 60;",
-        "static const double keyboard_scale_x = 0.75;",
+        "static const double key_margin = 4;",
+        "static const double keyboard_scale_x = 540.0 / 660.0;",
         "static const double keyboard_scale_y = 1.0;",
-        "\t12,\n\t6,\n\t\"en\"",
     )
     for declaration in required_dimensions:
         if declaration not in keyboard_source:
             raise VerificationError(f"missing dimension contract: {declaration!r}")
-    if abs(12 * 60 * 0.75 - 540) > 0.001:
+    if keyboard_source.count("\t11,\n\t6,\n\t\"en\"") != 2:
+        raise VerificationError("both pages must declare 11 columns and 6 rows")
+    if abs(COLUMNS * 60 * (540.0 / 660.0) - 540) > 0.001:
         raise VerificationError("logical keyboard width is not 540")
 
 
+KEYBOARD_BEHAVIOR_TOKENS = (
+    # Ctrl: tap latches, hold+type chords, both send a real Control modifier
+    "bool control_latched;",
+    "control_press(keyboard, id);",
+    "control_release(keyboard);",
+    "control_after_use(keyboard);",
+    "keyboard->control_latched = !keyboard->ctrl_latched_at_press;",
+    "keyboard->control_latched = false;",
+    "bool consume_control = keyboard->control_latched &&",
+    "key->key_type != keytype_control &&",
+    "key->key_type != keytype_switch &&",
+    "key->key_type != keytype_symbols;",
+    "mod_mask |= keyboard->keyboard->keysym.control_mask;",
+    "WL_KEYBOARD_KEY_STATE_PRESSED, mod_mask",
+    "WL_KEYBOARD_KEY_STATE_RELEASED, mod_mask",
+    "time, XKB_KEY_space,",
+    # Shift: multi-finger chording plus one-shot tap
+    "shift_press(keyboard, id);",
+    "shift_release(keyboard);",
+    "shift_after_use(keyboard);",
+    "keyboard->shift_chorded = true;",
+    # per-finger touch tracking
+    "struct touch_slot touches[MAX_TOUCH_SLOTS];",
+    "widget_set_touch_motion_handler(keyboard->widget, touch_motion_handler);",
+    "widget_set_touch_cancel_handler(keyboard->widget, touch_cancel_handler);",
+    # long-press slide selection with the magnifier bubble
+    "#define LONG_PRESS_USEC 350000",
+    "toytimer_arm_once_usec(&keyboard->longpress_timer,",
+    "keyboard->magnifier_active = true;",
+    "draw_magnifier(keyboard, cr, layout);",
+    # page switching via the fixed [ABC/#&] tag
+    "bool symbols_page;",
+    "keyboard->symbols_page = !keyboard->symbols_page;",
+    "draw_page_switch_label(keyboard, cr, x, y, w, h);",
+    # characters commit immediately instead of animating a preedit string
+    "/* commit immediately: no preedit churn on screen */",
+)
+
+
 def verify_keyboard_behavior(keyboard_source: str) -> None:
-    for keysym in ("Escape", "Tab", "BackSpace", "Return", "Left", "Up", "Down", "Right"):
+    for keysym in ("Escape", "Tab", "BackSpace", "Return", "Left", "Up",
+                   "Down", "Right", "Home", "End", "Page_Up", "Page_Down"):
         if f"XKB_KEY_{keysym}" not in keyboard_source:
             raise VerificationError(f"real keysym missing for {keysym}")
-    required = (
-        "bool control_latched;",
-        "keyboard->control_latched = !keyboard->control_latched;",
-        "keyboard->control_latched = false;",
-        "bool consume_control = keyboard->control_latched &&",
-        "key->key_type != keytype_control &&",
-        "key->key_type != keytype_switch &&",
-        "key->key_type != keytype_symbols &&",
-        "key->key_type != keytype_style;",
-        "mod_mask |= keyboard->keyboard->keysym.control_mask;",
-        "WL_KEYBOARD_KEY_STATE_PRESSED, mod_mask",
-        "WL_KEYBOARD_KEY_STATE_RELEASED, mod_mask",
-        "time, XKB_KEY_space,",
-        "state == WL_POINTER_BUTTON_STATE_RELEASED &&",
-        "key->key_type == keytype_control && keyboard->control_latched",
-    )
-    for token in required:
+    for token in KEYBOARD_BEHAVIOR_TOKENS:
         if token not in keyboard_source:
-            raise VerificationError(f"Ctrl latch behavior missing: {token}")
+            raise VerificationError(f"keyboard behavior missing: {token}")
 
 
 def verify_terminal_control(terminal_source: str) -> None:
@@ -288,13 +367,13 @@ def verify_build_attestation(*, require_artifact: bool = False) -> bool:
         raise VerificationError("APK package architecture is not aarch64")
 
     supersedes = attestation["supersedes"]
-    if supersedes["status"] != "NO_GO_CTRL_LATCH_AND_CURSOR_MODE_DEFECTS":
-        raise VerificationError("superseded r0 artifact is not explicitly NO-GO")
+    if supersedes["status"] != "SUPERSEDED_STATIC_ONLY_R1_TAP_KEYBOARD":
+        raise VerificationError("superseded r1 artifact is not explicitly marked")
     old_artifact = REPO / supersedes["artifact"]
     if old_artifact == artifact_path:
         raise VerificationError("current and superseded APK paths must be distinct")
     if old_artifact.exists() and digest(old_artifact) != supersedes["sha256"]:
-        raise VerificationError("superseded r0 APK hash does not match its record")
+        raise VerificationError("superseded r1 APK hash does not match its record")
     return True
 
 
@@ -311,26 +390,16 @@ def _retained_patch_text(path: Path) -> str:
 
 def verify_patch_contract() -> None:
     combined = "\n".join(
-        _retained_patch_text(FILES / name)
-        for name in (
-            "0001-phone-input-terminal-text-input.patch",
-            "0002-sixrow-control.patch",
-        )
+        _retained_patch_text(FILES / name) for name in PATCH_NAMES
     )
     verify_layout(combined)
     verify_terminal_control(combined)
-    for token in (
-        "bool control_latched;",
-        "keyboard->control_latched = !keyboard->control_latched;",
-        "keyboard->control_latched = false;",
-        "bool consume_control = keyboard->control_latched &&",
-        "key->key_type != keytype_switch &&",
-        "mod_mask |= keyboard->keyboard->keysym.control_mask;",
-        "key->key_type == keytype_control && keyboard->control_latched",
+    for token in KEYBOARD_BEHAVIOR_TOKENS + (
         "XKB_KEY_Escape",
         "XKB_KEY_BackSpace",
         "XKB_KEY_space",
-        "state == WL_POINTER_BUTTON_STATE_RELEASED &&",
+        "XKB_KEY_Home",
+        "XKB_KEY_Page_Up",
     ):
         if token not in combined:
             raise VerificationError(f"six-row patch contract is missing {token}")
