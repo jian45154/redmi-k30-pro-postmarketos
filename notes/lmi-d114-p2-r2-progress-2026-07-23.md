@@ -158,6 +158,35 @@ python3 scripts/lmi_p2_d114/assemble_userdata_image.py \
 per-profile owner 授权、flash + postwrite 验证。**flash 是 Tier 2
 persistent，须 owner 逐次批准。**
 
+## 2026-07-23 追加三：注入 + 组装完成，镜像已就绪（未 flash）
+
+- **注入器实跑成功**：injected rootfs `50d70dd2…`（2923429888 字节），
+  attestation `954e56fa…`。落位
+  `…injected-20260723.bundle/{rootfs.ext4,attestation.json}`。
+- **组装成功**：最终 userdata raw `321998e04b04b700aa4ae96205656f8ee9223e6e7a3edbf6af2362e85d1fd276`
+  （3436183552 字节）、android-sparse `e1c5578c5badfe558785ee57320f2ef8679763194ba5dd3a29f1aadf0d0b55ad`。
+  落位 `…injected-20260723/lmi-d114-userdata-p2-r2-most-complete-assembled-20260723.bundle/`。
+- **镜像内容已核验**（debugfs/dumpe2fs）：
+  - 分区 UUID 配对正确（boot d4f78f7d / root f8eb7c4b，匹配 D110
+    2b264d64 boot cmdline）；
+  - 新分页键盘二进制在位 `/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow`
+    = `d6b9e514…`；
+  - Wi-Fi 两条运行级链接 `lmi-wlan-on`、`lmi-cnss-fs-ready` + `pd-mapper`
+    default 链接就位；
+  - `/etc/machine-id` 已删除（首启由 dbus-uuidgen 重建，不再黑屏）；
+  - 无 `/home/lmi/.ssh`（base 未装 host key，卫生化确认 absent-in-base）。
+- **全测试绿**：197 P2-D114 + governance + safety lint +
+  `59_release_static_ci.sh` 全 OK。
+
+### 仅剩 flash（Tier 2，须 owner 逐次批准）
+
+镜像已完整就绪。下一步是写 WSL deploy profile（需 device serial +
+per-write nonce）、建 per-profile `authorized_profiles` 授权（owner ian）、
+经 `deploy_userdata_wsl.py` 执行器 flash userdata、postwrite 验证。
+按 AGENTS.md：persistent 分区写必须 owner 对该 profile 逐次 hash-bound
+批准，且需 distinct-hash 回滚件（当前 userdata 即回滚源）。**未经批准
+不 flash。**
+
 ## 设备状态
 
 未触碰。仍为 initramfs 调试壳（telnet 172.16.42.1:23），userdata 持久，
