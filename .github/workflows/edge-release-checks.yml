@@ -1,13 +1,13 @@
-# Copy this file to .github/workflows/edge-release-checks.yml when the pushing
-# token has GitHub Actions workflow scope.
 name: edge release checks
 
 on:
   push:
     branches:
+      - master
       - edge
   pull_request:
     branches:
+      - master
       - edge
 
 jobs:
