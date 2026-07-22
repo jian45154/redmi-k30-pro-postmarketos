@@ -29,50 +29,50 @@ REPO="$(derive_repo_root "$@")" || {
 }
 readonly REPO
 readonly CANONICAL_INJECTOR_SOURCE="$REPO/scripts/lmi_p2_d114/inject_rootfs_candidate.sh"
-readonly INPUT_BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-build-20260720"
-readonly BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722"
-readonly RAW="$INPUT_BUILD_DIR/xiaomi-lmi-v114-splash-recursion-fix-userdata-20260716.img"
-readonly RAW_SHA256=61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6
-readonly RAW_SIZE=3339714560
-readonly SPARSE="$INPUT_BUILD_DIR/xiaomi-lmi-v114-splash-recursion-fix-userdata-20260716.android-sparse.img"
-readonly SPARSE_SHA256=e8a30dc37cb4b75508d89725a9603bc15a985f4e51af77384e8d43c2928f8d68
-readonly SPARSE_SIZE=2192400084
+readonly INPUT_BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723"
+readonly BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723"
+readonly RAW="$INPUT_BUILD_DIR/xiaomi-lmi-d114-r2-most-complete-userdata-20260723.normalized.img"
+readonly RAW_SHA256=b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721
+readonly RAW_SIZE=3436183552
+readonly SPARSE="$INPUT_BUILD_DIR/xiaomi-lmi-d114-r2-most-complete-userdata-20260723.android-sparse.img"
+readonly SPARSE_SHA256=79276015be7d79ed77494b4bd3aec9e8a0f09325c53c4802eef54fede1022cbc
+readonly SPARSE_SIZE=2269399372
 readonly GPT_SECTOR_SIZE=4096
 readonly ROOT_START_SECTOR=124928
-readonly ROOT_SECTOR_COUNT=690176
+readonly ROOT_SECTOR_COUNT=713728
 readonly BASE="$INPUT_BUILD_DIR/lmi-d114-rootfs-base.ext4"
-readonly BASE_SHA256=76f032775b110855a5984b1ed45b10f9653c59af69b070ceac0e73e7216eb96c
-readonly INPUT="$INPUT_BUILD_DIR/lmi-d114-rootfs-p2-candidate-20260720.ext4"
-readonly INPUT_SHA256=90b9f0ab94198f78eb251cff0d4c521f7b4bb47fb50967a7c661eacc026e0e82
-readonly IMAGE_SIZE=2826960896
+readonly BASE_SHA256=7738604558ad38f95316e2f65f99dcd4d6cc222c3ff3469a590b4892da81448d
+readonly INPUT="$INPUT_BUILD_DIR/lmi-d114-rootfs-p2-candidate-20260723.ext4"
+readonly INPUT_SHA256=a5b368da152e52c732d558a9fb4158beec6a079ff9aafb6de073f83f108b435b
+readonly IMAGE_SIZE=2923429888
 readonly IMAGE_UUID=f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f
-readonly REPAIR_EPOCH=1784551824
+readonly REPAIR_EPOCH=1784734606
 readonly REPAIR_VERIFY_LOG="$INPUT_BUILD_DIR/candidate-preinstall-e2fsck-verify.log"
-readonly REPAIR_VERIFY_LOG_SHA256=4e23b50bc020fddde6daacf5b5a9a4f5472bcc156e7c58c5c932a8ba4c6ffc4f
+readonly REPAIR_VERIFY_LOG_SHA256=96a42f54078536e361b57a80d73a8199ae62dff4537db4b459eecdc6b16119c4
 readonly REPAIR_LOG="$INPUT_BUILD_DIR/candidate-preinstall-e2fsck-repair.log"
-readonly REPAIR_LOG_SHA256=9a3b20f3e422ee80cb6615158f1cc8b08fd71dda9a2e49745642404decf60837
+readonly REPAIR_LOG_SHA256=96a42f54078536e361b57a80d73a8199ae62dff4537db4b459eecdc6b16119c4
 readonly REBUILD_LOCK="$REPO/config/lmi-p2-d114/candidate-rebuild-lock.json"
-readonly REBUILD_LOCK_SHA256=1122fae16487ab77406fe444f1fc96da4848fcfb277fd4ad71dc51d81da01489
+readonly REBUILD_LOCK_SHA256=a45ba8072a5ed8667edc7ac84146c4daba5a595f22af05f396fce7a670357ce1
 readonly REBUILD_LOCK_SCHEMA=lmi-p2-d114-candidate-rebuild-lock/v1
-readonly OUTPUT_BUNDLE="$BUILD_DIR/lmi-d114-rootfs-p2-r1-sixrow-injected-20260722.bundle"
+readonly OUTPUT_BUNDLE="$BUILD_DIR/lmi-d114-rootfs-p2-r2-most-complete-injected-20260723.bundle"
 readonly OUTPUT="$OUTPUT_BUNDLE/rootfs.ext4"
 readonly ATTESTATION="$OUTPUT_BUNDLE/attestation.json"
-readonly P2_APK="$BUILD_DIR/run2-device-xiaomi-lmi-terminal-0.1.0-r1.apk"
-readonly P2_APK_SHA256=7cab262bd73b0bed23b5cc2b5b62d38c66ea715f49afa6b0ad7dd24246dd1db1
-readonly P2_APK_SIZE=8768
-readonly P2_APK_CHECKSUM=Q1CgJ9oAvCtPMD0gpMqjIRwUt4gow=
-readonly SIXROW_APK="$BUILD_DIR/lmi-weston-sixrow-clients-14.0.2-r1.apk"
-readonly SIXROW_APK_SHA256=ff8dbb02208959db4af9f1da735cb7b4f8765138388b6f7daebabce161fe208b
-readonly SIXROW_APK_SIZE=120891
-readonly SIXROW_APK_CHECKSUM=Q1z+kF3cP7AS8SIoqzAnBB/K89PAc=
+readonly P2_APK="$BUILD_DIR/run2-device-xiaomi-lmi-terminal-0.1.0-r2.apk"
+readonly P2_APK_SHA256=70d45810b14bb14274a23d935bb390271c8544db554ac70fb484f6eb2a4b93bc
+readonly P2_APK_SIZE=8775
+readonly P2_APK_CHECKSUM=Q1gHoYAku3NLLc7jWlEYfOGUhQcYs=
+readonly SIXROW_APK="$BUILD_DIR/lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk"
+readonly SIXROW_APK_SHA256=8d2f23522eb737432577b33ee7dd012b76d06012f1d6918eac289853f6f015e7
+readonly SIXROW_APK_SIZE=121842
+readonly SIXROW_APK_CHECKSUM=Q1dyp8uNSMxPIjVUwuCP4wyyBBCs4=
 readonly P2_KEY="$REPO/config/lmi-p2-d114/pmos@local-6a5d38f2.rsa.pub"
 readonly P2_KEY_SHA256=c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79e936736
-readonly SIXROW_KEY="$REPO/config/lmi-p2-d114/pmos@local-6a5fb853.rsa.pub"
-readonly SIXROW_KEY_SHA256=0d4b877df515c5a202abefc4d15f7b839ea0d1615045f9a7f656d5aef0496c52
+readonly SIXROW_KEY="$REPO/config/lmi-p2-d114/pmos@local-6a5d38f2.rsa.pub"
+readonly SIXROW_KEY_SHA256=c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79e936736
 readonly P2_BUILD_ATTESTATION="$REPO/config/lmi-p2-d114/apk-build-attestation.json"
-readonly P2_BUILD_ATTESTATION_SHA256=2a1b4dde55fe1544811337252d34c04acfb1438180d5589c0c5315d545748b61
-readonly SIXROW_BUILD_ATTESTATION="$REPO/config/lmi-weston-sixrow/build-attestation.json"
-readonly SIXROW_BUILD_ATTESTATION_SHA256=b4642db49c85e31a3b0b388968e1af94f4820d02ee712f09baa625c456e43e99
+readonly P2_BUILD_ATTESTATION_SHA256=519c9e9cd9a0087567fe5980f2a04906051b13c465cfac636793ed54aeae687b
+readonly SIXROW_BUILD_ATTESTATION="$REPO/config/lmi-weston-sixrow/build-attestation-r2.json"
+readonly SIXROW_BUILD_ATTESTATION_SHA256=5bb55928ae0b4109ad028d1a24e29de0dc74d2078f31d33628fd683cfbbaa0a2
 readonly APK_STATIC="$REPO/private/lmi-p1/calibration/acquisition-root/work-proot-chroot2/apk.static"
 readonly APK_STATIC_SHA256=a6542dc1fdb6214be1ef462668241bfe91f301e9249c99c0c6c327269d5e5ce4
 readonly PROOT="$REPO/private/lmi-p1/calibration/acquisition-root/proot-root/usr/bin/proot"
@@ -119,12 +119,12 @@ readonly BASH=/usr/bin/bash
 readonly BASH_SHA256=3efccc187bafa75ff1e37d246270ab3e7aa559f242c7a52bf3ec2a1b5450bdbd
 readonly DASH=/usr/bin/dash
 readonly DASH_SHA256=c626229526bb58ec2d0f585f3c3ae1412e6f973b4353385042d11c38d8426917
-readonly WORLD_SHA256=00a770856b6f2a1d15063c9e5085a3fea7e0e2d5ee5f421138ee90a06217a465
-readonly INSTALLED_DB_PRE_SHA256=b61419fa3c96feaf5d2e1b1f4e0aaab27e252d2ae2e6d47d33a56e3538ba7da4
-readonly SCRIPTS_DB_PRE_SHA256=fc9af3810c6baf8f1dbd389a6b13bc354d11dd34e0819e95717f1fc3f7c45039
-readonly TRIGGERS_DB_SHA256=ee66cbf049c70c6c992f27da83d45166a02c9b16c1efcf4b2206791a0adcacf7
-readonly SHADOW_SHA256=b472580419bd90569e1a67affd646fbbaefb5bbdd7862d082efef8946314d20a
-readonly SHADOW_BACKUP_SHA256=14bd22f98ce127273b6b7149282d8f6c2245d4e584e922468060c533c287699b
+readonly WORLD_SHA256=d2db0f373a095db9c4bd063ee3b678f27717a06663df85f56cf0ad584e939177
+readonly INSTALLED_DB_PRE_SHA256=bfd4503236d82debf7a5cd0a53a92c1355f4b350bc4a0316a575eaf5f236c0d3
+readonly SCRIPTS_DB_PRE_SHA256=ce9b0a667edcc4342d2f68a2019dcdec72d61a422f886b728502fea122dc9e4c
+readonly TRIGGERS_DB_SHA256=8847b2f186ea9b5a5806aeb9f00602e5a2f34e4b806b78ceff4fc72f4e0eb32d
+readonly SHADOW_SHA256=ccf1c9cb866c6eedec37f6ea6b6a1006ba7a49efa25a01b53712b656a45d0a04
+readonly SHADOW_BACKUP_SHA256=7cc7f7bbc72feae8f5b90e577b32e8683de20fc0c9b48a0f60cf28eb50c96a1a
 readonly EXT4_BLOCK_SIZE=4096
 readonly JOURNAL_FIRST_BLOCK=327680
 readonly JOURNAL_BLOCK_COUNT=16384
@@ -132,8 +132,8 @@ readonly JOURNAL_INACTIVE_FIRST_BLOCK=327681
 readonly JOURNAL_INACTIVE_BLOCK_COUNT=16383
 readonly JOURNAL_INACTIVE_ZERO_SHA256=40b4947fd669bcb849e47705c797e2484a4d406a596017fa889987d2614008b3
 readonly ZERO_BLOCK_SHA256=ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7
-readonly REVIEWED_FREED_BLOCK_ONE=586227
-readonly REVIEWED_FREED_BLOCK_TWO=661606
+# The r2 candidate's e2fsck repair freed no blocks; the reviewed list is empty.
+readonly -a REVIEWED_FREED_BLOCKS=()
 
 MOUNTPOINT=
 LOOP_DEVICE=
@@ -728,20 +728,13 @@ sanitize_public_image() {
 	local ssh_dropin_dir=$ssh_config_dir/sshd_config.d
 	local ssh_policy=$ssh_dropin_dir/99-lmi-public-image.conf
 	local cache_name clear_path clear_metadata clear_label
-	[[ -d "$ssh_dir" && ! -L "$ssh_dir" ]] || fail "image lmi SSH directory is unsafe"
-	[[ "$(stat -Lc %a:%u:%g -- "$ssh_dir")" == 700:10000:10000 ]] ||
-		fail "image lmi SSH directory metadata mismatch"
-	[[ "$(find "$ssh_dir" -xdev -mindepth 1 -maxdepth 1 -printf '%f\n')" == authorized_keys ]] ||
-		fail "image lmi SSH directory inventory mismatch"
-	[[ -f "$authorized_keys" && ! -L "$authorized_keys" ]] ||
-		fail "image authorized_keys is unsafe"
-	[[ "$(stat -Lc %a:%u:%g:%h:%s -- "$authorized_keys")" == 644:10000:10000:1:573 ]] ||
-		fail "image authorized_keys metadata mismatch"
-	rm -- "$authorized_keys" || fail "could not remove image authorized_keys"
+	# The r2 base is installed without any host SSH public key, so the lmi
+	# account must have no ~/.ssh at all; fail closed if anything occupies
+	# either path (a populated authorized_keys must never ship).
+	[[ ! -e "$ssh_dir" && ! -L "$ssh_dir" ]] ||
+		fail "image lmi SSH directory unexpectedly present"
 	[[ ! -e "$authorized_keys" && ! -L "$authorized_keys" ]] ||
-		fail "image authorized_keys remains after sanitation"
-	[[ -z "$(find "$ssh_dir" -xdev -mindepth 1 -maxdepth 1 -print -quit)" ]] ||
-		fail "image lmi SSH directory is not empty after sanitation"
+		fail "image authorized_keys unexpectedly present"
 
 	# Remove (not truncate) the machine-id: an empty /etc/machine-id makes dbus
 	# refuse to start on first boot (which cascades into elogind and the session
@@ -783,17 +776,17 @@ sanitize_public_image() {
 		fail "image APK cache directory metadata mismatch"
 	[[ "$(find "$apk_cache" -xdev -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)" == $'APKINDEX.066df28d.tar.gz\nAPKINDEX.30e6f5af.tar.gz\nAPKINDEX.b53994b4.tar.gz\nAPKINDEX.bc99f2f3.tar.gz' ]] ||
 		fail "image APK cache inventory mismatch"
-	[[ "$(stat -Lc %a:%u:%g:%h:%s -- "$apk_cache/APKINDEX.066df28d.tar.gz")" == 644:0:0:1:528174 ]] || fail "APK cache member metadata mismatch"
-	[[ "$(stat -Lc %a:%u:%g:%h:%s -- "$apk_cache/APKINDEX.30e6f5af.tar.gz")" == 644:0:0:1:750911 ]] || fail "APK cache member metadata mismatch"
-	[[ "$(stat -Lc %a:%u:%g:%h:%s -- "$apk_cache/APKINDEX.b53994b4.tar.gz")" == 644:0:0:1:2514943 ]] || fail "APK cache member metadata mismatch"
-	[[ "$(stat -Lc %a:%u:%g:%h:%s -- "$apk_cache/APKINDEX.bc99f2f3.tar.gz")" == 644:0:0:1:116688 ]] || fail "APK cache member metadata mismatch"
+	[[ "$(stat -Lc %a:%u:%g:%h:%s -- "$apk_cache/APKINDEX.066df28d.tar.gz")" == 644:0:0:1:527944 ]] || fail "APK cache member metadata mismatch"
+	[[ "$(stat -Lc %a:%u:%g:%h:%s -- "$apk_cache/APKINDEX.30e6f5af.tar.gz")" == 644:0:0:1:748453 ]] || fail "APK cache member metadata mismatch"
+	[[ "$(stat -Lc %a:%u:%g:%h:%s -- "$apk_cache/APKINDEX.b53994b4.tar.gz")" == 644:0:0:1:2507751 ]] || fail "APK cache member metadata mismatch"
+	[[ "$(stat -Lc %a:%u:%g:%h:%s -- "$apk_cache/APKINDEX.bc99f2f3.tar.gz")" == 644:0:0:1:110467 ]] || fail "APK cache member metadata mismatch"
 	rm -- "$apk_cache"/APKINDEX.066df28d.tar.gz "$apk_cache"/APKINDEX.30e6f5af.tar.gz \
 		"$apk_cache"/APKINDEX.b53994b4.tar.gz "$apk_cache"/APKINDEX.bc99f2f3.tar.gz ||
 		fail "could not clear image APK cache"
 	[[ -z "$(find "$apk_cache" -xdev -mindepth 1 -maxdepth 1 -print -quit)" ]] ||
 		fail "image APK cache is not empty after sanitation"
 
-	for cache_name in "$resolv_conf|644:0:0:1:211|resolv.conf" "$apk_log|644:0:0:1:69179|apk.log"; do
+	for cache_name in "$resolv_conf|644:0:0:1:215|resolv.conf" "$apk_log|644:0:0:1:68657|apk.log"; do
 		IFS='|' read -r clear_path clear_metadata clear_label <<<"$cache_name"
 		[[ -f "$clear_path" && ! -L "$clear_path" ]] || fail "image $clear_label is unsafe"
 		[[ "$(stat -Lc %a:%u:%g:%h:%s -- "$clear_path")" == "$clear_metadata" ]] ||
@@ -863,10 +856,10 @@ read_u32_at() {
 }
 
 verify_journal_extent() {
-	local image=$1 inode_extent_offset=$((370 * EXT4_BLOCK_SIZE + 7 * 256 + 40)) report
+	local image=$1 inode_extent_offset=$((382 * EXT4_BLOCK_SIZE + 7 * 256 + 40)) report
 	report="$("$DUMPE2FS" -h "$image" 2>/dev/null)" || return 1
 	grep -Fx 'Block size:               4096' <<<"$report" >/dev/null || return 1
-	grep -Fx 'Inodes per group:         7856' <<<"$report" >/dev/null || return 1
+	grep -Fx 'Inodes per group:         16224' <<<"$report" >/dev/null || return 1
 	grep -Fx 'Inode size:               256' <<<"$report" >/dev/null || return 1
 	grep -Fx 'Journal inode:            8' <<<"$report" >/dev/null || return 1
 	grep -Fx 'Total journal blocks:     16384' <<<"$report" >/dev/null || return 1
@@ -889,7 +882,7 @@ block_range_sha256() {
 
 verify_reviewed_blocks_unallocated() {
 	local image=$1 block report
-	for block in "$REVIEWED_FREED_BLOCK_ONE" "$REVIEWED_FREED_BLOCK_TWO"; do
+	for block in ${REVIEWED_FREED_BLOCKS[@]+"${REVIEWED_FREED_BLOCKS[@]}"}; do
 		report="$("$DEBUGFS" -R "testb $block" "$image" 2>&1)" || return 1
 		[[ "$report" == $'debugfs 1.47.2 (1-Jan-2025)\n'"Block $block not in use" ]] || return 1
 	done
@@ -918,8 +911,9 @@ normalize_allocated_ext4() {
 	NORMALIZATION_PROOF_SHA256="$(sha256_of "$proof")" || return 1
 	[[ "$(block_range_sha256 "$normalized" "$JOURNAL_INACTIVE_FIRST_BLOCK" "$JOURNAL_INACTIVE_BLOCK_COUNT")" == \
 		"$JOURNAL_INACTIVE_ZERO_SHA256" ]] || return 1
-	[[ "$(block_range_sha256 "$normalized" "$REVIEWED_FREED_BLOCK_ONE" 1)" == "$ZERO_BLOCK_SHA256" ]] || return 1
-	[[ "$(block_range_sha256 "$normalized" "$REVIEWED_FREED_BLOCK_TWO" 1)" == "$ZERO_BLOCK_SHA256" ]] || return 1
+	for reviewed_block in ${REVIEWED_FREED_BLOCKS[@]+"${REVIEWED_FREED_BLOCKS[@]}"}; do
+		[[ "$(block_range_sha256 "$normalized" "$reviewed_block" 1)" == "$ZERO_BLOCK_SHA256" ]] || return 1
+	done
 	verify_reviewed_blocks_unallocated "$normalized" || return 1
 	verify_journal_extent "$normalized" || return 1
 	NORMALIZED_ST_BLOCKS="$(stat -Lc %b -- "$normalized")" || return 1
@@ -937,7 +931,7 @@ verify_gpt_geometry() {
 	grep -Fx "Sector size (logical/physical): 4096 bytes / 4096 bytes" <<<"$report" >/dev/null || return 1
 	grep -Fx "Disklabel type: gpt" <<<"$report" >/dev/null || return 1
 	awk '$2 == 2048 && $3 == 124927 && $4 == 122880 && $5 == "480M" && $6 == "EFI" { boot++ }
-		$2 == 124928 && $3 == 815103 && $4 == 690176 && $5 == "2.6G" && $6 == "Linux" && $7 == "root" && $8 == "(ARM-64)" { root++ }
+		$2 == 124928 && $3 == 838655 && $4 == 713728 && $5 == "2.7G" && $6 == "Linux" && $7 == "root" && $8 == "(ARM-64)" { root++ }
 		END { exit !(boot == 1 && root == 1) }' <<<"$report"
 }
 
@@ -1085,14 +1079,14 @@ emit_full_delta_diagnostic() {
 	evidence_bytes="$(stat -Lc %s -- "$evidence")" || return 1
 	evidence_lines="$(awk 'END { print NR + 0 }' "$evidence")" || return 1
 	if [[ "$disposition" == over-bound ]]; then
-		printf 'D114 filesystem delta diagnostic: schema=lmi-p2-d114-filesystem-delta-diagnostic/v1 parse=%s expected_count=30 actual_count=%s actual_bytes=%s evidence_scope=%s evidence_sha256=%s evidence_bytes=%s evidence_lines=%s omitted=over-bound\n' \
+		printf 'D114 filesystem delta diagnostic: schema=lmi-p2-d114-filesystem-delta-diagnostic/v1 parse=%s expected_count=29 actual_count=%s actual_bytes=%s evidence_scope=%s evidence_sha256=%s evidence_bytes=%s evidence_lines=%s omitted=over-bound\n' \
 			"$parse_status" "$actual_count" "$actual_bytes" "$evidence_scope" "$evidence_sha256" \
 			"$evidence_bytes" "$evidence_lines" >&2
 	else
 		[[ "$evidence_scope" == normalized-op-path ]] || return 1
 		encoded="$(base64 -w 0 -- "$evidence")" || return 1
 		[[ "$encoded" =~ ^[A-Za-z0-9+/]*={0,2}$ ]] || return 1
-		printf 'D114 filesystem delta diagnostic: schema=lmi-p2-d114-filesystem-delta-diagnostic/v1 parse=%s expected_count=30 actual_count=%s actual_bytes=%s evidence_scope=%s evidence_sha256=%s evidence_bytes=%s evidence_lines=%s omitted=no op_path_b64=%s\n' \
+		printf 'D114 filesystem delta diagnostic: schema=lmi-p2-d114-filesystem-delta-diagnostic/v1 parse=%s expected_count=29 actual_count=%s actual_bytes=%s evidence_scope=%s evidence_sha256=%s evidence_bytes=%s evidence_lines=%s omitted=no op_path_b64=%s\n' \
 			"$parse_status" "$actual_count" "$actual_bytes" "$evidence_scope" "$evidence_sha256" \
 			"$evidence_bytes" "$evidence_lines" "$encoded" >&2
 	fi
@@ -1119,7 +1113,7 @@ verify_full_delta_fields() {
 			add_file["/etc/lmi-p2-d114/weston.ini"]="644|688|b54d838ccf435ee41dbd55f5aab245fd68bb65ab19c784a694375f001a9763a2"
 			add_file["/usr/libexec/lmi-p2-d114/config-lifecycle"]="755|8194|b0315472595e56b521345a40350d588402c265c40c0df8be638f5317c9fc3c96"
 			add_file["/usr/libexec/lmi-p2-d114/session"]="755|15645|3187f95d801e48efc245511544a21e1528efb2d7bbad4fa5866ddf023ca56ca6"
-			add_file["/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"]="755|134456|88d06d99f7c2d3eb1da64e7f89a0f5e37b87bc4c93f8b6778b1ca6491bf1dba6"
+			add_file["/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"]="755|134456|d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a"
 			add_file["/usr/libexec/lmi-p2-d114/weston-terminal-sixrow"]="755|200960|6602f7ac8e0c11892eec1d9db0411397e95f704a1655b94e0885a1220962a8cf"
 			add_file["/usr/share/lmi-p2-d114/greetd.confd"]="644|139|5be125043d60ff2d3b98624191769efd06320b81262b5552489d93076e85e6a4"
 			add_file["/var/lib/lmi-p2-d114/config-v1"]="600|28|2a480e997834e3a1960bd234c1d69905278a026afacdbb37a13522e6dbafe0f9"
@@ -1141,17 +1135,16 @@ verify_full_delta_fields() {
 			modified_parent["/usr/share"]=1
 			modified_parent["/var/lib"]=1
 			modified_file["/etc/conf.d/greetd"]="greetd"
-			modified_file["/etc/resolv.conf"]="empty-211"
+			modified_file["/etc/resolv.conf"]="empty-215"
 			modified_file["/usr/lib/apk/db/installed"]="database"
 			modified_file["/usr/lib/apk/db/scripts.tar.gz"]="database"
-			modified_file["/var/log/apk.log"]="empty-69179"
+			modified_file["/var/log/apk.log"]="empty-68657"
 			modified_shadow["/etc/shadow-"]=1
 			deleted_file["/etc/machine-id"]="644|1|33"
-			deleted_file["/home/lmi/.ssh/authorized_keys"]="644|1|573"
-			deleted_file["/var/cache/apk/APKINDEX.066df28d.tar.gz"]="644|1|528174"
-			deleted_file["/var/cache/apk/APKINDEX.30e6f5af.tar.gz"]="644|1|750911"
-			deleted_file["/var/cache/apk/APKINDEX.b53994b4.tar.gz"]="644|1|2514943"
-			deleted_file["/var/cache/apk/APKINDEX.bc99f2f3.tar.gz"]="644|1|116688"
+			deleted_file["/var/cache/apk/APKINDEX.066df28d.tar.gz"]="644|1|527944"
+			deleted_file["/var/cache/apk/APKINDEX.30e6f5af.tar.gz"]="644|1|748453"
+			deleted_file["/var/cache/apk/APKINDEX.b53994b4.tar.gz"]="644|1|2507751"
+			deleted_file["/var/cache/apk/APKINDEX.bc99f2f3.tar.gz"]="644|1|110467"
 		}
 		function valid_sha(value) {
 			return length(value) == 64 && value ~ /^[0-9a-f]+$/
@@ -1159,7 +1152,7 @@ verify_full_delta_fields() {
 		# Full-tree inventory paths follow the snapshot_tree serialization
 		# contract.  Linux/ext4 names legitimately contain spaces, @, :, [, and
 		# UTF-8, and a complete path may exceed one NAME_MAX-sized component.
-		# The exact 30-operation parser below intentionally remains narrower.
+		# The exact 29-operation parser below intentionally remains narrower.
 		function valid_path(value, components, count, component_index) {
 			if (value == "/") return 1
 			if (substr(value, 1, 1) != "/" || index(value, "|") != 0) return 0
@@ -1264,11 +1257,11 @@ verify_full_delta_fields() {
 					(old_payload[path] != "6523d36fa3490b4f518184bb0d5a1dd025f14e93ead2b0f9a80f82d685a953f0" ||
 					 new_payload[path] != "5be125043d60ff2d3b98624191769efd06320b81262b5552489d93076e85e6a4" ||
 					 stat_part(old_stat[path], 5) != 186 || stat_part(new_stat[path], 5) != 139)) bad=1
-				if (modified_file[path] == "empty-211" &&
-					(stat_part(old_stat[path], 5) != 211 || stat_part(new_stat[path], 5) != 0 ||
+				if (modified_file[path] == "empty-215" &&
+					(stat_part(old_stat[path], 5) != 215 || stat_part(new_stat[path], 5) != 0 ||
 					 new_payload[path] != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")) bad=1
-				if (modified_file[path] == "empty-69179" &&
-					(stat_part(old_stat[path], 5) != 69179 || stat_part(new_stat[path], 5) != 0 ||
+				if (modified_file[path] == "empty-68657" &&
+					(stat_part(old_stat[path], 5) != 68657 || stat_part(new_stat[path], 5) != 0 ||
 					 new_payload[path] != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")) bad=1
 			}
 			for (path in modified_shadow) {
@@ -1347,7 +1340,6 @@ verify_full_delta() {
 			expected["M|/etc/resolv.conf"]=1
 			expected["M|/etc/shadow-"]=1
 			expected["D|/etc/machine-id"]=1
-			expected["D|/home/lmi/.ssh/authorized_keys"]=1
 			expected["D|/var/cache/apk/APKINDEX.066df28d.tar.gz"]=1
 			expected["D|/var/cache/apk/APKINDEX.30e6f5af.tar.gz"]=1
 			expected["D|/var/cache/apk/APKINDEX.b53994b4.tar.gz"]=1
@@ -1377,7 +1369,7 @@ verify_full_delta() {
 		}
 		END {
 			for (pair in expected) if (seen_pair[pair] != 1) mismatch=1
-			if (NR != 30) mismatch=1
+			if (NR != 29) mismatch=1
 			if (schema_bad) exit 2
 			if (duplicate) exit 3
 			if (mismatch) exit 4
@@ -1456,9 +1448,9 @@ validate_p2_installed_record() {
 		BEGIN {
 			RS=""; FS="\n"; ORS="\n\n"
 			expected_value["P"]="device-xiaomi-lmi-terminal"
-			expected_value["V"]="0.1.0-r1"
+			expected_value["V"]="0.1.0-r2"
 			expected_value["A"]="noarch"
-			expected_value["S"]="8768"
+			expected_value["S"]="8775"
 			expected_value["I"]="24926"
 			expected_value["T"]="Pinned non-root Weston terminal session for Xiaomi lmi D114"
 			expected_value["U"]="https://postmarketos.org"
@@ -1466,24 +1458,24 @@ validate_p2_installed_record() {
 			expected_value["o"]="device-xiaomi-lmi-terminal"
 			expected_value["m"]="lmi P2 maintainers <noreply@example.invalid>"
 			expected_value["t"]="1784522705"
-			expected_value["c"]="uncommitted-p2-d114-source-lock-v3"
-			expected_D="device-xiaomi-lmi=1-r142 greetd=0.10.3-r11 greetd-openrc=0.10.3-r11 greetd-phrog=0.53.0-r0 libseat=0.9.3-r0 libweston=14.0.2-r10 linux-xiaomi-lmi=4.19.325-r9 lmi-weston-sixrow-clients=14.0.2-r1 openrc=0.63.2-r0 seatd=0.9.3-r0 seatd-openrc=0.9.3-r0 weston=14.0.2-r10 weston-backend-drm=14.0.2-r10 weston-shell-desktop=14.0.2-r10 weston-terminal=14.0.2-r10 /bin/sh"
+			expected_value["c"]="uncommitted-p2-d114-source-lock-v4"
+			expected_D="device-xiaomi-lmi=1-r144 greetd=0.10.3-r11 greetd-openrc=0.10.3-r11 greetd-phrog=0.53.0-r0 libseat=0.9.3-r1 libweston=14.0.2-r5 linux-xiaomi-lmi=4.19.325-r15 lmi-weston-sixrow-clients=14.0.2-r2 openrc=0.63.2-r0 seatd=0.9.3-r1 seatd-openrc=0.9.3-r1 weston=14.0.2-r5 weston-backend-drm=14.0.2-r5 weston-shell-desktop=14.0.2-r5 weston-terminal=14.0.2-r5 /bin/sh"
 			expected_dep["/bin/sh"]=1
-			expected_dep["device-xiaomi-lmi=1-r142"]=1
+			expected_dep["device-xiaomi-lmi=1-r144"]=1
 			expected_dep["greetd=0.10.3-r11"]=1
 			expected_dep["greetd-openrc=0.10.3-r11"]=1
 			expected_dep["greetd-phrog=0.53.0-r0"]=1
-			expected_dep["libseat=0.9.3-r0"]=1
-			expected_dep["libweston=14.0.2-r10"]=1
-			expected_dep["linux-xiaomi-lmi=4.19.325-r9"]=1
-			expected_dep["lmi-weston-sixrow-clients=14.0.2-r1"]=1
+			expected_dep["libseat=0.9.3-r1"]=1
+			expected_dep["libweston=14.0.2-r5"]=1
+			expected_dep["linux-xiaomi-lmi=4.19.325-r15"]=1
+			expected_dep["lmi-weston-sixrow-clients=14.0.2-r2"]=1
 			expected_dep["openrc=0.63.2-r0"]=1
-			expected_dep["seatd=0.9.3-r0"]=1
-			expected_dep["seatd-openrc=0.9.3-r0"]=1
-			expected_dep["weston=14.0.2-r10"]=1
-			expected_dep["weston-backend-drm=14.0.2-r10"]=1
-			expected_dep["weston-shell-desktop=14.0.2-r10"]=1
-			expected_dep["weston-terminal=14.0.2-r10"]=1
+			expected_dep["seatd=0.9.3-r1"]=1
+			expected_dep["seatd-openrc=0.9.3-r1"]=1
+			expected_dep["weston=14.0.2-r5"]=1
+			expected_dep["weston-backend-drm=14.0.2-r5"]=1
+			expected_dep["weston-shell-desktop=14.0.2-r5"]=1
+			expected_dep["weston-terminal=14.0.2-r5"]=1
 			expected_file["etc/lmi-p2-d114/greetd.toml"]="Q17aD3D/27DhKiygFdfBjjWQ46v/4="
 			expected_file["etc/lmi-p2-d114/weston.ini"]="Q1ACVXZU3ZSa9r/vWT8UkYAfbLRlw="
 			expected_file["usr/libexec/lmi-p2-d114/config-lifecycle"]="Q1fz2JibH7B8jAdosh8vogpdSyQZM="
@@ -1569,17 +1561,17 @@ validate_sixrow_installed_record() {
 		BEGIN {
 			RS=""; FS="\n"; ORS="\n\n"
 			expected_value["P"]="lmi-weston-sixrow-clients"
-			expected_value["V"]="14.0.2-r1"
+			expected_value["V"]="14.0.2-r2"
 			expected_value["A"]="aarch64"
-			expected_value["S"]="120891"
+			expected_value["S"]="121842"
 			expected_value["I"]="335416"
 			expected_value["T"]="Hash-locked six-row Weston keyboard and text-input terminal for xiaomi-lmi"
 			expected_value["U"]="https://gitlab.freedesktop.org/wayland/weston"
 			expected_value["L"]="MIT"
 			expected_value["o"]="lmi-weston-sixrow-clients"
 			expected_value["m"]="Local lmi port work <noreply@example.invalid>"
-			expected_value["t"]="1784659116"
-			expected_value["c"]="-dirty"
+			expected_value["t"]="1784730238"
+			expected_value["c"]=""
 			expected_D="so:libc.musl-aarch64.so.1 so:libcairo.so.2 so:libfontconfig.so.1 so:libgobject-2.0.so.0 so:libpango-1.0.so.0 so:libpangocairo-1.0.so.0 so:libpixman-1.so.0 so:libpng16.so.16 so:libwayland-client.so.0 so:libwayland-cursor.so.0 so:libxkbcommon.so.0"
 			expected_dep["so:libc.musl-aarch64.so.1"]=1
 			expected_dep["so:libcairo.so.2"]=1
@@ -1592,7 +1584,7 @@ validate_sixrow_installed_record() {
 			expected_dep["so:libwayland-client.so.0"]=1
 			expected_dep["so:libwayland-cursor.so.0"]=1
 			expected_dep["so:libxkbcommon.so.0"]=1
-			expected_file["usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"]="Q1azIWyRjIlMC3OdDOa9HLxShf19M="
+			expected_file["usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"]="Q1XSUCcmg4Qp6FPO9eNoHsqhU0Rls="
 			expected_file["usr/libexec/lmi-p2-d114/weston-terminal-sixrow"]="Q1TfC5e5TmOzP1rew68T4D0bOCiE4="
 			expected_attr["usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"]="0:0:755"
 			expected_attr["usr/libexec/lmi-p2-d114/weston-terminal-sixrow"]="0:0:755"
@@ -1990,7 +1982,7 @@ main() {
 	cp --reflink=never -- "/proc/self/fd/$P2_key_FD" "$KEY_CLOSURE/${P2_KEY##*/}"
 	cp --reflink=never -- "/proc/self/fd/$sixrow_key_FD" "$KEY_CLOSURE/${SIXROW_KEY##*/}"
 	chmod 0644 -- "$KEY_CLOSURE/${P2_KEY##*/}" "$KEY_CLOSURE/${SIXROW_KEY##*/}"
-	[[ "$(find "$KEY_CLOSURE" -xdev -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)" == $'pmos@local-6a5d38f2.rsa.pub\npmos@local-6a5fb853.rsa.pub' ]] || fail "key closure inventory mismatch"
+	[[ "$(find "$KEY_CLOSURE" -xdev -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)" == 'pmos@local-6a5d38f2.rsa.pub' ]] || fail "key closure inventory mismatch"
 	[[ "$(stat -Lc %a:%u:%g:%h -- "$KEY_CLOSURE/${P2_KEY##*/}")" == 644:0:0:1 &&
 		"$(sha256_of "$KEY_CLOSURE/${P2_KEY##*/}")" == "$P2_KEY_SHA256" ]] || fail "P2 key closure mismatch"
 	[[ "$(stat -Lc %a:%u:%g:%h -- "$KEY_CLOSURE/${SIXROW_KEY##*/}")" == 644:0:0:1 &&
@@ -2039,7 +2031,7 @@ main() {
 
 	verify_image_file /usr/libexec/lmi-p2-d114/config-lifecycle 755 b0315472595e56b521345a40350d588402c265c40c0df8be638f5317c9fc3c96
 	verify_image_file /usr/libexec/lmi-p2-d114/session 755 3187f95d801e48efc245511544a21e1528efb2d7bbad4fa5866ddf023ca56ca6
-	verify_image_file /usr/libexec/lmi-p2-d114/weston-keyboard-sixrow 755 88d06d99f7c2d3eb1da64e7f89a0f5e37b87bc4c93f8b6778b1ca6491bf1dba6
+	verify_image_file /usr/libexec/lmi-p2-d114/weston-keyboard-sixrow 755 d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a
 	verify_image_file /usr/libexec/lmi-p2-d114/weston-terminal-sixrow 755 6602f7ac8e0c11892eec1d9db0411397e95f704a1655b94e0885a1220962a8cf
 	verify_image_file /etc/lmi-p2-d114/weston.ini 644 b54d838ccf435ee41dbd55f5aab245fd68bb65ab19c784a694375f001a9763a2
 	verify_image_file /etc/lmi-p2-d114/greetd.toml 644 d576c1f5398bc3820a0ce2361e2b0b187d5c6263b1cf42c8f121d262309de899
@@ -2189,9 +2181,9 @@ main() {
 	[[ "$KERNEL_RELEASE" =~ ^[A-Za-z0-9._+-]+$ ]] || fail "unsafe kernel release for attestation"
 	PROC_VERSION_SHA256="$(sha256_of /proc/version)"
 	ATTESTATION_TMP="$SCRATCH_DIR/attestation.json"
-	printf '%s\n' "{\"claims\":{\"hardware_test_only\":true,\"production\":false,\"release_eligible\":false},\"commands\":{\"apk\":[\"bubblewrap:unshare-user,pid,uts,ipc;outer-private-net\",\"source-bindings:checked-root-owned-run-bridge;outer-private-mountns\",\"cap-drop=ALL;child-verified-no-new-privs-and-zero-capability-sets\",\"env:clear;HOME=/root;LANG=C;LC_ALL=C;PATH=/usr/sbin:/usr/bin:/sbin:/bin;PWD=/;TZ=UTC\",\"--root=/image\",\"--arch=aarch64\",\"--keys-dir=/keys\",\"--no-logfile\",\"--no-network\",\"--no-cache\",\"--no-scripts\",\"--repositories-file=/dev/null\",\"--force-non-repository\",\"add\",\"/tools/sixrow.apk\",\"/tools/p2.apk\"],\"lifecycle\":[\"bubblewrap:unshare-user,pid,uts,ipc;outer-private-net\",\"source-bindings:checked-root-owned-run-bridge;outer-private-mountns\",\"cap-drop=ALL;child-verified-no-new-privs-and-zero-capability-sets\",\"env:clear;HOME=/root;LANG=C;LC_ALL=C;PATH=/usr/sbin:/usr/bin:/sbin:/bin;PROOT_NO_SECCOMP=1;PWD=/;TZ=UTC\",\"loader:--library-path=/runtime\",\"proot:-r=/image,-q=/tools/qemu-aarch64,-w=/\",\"/usr/libexec/lmi-p2-d114/config-lifecycle\",\"install\"]},\"input\":{\"apks\":{\"p2\":{\"build_attestation_sha256\":\"$P2_BUILD_ATTESTATION_SHA256\",\"sandbox_path\":\"/tools/p2.apk\",\"sha256\":\"$P2_APK_SHA256\",\"source_path\":\"private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722/run2-device-xiaomi-lmi-terminal-0.1.0-r1.apk\"},\"sixrow\":{\"build_attestation_sha256\":\"$SIXROW_BUILD_ATTESTATION_SHA256\",\"sandbox_path\":\"/tools/sixrow.apk\",\"sha256\":\"$SIXROW_APK_SHA256\",\"source_path\":\"private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722/lmi-weston-sixrow-clients-14.0.2-r1.apk\"}},\"base_sha256\":\"$BASE_SHA256\",\"candidate_rebuild_lock_schema\":\"$REBUILD_LOCK_SCHEMA\",\"candidate_rebuild_lock_sha256\":\"$REBUILD_LOCK_SHA256\",\"candidate_sha256\":\"$INPUT_SHA256\",\"candidate_size\":$IMAGE_SIZE,\"candidate_uuid\":\"$IMAGE_UUID\",\"keys\":{\"p2_sha256\":\"$P2_KEY_SHA256\",\"sixrow_sha256\":\"$SIXROW_KEY_SHA256\"},\"raw_sha256\":\"$RAW_SHA256\",\"repair_epoch\":$REPAIR_EPOCH,\"repair_log_sha256\":\"$REPAIR_LOG_SHA256\",\"sparse_sha256\":\"$SPARSE_SHA256\",\"verify_log_sha256\":\"$REPAIR_VERIFY_LOG_SHA256\"},\"output\":{\"filesystem_delta_sha256\":\"$FULL_DELTA_SHA256\",\"geometry_sha256\":\"$GEOMETRY_SHA256\",\"installed_db_sha256\":\"$INSTALLED_DB_FINAL_SHA256\",\"key_inventory_sha256\":\"$KEY_INVENTORY_SHA256\",\"mode\":\"0640\",\"owner\":\"0:$CALLER_GID\",\"p2_package_record_sha256\":\"$P2_PACKAGE_RECORD_SHA256\",\"packages\":[\"device-xiaomi-lmi-terminal=0.1.0-r1\",\"lmi-weston-sixrow-clients=14.0.2-r1\"],\"path\":\"private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722/lmi-d114-rootfs-p2-r1-sixrow-injected-20260722.bundle/rootfs.ext4\",\"scripts_db_sha256\":\"$SCRIPTS_DB_FINAL_SHA256\",\"sha256\":\"$FINAL_SHA256\",\"sixrow_package_record_sha256\":\"$SIXROW_PACKAGE_RECORD_SHA256\",\"size\":$IMAGE_SIZE,\"triggers_sha256\":\"$TRIGGERS_DB_SHA256\",\"uuid\":\"$IMAGE_UUID\",\"world_sha256\":\"$WORLD_SHA256\"},\"runtime\":{\"injector_runtime_lock_schema\":\"$RUNTIME_LOCK_SCHEMA\",\"injector_runtime_lock_sha256\":\"$RUNTIME_LOCK_SHA256\",\"kernel_release\":\"$KERNEL_RELEASE\",\"mount_loop\":{\"backing_identity\":\"$ATTESTED_LOOP_BACKING_ID\",\"block_identity\":\"$ATTESTED_LOOP_DEVICE_ID\",\"mount_options\":\"$MOUNT_OPTIONS\"},\"namespaces\":{\"ipc\":\"$(readlink /proc/self/ns/ipc)\",\"mnt\":\"$(readlink /proc/self/ns/mnt)\",\"net\":\"$(readlink /proc/self/ns/net)\",\"pid\":\"$(readlink /proc/self/ns/pid)\",\"uts\":\"$(readlink /proc/self/ns/uts)\"},\"proc_version_sha256\":\"$PROC_VERSION_SHA256\",\"sandbox_entry_sha256\":\"$SANDBOX_ENTRY_SHA256\",\"sealed_script_sha256\":\"$SEALED_SCRIPT_SHA256\"},\"sanitization\":{\"apk_cache\":\"exact-four-index-members-removed\",\"apk_log\":\"empty\",\"authorized_keys\":\"removed\",\"machine_id\":\"removed\",\"resolv_conf\":\"empty\",\"shadow_backup\":\"exact-copy-of-locked-active-shadow\",\"ssh_password_authentication\":\"disabled-by-locked-drop-in\"},\"schema\":\"lmi-p2-d114-rootfs-injection-attestation/v3\",\"tools\":{\"apk_static_sha256\":\"$APK_STATIC_SHA256\",\"bash_sha256\":\"$BASH_SHA256\",\"bubblewrap_sha256\":\"$BWRAP_SHA256\",\"dumpe2fs_sha256\":\"$DUMPE2FS_SHA256\",\"e2fsck_sha256\":\"$E2FSCK_SHA256\",\"getfattr_sha256\":\"$GETFATTR_SHA256\",\"host_libc_sha256\":\"$HOST_LIBC_SHA256\",\"host_loader_sha256\":\"$HOST_LOADER_SHA256\",\"lsattr_libcom_err_sha256\":\"$LSATTR_LIBCOM_ERR_SHA256\",\"lsattr_libe2p_sha256\":\"$LSATTR_LIBE2P_SHA256\",\"lsattr_sha256\":\"$LSATTR_SHA256\",\"proot_libtalloc_sha256\":\"$PROOT_TALLOC_SHA256\",\"proot_sha256\":\"$PROOT_SHA256\",\"qemu_aarch64_sha256\":\"$QEMU_SHA256\",\"simg2img_sha256\":\"$SIMG2IMG_SHA256\"}}" >"$ATTESTATION_TMP"
+	printf '%s\n' "{\"claims\":{\"hardware_test_only\":true,\"production\":false,\"release_eligible\":false},\"commands\":{\"apk\":[\"bubblewrap:unshare-user,pid,uts,ipc;outer-private-net\",\"source-bindings:checked-root-owned-run-bridge;outer-private-mountns\",\"cap-drop=ALL;child-verified-no-new-privs-and-zero-capability-sets\",\"env:clear;HOME=/root;LANG=C;LC_ALL=C;PATH=/usr/sbin:/usr/bin:/sbin:/bin;PWD=/;TZ=UTC\",\"--root=/image\",\"--arch=aarch64\",\"--keys-dir=/keys\",\"--no-logfile\",\"--no-network\",\"--no-cache\",\"--no-scripts\",\"--repositories-file=/dev/null\",\"--force-non-repository\",\"add\",\"/tools/sixrow.apk\",\"/tools/p2.apk\"],\"lifecycle\":[\"bubblewrap:unshare-user,pid,uts,ipc;outer-private-net\",\"source-bindings:checked-root-owned-run-bridge;outer-private-mountns\",\"cap-drop=ALL;child-verified-no-new-privs-and-zero-capability-sets\",\"env:clear;HOME=/root;LANG=C;LC_ALL=C;PATH=/usr/sbin:/usr/bin:/sbin:/bin;PROOT_NO_SECCOMP=1;PWD=/;TZ=UTC\",\"loader:--library-path=/runtime\",\"proot:-r=/image,-q=/tools/qemu-aarch64,-w=/\",\"/usr/libexec/lmi-p2-d114/config-lifecycle\",\"install\"]},\"input\":{\"apks\":{\"p2\":{\"build_attestation_sha256\":\"$P2_BUILD_ATTESTATION_SHA256\",\"sandbox_path\":\"/tools/p2.apk\",\"sha256\":\"$P2_APK_SHA256\",\"source_path\":\"private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/run2-device-xiaomi-lmi-terminal-0.1.0-r2.apk\"},\"sixrow\":{\"build_attestation_sha256\":\"$SIXROW_BUILD_ATTESTATION_SHA256\",\"sandbox_path\":\"/tools/sixrow.apk\",\"sha256\":\"$SIXROW_APK_SHA256\",\"source_path\":\"private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk\"}},\"base_sha256\":\"$BASE_SHA256\",\"candidate_rebuild_lock_schema\":\"$REBUILD_LOCK_SCHEMA\",\"candidate_rebuild_lock_sha256\":\"$REBUILD_LOCK_SHA256\",\"candidate_sha256\":\"$INPUT_SHA256\",\"candidate_size\":$IMAGE_SIZE,\"candidate_uuid\":\"$IMAGE_UUID\",\"keys\":{\"p2_sha256\":\"$P2_KEY_SHA256\",\"sixrow_sha256\":\"$SIXROW_KEY_SHA256\"},\"raw_sha256\":\"$RAW_SHA256\",\"repair_epoch\":$REPAIR_EPOCH,\"repair_log_sha256\":\"$REPAIR_LOG_SHA256\",\"sparse_sha256\":\"$SPARSE_SHA256\",\"verify_log_sha256\":\"$REPAIR_VERIFY_LOG_SHA256\"},\"output\":{\"filesystem_delta_sha256\":\"$FULL_DELTA_SHA256\",\"geometry_sha256\":\"$GEOMETRY_SHA256\",\"installed_db_sha256\":\"$INSTALLED_DB_FINAL_SHA256\",\"key_inventory_sha256\":\"$KEY_INVENTORY_SHA256\",\"mode\":\"0640\",\"owner\":\"0:$CALLER_GID\",\"p2_package_record_sha256\":\"$P2_PACKAGE_RECORD_SHA256\",\"packages\":[\"device-xiaomi-lmi-terminal=0.1.0-r2\",\"lmi-weston-sixrow-clients=14.0.2-r2\"],\"path\":\"private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/lmi-d114-rootfs-p2-r2-most-complete-injected-20260723.bundle/rootfs.ext4\",\"scripts_db_sha256\":\"$SCRIPTS_DB_FINAL_SHA256\",\"sha256\":\"$FINAL_SHA256\",\"sixrow_package_record_sha256\":\"$SIXROW_PACKAGE_RECORD_SHA256\",\"size\":$IMAGE_SIZE,\"triggers_sha256\":\"$TRIGGERS_DB_SHA256\",\"uuid\":\"$IMAGE_UUID\",\"world_sha256\":\"$WORLD_SHA256\"},\"runtime\":{\"injector_runtime_lock_schema\":\"$RUNTIME_LOCK_SCHEMA\",\"injector_runtime_lock_sha256\":\"$RUNTIME_LOCK_SHA256\",\"kernel_release\":\"$KERNEL_RELEASE\",\"mount_loop\":{\"backing_identity\":\"$ATTESTED_LOOP_BACKING_ID\",\"block_identity\":\"$ATTESTED_LOOP_DEVICE_ID\",\"mount_options\":\"$MOUNT_OPTIONS\"},\"namespaces\":{\"ipc\":\"$(readlink /proc/self/ns/ipc)\",\"mnt\":\"$(readlink /proc/self/ns/mnt)\",\"net\":\"$(readlink /proc/self/ns/net)\",\"pid\":\"$(readlink /proc/self/ns/pid)\",\"uts\":\"$(readlink /proc/self/ns/uts)\"},\"proc_version_sha256\":\"$PROC_VERSION_SHA256\",\"sandbox_entry_sha256\":\"$SANDBOX_ENTRY_SHA256\",\"sealed_script_sha256\":\"$SEALED_SCRIPT_SHA256\"},\"sanitization\":{\"apk_cache\":\"exact-four-index-members-removed\",\"apk_log\":\"empty\",\"authorized_keys\":\"absent-in-base\",\"machine_id\":\"removed\",\"resolv_conf\":\"empty\",\"shadow_backup\":\"exact-copy-of-locked-active-shadow\",\"ssh_password_authentication\":\"disabled-by-locked-drop-in\"},\"schema\":\"lmi-p2-d114-rootfs-injection-attestation/v3\",\"tools\":{\"apk_static_sha256\":\"$APK_STATIC_SHA256\",\"bash_sha256\":\"$BASH_SHA256\",\"bubblewrap_sha256\":\"$BWRAP_SHA256\",\"dumpe2fs_sha256\":\"$DUMPE2FS_SHA256\",\"e2fsck_sha256\":\"$E2FSCK_SHA256\",\"getfattr_sha256\":\"$GETFATTR_SHA256\",\"host_libc_sha256\":\"$HOST_LIBC_SHA256\",\"host_loader_sha256\":\"$HOST_LOADER_SHA256\",\"lsattr_libcom_err_sha256\":\"$LSATTR_LIBCOM_ERR_SHA256\",\"lsattr_libe2p_sha256\":\"$LSATTR_LIBE2P_SHA256\",\"lsattr_sha256\":\"$LSATTR_SHA256\",\"proot_libtalloc_sha256\":\"$PROOT_TALLOC_SHA256\",\"proot_sha256\":\"$PROOT_SHA256\",\"qemu_aarch64_sha256\":\"$QEMU_SHA256\",\"simg2img_sha256\":\"$SIMG2IMG_SHA256\"}}" >"$ATTESTATION_TMP"
 	ATTESTATION_REWRITE="$SCRATCH_DIR/attestation.normalized.json"
-	NORMALIZATION_FRAGMENT="\"normalization\":{\"all_free_blocks_zero\":true,\"allocated_only_command\":[\"e2image\",\"-r\",\"-a\",\"-p\"],\"inactive_journal\":{\"block_count\":$JOURNAL_INACTIVE_BLOCK_COUNT,\"first_block\":$JOURNAL_INACTIVE_FIRST_BLOCK,\"sha256\":\"$JOURNAL_INACTIVE_ZERO_SHA256\"},\"journal_extent\":{\"block_count\":$JOURNAL_BLOCK_COUNT,\"first_block\":$JOURNAL_FIRST_BLOCK},\"pre_normalization_sha256\":\"$PRE_NORMALIZATION_SHA256\",\"proof\":\"second-e2image-byte-identical\",\"proof_sha256\":\"$NORMALIZATION_PROOF_SHA256\",\"reviewed_freed_blocks\":[$REVIEWED_FREED_BLOCK_ONE,$REVIEWED_FREED_BLOCK_TWO],\"sparse_st_blocks\":$NORMALIZED_ST_BLOCKS,\"tree_identity_sha256\":\"$NORMALIZATION_TREE_SHA256\"},"
+	NORMALIZATION_FRAGMENT="\"normalization\":{\"all_free_blocks_zero\":true,\"allocated_only_command\":[\"e2image\",\"-r\",\"-a\",\"-p\"],\"inactive_journal\":{\"block_count\":$JOURNAL_INACTIVE_BLOCK_COUNT,\"first_block\":$JOURNAL_INACTIVE_FIRST_BLOCK,\"sha256\":\"$JOURNAL_INACTIVE_ZERO_SHA256\"},\"journal_extent\":{\"block_count\":$JOURNAL_BLOCK_COUNT,\"first_block\":$JOURNAL_FIRST_BLOCK},\"pre_normalization_sha256\":\"$PRE_NORMALIZATION_SHA256\",\"proof\":\"second-e2image-byte-identical\",\"proof_sha256\":\"$NORMALIZATION_PROOF_SHA256\",\"reviewed_freed_blocks\":[],\"sparse_st_blocks\":$NORMALIZED_ST_BLOCKS,\"tree_identity_sha256\":\"$NORMALIZATION_TREE_SHA256\"},"
 	awk -v normalization="$NORMALIZATION_FRAGMENT" -v debugfs_sha="$DEBUGFS_SHA256" -v e2image_sha="$E2IMAGE_SHA256" '
 		{
 			if (gsub(/"output":/, normalization "\"output\":" ) != 1) exit 91
