@@ -11,6 +11,8 @@ import sys
 import tempfile
 import unittest
 
+from tests.lmi_p2_d114 import host_bound
+
 
 REPO = Path(__file__).resolve().parents[2]
 BUNDLE = (
@@ -40,6 +42,7 @@ def load_stager():
 class LiveInstallerContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        host_bound.require_path(HELPER)
         cls.shell = HELPER.read_text(encoding="utf-8")
         cls.stage_source = STAGER.read_text(encoding="utf-8")
         cls.stage = load_stager()

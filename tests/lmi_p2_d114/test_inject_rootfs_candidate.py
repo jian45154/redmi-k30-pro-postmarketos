@@ -1055,6 +1055,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             self.assertNotIn("sudo:", result.stderr)
 
     def test_private_input_gate_accepts_only_the_four_exact_old_build_inputs(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
         allowed = self.run_helper(
             'REPO_OWNER="$(stat -Lc %u:%g -- "$REPO")"\n'
             'for spec in "$RAW|raw" "$SPARSE|sparse" "$BASE|base" "$INPUT|candidate-input"; do\n'
