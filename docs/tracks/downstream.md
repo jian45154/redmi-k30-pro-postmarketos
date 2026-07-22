@@ -42,7 +42,14 @@
 
 The strongest verified hardware milestone is `D-v43`: downstream Wi-Fi works
 well enough to create interfaces and scan. The latest downstream artifact is
-`D-v46`, which appears to be a cleanup build on top of that Wi-Fi path.
+`D-v46`, which is a build-only cleanup artifact on top of that Wi-Fi path.
+Both manifests record kernel SHA-256
+`38c38390ca9a474b4d29d24fb25ad9139bb58e2ad9cd88b5b601abad2f8c2d5e`.
+That byte identity transfers the `D-v43` kernel evidence to those kernel bytes;
+it does not directly runtime-verify the complete `D-v46` image or its cleanup
+changes. Later reports that classify a running rootfs as `D-v46` lack a
+separate archived artifact-to-runtime chain and do not supersede `D-v43` as
+the strongest verified milestone.
 
 ## Open Work
 

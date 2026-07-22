@@ -1,0 +1,73 @@
+{
+  "schema": "lmi-windows-history-evidence-lock/v1",
+  "reviewed_at": "2026-07-20",
+  "authority": {
+    "governance": "current-wsl-project-only",
+    "source_role": "historical-evidence-only",
+    "source_files_executed": false,
+    "source_files_modified": false,
+    "source_tree_head": "e47ee0143acf3d32aa407a7574e185afa3ab938d",
+    "source_tree_dirty": true,
+    "governing_tree_head_at_review": "4cf8bbfa54b4dc7da138b0681d08e4a6949afee7",
+    "import_decision": "no-new-file-import-hash-reference-only"
+  },
+  "already_present_in_wsl": {
+    "d110_boot_sha256": "2b264d64d2ed22f0ab5c3c2615b0bda9ed821fa5d8d5d691ea513e5d2f071487",
+    "d110_manifest_sha256": "cefd76780d97eec69083af3830fa64fbad2b44e0fed1795d4235915451f6711b",
+    "d114_transfer_manifest_sha256": "cb61ff6ee223e3b16277363e9b4e8ab619bfde377b9c0cba5d6c3e76923f2a0d",
+    "d114_deploy_profile_sha256": "bf5076df4283da8b2227d1742380fae2cbd42923d4650a440dfb028a1902f9e4",
+    "d80_archive_sha256": "f380eb275ef4ba8854dd3bc389f7113a701a29ab3fd302684b729e6ad64286ca",
+    "d204_live_ssh_attestation_sha256": "9fd4b4743b78ff39c16cd83f8c561089501a7394348d6d3c51c08d0abddc2fe9",
+    "d205_live_terminal_osk_attestation_sha256": "8c422b0a8ef50698102b814856cbe49c7e7ade2296a086c093d5865f330a8ecf"
+  },
+  "historical_evidence": [
+    {
+      "id": "d82-weston-runtime",
+      "source_relative_path": "logs/downstream-d82-weston-keyboard-readonly-current.txt",
+      "sha256": "4b07f5e858cd4bf0e7427ac9a51914c357da263744fa00e52d4da19768181558",
+      "provenance": "ignored-content-addressed-not-commit-bound",
+      "accepted_scope": "Weston, terminal, editor and exact weston-keyboard runtime inventory",
+      "imported": false
+    },
+    {
+      "id": "d82-keyboard-observation",
+      "source_relative_path": "logs/d82-ramboot-weston-phone10-grid-persistent.observation.json",
+      "sha256": "a2b27a2981c5c34972ae9c9ae831ce56b0c939694217cde810e73ed5ae04ccc9",
+      "provenance": "already-present-in-locked-d80-archive",
+      "accepted_scope": "operator reported complete ten-column keyboard visible with adequate targets",
+      "imported": false
+    },
+    {
+      "id": "d85-audio-binding",
+      "source_relative_path": "logs/downstream-d85-audio-binding-readonly-current.txt",
+      "sha256": "f2b8fd1db700f12ca07ad23c40e8758600e3300542821534af96a10481bd2e98",
+      "provenance": "ignored-content-addressed-not-commit-bound",
+      "accepted_scope": "historical D84/r9 nested sound DT, APR/Kona driver, unbound packet core, no ALSA card and TFA9874 probe evidence",
+      "imported": false
+    },
+    {
+      "id": "d205-greetd-failure",
+      "source_relative_path": "logs/d205-d114-pinned-greetd-failure-20260717-r1.txt",
+      "sha256": "010fa51dfaacb26848761fbc023f0a3ec23f7d44240989a030690e7052fc8723",
+      "provenance": "ignored-content-addressed-not-commit-bound",
+      "accepted_scope": "splash clear succeeded and greetd reported no default_session",
+      "imported": false,
+      "reason_not_imported": "contains SSH session metadata and local path; conflicts with stale completed summary; current WSL evidence supersedes it"
+    }
+  ],
+  "rejected_scopes": [
+    "windows-governance-and-agent-files",
+    "windows-standing-or-automation-approval",
+    "windows-executors-and-scripts",
+    "windows-recovery-and-rom-binaries",
+    "windows-raw-device-logs",
+    "windows-full-and-sparse-images",
+    "windows-apkbuilds-as-current-wsl-source",
+    "windows-d114-full-manifest-as-deployed-pair"
+  ],
+  "current_status": {
+    "p1": "live-ssh-verified",
+    "p2": "runtime-chain-verified-physical-interaction-and-persistent-image-pending",
+    "p3": "not-working-current-runtime-readonly-baseline-required"
+  }
+}

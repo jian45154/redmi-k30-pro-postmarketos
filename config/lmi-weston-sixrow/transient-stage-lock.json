@@ -1,0 +1,86 @@
+{
+  "schema": "lmi-weston-sixrow-transient-source-lock/v1",
+  "status": "NO_GO_EXECUTION_DISABLED_PID_SIGNAL_RACE",
+  "execution_enabled": false,
+  "review_decision": {
+    "outcome": "NO-GO",
+    "reason_code": "LEGACY_STOCK_PID_SIGNAL_RACE",
+    "scope": "transient Weston handoff execution",
+    "revisit_condition": "Replace the already-running legacy stock process with a runner that binds every child PID to PPID, start time, executable path, and executable hash immediately before signalling, then complete a new independent review."
+  },
+  "remote_root": "/tmp/lmi-weston-sixrow-r1-ff8dbb022089",
+  "sources": [
+    {
+      "path": "scripts/lmi_weston_sixrow/stage_transient.py",
+      "sha256": "86ba94c932d3c0da69dbcc005dd4d0b185cdea4ac32ca05c56f3416b4938ee99"
+    },
+    {
+      "path": "files/lmi-weston-sixrow/transient-supervisor.in",
+      "sha256": "f8ab1eb428d40471e1859878a1100974f6ba0a2b42c37606952075c4ababdeb4"
+    },
+    {
+      "path": "files/lmi-weston-sixrow/transient-weston.ini.in",
+      "sha256": "4addb87566ba866c5cb284f254479d776d5a2d9acdebeee3899c5c0dc6f78744"
+    },
+    {
+      "path": "tests/lmi_weston_sixrow/test_transient_stage.py",
+      "sha256": "cbde719b840d515ea589fc4f2b269331758db5879d1a8a54709873e81998575a"
+    },
+    {
+      "path": "files/lmi-weston-sixrow/frozen-d114-r1-stock-session",
+      "sha256": "57c77281f23b57ab297fe77d434f89762200cf554405be84ec375b44ae4fc77a"
+    },
+    {
+      "path": "files/lmi-weston-sixrow/frozen-d114-r1-stock-weston.ini",
+      "sha256": "19a872670debc8c81bcb64b16f5e49b8958709d8150fcf3634c63cab25ac67f4"
+    },
+    {
+      "path": "config/lmi-weston-sixrow/build-attestation.json",
+      "sha256": "b4642db49c85e31a3b0b388968e1af94f4820d02ee712f09baa625c456e43e99"
+    }
+  ],
+  "frozen_baseline": {
+    "session_path": "files/lmi-weston-sixrow/frozen-d114-r1-stock-session",
+    "session_sha256": "57c77281f23b57ab297fe77d434f89762200cf554405be84ec375b44ae4fc77a",
+    "weston_config_path": "files/lmi-weston-sixrow/frozen-d114-r1-stock-weston.ini",
+    "weston_config_sha256": "19a872670debc8c81bcb64b16f5e49b8958709d8150fcf3634c63cab25ac67f4",
+    "recovered_identical_r1_copies": 2,
+    "comparison_r0_session_sha256": "6d8935d01c676a7501b72fb9fe2a37cc8a1fc11bad436a1c732599762d3bb792",
+    "comparison_identical_r0_copies": 4,
+    "comparison_delta": "The r1 session removes only Weston's unsupported --tty=7 option from the r0 v2-v5 baseline.",
+    "provenance": "Recovered byte-for-byte from two independent pre-sixrow r1 overlay build outputs and compared with four byte-identical v2-v5 r0 build copies. No private or temporary developer path is needed to reproduce the fallback source."
+  },
+  "runtime_pins": {
+    "active_stock_session": {
+      "path": "/tmp/lmi-p2-d114-r1-57c77281/session",
+      "sha256": "57c77281f23b57ab297fe77d434f89762200cf554405be84ec375b44ae4fc77a",
+      "required_ppid": 1
+    },
+    "busybox_sha256": "a8d8e2b9898537c8b9fb4fcb3d9c95c2e09fecc76c9adfb19ac75965e1a4f19b",
+    "setsid_sha256": "53c7e6e86b00235ccd9c2c1c15667d5c5a02500ddc6a587d3702dcb482763903",
+    "candidate_apk_sha256": "ff8dbb02208959db4af9f1da735cb7b4f8765138388b6f7daebabce161fe208b"
+  },
+  "runtime_evidence": {
+    "rootfs_image": {
+      "sha256": "90b9f0ab94198f78eb251cff0d4c521f7b4bb47fb50967a7c661eacc026e0e82",
+      "size": 2826960896
+    },
+    "busybox_path": "/usr/bin/busybox",
+    "busybox_sha256": "a8d8e2b9898537c8b9fb4fcb3d9c95c2e09fecc76c9adfb19ac75965e1a4f19b",
+    "setsid_path": "/usr/bin/setsid",
+    "setsid_sha256": "53c7e6e86b00235ccd9c2c1c15667d5c5a02500ddc6a587d3702dcb482763903",
+    "method": "Read-only debugfs dumps from the hash-identified candidate rootfs followed by host SHA-256 on 2026-07-22.",
+    "active_session_evidence": "The contemporaneous D207 evidence record identified the exact stock session path/hash, launch method, PID comm, PPID 1, visible display, and partial physical OSK use. It did not capture the child identities required to make later signalling safe, so it is evidence for the NO-GO decision rather than an executable source dependency."
+  },
+  "trial_contract": {
+    "candidate_stability_seconds": 12,
+    "interactive_trial_seconds": 120,
+    "restore_stability_seconds": 12,
+    "allowed_write_roots": [
+      "/tmp/lmi-weston-sixrow-r1-ff8dbb022089",
+      "/run/user/10000"
+    ],
+    "residual_risk": "The retained handoff implementation is inspection material only. Its supervisor exits with status 125 before preflight, process discovery, signalling, or writes.",
+    "legacy_active_stock_shutdown_risk": "The already-running 57c772... stock script does not bind each Weston/terminal child PID to PPID/starttime/exe/hash immediately before its own cleanup signals. The new candidate and fallback do, but they cannot repair the legacy process already running. Execution remains disabled; operator acceptance does not waive this NO-GO decision."
+  }
+}

@@ -1,5 +1,9 @@
 # Xiaomi lmi r6 bootmem release manifest - 2026-06-24
 
+> **Archived evidence — do not execute commands from this file.**
+> This snapshot preserves the M-r6 state recorded on 2026-06-24. Any "current"
+> wording below is historical and does not describe the present device route.
+
 This is a lightweight repository archive of the host-side release bundle. Large
 images are intentionally not committed to git; use the paths and hashes below to
 identify the exact artifacts in the local release bundle.

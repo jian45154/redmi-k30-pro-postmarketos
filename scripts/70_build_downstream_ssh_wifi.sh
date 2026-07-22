@@ -1,64 +1,52 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-repo=${REPO:-$(dirname "$script_dir")}
-pmaports=${PMAPORTS:-/home/microstar/.local/var/pmbootstrap/cache_git/pmaports}
-disabled_dir="$pmaports/device/.lmi-overlay-disabled"
-tag=${TAG:-20260624}
-variant=${VARIANT:-v46-daemon-status-idempotent}
+if [[ $# -ne 2 ]]; then
+	builtin printf '%s\n' \
+		'usage: 70_build_downstream_ssh_wifi.sh POLICY_ID TAG' >&2
+	exit 64
+fi
 
-export TAG="$tag"
-export PMOS_INSTALL_PASSWORD=${PMOS_INSTALL_PASSWORD:-147147}
-export OUT_BOOT=${OUT_BOOT:-$repo/artifacts/images/pmos-lmi-normalboot-$variant-$tag.img}
-export OUT_USERDATA=${OUT_USERDATA:-$repo/artifacts/images/xiaomi-lmi-$variant-userdata-$tag.img}
-export OUT_MANIFEST=${OUT_MANIFEST:-$repo/artifacts/images/pmos-lmi-$variant-full-$tag.manifest}
-export EXPORT_DIR=${EXPORT_DIR:-/tmp/postmarketOS-export-$variant}
-export LOG=${LOG:-$repo/logs/pmaports-build-$variant-$tag.txt}
+policy_id=$1
+tag=$2
+if [[ ! $policy_id =~ ^[0-9a-f]{64}$ ]]; then
+	builtin printf '%s\n' 'invalid lmi P1 policy id' >&2
+	exit 64
+fi
+if [[ ! $tag =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]]; then
+	builtin printf '%s\n' 'invalid lmi P1 build tag' >&2
+	exit 64
+fi
 
-mainline_paths=(
-	"$pmaports/device/testing/device-xiaomi-lmi"
-	"$pmaports/device/testing/firmware-xiaomi-lmi"
-	"$pmaports/device/testing/linux-postmarketos-qcom-sm8250-lmi"
-)
+request_json=$(builtin printf \
+	'{"policy_id":"%s","schema":"lmi-p1-build-request/v1","tag":"%s"}' \
+	"$policy_id" "$tag")
+request_length=$((${#request_json} + 1))
+if ((request_length <= 0 || request_length > 4096)); then
+	builtin printf '%s\n' 'lmi P1 request exceeds 4 KiB' >&2
+	exit 64
+fi
 
-restore_mainline() {
-	local base name disabled
-
-	shopt -s nullglob
-	for disabled in "$disabled_dir"/*.lmi-build-disabled; do
-		name=${disabled##*/}
-		base=${name%.lmi-build-disabled}
-		case "$base" in
-			device-xiaomi-lmi|firmware-xiaomi-lmi|linux-postmarketos-qcom-sm8250-lmi)
-				mkdir -p "$pmaports/device/testing"
-				mv "$disabled" "$pmaports/device/testing/$base"
-				;;
-		esac
-	done
-	shopt -u nullglob
+umask 077
+request_file=$(/usr/bin/mktemp /tmp/lmi-p1-build-request.XXXXXXXX)
+cleanup() {
+	/bin/rm -f -- "$request_file"
 }
+trap cleanup EXIT HUP INT TERM
 
-trap restore_mainline EXIT
-
-mkdir -p "$disabled_dir"
-for path in "${mainline_paths[@]}"; do
-	if [ -e "$path" ]; then
-		mv "$path" "$disabled_dir/${path##*/}.lmi-build-disabled"
-	fi
-done
-
-"$repo/scripts/21_build_pmos_v27_full_reproducible.sh"
-
+builtin printf -v request_length_escape \
+	'\\x%02x\\x%02x\\x%02x\\x%02x' \
+	$(((request_length >> 24) & 255)) \
+	$(((request_length >> 16) & 255)) \
+	$(((request_length >> 8) & 255)) \
+	$((request_length & 255))
 {
-	echo "variant=$variant"
-	echo "purpose=downstream boot/rootfs with RNDIS+SSH baseline and manual Wi-Fi bring-up"
-	echo "device_xiaomi_lmi_expected=1-r107"
-	echo "linux_xiaomi_lmi_expected=4.19.325-r8"
-	echo "ssh_strategy=shelli/postmarketos-base OpenRC SSH as in verified v27 baseline"
-	echo "wifi_strategy=SSH-first boot; run static qrtr-ns before CNSS; mount stock Android system/vendor/runtime APEX read-only; mount persist read-only for WLAN MAC; create /data/vendor/wifi sockets; link vendor wlan/qca_cld/WCNSS_qcom_cfg.ini and wlan_mac.bin into /lib/firmware; run vendor cnss-daemon with LD_PRELOAD Android property shim; manual WLAN trigger"
-	echo "wifi_services_expected=/usr/sbin/lmi-qrtr-ns /etc/init.d/lmi-qrtr-ns /usr/sbin/lmi-wifi-start /etc/conf.d/lmi-wlan-firmware"
-	echo "safety=no flashing or rebooting performed by this build script"
-} >> "$OUT_MANIFEST"
+	builtin printf '%s' 'LMIR'
+	builtin printf '%b' "$request_length_escape"
+	builtin printf '%s\n' "$request_json"
+} >"$request_file"
+/bin/chmod 0600 "$request_file"
+/usr/bin/sync -f "$request_file"
 
-cat "$OUT_MANIFEST"
+/usr/bin/sudo -n -- /usr/bin/python3 -I -S -B \
+	/usr/local/sbin/lmi-p1-root-launcher <"$request_file"

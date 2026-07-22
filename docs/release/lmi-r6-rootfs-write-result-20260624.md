@@ -1,5 +1,9 @@
 # Xiaomi lmi r6 rootfs write result - 2026-06-24
 
+> **Archived evidence — do not execute commands from this file.**
+> This completed result is historical evidence. Any suggested next step or
+> approval language below has expired and is not present authorization.
+
 This records the approved rootfs write that was executed after the r6
 mainline/copydown fastbootd preflight passed. It is not an approval for any
 additional write or reboot.
@@ -15,7 +19,7 @@ LMI_FLASH_CONFIRM=flash-xiaomi-lmi-rootfs-45bc097634b5-d778d4ea659e scripts/53_s
 - Stage: `rootfs`
 - Target partition: `userdata`
 - Status: `OK`
-- Fastbootd device after write: `8336ded7 fastboot`
+- Fastbootd device after write: `<redacted-device-serial> fastboot`
 - Product after write: `lmi`
 - is-userspace after write: `yes`
 - userdata size reported after write: `0x1AC07FB000`

@@ -1,6 +1,6 @@
 ---
 name: pmos-port-unsupported-device
-description: Assess, port, build, temporarily boot, debug, and install postmarketOS on phones or tablets that do not have a supported device package. Use when Codex must investigate an unsupported postmarketOS device, create or audit pmaports device and kernel packages, determine deviceinfo values, build images with pmbootstrap, diagnose initramfs/rootfs/SSH failures, or plan a reversible installation without risking Android partitions.
+description: Assess, port, build, temporarily boot, debug, and install postmarketOS on phones or tablets that do not have a supported device package. Use when an agent must investigate an unsupported postmarketOS device, create or audit pmaports device and kernel packages, determine deviceinfo values, build images with pmbootstrap, diagnose initramfs/rootfs/SSH failures, or plan a reversible installation without risking Android partitions.
 ---
 
 # Port an Unsupported Device to postmarketOS

@@ -1,0 +1,91 @@
+{
+  "architecture": "x86_64",
+  "artifacts": [
+    {
+      "kind": "dynamic-executable",
+      "mode": "0755",
+      "needed": [
+        "libselinux.so.1",
+        "libcap.so.2",
+        "libc.so.6"
+      ],
+      "path": "/usr/bin/bwrap",
+      "sha256": "0abea81db798ebf6b4742ac0664802d97521547a353c2a0dbdc21d76cbbfd2c0"
+    },
+    {
+      "kind": "dynamic-executable",
+      "mode": "0755",
+      "needed": [
+        "libc.so.6"
+      ],
+      "path": "/usr/bin/dash",
+      "sha256": "c626229526bb58ec2d0f585f3c3ae1412e6f973b4353385042d11c38d8426917"
+    },
+    {
+      "kind": "dynamic-executable",
+      "mode": "0755",
+      "needed": [
+        "libtalloc.so.2",
+        "libc.so.6"
+      ],
+      "path": "private/lmi-p1/calibration/acquisition-root/proot-root/usr/bin/proot",
+      "sha256": "e95e0da51b8948c38743704a0e751276faf95b176e11dc4f1f99bca7157fb2ab"
+    },
+    {
+      "kind": "dynamic-loader",
+      "mode": "0755",
+      "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+      "sha256": "223b94a42758f2434da331cc0aa62db1af5b456481762c5caceefa1a2d1eb8fb"
+    },
+    {
+      "kind": "shared-library",
+      "mode": "0755",
+      "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+      "sha256": "d763925433ff9b757390549e1b20c085f5e6de27ae700fe89194178d96a8a2b0",
+      "soname": "libc.so.6"
+    },
+    {
+      "kind": "shared-library",
+      "mode": "0644",
+      "path": "/usr/lib/x86_64-linux-gnu/libselinux.so.1",
+      "sha256": "7538ee77765a27966563c0d22437a3080dcdb346ff76cc16d71a3ce3379a716a",
+      "soname": "libselinux.so.1"
+    },
+    {
+      "kind": "shared-library",
+      "mode": "0644",
+      "path": "/usr/lib/x86_64-linux-gnu/libcap.so.2.75",
+      "sha256": "c5b463a8136dabb152bad8b04e89bf67bd2049ef49777ed0b96bdbc6cb5b9565",
+      "soname": "libcap.so.2"
+    },
+    {
+      "kind": "shared-library",
+      "mode": "0644",
+      "path": "/usr/lib/x86_64-linux-gnu/libpcre2-8.so.0.14.0",
+      "sha256": "4a6b6b2078685b074869d75cb068664d7da6b3036df7bca0442b1bbbd4ac7e65",
+      "soname": "libpcre2-8.so.0"
+    },
+    {
+      "kind": "shared-library",
+      "mode": "0644",
+      "path": "private/lmi-p1/calibration/acquisition-root/proot-root/usr/lib/x86_64-linux-gnu/libtalloc.so.2.4.3",
+      "sha256": "261d4fd32e2341567eeafba6d4d75684c8eeaedb9bcda04f1fd69792e6197634",
+      "soname": "libtalloc.so.2"
+    },
+    {
+      "kind": "static-pie-executable",
+      "mode": "0700",
+      "path": "private/lmi-p1/calibration/acquisition-root/work-proot-chroot2/apk.static",
+      "sha256": "a6542dc1fdb6214be1ef462668241bfe91f301e9249c99c0c6c327269d5e5ce4"
+    },
+    {
+      "kind": "static-pie-executable",
+      "mode": "0755",
+      "path": "private/lmi-p1/calibration/acquisition-root/work-proot-chroot2/chroot_native-pre-rootfs-calibration/usr/bin/qemu-aarch64",
+      "sha256": "4a2fd0e1fb9c1ba3f63f81113ead9e96e0cdb513c64c83bb2ecfc94e1df05e4c"
+    }
+  ],
+  "interpreter": "/lib64/ld-linux-x86-64.so.2 -> /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+  "schema": "lmi-p2-d114-injector-runtime-lock/v1",
+  "scope": "copied bubblewrap, dash, PRoot, QEMU, apk.static, and exact dynamic sandbox closure"
+}

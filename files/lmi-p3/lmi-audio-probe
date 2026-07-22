@@ -1,0 +1,431 @@
+#!/bin/sh
+set -u
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+LC_ALL=C
+export PATH LC_ALL
+umask 077
+
+SYS_BASE=/sys
+PROC_BASE=/proc
+DEV_BASE=/dev
+ETC_BASE=/etc
+BOOT_BASE=/boot
+RUN_BASE=/run
+FIRMWARE_BASE=/lib/firmware
+FIRMWARE_REVIEW_BASE=/etc/lmi-p3
+ARCHIVE_ROOT=/var/log
+ARCHIVE_DIRECTORY=/var/log/lmi-p3
+ID=/usr/bin/id
+STAT=/usr/bin/stat
+DT_BASE=$SYS_BASE/firmware/devicetree/base
+
+fail() {
+	printf 'lmi-audio-probe: %s\n' "$1" >&2
+	return 1
+}
+
+redact_stream() {
+	sed -E \
+		-e '/(serial|Serial|SERIAL|cpuid|CPUID|uuid|UUID|ssid|SSID|bssid|BSSID)/ s/.*/<sensitive-line-redacted>/' \
+		-e '/(build|Build|BUILD)[ _-]*(user|host|USER|HOST)/ s/.*/<build-identity-redacted>/' \
+		-e 's/(serial(no)?|Serial([Nn]o| [Nn]umber)?|SERIAL(NO)?|cpuid|CPUID|uuid|UUID|build[_ -]?(user|host)|BUILD[_ -]?(USER|HOST)|hostname|HOSTNAME|ssid|SSID|bssid|BSSID|mac([_ -]?address)?|MAC([_ -]?ADDRESS)?|ip([_ -]?address)?|IP([_ -]?ADDRESS)?)[[:space:]]*[:=][[:space:]]*.*/<sensitive-field-redacted>/g' \
+		-e 's/[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}/<uuid-redacted>/g' \
+		-e 's/([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}/<mac-redacted>/g' \
+		-e 's/([0-9]{1,3}\.){3}[0-9]{1,3}/<ipv4-redacted>/g' \
+		-e 's/[[:xdigit:]]{1,4}(:[[:xdigit:]]{0,4}){2,7}/<ipv6-redacted>/g' \
+		-e 's/[[:alnum:]_.-]+@[[:alnum:]_.-]+/<build-user-host-redacted>/g' \
+		-e 's#/(home|Users)/[^/[:space:]]+#/\1/<user-redacted>#g'
+}
+
+check_root_owned_directory() {
+	path=$1
+	mode=$2
+	label=$3
+	[ -d "$path" ] && [ ! -L "$path" ] ||
+		fail "$label is not one real directory: $path" || return 1
+	metadata=$($STAT -c '%u:%g:%a:%F' "$path") ||
+		fail "could not stat $label: $path" || return 1
+	[ "$metadata" = "0:0:$mode:directory" ] ||
+		fail "$label must be root:root mode $mode" || return 1
+}
+
+check_private_archive_file() {
+	path=$1
+	label=$2
+	[ -f "$path" ] && [ ! -L "$path" ] && [ -r "$path" ] ||
+		fail "$label is not one readable regular file: $path" || return 1
+	metadata=$($STAT -c '%u:%g:%a:%h:%F' "$path") ||
+		fail "could not stat $label: $path" || return 1
+	[ "$metadata" = '0:0:600:1:regular file' ] ||
+		fail "$label must be root:root mode 600 with one link" || return 1
+}
+
+ensure_archive_directory() {
+	[ -x "$ID" ] && [ -x "$STAT" ] ||
+		fail 'absolute-path archive inspection tools are unavailable' || return 1
+	[ "$($ID -u)" = 0 ] ||
+		fail 'private evidence archival requires explicit uid 0' || return 1
+	check_root_owned_directory "$ARCHIVE_ROOT" 755 'archive root' || return 1
+	if [ ! -e "$ARCHIVE_DIRECTORY" ] && [ ! -L "$ARCHIVE_DIRECTORY" ]; then
+		if ! mkdir -m 700 "$ARCHIVE_DIRECTORY" 2>/dev/null; then
+			[ -e "$ARCHIVE_DIRECTORY" ] || [ -L "$ARCHIVE_DIRECTORY" ] ||
+				fail 'could not create the private archive directory safely' ||
+				return 1
+		fi
+	fi
+	check_root_owned_directory "$ARCHIVE_DIRECTORY" 700 \
+		'private archive directory' || return 1
+}
+
+section() {
+	printf '\n=== %s ===\n' "$1"
+}
+
+run_readonly() {
+	printf '$'
+	printf ' %s' "$@"
+	printf '\n'
+	"$@" 2>&1 || printf '[unavailable exit=%s]\n' "$?"
+}
+
+show_readable_file() {
+	path=$1
+	if [ -r "$path" ]; then
+		printf '%s:\n' "$path"
+		sed -n '1,240p' "$path" 2>&1 || true
+	else
+		printf '%s=<missing-or-unreadable>\n' "$path"
+	fi
+}
+
+compatible_is_audio() {
+	tr '\000' '\n' < "$1" 2>/dev/null |
+		grep -Eiq '(audio|sound|snd|apr|q6|adsp|lpass|bolero|wcd|tfa98|swr|soundwire|slim)'
+}
+
+print_nul_strings() {
+	tr '\000' '\n' < "$1" 2>/dev/null | sed '/^$/d' || true
+}
+
+show_driver_link() {
+	device=$1
+	printf '  driver: '
+	if [ -L "$device/driver" ]; then
+		readlink "$device/driver" 2>&1 || true
+	else
+		printf '%s\n' '<unbound>'
+	fi
+}
+
+collect_probe() {
+section "release, running kernel, and exact DT identity inputs"
+printf '%s\n' '$ uname -s; uname -r; uname -m (nodename omitted)'
+uname -s 2>&1 || printf '[unavailable exit=%s]\n' "$?"
+uname -r 2>&1 || printf '[unavailable exit=%s]\n' "$?"
+uname -m 2>&1 || printf '[unavailable exit=%s]\n' "$?"
+show_readable_file "$PROC_BASE/version"
+show_readable_file "$ETC_BASE/lmi-release-identity"
+show_readable_file "$SYS_BASE/firmware/devicetree/base/model"
+if [ -r "$DT_BASE/compatible" ]; then
+	printf '%s:\n' "$DT_BASE/compatible"
+	print_nul_strings "$DT_BASE/compatible"
+else
+	printf '%s=<missing-or-unreadable>\n' "$DT_BASE/compatible"
+fi
+
+section "nested device-tree audio compatibles"
+if [ -d "$DT_BASE" ]; then
+	find "$DT_BASE" -type f -name compatible -print 2>/dev/null |
+		sort |
+		while IFS= read -r compatible; do
+			compatible_is_audio "$compatible" || continue
+			node=${compatible%/compatible}
+			printf '%s\n' "$node"
+			printf '  compatible: '
+			print_nul_strings "$compatible" | tr '\n' ' '
+			printf '\n'
+			for property in qcom,model model status reg; do
+				[ -r "$node/$property" ] || continue
+				printf '  %s: ' "$property"
+				print_nul_strings "$node/$property" | tr '\n' ' '
+				printf '\n'
+			done
+		done
+else
+	printf '%s=<missing>\n' "$DT_BASE"
+fi
+
+section "boot_adsp and downstream subsystem state"
+run_readonly ls -ld "$SYS_BASE/kernel/boot_adsp" "$SYS_BASE/kernel/boot_adsp/boot"
+if [ -w "$SYS_BASE/kernel/boot_adsp/boot" ]; then
+	printf '%s\n' "$SYS_BASE/kernel/boot_adsp/boot=writable"
+else
+	printf '%s\n' "$SYS_BASE/kernel/boot_adsp/boot=not-writable-or-missing"
+fi
+for subsystem in "$SYS_BASE"/bus/msm_subsys/devices/subsys*; do
+	[ -d "$subsystem" ] || continue
+	printf '%s\n' "$subsystem"
+	for property in name state firmware_name crash_count restart_level; do
+		[ -r "$subsystem/$property" ] || continue
+		printf '  %s: ' "$property"
+		sed -n '1,8p' "$subsystem/$property" 2>&1 || true
+	done
+done
+if [ -d "$SYS_BASE/class/remoteproc" ]; then
+	find "$SYS_BASE/class/remoteproc" -maxdepth 2 \
+		\( -name name -o -name state -o -name firmware \) -type f -print 2>/dev/null |
+		sort | sed -n '1,240p' |
+		while IFS= read -r property; do show_readable_file "$property"; done
+else
+	printf '%s=<missing>\n' "$SYS_BASE/class/remoteproc"
+fi
+
+section "ADSP firmware metadata, segment set, and review hooks"
+if [ -d "$FIRMWARE_BASE" ]; then
+	find "$FIRMWARE_BASE" -maxdepth 1 \( -type f -o -type l \) \
+		\( -name adsp.mdt -o -name 'adsp.b*' \) -print 2>/dev/null |
+		sort |
+		while IFS= read -r firmware; do
+			if [ -f "$firmware" ] && [ -r "$firmware" ] && [ -s "$firmware" ]; then
+				readability=nonempty-readable-regular-target
+			else
+				readability=invalid-or-unreadable-target
+			fi
+			printf '%s %s\n' "$readability" "$firmware"
+			ls -ld "$firmware" 2>&1 || true
+			readlink -f "$firmware" 2>&1 || true
+		done
+else
+	printf '%s=<missing>\n' "$FIRMWARE_BASE"
+fi
+for review_file in "$FIRMWARE_REVIEW_BASE/adsp-firmware.inventory" \
+	"$FIRMWARE_REVIEW_BASE/adsp-firmware.provenance"; do
+	if [ -f "$review_file" ] && [ ! -L "$review_file" ] && [ -r "$review_file" ]; then
+		ls -ld "$review_file" 2>&1 || true
+		sha256sum "$review_file" 2>&1 || true
+	else
+		printf '%s=<missing-or-unsafe>\n' "$review_file"
+	fi
+done
+
+section "OpenRC required-service state and ordering inputs"
+for service in lmi-firmware-mount lmi-qrtr-ns pd-mapper rmtfs tqftpserv; do
+	if [ -e "$RUN_BASE/openrc/started/$service" ] ||
+		[ -L "$RUN_BASE/openrc/started/$service" ]; then
+		printf '%s=started-marker-present\n' "$service"
+		run_readonly ls -ld "$RUN_BASE/openrc/started/$service"
+	else
+		printf '%s=started-marker-absent\n' "$service"
+	fi
+	for runlevel_link in "$ETC_BASE"/runlevels/*/"$service"; do
+		[ -L "$runlevel_link" ] || continue
+		printf '%s -> ' "$runlevel_link"
+		readlink "$runlevel_link" 2>&1 || true
+	done
+done
+
+section "platform, downstream SWR, SoundWire, and SLIMbus bindings"
+for device in "$SYS_BASE"/bus/platform/devices/*; do
+	[ -e "$device" ] || continue
+	compatible=$device/of_node/compatible
+	[ -r "$compatible" ] || continue
+	compatible_is_audio "$compatible" || continue
+	printf '%s\n' "$device"
+	printf '  compatible: '
+	print_nul_strings "$compatible" | tr '\n' ' '
+	printf '\n'
+	show_driver_link "$device"
+done
+for bus in swr soundwire slimbus; do
+	devices=$SYS_BASE/bus/$bus/devices
+	if [ ! -d "$devices" ]; then
+		printf '%s=<missing>\n' "$devices"
+		continue
+	fi
+	for device in "$devices"/*; do
+		[ -e "$device" ] || [ -L "$device" ] || continue
+		printf '%s\n' "$device"
+		for property in name modalias; do
+			[ -r "$device/$property" ] || continue
+			printf '  %s: ' "$property"
+			sed -n '1,8p' "$device/$property" 2>&1 || true
+		done
+		show_driver_link "$device"
+	done
+done
+
+section "I2C TFA98xx bindings"
+if [ -d "$SYS_BASE/bus/i2c/devices" ]; then
+	for device in "$SYS_BASE"/bus/i2c/devices/*; do
+		[ -e "$device" ] || [ -L "$device" ] || continue
+		matched=0
+		compatible=$device/of_node/compatible
+		if [ -r "$compatible" ] &&
+			print_nul_strings "$compatible" | grep -Eiq '(^|,)(nxp,)?tfa98'; then
+			matched=1
+		fi
+		if [ -r "$device/name" ] && grep -Eiq 'tfa98' "$device/name"; then
+			matched=1
+		fi
+		[ "$matched" -eq 1 ] || continue
+		printf '%s\n' "$device"
+		for property in name modalias; do
+			[ -r "$device/$property" ] || continue
+			printf '  %s: ' "$property"
+			sed -n '1,8p' "$device/$property" 2>&1 || true
+		done
+		if [ -r "$compatible" ]; then
+			printf '  compatible: '
+			print_nul_strings "$compatible" | tr '\n' ' '
+			printf '\n'
+		fi
+		show_driver_link "$device"
+	done
+else
+	printf '%s=<missing>\n' "$SYS_BASE/bus/i2c/devices"
+fi
+
+section "kernel audio, QRTR, PDR, APR, and subsystem configuration"
+kernel_release=$(uname -r 2>/dev/null || printf unknown)
+config_file=$BOOT_BASE/config-$kernel_release
+config_pattern='^(# )?CONFIG_(QRTR|MSM_SUBSYSTEM_RESTART|MSM_SERVICE_LOCATOR|MSM_PDR|SND|SLIMBUS|SOUNDWIRE|QCOM_APR|RPMSG)([A-Z0-9_]*)?(=| is not set$)'
+if [ -r "$PROC_BASE/config.gz" ] && command -v zcat >/dev/null 2>&1; then
+	printf '%s:\n' "$PROC_BASE/config.gz"
+	zcat "$PROC_BASE/config.gz" 2>&1 | grep -E "$config_pattern" | sed -n '1,240p' || true
+elif [ -r "$config_file" ]; then
+	printf '%s:\n' "$config_file"
+	grep -E "$config_pattern" "$config_file" 2>&1 | sed -n '1,240p' || true
+else
+	printf '%s\n' 'kernel_config=<missing-or-unreadable>'
+fi
+
+section "QRTR, PDR, APR, RPMSG, and audio endpoints"
+for readable in "$PROC_BASE/net/qrtr" "$PROC_BASE/net/rpmsg" \
+	"$SYS_BASE/kernel/debug/qrtr" "$SYS_BASE/kernel/debug/remoteproc" \
+	"$SYS_BASE/kernel/debug/service_locator" "$SYS_BASE/kernel/debug/pdr" \
+	"$SYS_BASE/kernel/debug/ipc_logging/apr" \
+	"$SYS_BASE/kernel/debug/ipc_logging/audio"; do
+	show_readable_file "$readable"
+done
+for endpoint_root in "$SYS_BASE/bus/rpmsg/devices" \
+	"$SYS_BASE/bus/msm_subsys/devices" "$SYS_BASE/bus/platform/drivers" \
+	"$DEV_BASE"; do
+	[ -d "$endpoint_root" ] || {
+		printf '%s=<missing>\n' "$endpoint_root"
+		continue
+	}
+	case "$endpoint_root" in
+		"$DEV_BASE")
+			find "$endpoint_root" -maxdepth 1 \
+				\( -name 'subsys_*' -o -name 'apr*' -o -name 'msm_audio*' \
+				-o -name 'audio_*' -o -name 'rpmsg*' -o -name 'qrtr*' \) \
+				-print 2>/dev/null | sort | sed -n '1,240p'
+			;;
+		"$SYS_BASE/bus/platform/drivers")
+			find "$endpoint_root" -maxdepth 1 -print 2>/dev/null |
+				grep -Ei '(apr|pdr|q6|adsp|audio|qrtr|service)' |
+				sort | sed -n '1,240p' || true
+			;;
+		*) find "$endpoint_root" -maxdepth 2 -print 2>/dev/null |
+			sort | sed -n '1,240p' ;;
+	esac
+done
+if command -v ss >/dev/null 2>&1; then
+	run_readonly ss -a -A qrtr
+else
+	printf '%s\n' 'ss=<missing>'
+fi
+
+section "ALSA and PCM inventory"
+show_readable_file "$PROC_BASE/asound/cards"
+show_readable_file "$PROC_BASE/asound/devices"
+show_readable_file "$PROC_BASE/asound/pcm"
+run_readonly ls -la "$DEV_BASE/snd"
+if command -v aplay >/dev/null 2>&1; then
+	run_readonly aplay -l
+	run_readonly aplay -L
+else
+	printf '%s\n' 'aplay=<missing>'
+fi
+if command -v arecord >/dev/null 2>&1; then
+	run_readonly arecord -l
+	run_readonly arecord -L
+else
+	printf '%s\n' 'arecord=<missing>'
+fi
+
+section "read-only mixer control inventory"
+if command -v amixer >/dev/null 2>&1; then
+	control_found=0
+	for control in "$DEV_BASE"/snd/controlC*; do
+		[ -e "$control" ] || continue
+		card=${control##*controlC}
+		case "$card" in ''|*[!0-9]*) continue ;; esac
+		control_found=1
+		run_readonly amixer -c "$card" scontrols
+		run_readonly amixer -c "$card" contents
+	done
+	[ "$control_found" -eq 1 ] || printf '%s\n' 'amixer=<no-control-devices>'
+else
+	printf '%s\n' 'amixer=<missing>'
+fi
+
+section "bounded read-only kernel log tail"
+if command -v dmesg >/dev/null 2>&1; then
+	printf '%s\n' '$ dmesg | tail -n 240'
+	dmesg 2>&1 | tail -n 240 || printf '[unavailable exit=%s]\n' "$?"
+else
+	printf '%s\n' 'dmesg=<missing>'
+fi
+
+printf '\n%s\n' 'probe_complete=readonly-inventory-only'
+}
+
+emit_redacted() {
+	printf '%s\n' 'evidence_class=redacted-shareable'
+	collect_probe | redact_stream
+}
+
+archive_private() {
+	ensure_archive_directory || return 1
+	raw=$ARCHIVE_DIRECTORY/lmi-audio-probe.$$.raw
+	redacted=$ARCHIVE_DIRECTORY/lmi-audio-probe.$$.redacted
+	if ! (
+		set -C
+		{
+			printf '%s\n' 'evidence_class=raw-private-do-not-share'
+			collect_probe
+		} > "$raw"
+	); then
+		fail 'could not create a new private raw evidence file'
+		return 1
+	fi
+	check_private_archive_file "$raw" 'private raw evidence' || return 1
+	if ! (
+		set -C
+		{
+			printf '%s\n' 'evidence_class=redacted-shareable'
+			sed -n '2,$p' "$raw" | redact_stream
+		} > "$redacted"
+	); then
+		fail 'could not create a new redacted evidence file'
+		return 1
+	fi
+	check_private_archive_file "$redacted" 'redacted evidence' || return 1
+	printf 'archive_raw_private=%s\n' "$raw"
+	printf 'archive_redacted_shareable=%s\n' "$redacted"
+}
+
+case "$#:${1-}" in
+	0:)
+		emit_redacted
+		;;
+	1:--archive-private)
+		archive_private
+		;;
+	*)
+		fail 'usage: lmi-audio-probe [--archive-private]'
+		exit 64
+		;;
+esac

@@ -1,0 +1,38 @@
+#!/sbin/openrc-run
+
+description="Guarded one-shot ADSP boot request for Xiaomi lmi"
+extra_commands="probe"
+description_probe="Check ADSP boot readiness without writing sysfs"
+
+readonly reviewed_confirmation='lmi-p3:boot-adsp=1'
+
+depend() {
+	need lmi-firmware-mount lmi-qrtr-ns pd-mapper rmtfs tqftpserv
+}
+
+probe() {
+	/usr/sbin/lmi-adsp-control probe \
+		--inventory-sha256 "${lmi_adsp_inventory_sha256:-}" \
+		--provenance-sha256 "${lmi_adsp_provenance_sha256:-}"
+}
+
+start_pre() {
+	if [ "${lmi_adsp_boot_confirmation:-}" != "$reviewed_confirmation" ]; then
+		eerror "set the exact local confirmation in /etc/conf.d/lmi-adsp-boot"
+		return 1
+	fi
+	probe >/dev/null
+}
+
+start() {
+	ebegin "Submitting the explicitly confirmed lmi ADSP boot request"
+	/usr/sbin/lmi-adsp-control boot \
+		--confirm-exact "$lmi_adsp_boot_confirmation" \
+		--inventory-sha256 "${lmi_adsp_inventory_sha256:-}" \
+		--provenance-sha256 "${lmi_adsp_provenance_sha256:-}"
+	eend $?
+}
+
+stop() {
+	einfo "No userspace undo exists for an ADSP boot request; reboot is the recovery boundary"
+}
