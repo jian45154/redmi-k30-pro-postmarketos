@@ -22,10 +22,10 @@ readonly LAUNCHER_CANONICAL
 }
 readonly REPO="${LAUNCHER_CANONICAL%"$LAUNCHER_SUFFIX"}"
 [[ -n "$REPO" && "$REPO" == /* && -d "$REPO" && ! -L "$REPO" ]] || exit 1
-readonly BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723"
+readonly BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-injected-20260723"
 readonly INJECTOR="$REPO/scripts/lmi_p2_d114/inject_rootfs_candidate.sh"
 # Updated only after the injector passes its focused tests.
-readonly INJECTOR_SHA256=ca3785fd75dd135fde2ae52f8f2fe0a43da166712e019b78b44491e556745d37
+readonly INJECTOR_SHA256=50be8d7211e08ecc561002cde10678989f6ab4baa431df5007ce7b10ceea4190
 readonly ROOT_SEAL_DIR=/run/lmi-p2-d114-inject
 readonly OUTPUT_BUNDLE="$BUILD_DIR/lmi-d114-rootfs-p2-r2-most-complete-injected-20260723.bundle"
 readonly OUTPUT="$OUTPUT_BUNDLE/rootfs.ext4"

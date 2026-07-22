@@ -131,7 +131,7 @@ def splice(image: Path, offset: int, payload: Path) -> None:
 def run_logged(command: list[str], log_path: Path, expected: tuple[int, ...]) -> int:
     with log_path.open("wb") as log:
         result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
-    log_path.chmod(0o600)
+    log_path.chmod(0o644)
     if result.returncode not in expected:
         raise SystemExit(
             f"{command[0]} exited {result.returncode}, expected one of {expected}; "
