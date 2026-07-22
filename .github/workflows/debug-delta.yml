@@ -3,7 +3,9 @@
 name: debug delta fixture
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - agent/lmi-d114-p2-r1-sixrow-release
 
 jobs:
   trace:
