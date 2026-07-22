@@ -93,16 +93,16 @@ class DeployError(RuntimeError):
 
 @dataclass(frozen=True)
 class Contract:
-    assembly_sha256: str = "a38d97270255a5a28b16794572eda65cbea52482258a0fb8916330710eb0569b"
-    assembly_size: int = 7_225
-    injection_sha256: str = "b0b263d3dec3dc469a618b41794fd331b26e8996c0aba133c305a8c3799465c4"
-    injection_size: int = 7_136
-    rootfs_sha256: str = "ff49900bd302cbcaaa5bddc8f7a76d221cce4af9313c3b45bf6e02dc85c624da"
-    rootfs_size: int = 2_826_960_896
-    raw_sha256: str = "eedf2e762869bdbfb4a0b660b6837ed69faf3fbc1afed35c4ed185657d1891f7"
-    raw_size: int = 3_339_714_560
-    sparse_sha256: str = "64d5121c3dfc3e143626386417e1f56cd6dcfcd2cf647d51182516415195b217"
-    sparse_size: int = 2_160_111_768
+    assembly_sha256: str = "cb8c98d89d82e831c95320fe048dc945a17111aec6e2ac438e5c3d68275e9c81"
+    assembly_size: int = 7_232
+    injection_sha256: str = "954e56fa8d721ae5a50bec1fac6a7d5eb83fb9149c23cde353ba0326d5dc0b2b"
+    injection_size: int = 7_172
+    rootfs_sha256: str = "50d70dd2a5269bb75a484b60d1c838a90e872b0ed58d9a5237684d6a2b703689"
+    rootfs_size: int = 2_923_429_888
+    raw_sha256: str = "321998e04b04b700aa4ae96205656f8ee9223e6e7a3edbf6af2362e85d1fd276"
+    raw_size: int = 3_436_183_552
+    sparse_sha256: str = "e1c5578c5badfe558785ee57320f2ef8679763194ba5dd3a29f1aadf0d0b55ad"
+    sparse_size: int = 2_236_684_676
     mapping_sha256: str = "59f27854ac595a9b615bddeb91aa72e6bf1e0dacd9341cda2783a19bb050014f"
     mapping_size: int = 3_879
     runtime_sha256: str = "a2db2d343aeeead7400da9b0487de536ba0842d20a3861fdde23ca647d71c65d"
@@ -114,9 +114,9 @@ class Contract:
     old_sparse_sha256: str = "39d45c6de7d2708f59154b1dd9352573849fc0a51434ebfd9d0f493c36841583"
     d110_boot_sha256: str = "2b264d64d2ed22f0ab5c3c2615b0bda9ed821fa5d8d5d691ea513e5d2f071487"
     d110_boot_size: int = 52_944_896
-    rollback_sha256: str = "e8a30dc37cb4b75508d89725a9603bc15a985f4e51af77384e8d43c2928f8d68"
-    rollback_size: int = 2_192_400_084
-    baseline_raw_sha256: str = "61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6"
+    rollback_sha256: str = "79276015be7d79ed77494b4bd3aec9e8a0f09325c53c4802eef54fede1022cbc"
+    rollback_size: int = 2_269_399_372
+    baseline_raw_sha256: str = "b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721"
     userdata_capacity: int = 114_898_743_296
 
 

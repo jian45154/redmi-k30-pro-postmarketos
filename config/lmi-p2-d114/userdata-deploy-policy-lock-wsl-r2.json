@@ -1,0 +1,138 @@
+{
+  "approval": {
+    "fresh_preflight_required": true,
+    "preflight_max_age_seconds": 120,
+    "same_claim_retry": false,
+    "ttl_seconds": 120
+  },
+  "artifact_contract": {
+    "assembly_attestation": {
+      "sha256": "cb8c98d89d82e831c95320fe048dc945a17111aec6e2ac438e5c3d68275e9c81",
+      "size": 7232
+    },
+    "candidate_raw": {
+      "sha256": "321998e04b04b700aa4ae96205656f8ee9223e6e7a3edbf6af2362e85d1fd276",
+      "size": 3436183552
+    },
+    "candidate_sparse": {
+      "logical_size": 3436183552,
+      "roundtrip_raw_sha256": "321998e04b04b700aa4ae96205656f8ee9223e6e7a3edbf6af2362e85d1fd276",
+      "sha256": "e1c5578c5badfe558785ee57320f2ef8679763194ba5dd3a29f1aadf0d0b55ad",
+      "size": 2236684676
+    },
+    "injection_attestation": {
+      "sha256": "954e56fa8d721ae5a50bec1fac6a7d5eb83fb9149c23cde353ba0326d5dc0b2b",
+      "size": 7172
+    },
+    "p2_rootfs": {
+      "sha256": "50d70dd2a5269bb75a484b60d1c838a90e872b0ed58d9a5237684d6a2b703689",
+      "size": 2923429888
+    },
+    "rollback_sparse": {
+      "logical_size": 3436183552,
+      "roundtrip_raw_sha256": "b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721",
+      "sha256": "79276015be7d79ed77494b4bd3aec9e8a0f09325c53c4802eef54fede1022cbc",
+      "size": 2269399372
+    }
+  },
+  "bindings": {
+    "completed_actions_lock": {
+      "path": "config/lmi-p2-d114/completed-userdata-actions-lock.json",
+      "sha256": "5c7c9b79baf58366167bf5d58bc65554d4e54a9f1e07b160d705d2cf58a837df",
+      "size": 1160
+    },
+    "fastboot_runtime_lock": {
+      "path": "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json",
+      "sha256": "a2db2d343aeeead7400da9b0487de536ba0842d20a3861fdde23ca647d71c65d",
+      "size": 8066
+    },
+    "physical_userdata_mapping": {
+      "path": "config/lmi-p2-d114/physical-userdata-mapping.json",
+      "sha256": "59f27854ac595a9b615bddeb91aa72e6bf1e0dacd9341cda2783a19bb050014f",
+      "size": 3879
+    },
+    "profile_template": {
+      "path": "config/lmi-p2-d114/userdata-deploy-profile-wsl.template.json",
+      "sha256": "cd6a071425309a83442f4de3dbd71c68b7261cfb1deaac16686271757ac70800",
+      "size": 2653
+    }
+  },
+  "device_gate": {
+    "allowed_is_logical_userdata": [
+      "no",
+      "unsupported-exact-variable-not-found-with-mapping-override"
+    ],
+    "battery_soc_ok": "yes",
+    "expected_product": "lmi",
+    "expected_userdata_capacity": 114898743296,
+    "fastboot_mode": "bootloader",
+    "minimum_battery_mv": 3800,
+    "minimum_max_download_size": 52944896,
+    "partition_type": "f2fs",
+    "require_exactly_one_device": true,
+    "require_nonce_scoped_identity": true,
+    "unlocked": "yes",
+    "userspace": "no"
+  },
+  "execution": {
+    "allowed_argv_suffix": [
+      "-s",
+      "<identity-matched-serial>",
+      "flash",
+      "userdata",
+      "/proc/self/fd/<held-candidate-fd>"
+    ],
+    "automatic_retry": false,
+    "candidate_transport": "held-read-only-fd-pass_fds",
+    "durable_claim_consumption_before_attempt": true,
+    "durable_intent_before_attempt": true,
+    "environment": {
+      "LANG": "C",
+      "LC_ALL": "C",
+      "PATH": "/usr/bin:/bin"
+    },
+    "max_attempts": 1,
+    "operation": "flash",
+    "partition": "userdata",
+    "process_group_kill_and_reap": true,
+    "shell": false,
+    "slot_layout_claim": "not-proven",
+    "super_fastbootd_or_slotted_fallback": false,
+    "write_timeout_seconds": 1800
+  },
+  "fixed_read_only_queries": [
+    "devices",
+    "getvar:serialno",
+    "getvar:product",
+    "getvar:unlocked",
+    "getvar:is-userspace",
+    "getvar:is-logical:userdata",
+    "getvar:partition-type:userdata",
+    "getvar:partition-size:userdata",
+    "getvar:battery-voltage",
+    "getvar:battery-soc-ok",
+    "getvar:max-download-size"
+  ],
+  "hardware_test_only": true,
+  "historical_actions": {
+    "completed_sparse_sha256": "39d45c6de7d2708f59154b1dd9352573849fc0a51434ebfd9d0f493c36841583",
+    "d110_boot_authorization": false,
+    "new_sparse_precompleted": false,
+    "reauthorization": false
+  },
+  "privacy": {
+    "absolute_user_paths_in_reports": false,
+    "raw_serial_in_reports": false,
+    "stable_public_device_fingerprint": false,
+    "usb_identifier_in_reports": false
+  },
+  "runtime": {
+    "absolute_argv": true,
+    "ancestor_policy": "no-group-or-world-writable-ancestors",
+    "ancestor_symlink_policy": "reject-except-exact-locked-interpreter-usrmerge-chain",
+    "clear_loader_environment": true,
+    "elf_closure": "exact-interpreter-and-complete-dt-needed-resolution",
+    "shell": false
+  },
+  "schema": "lmi-p2-d114-userdata-deploy-policy-lock-wsl/v1"
+}

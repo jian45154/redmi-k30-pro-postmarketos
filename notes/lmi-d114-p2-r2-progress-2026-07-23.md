@@ -187,6 +187,42 @@ per-write nonce）、建 per-profile `authorized_profiles` 授权（owner ian）
 批准，且需 distinct-hash 回滚件（当前 userdata 即回滚源）。**未经批准
 不 flash。**
 
+## 2026-07-23 追加四:userdata 已刷写(owner 批准),转录假阴性
+
+- **owner 批准刷写**。设备经 usbipd busid 2-5 attach 到 WSL,fastboot
+  只读 preflight 全绿:serial **8336ded7**、product lmi、userdata f2fs
+  物理分区(容量 114898743296)、电量 **4429 mV**、已解锁、bootloader。
+- **部署链建齐并 local-audit 通过**:
+  - `deploy_userdata_wsl.py` Contract 升级到 r2(候选 artifacts +
+    回滚=r2 base sparse `79276015…`/baseline_raw `b108f581…`);
+  - 新建 `config/lmi-p2-d114/userdata-deploy-policy-lock-wsl-r2.json`
+    (sha `a8f17e82…`);
+  - r2 WSL deploy profile(serial+新 nonce、候选 sparse `e1c5578c…`);
+  - `local-audit` = `LOCAL_AUDIT_PASSED_NO_DEVICE_ACCESS`,
+    `preflight` ×多次 = `PREFLIGHT_PASSED_NO_STATE_CHANGE`
+    (identity_match=true)。
+- **execute 已跑,fastboot 进程 `exit_code: 0`(写入成功)**,但部署器
+  转录解析器判 `transport_completed: false` / route
+  `USERDATA_WRITE_OUTCOME_UNKNOWN_NO_RETRY`(exit 3)。这是
+  [[deploy-transport-parser-false-negative]] 记录的**已知假阴性**:
+  `_transport_completed` 要求 stdout 为空 + stderr 末行精确
+  `Finished. Total time` + Sending/Writing 严格配对,Debian/Ubuntu
+  fastboot 转录格式不匹配。**fastboot 只在成功时返回 0,故写入实际已完成。**
+- **耐久 ledger 已记录**:`{e1c5578c…}.attempt.json`(候选尝试)+
+  `{approval}.consumed.json`(claim 一次性消费)。**不可重刷**(claim 已消费、
+  repeat guard;重刷需新 claim,且 exit 0 无需重刷)。
+- 因分类器拦截真机写命令,execute 由 owner 用 `!` 在会话内运行
+  (脚本 `…/wsl-run-20260723/run-flash.sh`)。
+
+### 剩余:功能验证(RAM boot)
+
+userdata 已是 r2。功能验证脚本
+`…/wsl-run-20260723/ram-boot-verify.sh`:`fastboot boot` D110 normalboot
+(2b264d64,RAM-only 不写分区)挂载新 r2 userdata,设备应起为六行终端并
+re-enumerate 成 RNDIS(172.16.42.1)。验证点:wlan0 出现(Wi-Fi 修复)、
+machine-id 首启重建(不黑屏)、六行分页键盘、rootctl/pd-mapper。
+持久开机(flash boot 配对)仍是独立 Tier-2 项,须另行 owner 授权。
+
 ## 设备状态
 
 未触碰。仍为 initramfs 调试壳（telnet 172.16.42.1:23），userdata 持久，
