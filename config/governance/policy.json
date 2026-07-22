@@ -1,0 +1,14 @@
+{
+  "schema_version": 4,
+  "enabled": true,
+  "revision": "2026-07-22.1",
+  "authorized_by": "ian",
+  "authorization_note": "Standing authorization established 2026-07-22 when the owner directed landing of the bringup governance v4 baseline (adapted per the same-day evaluation). Scope: volatile and ram_rw tiers only. ram_rw claims additionally require the record-level persistent-media acknowledgment because on lmi the rootfs lives on userdata and a RAM-booted OS can write it. The persistent tier is intentionally NOT a standing scope: every partition write requires a matching authorized_profiles entry (per-profile, hash-bound owner authorization). The forbidden set is hardcoded in scripts/bringup_loop.py and cannot be widened from this file.",
+  "standing_scopes": [
+    { "tier": "volatile", "operation": "device_reboot", "target": "device" },
+    { "tier": "ram_rw", "operation": "ram_boot", "target": "ram" },
+    { "tier": "ram_rw", "operation": "runtime_handoff", "target": "initramfs" }
+  ],
+  "authorized_profiles": [],
+  "manual_only": ["bootloader-relock"]
+}
