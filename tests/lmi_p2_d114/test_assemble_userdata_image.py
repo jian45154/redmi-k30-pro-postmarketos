@@ -15,6 +15,7 @@ from unittest import mock
 import uuid
 
 import scripts.lmi_p2_d114.assemble_userdata_image as assembler
+from tests.lmi_p2_d114 import host_bound
 from scripts.lmi_p2_d114.assemble_userdata_image import (
     ARM64_ROOT_GUID,
     ESP_GUID,
@@ -257,16 +258,23 @@ class AssembleUserdataImageTests(unittest.TestCase):
         return self.output_bundle / name
 
     def assemble(self) -> dict[str, object]:
-        return assemble_userdata_image(
-            self.baseline,
-            self.p2,
-            self.p2_attestation,
-            self.output_bundle,
-            policy=self.policy,
-            injection_policy_lock_path=self.injection_policy_lock,
-            test_only_allow_unprivileged_input_bundle=True,
-            test_only_injection_policy_lock_sha256=self.injection_policy_sha256,
-        )
+        try:
+            return assemble_userdata_image(
+                self.baseline,
+                self.p2,
+                self.p2_attestation,
+                self.output_bundle,
+                policy=self.policy,
+                injection_policy_lock_path=self.injection_policy_lock,
+                test_only_allow_unprivileged_input_bundle=True,
+                test_only_injection_policy_lock_sha256=self.injection_policy_sha256,
+            )
+        except AssemblyError as error:
+            if "pinned sparse runtime" in str(error):
+                host_bound.require(
+                    False, f"host sparse toolchain differs from lock: {error}"
+                )
+            raise
 
     def validate_attestation(self) -> None:
         injection_policy = load_injection_policy_lock(

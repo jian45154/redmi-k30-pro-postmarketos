@@ -16,6 +16,8 @@ import tarfile
 import tempfile
 import unittest
 
+from tests.lmi_p2_d114 import host_bound
+
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "scripts/lmi_p2_d114/inject_rootfs_candidate.sh"
@@ -667,6 +669,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             self.assertFalse(inventory.exists())
 
     def test_metadata_inventory_tools_are_host_pinned_and_attested(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
         tools = {
             "getfattr": (Path("/usr/bin/getfattr"), "GETFATTR_SHA256", "getfattr_sha256", "755"),
             "lsattr": (Path("/usr/bin/lsattr"), "LSATTR_SHA256", "lsattr_sha256", "755"),
@@ -811,6 +814,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             self.assertFalse(scratch.exists())
 
     def test_fixed_inputs_are_private_canonical_and_candidate_is_never_mutated(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
         for name in (
             "xiaomi-lmi-v114-splash-recursion-fix-userdata-20260716.img",
             "xiaomi-lmi-v114-splash-recursion-fix-userdata-20260716.android-sparse.img",
@@ -853,6 +857,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         self.assertIn('verify_open_path_unchanged "$path" "$descriptor" "$identity"', self.source)
 
     def test_runtime_lock_is_exact_and_matches_the_copied_sandbox_closure(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
         self.assertEqual(self.runtime_lock["schema"], "lmi-p2-d114-injector-runtime-lock/v1")
         self.assertEqual(
             digest(RUNTIME_LOCK),
@@ -891,6 +896,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         self.assertEqual(version.stdout.strip(), "bubblewrap 0.11.1")
 
     def test_candidate_primary_superblock_has_reviewed_little_endian_epoch(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
         candidate = BUILD / "lmi-d114-rootfs-p2-candidate-20260720.ext4"
         with candidate.open("rb") as source:
             source.seek(1072)
