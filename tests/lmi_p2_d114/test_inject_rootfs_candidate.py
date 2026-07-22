@@ -431,6 +431,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             self.assertFalse(scratch.exists())
 
     def test_full_delta_real_tree_fixture_covers_exact_operations_and_parent_links(self) -> None:
+        host_bound.require_tree_snapshot_tools()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             before, after = root / "before", root / "after"
@@ -555,6 +556,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
                 self.assertFalse(inventory.exists())
 
     def test_full_delta_rejects_metadata_drift_on_unknown_added_and_allowed_paths(self) -> None:
+        host_bound.require_tree_snapshot_tools()
         mutations = (
             "root-mode",
             "unknown-xattr",
@@ -694,6 +696,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
                 self.assertIn(f'|{mode}|{label}|${constant}', self.source)
 
     def test_full_delta_exact_set_accepts_reordering_without_losing_operations(self) -> None:
+        host_bound.require_tree_snapshot_tools()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             before, after = root / "before", root / "after"
@@ -1169,6 +1172,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         self.assertNotIn("launcher is not running from its canonical project path", result.stderr)
 
     def test_ext4_normalization_is_allocated_only_zero_proven_and_tree_identical(self) -> None:
+        host_bound.require_tree_snapshot_tools()
         normalization = self.injection_policy_lock["normalization"]
         self.assertEqual(
             normalization["fixed"]["allocated_only_command"],
