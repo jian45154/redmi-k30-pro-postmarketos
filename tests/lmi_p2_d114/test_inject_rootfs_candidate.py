@@ -49,9 +49,9 @@ EXPECTED_DELTA_OP_PATHS = (
     "A|/etc/ssh/sshd_config.d/99-lmi-public-image.conf",
     "M|/etc",
     "M|/etc/conf.d/greetd",
+    "M|/etc/machine-id",
     "M|/etc/resolv.conf",
     "M|/etc/shadow-",
-    "D|/etc/machine-id",
     "D|/var/cache/apk/APKINDEX.066df28d.tar.gz",
     "D|/var/cache/apk/APKINDEX.30e6f5af.tar.gz",
     "D|/var/cache/apk/APKINDEX.b53994b4.tar.gz",
@@ -333,7 +333,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         )
         (root / "usr/lib/apk/db/installed").write_text("installed-with-target\n", encoding="utf-8")
         (root / "usr/lib/apk/db/scripts.tar.gz").write_bytes(b"scripts-with-target")
-        (root / "etc/machine-id").unlink()
+        (root / "etc/machine-id").write_bytes(b"1835a845d0bb85b283be20a5fd1c18a4\n")
         (root / "etc/resolv.conf").write_bytes(b"")
         (root / "etc/shadow-").write_bytes((root / "etc/shadow").read_bytes())
         (root / "var/log/apk.log").write_bytes(b"")
@@ -463,8 +463,8 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             self.assertEqual(len(op_paths), len(EXPECTED_DELTA_OP_PATHS))
             self.assertEqual(set(op_paths), set(EXPECTED_DELTA_OP_PATHS))
             self.assertEqual(sum(item.startswith("A|") for item in op_paths), 14)
-            self.assertEqual(sum(item.startswith("M|") for item in op_paths), 10)
-            self.assertEqual(sum(item.startswith("D|") for item in op_paths), 5)
+            self.assertEqual(sum(item.startswith("M|") for item in op_paths), 11)
+            self.assertEqual(sum(item.startswith("D|") for item in op_paths), 4)
             for parent in ("/etc", "/usr/libexec", "/usr/share", "/var/lib"):
                 self.assertIn(f"M|{parent}", op_paths)
             before_paths = {
@@ -491,7 +491,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             'fail "image authorized_keys unexpectedly present"',
             "etc/machine-id",
             "644:0:0:1:33",
-            'rm -- "$machine_id"',
+            'printf \'%s\\n\' "$MACHINE_ID" >"$machine_id"',
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         ):
             self.assertIn(required, sanitation)
