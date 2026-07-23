@@ -50,7 +50,25 @@ Internal SHA consistency ≠ correctness.
    injection-policy-lock, deploy contract rollback size).
    **Tests: 200/200 green. hash_consistency: 60 pins green.**
 
-## REMAINING (sealed pipeline runs; source tree is ready)
+## FLASH-READY (2026-07-24 — all host-side work done)
+- Injected: rootfs `a91a2090` (drm-backend `3d745727`, desktop-shell `e4996ef1`,
+  session `d0bfe969` verified on disk). Assembled: userdata.raw `c3c3a513`,
+  android-sparse `77ff1993` (2236696908).
+- Deploy Contract + policy lock + postwrite EXPECTED_* finalized to r10.
+  **hash_consistency 60 pins green; release static CI green (200/200 + all suites).**
+  Committed b098cec + 2a25154, pushed to PR #10.
+- r10 deploy profile built (`build-20260724/...r10-wsl-deploy-profile-20260724.json`,
+  private) and **local-audit PASSED** (`LOCAL_AUDIT_PASSED_NO_DEVICE_ACCESS`).
+- Turnkey flash script: `.../wsl-run-r10-20260724/run-flash-r10.sh`
+  (approved-sparse-sha256 `77ff1993…`).
+
+**ONLY remaining step = the owner-run flash (needs the device):**
+1. Put the phone in fastboot, then on Windows `usbipd attach --wsl --busid <id>`.
+2. `! bash private/.../wsl-run-r10-20260724/run-flash-r10.sh` (preflight→approve→execute).
+3. Reboot; the six-row terminal should render (no black screen).
+The device was NOT connected during this session, so the flash could not be run here.
+
+## (superseded) earlier remaining list — kept for reference
 5. **Inject**: run `launch_inject_rootfs_candidate.sh` on the r10 candidate.
    First bump the injector's path constants 20260723→20260724 (INPUT_BUILD_DIR,
    BUILD_DIR, RAW/SPARSE/INPUT filenames, OUTPUT_BUNDLE) — hashes already r10.
