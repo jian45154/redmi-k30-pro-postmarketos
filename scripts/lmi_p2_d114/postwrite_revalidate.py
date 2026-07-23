@@ -114,7 +114,7 @@ class Contract:
     legacy_helper_sha256: str = "759aa7e6f336cb9c3fcf9aff45a224886654b5f77d5fa6a139640e9a19969339"
     legacy_helper_size: int = 94_276
     legacy_gate_path: str = "scripts/lmi_p2_d114/deploy_userdata.py"
-    legacy_gate_sha256: str = "c971d5f07e434098979e7f76e143be211b71e807093c0122fa49b100ec88047a"
+    legacy_gate_sha256: str = "09d3e2497f15e1a2a6c410039bf6e5d4b0608124a9363ec5491425439f2f336e"
     legacy_gate_size: int = 136794
     helper_sha256: str = "bb059d2a3b2ec24cd864a02c66521ce58cf92cbb751329c04485899823d737a6"
     helper_size: int = 33_078

@@ -190,7 +190,7 @@ per-write nonce）、建 per-profile `authorized_profiles` 授权（owner ian）
 ## 2026-07-23 追加四:userdata 已刷写(owner 批准),转录假阴性
 
 - **owner 批准刷写**。设备经 usbipd busid 2-5 attach 到 WSL,fastboot
-  只读 preflight 全绿:serial **8336ded7**、product lmi、userdata f2fs
+  只读 preflight 全绿:serial **<redacted>**、product lmi、userdata f2fs
   物理分区(容量 114898743296)、电量 **4429 mV**、已解锁、bootloader。
 - **部署链建齐并 local-audit 通过**:
   - `deploy_userdata_wsl.py` Contract 升级到 r2(候选 artifacts +

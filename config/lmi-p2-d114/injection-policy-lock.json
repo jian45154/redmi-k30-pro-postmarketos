@@ -141,13 +141,13 @@
       "pid",
       "uts"
     ],
-    "sealed_injector_script_sha256": "50be8d7211e08ecc561002cde10678989f6ab4baa431df5007ce7b10ceea4190"
+    "sealed_injector_script_sha256": "60b7d6e7594d73b67658ba7e36a7a21f0b8f5c0464b59b238c79a5d92a36cb78"
   },
   "sanitization": {
     "apk_cache": "exact-four-index-members-removed",
     "apk_log": "empty",
     "authorized_keys": "absent-in-base",
-    "machine_id": "removed",
+    "machine_id": "baked-fixed-hardware-test",
     "resolv_conf": "empty",
     "shadow_backup": "exact-copy-of-locked-active-shadow",
     "ssh_password_authentication": "disabled-by-locked-drop-in"
