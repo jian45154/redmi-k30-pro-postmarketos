@@ -25,10 +25,10 @@ LAUNCHER = REPO / "scripts/lmi_p2_d114/launch_inject_rootfs_candidate.sh"
 LOCK = REPO / "config/lmi-p2-d114/candidate-rebuild-lock.json"
 RUNTIME_LOCK = REPO / "config/lmi-p2-d114/injector-runtime-lock.json"
 INJECTION_POLICY_LOCK = REPO / "config/lmi-p2-d114/injection-policy-lock.json"
-BUILD = REPO / "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723"
+BUILD = REPO / "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724"
 SIXROW_APK = (
     REPO
-    / "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723"
+    / "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724"
     / "lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk"
 )
 
@@ -813,10 +813,10 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
     def test_fixed_inputs_are_private_canonical_and_candidate_is_never_mutated(self) -> None:
         host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
         for name in (
-            "xiaomi-lmi-d114-r2-most-complete-userdata-20260723.normalized.img",
-            "xiaomi-lmi-d114-r2-most-complete-userdata-20260723.android-sparse.img",
+            "xiaomi-lmi-d114-r2-most-complete-userdata-20260724.normalized.img",
+            "xiaomi-lmi-d114-r2-most-complete-userdata-20260724.android-sparse.img",
             "lmi-d114-rootfs-base.ext4",
-            "lmi-d114-rootfs-p2-candidate-20260723.ext4",
+            "lmi-d114-rootfs-p2-candidate-20260724.ext4",
         ):
             path = BUILD / name
             self.assertEqual(path.resolve(strict=True), path)
@@ -835,14 +835,14 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_rebuild_lock_is_exactly_pinned_and_cross_matches_script_constants(self) -> None:
         self.assertEqual(self.lock["schema"], "lmi-p2-d114-candidate-rebuild-lock/v1")
-        self.assertEqual(digest(LOCK), "d2066493338a9402239af5a9f4d33d9086c2f8d8d9adef59074dab046950c523")
+        self.assertEqual(digest(LOCK), "80c4952c9f71eda4bb49d72facd451630927a53a5550103caffe9e818469a7a2")
         expected = {
             "33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8",
             "1315e3a06ddff42e91f930f01b16a62ab30ab3d4f490e8e8e40d0af89c657279",
             "5f351c9184fec53070886f3e9aa6a04178d2be8858ec2237b13af19e4a0e8cf6",
             "d331433af3b7fdb78e42732a1d6b5530a5cf9e6a90a4f4e648f7a97aa696f790",
-            "96a42f54078536e361b57a80d73a8199ae62dff4537db4b459eecdc6b16119c4",
-            "96a42f54078536e361b57a80d73a8199ae62dff4537db4b459eecdc6b16119c4",
+            "b2256b9695e96bf57505a107edb2ca1581bcc307b70fc04997e1f016e936daf5",
+            "b2256b9695e96bf57505a107edb2ca1581bcc307b70fc04997e1f016e936daf5",
             "2e51f521c676729920eaba694933d9d4048645f1a5789556fd0027e62d11ecc8",
         }
         for value in expected:
@@ -894,7 +894,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_candidate_primary_superblock_has_reviewed_little_endian_epoch(self) -> None:
         host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
-        candidate = BUILD / "lmi-d114-rootfs-p2-candidate-20260723.ext4"
+        candidate = BUILD / "lmi-d114-rootfs-p2-candidate-20260724.ext4"
         with candidate.open("rb") as source:
             source.seek(1072)
             wtime = int.from_bytes(source.read(4), "little")
