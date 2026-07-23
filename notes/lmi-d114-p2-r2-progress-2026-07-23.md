@@ -223,6 +223,27 @@ re-enumerate 成 RNDIS(172.16.42.1)。验证点:wlan0 出现(Wi-Fi 修复)、
 machine-id 首启重建(不黑屏)、六行分页键盘、rootctl/pd-mapper。
 持久开机(flash boot 配对)仍是独立 Tier-2 项,须另行 owner 授权。
 
+## 2026-07-23 追加五:RAM boot 已加载 r2,live 网络验证受限
+
+- **RAM boot 成功**:`fastboot boot` D110 normalboot 返回
+  `Sending 'boot.img' … OKAY / Booting OKAY / Finished. Total time: 5.778s`
+  exit 0。设备离开 fastboot 并 re-enumerate 成 **RNDIS 0525:a4a2**——
+  证明 D110 内核已加载并起了 USB gadget。
+- **顺带确认刷写假阴性根因**:RAM boot 的 fastboot `OKAY` 输出走
+  **stdout**,而 `_transport_completed` 要求 `result.stdout == b""`。
+  这就是 userdata 写入被判 UNKNOWN 的确切原因——fastboot exit 0 =
+  写入成功。([[deploy-transport-parser-false-negative]] 得到实测佐证。)
+- **live 网络验证此路不通**,两因:
+  1. **r2 是设计锁定的公开镜像**:卫生化删除 authorized_keys、SSH 仅
+     publickey、密码认证禁用。即使完整启动也无法 SSH 诊断(r5 当年是
+     临时注入了会话公钥;r2 重建后该键不存在,符合发布卫生化预期)。
+  2. RNDIS 已在 WSL 绑为 `enu1i1`(cdc_subset,carrier up)、配
+     172.16.42.2/24,但 172.16.42.1 约 8 分钟内无 ARP/22/23 应答。
+     WSL mirrored 网络模式下 usbnet 未透传到设备。
+- **功能验证应目视手机屏幕**:六行终端是否上屏(证不黑屏 + machine-id
+  首启重建)、分页键盘手感、Wi-Fi(wlan0 自起)。这是本版四项改动的
+  真实验收点,须 owner 目视/操作确认。
+
 ## 设备状态
 
 未触碰。仍为 initramfs 调试壳（telnet 172.16.42.1:23），userdata 持久，
