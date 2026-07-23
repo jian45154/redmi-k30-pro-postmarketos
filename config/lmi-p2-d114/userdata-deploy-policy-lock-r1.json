@@ -80,12 +80,12 @@
     },
     "assembler": {
       "path": "scripts/lmi_p2_d114/assemble_userdata_image.py",
-      "sha256": "a8f3a947343831f2eb4fc719c125f1ad10b2908d75ad7db0253dac004dc001a7",
+      "sha256": "c46b0408fdcc512e56b40730c91dff9e4bff991a0190751dd6e02f5eb353122e",
       "size": 84891
     },
     "candidate_rebuild_lock": {
       "path": "config/lmi-p2-d114/candidate-rebuild-lock.json",
-      "sha256": "d2066493338a9402239af5a9f4d33d9086c2f8d8d9adef59074dab046950c523",
+      "sha256": "80c4952c9f71eda4bb49d72facd451630927a53a5550103caffe9e818469a7a2",
       "size": 5939
     },
     "fastboot_windows_provenance_lock": {
@@ -95,17 +95,17 @@
     },
     "injection_policy_lock": {
       "path": "config/lmi-p2-d114/injection-policy-lock.json",
-      "sha256": "7d83f4af2208dca1a24740e3bebc389ac766e457a2b447f3bef353fa9a6540b6",
+      "sha256": "15cac53665f18d6cbf93d975d8beef06dbc061bcfcda2731a479f4b961b9fac5",
       "size": 7469
     },
     "injector": {
       "path": "scripts/lmi_p2_d114/inject_rootfs_candidate.sh",
-      "sha256": "b741492fbd66978d7f53db7d399cae3c30a9ee413bfa1a5674ae752dc2704041",
+      "sha256": "0da273703f808f3ad0d599835c71812f415b03651a4ee75767e9a38f4a4c213d",
       "size": 124825
     },
     "injector_launcher": {
       "path": "scripts/lmi_p2_d114/launch_inject_rootfs_candidate.sh",
-      "sha256": "1f9af3eff33d22da6bf8943d58dc86e09b378671e9610a442d401e29a9945327",
+      "sha256": "c8986c0111dc2049c06b2dfd20356f30f983f48d31b97619e27c432082c8aa4c",
       "size": 20125
     },
     "injector_runtime_lock": {

@@ -7,25 +7,25 @@
   },
   "artifact_contract": {
     "assembly_attestation": {
-      "sha256": "8b16ebf65f532c2e0ee7ea54583b24843b0be2e023a24007324ae94dd8c5c73e",
+      "sha256": "cfcf2cc4a1b9ad149ce0a303ab6b49b570c5e2cd78a988b06b8ca4a72c90b4da",
       "size": 7232
     },
     "candidate_raw": {
-      "sha256": "382f3ae32d5a3866a5ce0b5559e5289b784925c5377ce3906b1867e0c060acdf",
+      "sha256": "c3c3a51376417aeba94c3fbd536df7d68b3ab4559ca5ba19f0dd18d1e157a8de",
       "size": 3436183552
     },
     "candidate_sparse": {
       "logical_size": 3436183552,
-      "roundtrip_raw_sha256": "382f3ae32d5a3866a5ce0b5559e5289b784925c5377ce3906b1867e0c060acdf",
-      "sha256": "c9bf765a9359603b2b7fb5d0c447e6c0bb83b14c7536366666c71d96790dfc8b",
-      "size": 2236688828
+      "roundtrip_raw_sha256": "c3c3a51376417aeba94c3fbd536df7d68b3ab4559ca5ba19f0dd18d1e157a8de",
+      "sha256": "77ff199311f71b3f3e4fdf3e3251138abc0f46664567b2deae409a79c960b2a1",
+      "size": 2236696908
     },
     "injection_attestation": {
-      "sha256": "cbd908fd3655151158ab01ec583d5022fb9700c8761e2ed003c807901d5e9815",
+      "sha256": "ad14a24791e8b60d72787c756ea91a00fb3325491f5d6d62592ae44e2a352a9a",
       "size": 7190
     },
     "p2_rootfs": {
-      "sha256": "69e07c23186cdacf716fb9f61c883a6c8c25364edf9cc1ea9f0564f58320fe58",
+      "sha256": "a91a2090aea6a1d7338a7f51ba66590472cbb395386765d9e5a199856afba134",
       "size": 2923429888
     },
     "rollback_sparse": {
