@@ -75,17 +75,17 @@
   "repo_bindings": {
     "apk_build_attestation": {
       "path": "config/lmi-p2-d114/apk-build-attestation.json",
-      "sha256": "519c9e9cd9a0087567fe5980f2a04906051b13c465cfac636793ed54aeae687b",
+      "sha256": "13267720012535ec33ceffdeca0994f5b13313fc65b092516cfe0c35d7fcc742",
       "size": 3267
     },
     "assembler": {
       "path": "scripts/lmi_p2_d114/assemble_userdata_image.py",
-      "sha256": "8d781c33f49b46d2528a64256d0bb5006245cbba5437b777eb349d17b4358e63",
+      "sha256": "36cb841cd7eccbbd42d9738640ac711820118cc084c0656fe0ee27a073b14f97",
       "size": 84891
     },
     "candidate_rebuild_lock": {
       "path": "config/lmi-p2-d114/candidate-rebuild-lock.json",
-      "sha256": "a45ba8072a5ed8667edc7ac84146c4daba5a595f22af05f396fce7a670357ce1",
+      "sha256": "7f9989b2d82cf91e7fd0e9e718847892ff8ab611a06285886df26b77b648bd43",
       "size": 5939
     },
     "fastboot_windows_provenance_lock": {
@@ -95,17 +95,17 @@
     },
     "injection_policy_lock": {
       "path": "config/lmi-p2-d114/injection-policy-lock.json",
-      "sha256": "df5c69759ae0ebb5339b7712e4b404b16b8b476d03110d1f8526e987623d9bee",
+      "sha256": "3b738245a5d6fd8e41cf7c4bc26e9e852404ee15db26ad1eb7790777e5c0cff4",
       "size": 7469
     },
     "injector": {
       "path": "scripts/lmi_p2_d114/inject_rootfs_candidate.sh",
-      "sha256": "60b7d6e7594d73b67658ba7e36a7a21f0b8f5c0464b59b238c79a5d92a36cb78",
+      "sha256": "ec7970a70879bee4446e552667627acc85269d2ea785999bdbe395d486516e83",
       "size": 124825
     },
     "injector_launcher": {
       "path": "scripts/lmi_p2_d114/launch_inject_rootfs_candidate.sh",
-      "sha256": "a2298a490a38630a47ec70832eed85c5975c78e550d78806202e0df43acb3f4a",
+      "sha256": "9194c8906e267bf6f8d7c643926de66c4a57c8f8e33cfe034793229d6b7158e2",
       "size": 20125
     },
     "injector_runtime_lock": {
@@ -140,7 +140,7 @@
     },
     "userdata_deploy_profile_template": {
       "path": "config/lmi-p2-d114/userdata-deploy-profile.template.json",
-      "sha256": "a243220dbbb82a9446d3437fe47b2004ffcdbf9dad91c7a2f962a829049b3a8d",
+      "sha256": "85299a57c9b12edddb78fe04c4dd935a0bf2ee88705dfa019a41233366875281",
       "size": 3512
     }
   },

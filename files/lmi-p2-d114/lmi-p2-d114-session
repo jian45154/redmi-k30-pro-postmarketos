@@ -139,7 +139,7 @@ keyboard_identity_full() {
 	[ "$(process_starttime "$keyboard_identity_pid")" = \
 		"$keyboard_identity_starttime" ] || return 1
 	process_sha256_valid "$keyboard_identity_pid" \
-		88d06d99f7c2d3eb1da64e7f89a0f5e37b87bc4c93f8b6778b1ca6491bf1dba6
+		d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a
 }
 
 find_keyboard_child() {
@@ -196,7 +196,7 @@ wait_for_keyboard() {
 			fi
 			if [ "$keyboard_stable_polls" -ge 5 ]; then
 				process_sha256_valid "$keyboard_pid" \
-					88d06d99f7c2d3eb1da64e7f89a0f5e37b87bc4c93f8b6778b1ca6491bf1dba6 ||
+					d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a ||
 					fail "weston-keyboard process digest changed"
 				keyboard_starttime=$(process_starttime "$keyboard_pid") ||
 					fail "weston-keyboard start time is unavailable"
@@ -370,7 +370,7 @@ check_sha256 /usr/bin/weston \
 check_sha256 /usr/libexec/lmi-p2-d114/weston-terminal-sixrow \
 	6602f7ac8e0c11892eec1d9db0411397e95f704a1655b94e0885a1220962a8cf
 check_sha256 /usr/libexec/lmi-p2-d114/weston-keyboard-sixrow \
-	88d06d99f7c2d3eb1da64e7f89a0f5e37b87bc4c93f8b6778b1ca6491bf1dba6
+	d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a
 check_sha256 /usr/lib/libweston-14.so.0.0.2 \
 	2c7565771a3e4097cdaf3e240d5e1dece2cdff78227967153df6088164bde9cd
 check_sha256 /usr/lib/libweston-14/drm-backend.so \
