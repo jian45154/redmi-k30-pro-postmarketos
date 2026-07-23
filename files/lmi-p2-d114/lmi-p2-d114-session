@@ -374,9 +374,9 @@ check_sha256 /usr/libexec/lmi-p2-d114/weston-keyboard-sixrow \
 check_sha256 /usr/lib/libweston-14.so.0.0.2 \
 	2c7565771a3e4097cdaf3e240d5e1dece2cdff78227967153df6088164bde9cd
 check_sha256 /usr/lib/libweston-14/drm-backend.so \
-	3d74572726b4c7cbbdf1abad75dbeeee6d76f08af766a8bba06f30aeaf617a2f
+	72bdbdda9850f92dc56178075eda9be28ddad0867da1d0b50db22bb304aa64ba
 check_sha256 /usr/lib/weston/desktop-shell.so \
-	e4996ef148957fbeaafd1c374611a4831a7afe74b6014e47869e445c88b6cf67
+	8411118894008448b2d18875c069b7e79588e1ed6526dc49e4831e2cb20caf3f
 check_sha256 /etc/lmi-p2-d114/weston.ini \
 	b54d838ccf435ee41dbd55f5aab245fd68bb65ab19c784a694375f001a9763a2
 

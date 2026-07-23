@@ -93,16 +93,16 @@ class DeployError(RuntimeError):
 
 @dataclass(frozen=True)
 class Contract:
-    assembly_sha256: str = "b1a2edb550e490ec7f94b4aa0ccef4b888498f4f1a8599d9928f37da54c7164a"
+    assembly_sha256: str = "767d2ba72a00bb5a96fd7a39c961494b9fb1458c3c9515df083e4ce4083582d0"
     assembly_size: int = 7_232
-    injection_sha256: str = "540b62ee6e90d7c596a5ec18593f1a97e0fe7c0b1d98fc7af7980ae657d31d9a"
+    injection_sha256: str = "8a653b4d39a8edc92f05053c111e2e7a6e8feb4c4a52f37eac0e95ce7c81e1c1"
     injection_size: int = 7_190
-    rootfs_sha256: str = "a7ab3ea3e6dab8af239a5e0eb040de2f78cb0b6a618d3372f83366408c1943ab"
+    rootfs_sha256: str = "7f85adf3a4e2d2e514f2aee8762f654d959f251d19989ca33fc1ff3a0ae7a868"
     rootfs_size: int = 2_923_429_888
-    raw_sha256: str = "98b67f3c34795e63a5c1e998d4bf2730599c8c21233940d34f669f7062f09ae8"
+    raw_sha256: str = "75994df2b3fd676e52c998adc25e2b90cb323d55d4e1deb037e7de8b266d8462"
     raw_size: int = 3_436_183_552
-    sparse_sha256: str = "0d2af65bcc0c6700bce7e58c061fa40022390d2f72fcc3cac1083373320967e5"
-    sparse_size: int = 2_236_688_800
+    sparse_sha256: str = "67cc053cb35a1465410666b5144cd9c15a03dec699f0b6b3a1a334c3654e5e2a"
+    sparse_size: int = 2_236_688_772
     mapping_sha256: str = "59f27854ac595a9b615bddeb91aa72e6bf1e0dacd9341cda2783a19bb050014f"
     mapping_size: int = 3_879
     runtime_sha256: str = "a2db2d343aeeead7400da9b0487de536ba0842d20a3861fdde23ca647d71c65d"

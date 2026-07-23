@@ -38,9 +38,9 @@
   "input": {
     "apks": {
       "p2": {
-        "build_attestation_sha256": "13267720012535ec33ceffdeca0994f5b13313fc65b092516cfe0c35d7fcc742",
+        "build_attestation_sha256": "72fd079b0fb63e9ecbbff2328080d0072274153e81691226fbf321ab13fe46b8",
         "sandbox_path": "/tools/p2.apk",
-        "sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
+        "sha256": "50a7301efda02b3f3c900337518ce456c23241aff9ff1e061513eb97217b22d6",
         "source_path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/run2-device-xiaomi-lmi-terminal-0.1.0-r2.apk"
       },
       "sixrow": {
@@ -52,7 +52,7 @@
     },
     "base_sha256": "7738604558ad38f95316e2f65f99dcd4d6cc222c3ff3469a590b4892da81448d",
     "candidate_rebuild_lock_schema": "lmi-p2-d114-candidate-rebuild-lock/v1",
-    "candidate_rebuild_lock_sha256": "7f9989b2d82cf91e7fd0e9e718847892ff8ab611a06285886df26b77b648bd43",
+    "candidate_rebuild_lock_sha256": "0d77f35dc16d21d82dec0f7e5d145c5545cc31c9adc8cea2a324c2bcfd8fa5b9",
     "candidate_sha256": "a5b368da152e52c732d558a9fb4158beec6a079ff9aafb6de073f83f108b435b",
     "candidate_size": 2923429888,
     "candidate_uuid": "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f",
@@ -141,7 +141,7 @@
       "pid",
       "uts"
     ],
-    "sealed_injector_script_sha256": "ec7970a70879bee4446e552667627acc85269d2ea785999bdbe395d486516e83"
+    "sealed_injector_script_sha256": "083fc7e039064529a8b37df7b5f0c227e2a4bdd03ea46c449088ac70c6fd2640"
   },
   "sanitization": {
     "apk_cache": "exact-four-index-members-removed",
