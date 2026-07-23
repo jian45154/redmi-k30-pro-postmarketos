@@ -114,9 +114,9 @@ class Contract:
     old_sparse_sha256: str = "39d45c6de7d2708f59154b1dd9352573849fc0a51434ebfd9d0f493c36841583"
     d110_boot_sha256: str = "2b264d64d2ed22f0ab5c3c2615b0bda9ed821fa5d8d5d691ea513e5d2f071487"
     d110_boot_size: int = 52_944_896
-    rollback_sha256: str = "79276015be7d79ed77494b4bd3aec9e8a0f09325c53c4802eef54fede1022cbc"
-    rollback_size: int = 2_269_399_372
-    baseline_raw_sha256: str = "b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721"
+    rollback_sha256: str = "1315e3a06ddff42e91f930f01b16a62ab30ab3d4f490e8e8e40d0af89c657279"
+    rollback_size: int = 2_269_624_624
+    baseline_raw_sha256: str = "33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8"
     userdata_capacity: int = 114_898_743_296
 
 

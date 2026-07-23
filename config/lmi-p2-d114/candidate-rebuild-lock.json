@@ -25,7 +25,7 @@
       "reason": "tune2fs and e2fsck write wall-clock time; normalize only these two primary-superblock fields to reproduce the reviewed candidate"
     },
     "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/lmi-d114-rootfs-p2-candidate-20260723.ext4",
-    "sha256": "a5b368da152e52c732d558a9fb4158beec6a079ff9aafb6de073f83f108b435b",
+    "sha256": "d331433af3b7fdb78e42732a1d6b5530a5cf9e6a90a4f4e648f7a97aa696f790",
     "size": 2923429888
   },
   "derivation": {
@@ -105,7 +105,7 @@
     "base_ext4": {
       "mode": "0600",
       "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/lmi-d114-rootfs-base.ext4",
-      "sha256": "7738604558ad38f95316e2f65f99dcd4d6cc222c3ff3469a590b4892da81448d",
+      "sha256": "5f351c9184fec53070886f3e9aa6a04178d2be8858ec2237b13af19e4a0e8cf6",
       "size": 2923429888
     },
     "source_lock": {
@@ -120,16 +120,16 @@
     "userdata_raw": {
       "mode": "0600",
       "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/xiaomi-lmi-d114-r2-most-complete-userdata-20260723.normalized.img",
-      "sha256": "b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721",
+      "sha256": "33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8",
       "size": 3436183552
     },
     "userdata_sparse": {
-      "expanded_raw_sha256": "b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721",
+      "expanded_raw_sha256": "33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8",
       "expanded_raw_size": 3436183552,
       "mode": "0600",
       "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/xiaomi-lmi-d114-r2-most-complete-userdata-20260723.android-sparse.img",
-      "sha256": "79276015be7d79ed77494b4bd3aec9e8a0f09325c53c4802eef54fede1022cbc",
-      "size": 2269399372,
+      "sha256": "1315e3a06ddff42e91f930f01b16a62ab30ab3d4f490e8e8e40d0af89c657279",
+      "size": 2269624624,
       "sparse_block_size": 4096,
       "sparse_total_blocks": 838912
     }
