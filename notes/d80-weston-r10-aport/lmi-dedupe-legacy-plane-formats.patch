@@ -1,0 +1,17 @@
+diff --git a/libweston/backend-drm/kms.c b/libweston/backend-drm/kms.c
+--- a/libweston/backend-drm/kms.c
++++ b/libweston/backend-drm/kms.c
+@@ -616,5 +616,13 @@ fallback:
+ 	/* No IN_FORMATS blob available, so just use the old. */
+ 	for (i = 0; i < kplane->count_formats; i++) {
++		/*
++		 * Some downstream MSM drivers expose the same fourcc more than
++		 * once to represent vendor modifiers that the legacy API cannot
++		 * describe. Keep one indistinguishable legacy format entry.
++		 */
++		if (weston_drm_format_array_find_format(&plane->formats,
++						      kplane->formats[i]))
++			continue;
+ 		fmt = weston_drm_format_array_add_format(&plane->formats,
+ 							 kplane->formats[i]);
+ 		if (!fmt)

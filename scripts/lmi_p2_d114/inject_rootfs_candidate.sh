@@ -32,18 +32,18 @@ readonly CANONICAL_INJECTOR_SOURCE="$REPO/scripts/lmi_p2_d114/inject_rootfs_cand
 readonly INPUT_BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723"
 readonly BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-injected-20260723"
 readonly RAW="$INPUT_BUILD_DIR/xiaomi-lmi-d114-r2-most-complete-userdata-20260723.normalized.img"
-readonly RAW_SHA256=b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721
+readonly RAW_SHA256=33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8
 readonly RAW_SIZE=3436183552
 readonly SPARSE="$INPUT_BUILD_DIR/xiaomi-lmi-d114-r2-most-complete-userdata-20260723.android-sparse.img"
-readonly SPARSE_SHA256=79276015be7d79ed77494b4bd3aec9e8a0f09325c53c4802eef54fede1022cbc
-readonly SPARSE_SIZE=2269399372
+readonly SPARSE_SHA256=1315e3a06ddff42e91f930f01b16a62ab30ab3d4f490e8e8e40d0af89c657279
+readonly SPARSE_SIZE=2269624624
 readonly GPT_SECTOR_SIZE=4096
 readonly ROOT_START_SECTOR=124928
 readonly ROOT_SECTOR_COUNT=713728
 readonly BASE="$INPUT_BUILD_DIR/lmi-d114-rootfs-base.ext4"
-readonly BASE_SHA256=7738604558ad38f95316e2f65f99dcd4d6cc222c3ff3469a590b4892da81448d
+readonly BASE_SHA256=5f351c9184fec53070886f3e9aa6a04178d2be8858ec2237b13af19e4a0e8cf6
 readonly INPUT="$INPUT_BUILD_DIR/lmi-d114-rootfs-p2-candidate-20260723.ext4"
-readonly INPUT_SHA256=a5b368da152e52c732d558a9fb4158beec6a079ff9aafb6de073f83f108b435b
+readonly INPUT_SHA256=d331433af3b7fdb78e42732a1d6b5530a5cf9e6a90a4f4e648f7a97aa696f790
 readonly IMAGE_SIZE=2923429888
 readonly IMAGE_UUID=f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f
 readonly REPAIR_EPOCH=1784734606
@@ -52,15 +52,15 @@ readonly REPAIR_VERIFY_LOG_SHA256=96a42f54078536e361b57a80d73a8199ae62dff4537db4
 readonly REPAIR_LOG="$INPUT_BUILD_DIR/candidate-preinstall-e2fsck-repair.log"
 readonly REPAIR_LOG_SHA256=96a42f54078536e361b57a80d73a8199ae62dff4537db4b459eecdc6b16119c4
 readonly REBUILD_LOCK="$REPO/config/lmi-p2-d114/candidate-rebuild-lock.json"
-readonly REBUILD_LOCK_SHA256=0d77f35dc16d21d82dec0f7e5d145c5545cc31c9adc8cea2a324c2bcfd8fa5b9
+readonly REBUILD_LOCK_SHA256=d2066493338a9402239af5a9f4d33d9086c2f8d8d9adef59074dab046950c523
 readonly REBUILD_LOCK_SCHEMA=lmi-p2-d114-candidate-rebuild-lock/v1
 readonly OUTPUT_BUNDLE="$BUILD_DIR/lmi-d114-rootfs-p2-r2-most-complete-injected-20260723.bundle"
 readonly OUTPUT="$OUTPUT_BUNDLE/rootfs.ext4"
 readonly ATTESTATION="$OUTPUT_BUNDLE/attestation.json"
 readonly P2_APK="$INPUT_BUILD_DIR/run2-device-xiaomi-lmi-terminal-0.1.0-r2.apk"
-readonly P2_APK_SHA256=50a7301efda02b3f3c900337518ce456c23241aff9ff1e061513eb97217b22d6
-readonly P2_APK_SIZE=8774
-readonly P2_APK_CHECKSUM=Q1vCtAzcoP/rytYrrxaw/XVJCcTG8=
+readonly P2_APK_SHA256=f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4
+readonly P2_APK_SIZE=8776
+readonly P2_APK_CHECKSUM=Q1xmDSKg+38KWGNRvP8eE/06z1gTg=
 readonly SIXROW_APK="$INPUT_BUILD_DIR/lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk"
 readonly SIXROW_APK_SHA256=8d2f23522eb737432577b33ee7dd012b76d06012f1d6918eac289853f6f015e7
 readonly SIXROW_APK_SIZE=121842
@@ -70,7 +70,7 @@ readonly P2_KEY_SHA256=c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79
 readonly SIXROW_KEY="$REPO/config/lmi-p2-d114/pmos@local-6a5d38f2.rsa.pub"
 readonly SIXROW_KEY_SHA256=c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79e936736
 readonly P2_BUILD_ATTESTATION="$REPO/config/lmi-p2-d114/apk-build-attestation.json"
-readonly P2_BUILD_ATTESTATION_SHA256=72fd079b0fb63e9ecbbff2328080d0072274153e81691226fbf321ab13fe46b8
+readonly P2_BUILD_ATTESTATION_SHA256=f0193caac2ab580d5e8a154539e34419ad0a04b25a24a8de5b84fbb12beb40a3
 readonly SIXROW_BUILD_ATTESTATION="$REPO/config/lmi-weston-sixrow/build-attestation-r2.json"
 readonly SIXROW_BUILD_ATTESTATION_SHA256=5bb55928ae0b4109ad028d1a24e29de0dc74d2078f31d33628fd683cfbbaa0a2
 readonly APK_STATIC="$REPO/private/lmi-p1/calibration/acquisition-root/work-proot-chroot2/apk.static"
@@ -1121,7 +1121,7 @@ verify_full_delta_fields() {
 			add_file["/etc/lmi-p2-d114/greetd.toml"]="644|260|d576c1f5398bc3820a0ce2361e2b0b187d5c6263b1cf42c8f121d262309de899"
 			add_file["/etc/lmi-p2-d114/weston.ini"]="644|688|b54d838ccf435ee41dbd55f5aab245fd68bb65ab19c784a694375f001a9763a2"
 			add_file["/usr/libexec/lmi-p2-d114/config-lifecycle"]="755|8194|b0315472595e56b521345a40350d588402c265c40c0df8be638f5317c9fc3c96"
-			add_file["/usr/libexec/lmi-p2-d114/session"]="755|15645|1d75f45fa6d75aced8b3dcd581757ec4fbe0ed6f3df5a31fa5da020f5e07c8d1"
+			add_file["/usr/libexec/lmi-p2-d114/session"]="755|15645|d0bfe969f2faae9a8bb9a4cceee2d2e81efe053806a0ec6da865c9624bb13325"
 			add_file["/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"]="755|134456|d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a"
 			add_file["/usr/libexec/lmi-p2-d114/weston-terminal-sixrow"]="755|200960|6602f7ac8e0c11892eec1d9db0411397e95f704a1655b94e0885a1220962a8cf"
 			add_file["/usr/share/lmi-p2-d114/greetd.confd"]="644|139|5be125043d60ff2d3b98624191769efd06320b81262b5552489d93076e85e6a4"
@@ -1462,7 +1462,7 @@ validate_p2_installed_record() {
 			expected_value["P"]="device-xiaomi-lmi-terminal"
 			expected_value["V"]="0.1.0-r2"
 			expected_value["A"]="noarch"
-			expected_value["S"]="8774"
+			expected_value["S"]="8776"
 			expected_value["I"]="24926"
 			expected_value["T"]="Pinned non-root Weston terminal session for Xiaomi lmi D114"
 			expected_value["U"]="https://postmarketos.org"
@@ -1491,7 +1491,7 @@ validate_p2_installed_record() {
 			expected_file["etc/lmi-p2-d114/greetd.toml"]="Q17aD3D/27DhKiygFdfBjjWQ46v/4="
 			expected_file["etc/lmi-p2-d114/weston.ini"]="Q1ACVXZU3ZSa9r/vWT8UkYAfbLRlw="
 			expected_file["usr/libexec/lmi-p2-d114/config-lifecycle"]="Q1fz2JibH7B8jAdosh8vogpdSyQZM="
-			expected_file["usr/libexec/lmi-p2-d114/session"]="Q1g3zI0xo7iooSVXXjAUrSAd63TWs="
+			expected_file["usr/libexec/lmi-p2-d114/session"]="Q1VY+DEJK+eyq5Mv5rs4gUBmgVyD4="
 			expected_file["usr/share/lmi-p2-d114/greetd.confd"]="Q11ujOtYABrGQSohB67SphVfwH5C8="
 			expected_attr["usr/libexec/lmi-p2-d114/config-lifecycle"]="0:0:755"
 			expected_attr["usr/libexec/lmi-p2-d114/session"]="0:0:755"
@@ -2041,7 +2041,7 @@ main() {
 	sanitize_public_image
 
 	verify_image_file /usr/libexec/lmi-p2-d114/config-lifecycle 755 b0315472595e56b521345a40350d588402c265c40c0df8be638f5317c9fc3c96
-	verify_image_file /usr/libexec/lmi-p2-d114/session 755 1d75f45fa6d75aced8b3dcd581757ec4fbe0ed6f3df5a31fa5da020f5e07c8d1
+	verify_image_file /usr/libexec/lmi-p2-d114/session 755 d0bfe969f2faae9a8bb9a4cceee2d2e81efe053806a0ec6da865c9624bb13325
 	verify_image_file /usr/libexec/lmi-p2-d114/weston-keyboard-sixrow 755 d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a
 	verify_image_file /usr/libexec/lmi-p2-d114/weston-terminal-sixrow 755 6602f7ac8e0c11892eec1d9db0411397e95f704a1655b94e0885a1220962a8cf
 	verify_image_file /etc/lmi-p2-d114/weston.ini 644 b54d838ccf435ee41dbd55f5aab245fd68bb65ab19c784a694375f001a9763a2

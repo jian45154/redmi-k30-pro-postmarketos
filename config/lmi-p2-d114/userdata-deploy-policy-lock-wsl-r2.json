@@ -30,9 +30,9 @@
     },
     "rollback_sparse": {
       "logical_size": 3436183552,
-      "roundtrip_raw_sha256": "b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721",
-      "sha256": "79276015be7d79ed77494b4bd3aec9e8a0f09325c53c4802eef54fede1022cbc",
-      "size": 2269399372
+      "roundtrip_raw_sha256": "33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8",
+      "sha256": "1315e3a06ddff42e91f930f01b16a62ab30ab3d4f490e8e8e40d0af89c657279",
+      "size": 2269624624
     }
   },
   "bindings": {

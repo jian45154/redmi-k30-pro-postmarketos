@@ -75,17 +75,17 @@
   "repo_bindings": {
     "apk_build_attestation": {
       "path": "config/lmi-p2-d114/apk-build-attestation.json",
-      "sha256": "72fd079b0fb63e9ecbbff2328080d0072274153e81691226fbf321ab13fe46b8",
-      "size": 3267
+      "sha256": "f0193caac2ab580d5e8a154539e34419ad0a04b25a24a8de5b84fbb12beb40a3",
+      "size": 3551
     },
     "assembler": {
       "path": "scripts/lmi_p2_d114/assemble_userdata_image.py",
-      "sha256": "c0459c00f112c8f9fd0bee57dc10e4ff04e51d222191f2f04517c23222c21d13",
+      "sha256": "a8f3a947343831f2eb4fc719c125f1ad10b2908d75ad7db0253dac004dc001a7",
       "size": 84891
     },
     "candidate_rebuild_lock": {
       "path": "config/lmi-p2-d114/candidate-rebuild-lock.json",
-      "sha256": "0d77f35dc16d21d82dec0f7e5d145c5545cc31c9adc8cea2a324c2bcfd8fa5b9",
+      "sha256": "d2066493338a9402239af5a9f4d33d9086c2f8d8d9adef59074dab046950c523",
       "size": 5939
     },
     "fastboot_windows_provenance_lock": {
@@ -95,17 +95,17 @@
     },
     "injection_policy_lock": {
       "path": "config/lmi-p2-d114/injection-policy-lock.json",
-      "sha256": "68868764a183d2a58ce44b8581fdddc5e78062d5b49841c09604221b7116ca3d",
+      "sha256": "7d83f4af2208dca1a24740e3bebc389ac766e457a2b447f3bef353fa9a6540b6",
       "size": 7469
     },
     "injector": {
       "path": "scripts/lmi_p2_d114/inject_rootfs_candidate.sh",
-      "sha256": "083fc7e039064529a8b37df7b5f0c227e2a4bdd03ea46c449088ac70c6fd2640",
+      "sha256": "b741492fbd66978d7f53db7d399cae3c30a9ee413bfa1a5674ae752dc2704041",
       "size": 124825
     },
     "injector_launcher": {
       "path": "scripts/lmi_p2_d114/launch_inject_rootfs_candidate.sh",
-      "sha256": "fd1927d332ad6bd77176e35e14ac79127faa31c1d121cd8091b6a67ea6c633e8",
+      "sha256": "1f9af3eff33d22da6bf8943d58dc86e09b378671e9610a442d401e29a9945327",
       "size": 20125
     },
     "injector_runtime_lock": {

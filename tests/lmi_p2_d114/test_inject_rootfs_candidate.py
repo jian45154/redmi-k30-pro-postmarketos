@@ -95,11 +95,11 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "weston-shell-desktop=14.0.2-r5 weston-terminal=14.0.2-r5 /bin/sh"
         )
         lines = [
-            "C:Q1vCtAzcoP/rytYrrxaw/XVJCcTG8=",
+            "C:Q1xmDSKg+38KWGNRvP8eE/06z1gTg=",
             "P:device-xiaomi-lmi-terminal",
             "V:0.1.0-r2",
             "A:noarch",
-            "S:8774",
+            "S:8776",
             "I:24926",
             "T:Pinned non-root Weston terminal session for Xiaomi lmi D114",
             "U:https://postmarketos.org",
@@ -123,7 +123,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "Z:Q1fz2JibH7B8jAdosh8vogpdSyQZM=",
             "R:session",
             "a:0:0:755",
-            "Z:Q1g3zI0xo7iooSVXXjAUrSAd63TWs=",
+            "Z:Q1VY+DEJK+eyq5Mv5rs4gUBmgVyD4=",
             "F:usr/share",
             "F:usr/share/lmi-p2-d114",
             "R:greetd.confd",
@@ -835,12 +835,12 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_rebuild_lock_is_exactly_pinned_and_cross_matches_script_constants(self) -> None:
         self.assertEqual(self.lock["schema"], "lmi-p2-d114-candidate-rebuild-lock/v1")
-        self.assertEqual(digest(LOCK), "0d77f35dc16d21d82dec0f7e5d145c5545cc31c9adc8cea2a324c2bcfd8fa5b9")
+        self.assertEqual(digest(LOCK), "d2066493338a9402239af5a9f4d33d9086c2f8d8d9adef59074dab046950c523")
         expected = {
-            "b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721",
-            "79276015be7d79ed77494b4bd3aec9e8a0f09325c53c4802eef54fede1022cbc",
-            "7738604558ad38f95316e2f65f99dcd4d6cc222c3ff3469a590b4892da81448d",
-            "a5b368da152e52c732d558a9fb4158beec6a079ff9aafb6de073f83f108b435b",
+            "33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8",
+            "1315e3a06ddff42e91f930f01b16a62ab30ab3d4f490e8e8e40d0af89c657279",
+            "5f351c9184fec53070886f3e9aa6a04178d2be8858ec2237b13af19e4a0e8cf6",
+            "d331433af3b7fdb78e42732a1d6b5530a5cf9e6a90a4f4e648f7a97aa696f790",
             "96a42f54078536e361b57a80d73a8199ae62dff4537db4b459eecdc6b16119c4",
             "96a42f54078536e361b57a80d73a8199ae62dff4537db4b459eecdc6b16119c4",
             "2e51f521c676729920eaba694933d9d4048645f1a5789556fd0027e62d11ecc8",
@@ -1732,7 +1732,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
                 (
                     "validate_p2_installed_record",
                     self.valid_p2_installed_record(),
-                    "C:Q1vCtAzcoP/rytYrrxaw/XVJCcTG8=",
+                    "C:Q1xmDSKg+38KWGNRvP8eE/06z1gTg=",
                     "V:0.1.0-r2",
                 ),
                 (

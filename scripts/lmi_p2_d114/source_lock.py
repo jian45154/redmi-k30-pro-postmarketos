@@ -30,10 +30,10 @@ EXPECTED_BASELINE = {
     "root_uuid": "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f",
     "running_kernel_release": "4.19.325-cip128-st12-perf",
     "transfer_manifest_sha256": "3b68dbcbb00c43ebf0560a89e542ac20a90e6b2a1b888d50fe9cb45ef9b46fe7",
-    "userdata_raw_sha256": "b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721",
+    "userdata_raw_sha256": "33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8",
     "userdata_raw_size": 3436183552,
-    "userdata_sparse_sha256": "79276015be7d79ed77494b4bd3aec9e8a0f09325c53c4802eef54fede1022cbc",
-    "userdata_sparse_size": 2269399372,
+    "userdata_sparse_sha256": "1315e3a06ddff42e91f930f01b16a62ab30ab3d4f490e8e8e40d0af89c657279",
+    "userdata_sparse_size": 2269624624,
 }
 
 EXPECTED_DEPENDENCIES = [
@@ -78,8 +78,8 @@ EXPECTED_RUNTIME = {
         "/usr/bin/seatd": "64d9099f9c7974e4a08b93f9f117eeaacbfebd0d75d6810ed80f8c4f38761be8",
         "/usr/bin/weston": "191703aa8da1d965fe7a2e7b4ec7ad7316c484cdc26ac77f31c015d6ee4bd45e",
         "/usr/lib/libweston-14.so.0.0.2": "2c7565771a3e4097cdaf3e240d5e1dece2cdff78227967153df6088164bde9cd",
-        "/usr/lib/libweston-14/drm-backend.so": "72bdbdda9850f92dc56178075eda9be28ddad0867da1d0b50db22bb304aa64ba",
-        "/usr/lib/weston/desktop-shell.so": "8411118894008448b2d18875c069b7e79588e1ed6526dc49e4831e2cb20caf3f",
+        "/usr/lib/libweston-14/drm-backend.so": "3d74572726b4c7cbbdf1abad75dbeeee6d76f08af766a8bba06f30aeaf617a2f",
+        "/usr/lib/weston/desktop-shell.so": "e4996ef148957fbeaafd1c374611a4831a7afe74b6014e47869e445c88b6cf67",
         "/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow": "d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a",
         "/usr/libexec/lmi-p2-d114/weston-terminal-sixrow": "6602f7ac8e0c11892eec1d9db0411397e95f704a1655b94e0885a1220962a8cf",
         "/usr/sbin/greetd": "91aa06de3923cd0c77b95331bce869d7e7e073d09548d9974e725713fabf9497",
