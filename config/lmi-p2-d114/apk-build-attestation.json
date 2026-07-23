@@ -1,11 +1,11 @@
 {
   "artifact": {
-    "apk_sha256": "70d45810b14bb14274a23d935bb390271c8544db554ac70fb484f6eb2a4b93bc",
-    "apk_size": 8775,
+    "apk_sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
+    "apk_size": 8776,
     "arch": "noarch",
     "builddate": 1784522705,
     "commit": "uncommitted-p2-d114-source-lock-v4",
-    "datahash": "272cc513956072eb3e87da7734740eaa82a2fc47f10eba740857b262c929a0dd",
+    "datahash": "75c1621e2904797e0e04e3cb04486e782569337eae66211ee057f4aa3885cce4",
     "installed_size": 24926,
     "maintainer": "lmi P2 maintainers <noreply@example.invalid>",
     "name": "device-xiaomi-lmi-terminal",
@@ -24,24 +24,24 @@
   },
   "inputs": {
     "generated_overlay_path": "config/lmi-p2-d114/generated-overlay.json",
-    "generated_overlay_sha256": "53a745bc64dc7e939d869bd7995de23ed212f361289fecf1145d9ef2de99f75c",
+    "generated_overlay_sha256": "8900baf6cc43fb2ace8df88a0191d3bb7eca3768abe5dd5fed156485b1c1eac8",
     "source_lock_path": "config/lmi-p2-d114/source-lock.json",
-    "source_lock_sha256": "0046a432b961fef3f1c5900ee9b4e26351e87d87bd058ed4824f897a2def04fb"
+    "source_lock_sha256": "36583120d97fcc5071259d6491f3472586a60d14190d799ab6718de6e998f173"
   },
   "reproducibility": {
     "byte_identical": true,
     "runs": [
       {
         "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/run1-device-xiaomi-lmi-terminal-0.1.0-r2.apk",
-        "sha256": "70d45810b14bb14274a23d935bb390271c8544db554ac70fb484f6eb2a4b93bc",
+        "sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
         "signature_verified": true,
-        "size": 8775
+        "size": 8776
       },
       {
         "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/run2-device-xiaomi-lmi-terminal-0.1.0-r2.apk",
-        "sha256": "70d45810b14bb14274a23d935bb390271c8544db554ac70fb484f6eb2a4b93bc",
+        "sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
         "signature_verified": true,
-        "size": 8775
+        "size": 8776
       }
     ]
   },

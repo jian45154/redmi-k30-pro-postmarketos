@@ -95,11 +95,11 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "weston-shell-desktop=14.0.2-r5 weston-terminal=14.0.2-r5 /bin/sh"
         )
         lines = [
-            "C:Q1gHoYAku3NLLc7jWlEYfOGUhQcYs=",
+            "C:Q1xmDSKg+38KWGNRvP8eE/06z1gTg=",
             "P:device-xiaomi-lmi-terminal",
             "V:0.1.0-r2",
             "A:noarch",
-            "S:8775",
+            "S:8776",
             "I:24926",
             "T:Pinned non-root Weston terminal session for Xiaomi lmi D114",
             "U:https://postmarketos.org",
@@ -123,7 +123,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "Z:Q1fz2JibH7B8jAdosh8vogpdSyQZM=",
             "R:session",
             "a:0:0:755",
-            "Z:Q1HZ+4EtKUzGLZ9gU4XrAdWTyoAVM=",
+            "Z:Q1VY+DEJK+eyq5Mv5rs4gUBmgVyD4=",
             "F:usr/share",
             "F:usr/share/lmi-p2-d114",
             "R:greetd.confd",
@@ -835,7 +835,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_rebuild_lock_is_exactly_pinned_and_cross_matches_script_constants(self) -> None:
         self.assertEqual(self.lock["schema"], "lmi-p2-d114-candidate-rebuild-lock/v1")
-        self.assertEqual(digest(LOCK), "a45ba8072a5ed8667edc7ac84146c4daba5a595f22af05f396fce7a670357ce1")
+        self.assertEqual(digest(LOCK), "7f9989b2d82cf91e7fd0e9e718847892ff8ab611a06285886df26b77b648bd43")
         expected = {
             "b108f581426c644319396fe5d5cdafd2f490151f2ac2b63bd2ef5275567d0721",
             "79276015be7d79ed77494b4bd3aec9e8a0f09325c53c4802eef54fede1022cbc",
@@ -1732,7 +1732,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
                 (
                     "validate_p2_installed_record",
                     self.valid_p2_installed_record(),
-                    "C:Q1gHoYAku3NLLc7jWlEYfOGUhQcYs=",
+                    "C:Q1xmDSKg+38KWGNRvP8eE/06z1gTg=",
                     "V:0.1.0-r2",
                 ),
                 (
