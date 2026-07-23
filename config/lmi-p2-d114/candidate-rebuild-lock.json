@@ -110,7 +110,7 @@
     },
     "source_lock": {
       "path": "config/lmi-p2-d114/source-lock.json",
-      "sha256": "36583120d97fcc5071259d6491f3472586a60d14190d799ab6718de6e998f173"
+      "sha256": "8f19ea125098134680e41917635f56a487bd6810b47f1007ba60c9ad0a618cbd"
     },
     "transfer_manifest": {
       "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/xiaomi-lmi-d114-r2-most-complete-userdata-20260723.manifest",

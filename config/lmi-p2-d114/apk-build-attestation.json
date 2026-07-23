@@ -1,11 +1,11 @@
 {
   "artifact": {
-    "apk_sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
-    "apk_size": 8776,
+    "apk_sha256": "50a7301efda02b3f3c900337518ce456c23241aff9ff1e061513eb97217b22d6",
+    "apk_size": 8774,
     "arch": "noarch",
     "builddate": 1784522705,
     "commit": "uncommitted-p2-d114-source-lock-v4",
-    "datahash": "75c1621e2904797e0e04e3cb04486e782569337eae66211ee057f4aa3885cce4",
+    "datahash": "894ea5392ef3ffd285fce7597dde7c65ef9d6df8e792bfd20143e8c4935b0df2",
     "installed_size": 24926,
     "maintainer": "lmi P2 maintainers <noreply@example.invalid>",
     "name": "device-xiaomi-lmi-terminal",
@@ -24,24 +24,24 @@
   },
   "inputs": {
     "generated_overlay_path": "config/lmi-p2-d114/generated-overlay.json",
-    "generated_overlay_sha256": "8900baf6cc43fb2ace8df88a0191d3bb7eca3768abe5dd5fed156485b1c1eac8",
+    "generated_overlay_sha256": "1fed48059f82c722011b5e6518e4fef998ad11d3aa40e888aba4a9042503f447",
     "source_lock_path": "config/lmi-p2-d114/source-lock.json",
-    "source_lock_sha256": "36583120d97fcc5071259d6491f3472586a60d14190d799ab6718de6e998f173"
+    "source_lock_sha256": "8f19ea125098134680e41917635f56a487bd6810b47f1007ba60c9ad0a618cbd"
   },
   "reproducibility": {
     "byte_identical": true,
     "runs": [
       {
         "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/run1-device-xiaomi-lmi-terminal-0.1.0-r2.apk",
-        "sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
+        "sha256": "50a7301efda02b3f3c900337518ce456c23241aff9ff1e061513eb97217b22d6",
         "signature_verified": true,
-        "size": 8776
+        "size": 8774
       },
       {
         "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/run2-device-xiaomi-lmi-terminal-0.1.0-r2.apk",
-        "sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
+        "sha256": "50a7301efda02b3f3c900337518ce456c23241aff9ff1e061513eb97217b22d6",
         "signature_verified": true,
-        "size": 8776
+        "size": 8774
       }
     ]
   },

@@ -200,23 +200,32 @@ def registry() -> tuple[list[Derived], list[Mirrored]]:
                 (SCRIPTS / "deploy_userdata.py", SCRIPTS / "postwrite_revalidate.py")),
     ]
 
-    kbd = f"runtime{us}component_sha256{us}/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"
-    term = f"runtime{us}component_sha256{us}/usr/libexec/lmi-p2-d114/weston-terminal-sixrow"
-    weston = f"runtime{us}component_sha256{us}/usr/bin/weston"
-    libweston = f"runtime{us}component_sha256{us}/usr/lib/libweston-14.so.0.0.2"
     sl = CONFIG / "source-lock.json"
+    session = FILES / "lmi-p2-d114-session"
+    slpy = SCRIPTS / "source_lock.py"
+
+    def comp(path: str) -> str:
+        return f"runtime{us}component_sha256{us}{path}"
 
     mirrored = [
-        # The exact drift that black-screened the device: the session script
-        # sha256-validates its live keyboard/terminal children against these.
-        Mirrored("keyboard binary", sl, kbd,
-                 (FILES / "lmi-p2-d114-session", SCRIPTS / "inject_rootfs_candidate.sh",
-                  SCRIPTS / "source_lock.py")),
-        Mirrored("terminal binary", sl, term,
-                 (FILES / "lmi-p2-d114-session", SCRIPTS / "inject_rootfs_candidate.sh",
-                  SCRIPTS / "source_lock.py")),
-        Mirrored("weston binary", sl, weston, (SCRIPTS / "source_lock.py",)),
-        Mirrored("libweston", sl, libweston, (SCRIPTS / "source_lock.py",)),
+        # The session script (files/lmi-p2-d114-session) hard-validates EVERY
+        # runtime binary it launches or links by sha256 against a hardcoded
+        # copy. Each must equal source-lock's component_sha256, or the session
+        # gate fails and the device black-screens after the splash. Two
+        # separate rounds of this exact drift shipped (r2 keyboard, then r2
+        # drm-backend + desktop-shell), so every session-validated component is
+        # registered here — a device black screen for a stale copy of any of
+        # them is now a CI failure.
+        Mirrored("keyboard binary", sl,
+                 comp("/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"),
+                 (session, SCRIPTS / "inject_rootfs_candidate.sh", slpy)),
+        Mirrored("terminal binary", sl,
+                 comp("/usr/libexec/lmi-p2-d114/weston-terminal-sixrow"),
+                 (session, SCRIPTS / "inject_rootfs_candidate.sh", slpy)),
+        Mirrored("weston binary", sl, comp("/usr/bin/weston"), (session, slpy)),
+        Mirrored("libweston", sl, comp("/usr/lib/libweston-14.so.0.0.2"), (session, slpy)),
+        Mirrored("drm-backend", sl, comp("/usr/lib/libweston-14/drm-backend.so"), (session, slpy)),
+        Mirrored("desktop-shell", sl, comp("/usr/lib/weston/desktop-shell.so"), (session, slpy)),
         # Built apks + signing key hand-copied across the injection attestation chain.
         Mirrored("P2 apk", CONFIG / "apk-build-attestation.json",
                  f"artifact{us}apk_sha256",
