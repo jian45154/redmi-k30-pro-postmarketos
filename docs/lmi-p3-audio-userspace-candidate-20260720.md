@@ -1,6 +1,6 @@
 # lmi P3 音频 userspace 候选报告
 
-日期：2026-07-20（Australia/Sydney）
+日期：2026-07-20（Australia/Sydney）；P1 合同重钉扎：2026-07-24
 
 状态：`host-source-only-candidate`；`release_eligible=false`；不是实机 P3 验收结果
 
@@ -16,7 +16,7 @@ r8 APK、锁定内核源码和脱敏旧日志。包仍不包含专有
 `linux-xiaomi-lmi=4.19.325-r9`。现在锁和生成的 APKBUILD 都绑定当前 P1/P2
 源码基线：
 
-- `device-xiaomi-lmi=1-r107`；
+- `device-xiaomi-lmi=1-r145`；
 - `linux-xiaomi-lmi=4.19.325-r8`（是生成 APK 的显式精确依赖，不是只写在报告
   中）；
 - 已保存的精确 r8 APK SHA-256 为
@@ -26,15 +26,19 @@ r8 APK、锁定内核源码和脱敏旧日志。包仍不包含专有
 - pmaports commit `6fb3a1e5eb21c809891645a2ba5ae11fa788e032`；
 - 不修改内核，仍使用内置 vendor techpack/APR/Kona/TFA9874 路径。
 
-P3 不要求 P2 GUI 包，因此可叠加在 P1-only 或 P1+P2 的相同 r107/r8 根文件系统
+P3 不要求 P2 GUI 包，因此可叠加在 P1-only 或 P1+P2 的相同 r145/r8 根文件系统
 上；它不会把 P2 尚未验证的 VT delta 描述为已解决。
 
 ## 旧 ADSP 路径和 P1 root 边界
 
-已只读审计当前 P1 r107 合同。P1 最终镜像只允许 `lmi` 通过
-`/usr/sbin/lmi-rootctl` 执行精确列举的 reboot、bootloader reboot、sshd status
-和经确认的 sshd restart；它没有 ADSP 子命令。P3 锁固定该 helper、主 sudoers
-文件和唯一 sudoers drop-in 的 SHA-256。
+已只读审计当前 P1 r145 合同。P1 最终镜像只允许 `lmi` 通过
+`/usr/sbin/lmi-rootctl` 执行精确列举且按动作确认的系统、service、Wi-Fi、显示、
+Bluetooth 和 ADSP 操作；当前 helper 自身包含一个经
+`adsp-boot-d70-android-init-trigger-xiaomi-lmi` token 确认的 `adsp-boot` 子命令。
+P3 锁固定该 helper、主 sudoers 文件和唯一 sudoers drop-in 的 SHA-256，分别为
+`ad294ecd581a5b16d6fce680270c3b3f4ff0fc77b62801363c3352ac036f04ba`、
+`1bca048389b53b5d6ca5690eabe05580a334f05d793684fad37c8b6840fcd303` 和
+`8b74be55d83c2e77723911aaf65216c68bbb829d99a73167295577147d19f02d`。
 
 生成包通过两层阻断旧的无门禁 `adsp-audio` service：
 
@@ -47,16 +51,18 @@ P3 不要求 P2 GUI 包，因此可叠加在 P1-only 或 P1+P2 的相同 r107/r8
    P3 自身的 runlevel link。每次 P3 probe/boot 又重新执行同一 guard，防止安装
    后漂移绕过门禁。
 
-guard 只证明已审计的包、service 和 P1 非特权入口没有第二条路径。已经取得
-root 权限的管理员仍可直接写 root-owned sysfs；P3 自己无法在所拥有的包路径内
-取消 kernel 暴露的 root 权限，因此本文不声称系统对 root 具有“唯一写入口”。
-若要求连 root 直接写也不可行，需要另行评审内核权限/LSM 或修改 P1 root
-治理合同，均不在本次授权范围。
+guard 只证明精确 r145 P1 权限边界未漂移，且没有未钉扎的提权策略或旧 ADSP
+service 路径。它有意接受已钉扎的 P1 `lmi-rootctl adsp-boot`；该命令不执行 P3
+的 firmware inventory/provenance、转换锁和 failed-attempt latch 检查，因此
+P3 状态机不是系统的唯一 ADSP 路径。已经取得 root 权限的管理员也仍可直接写
+root-owned sysfs。P3 自己无法在所拥有的包路径内取消这两个 P1/kernel 暴露的
+入口，因此本文不声称系统对 root 具有“唯一写入口”。若要求唯一入口，需要另行
+评审并修改 P1 root 治理合同或内核权限/LSM，均不在本次授权范围。
 
 另一个明确的组合限制是安装顺序：post-install 要求 P1 finalizer 已经放置并
 封存 rootctl/sudoers。若把 P3 加进 finalizer 之前的 pmbootstrap 包事务，它会
 因 P1 边界尚不存在而失败关闭；当前安全路径只能是在已完成 P1 finalizer 的
-r107/r8 rootfs 上安装，或以后由 P1 owner 增加一个先封存边界再验证 P3 的构建
+r145/r8 rootfs 上安装，或以后由 P1 owner 增加一个先封存边界再验证 P3 的构建
 阶段。本次没有越权修改 P1 来隐藏这个限制。
 
 ## ADSP 状态机
@@ -67,7 +73,7 @@ r107/r8 rootfs 上安装，或以后由 P1 owner 增加一个先封存边界再�
 
 写入前必须全部成立：
 
-1. `/etc/lmi-release-identity` 中 schema、scope、`device_xiaomi_lmi=1-r107`、
+1. `/etc/lmi-release-identity` 中 schema、scope、`device_xiaomi_lmi=1-r145`、
    `linux_xiaomi_lmi=4.19.325-r8` 各出现且只出现一次；已安装 deviceinfo 的
    codename 和 DTB 分别精确为 `xiaomi-lmi` 和 `qcom/kona-v2.1-lmi`；
 2. `uname -m` 精确为 `aarch64`，`uname -r` 精确为已从上述固定 r8 APK
@@ -189,7 +195,7 @@ command 上的实际 shell 行为，而
    证据；package 不提供 inventory/provenance，默认 digest 为空，因此当前候选
    实际不能执行 boot。
 2. 没有构建 P3 APK，也没有验证 `pd-mapper`/OpenRC 子包在最终离线仓库中的完整
-   dependency closure；r8 kernel APK digest 已固定，但 r107 device artifact 和
+   dependency closure；r8 kernel APK digest 已固定，但 r145 device artifact 和
    最终可复现 package 集合仍需构建证明。
 3. 没有本次当前设备的实机只读 probe 结果。锁定 r8 源码/DTB 与旧硬件日志共同
    支持上述 12-name allowlist，但没有保存的当前 r8 `subsys*/name` 直接清单，
@@ -197,8 +203,9 @@ command 上的实际 shell 行为，而
    binding、machine card 或 PCM 存在。
 4. 没有执行 ADSP boot、播放、录音、mixer、UCM、冷启动或 P1/P2 回归。每个主动
    硬件步骤仍需当次独立批准、超时/音量/停止方案和恢复证据。
-5. root 直接 sysfs 写无法由此 userspace 包消除；若这被定义为必须消除的全系统
-   bypass，P3 保持阻断，不能声称唯一入口或提升为 accepted。
+5. P1 r145 的 `lmi-rootctl adsp-boot` 和 root 直接 sysfs 写都无法由此 P3
+   userspace 包消除；若必须让 P3 状态机成为全系统唯一入口，P3 保持阻断，不能
+   声称唯一入口或提升为 accepted。
 
 在上述硬件、固件来源、构建 closure、主动音频和 P1/P2 回归全部完成前，P3
 必须保持 source-only candidate。

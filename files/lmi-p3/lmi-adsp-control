@@ -115,8 +115,8 @@ check_release_identity() {
 				;;
 			device_xiaomi_lmi)
 				device_count=$((device_count + 1))
-				[ "$value" = 1-r107 ] ||
-					fail 'device-xiaomi-lmi is not exactly 1-r107' || return 1
+				[ "$value" = 1-r145 ] ||
+					fail 'device-xiaomi-lmi is not exactly 1-r145' || return 1
 				;;
 			linux_xiaomi_lmi)
 				kernel_count=$((kernel_count + 1))

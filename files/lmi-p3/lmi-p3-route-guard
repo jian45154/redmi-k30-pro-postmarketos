@@ -19,7 +19,7 @@ ID=/usr/bin/id
 SHA256SUM=/usr/bin/sha256sum
 STAT=/usr/bin/stat
 
-ROOTCTL_SHA256=0a9ad28b21dd5adc66304f54f1ebaf6b0fd1876cf206f7583cd8fa1465e3f239
+ROOTCTL_SHA256=ad294ecd581a5b16d6fce680270c3b3f4ff0fc77b62801363c3352ac036f04ba
 SUDOERS_SHA256=1bca048389b53b5d6ca5690eabe05580a334f05d793684fad37c8b6840fcd303
 ROOTCTL_RULE_SHA256=8b74be55d83c2e77723911aaf65216c68bbb829d99a73167295577147d19f02d
 
@@ -44,7 +44,7 @@ check_exact_file() {
 		fail "could not hash $label: $path" || return 1
 	actual_digest=${actual_digest%% *}
 	[ "$actual_digest" = "$digest" ] ||
-		fail "$label digest does not match the active P1 r107 contract" || return 1
+		fail "$label digest does not match the active P1 r145 contract" || return 1
 }
 
 check_absent() {
@@ -99,4 +99,5 @@ for entry in "$RUNLEVEL_DIRECTORY"/*/adsp-audio \
 	exit 1
 done
 
-printf '%s\n' 'lmi-p3-route-guard: exact P1 boundary present; no packaged ADSP bypass found'
+printf '%s\n' \
+	'lmi-p3-route-guard: exact P1 r145 boundary present; no unpinned privilege or legacy ADSP service route found'

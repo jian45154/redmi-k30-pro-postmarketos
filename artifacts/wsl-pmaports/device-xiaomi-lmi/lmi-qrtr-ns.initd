@@ -4,7 +4,8 @@ description="Run QRTR nameservice for xiaomi-lmi"
 command="/usr/sbin/lmi-qrtr-ns"
 
 depend() {
-	before lmi-cnss-daemon lmi-cnss-fs-ready wpa_supplicant networkmanager
+	need lmi-firmware-mount
+	before pd-mapper rmtfs tqftpserv lmi-cnss-daemon lmi-cnss-fs-ready wpa_supplicant networkmanager
 }
 
 is_running() {

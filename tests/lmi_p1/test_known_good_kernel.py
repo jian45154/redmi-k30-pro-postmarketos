@@ -96,7 +96,7 @@ class KnownGoodKernelArtifactTests(unittest.TestCase):
 
             index_text = (
                 "P:postmarketos-initramfs\nV:2-r0\nA:aarch64\n\n"
-                "P:device-xiaomi-lmi\nV:1-r107\nA:aarch64\n\n"
+                "P:device-xiaomi-lmi\nV:1-r144\nA:aarch64\n\n"
             ).encode("ascii")
             info = tarfile.TarInfo("APKINDEX")
             info.size = len(index_text)
@@ -119,7 +119,13 @@ class KnownGoodKernelArtifactTests(unittest.TestCase):
             )
             self.assertEqual(
                 build_module._known_good_install_add(package),
-                "unudhcpd-openrc,linux-xiaomi-lmi=4.19.325-r8," + str(package),
+                "networkmanager=1.52.2-r0,"
+                "networkmanager-openrc=1.52.2-r0,"
+                "networkmanager-cli=1.52.2-r0,"
+                "networkmanager-wifi=1.52.2-r0,"
+                "unudhcpd-openrc,openssh-client-default,"
+                "linux-xiaomi-lmi=4.19.325-r8,"
+                + str(package),
             )
             self.assertTrue(package.is_absolute())
             self.assertEqual(

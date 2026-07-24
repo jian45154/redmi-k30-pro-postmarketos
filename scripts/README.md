@@ -12,6 +12,7 @@ names are preserved because many notes cite them directly.
 | `25`-`31` | `D-v27` persistent boot, display checks, hardware checks, and `D-v28` hardware tools. |
 | `32`-`39` | Firmware service, inventory, display/audio/power/network probes. |
 | `70`-`72` | Downstream SSH/Wi-Fi build, sidecar monitor, and staged downstream Wi-Fi test helpers. |
+| `74` | SSH protocol acceptance with no explicit remote mutation; mocked tests cover logic only, and hardware claims require captured real-device evidence. |
 
 ## Mainline/copydown sequence (`M-rNN`)
 
@@ -21,6 +22,25 @@ names are preserved because many notes cite them directly.
 | `45`-`47` | Build, verify, and bundle copydown boot images. |
 | `48`-`58` | Fastbootd preflight, approval sheets, rollback scan, staged write, monitor, and release docs. |
 | `59`-`69` | Static CI, guarded fastbootd/reboot helpers, release refresh, readiness audit, and mainline progress/resource loops. |
+
+## P1 sealed-build helpers
+
+The Python modules under `scripts/lmi_p1/` implement the source-locked P1
+builder and its host-side artifact gates. Offline-cache calibration is a
+separate two-step workflow:
+
+- `python3 -B -m scripts.lmi_p1.offline_cache_calibration prepare ...` writes
+  only a private review draft;
+- `python3 -B -m scripts.lmi_p1.offline_cache_calibration execute` accepts only
+  the manually installed canonical authorization and writes only private
+  candidate replay/attestation records plus a hash-bound execution receipt.
+
+Neither command changes device state. Prepare never installs its own
+authorization, and execute has no alternate authorization, verifier, or trust
+pin options. The receipt binds accepted output bytes to a descriptor-held
+snapshot, but does not claim that the unchanged pathname-based production
+promoter consumed the held inode. Same-UID process-memory and post-exit
+evidence modification require a stronger external trust boundary.
 
 ## Naming rule for new scripts
 

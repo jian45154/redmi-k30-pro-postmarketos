@@ -16,12 +16,12 @@ STATUS = "host-source-only-candidate"
 
 EXPECTED_BASELINE = {
     "audio_implementation": "built-in-vendor-techpack-apr-kona-tfa9874",
-    "device_dependency": "device-xiaomi-lmi=1-r107",
+    "device_dependency": "device-xiaomi-lmi=1-r145",
     "kernel_change_policy": "no-kernel-changes",
     "kernel_dependency": "linux-xiaomi-lmi=4.19.325-r8",
     "kernel_apk_sha256": "67cbc5a543b425d3602ffa33b722fbf0379dcdbf184c5996c960576f16c91610",
     "pmaports_commit": "6fb3a1e5eb21c809891645a2ba5ae11fa788e032",
-    "rootctl_sha256": "0a9ad28b21dd5adc66304f54f1ebaf6b0fd1876cf206f7583cd8fa1465e3f239",
+    "rootctl_sha256": "ad294ecd581a5b16d6fce680270c3b3f4ff0fc77b62801363c3352ac036f04ba",
     "rootctl_sudoers_sha256": "8b74be55d83c2e77723911aaf65216c68bbb829d99a73167295577147d19f02d",
     "running_kernel_release": "4.19.325-cip128-st12-perf",
     "sudoers_sha256": "1bca048389b53b5d6ca5690eabe05580a334f05d793684fad37c8b6840fcd303",
@@ -31,7 +31,7 @@ EXPECTED_DEPENDENCIES = [
     "!adsp-audio",
     "!adsp-audio-openrc",
     "alsa-utils",
-    "device-xiaomi-lmi=1-r107",
+    "device-xiaomi-lmi=1-r145",
     "linux-xiaomi-lmi=4.19.325-r8",
     "openrc",
     "pd-mapper",

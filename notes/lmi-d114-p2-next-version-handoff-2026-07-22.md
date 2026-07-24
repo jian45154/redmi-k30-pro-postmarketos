@@ -27,8 +27,10 @@
 
 ## 2. 下一版本核心发现（最省力配方）
 
-用户要求下一版含三项：**Wi-Fi 触发链修复 + rootctl 提权 + pd-mapper
-service-foundation**，外加必做的 **machine-id 卫生化修复**。
+用户要求下一版含四项：**Wi-Fi 触发链修复 + rootctl 提权 + pd-mapper
+service-foundation + 全功能 SSH**，外加必做的 **machine-id 卫生化修复**。
+SSH 的精确安全边界和验收矩阵见
+[`ssh-full-function-contract-2026-07-24.md`](ssh-full-function-contract-2026-07-24.md)。
 
 ### 关键事实：最完整的 device 源是 r143，在 Windows 副本里
 
@@ -68,11 +70,24 @@ r143 `package()` install 了 `lmi-wlan-on.initd`，但运行级段**没有**
    `sanitize_public_image` 把 `: >"$machine_id"`（截空）改为
    `rm -- "$machine_id"`（删除，让 `dbus-uuidgen --ensure` 首启重建），同步更新
    sanitation 契约与 full-delta expected 集里的 machine-id 项。
-5. pmbootstrap 重建 rootfs（`scripts/21_build_pmos_v27_full_reproducible.sh` 同型
+5. rootfs 显式加入 `openssh-client-default`（并锁定同版本
+   `openssh-client-common`），应用 P1 的全功能 SSH 服务策略；公开镜像仍删除
+   `authorized_keys`，私有测试镜像另走单一 owner Ed25519 key 的
+   never-publish personalization。**不得沿用 D114 r1 的提权状态**：`lmi`
+   必须退出 `wheel` 和所有 sudo 授权组，active/backup shadow 中的 `lmi`
+   密码必须锁定，主 sudoers 与所有 drop-in 不得再有 `%wheel` 或其他宽泛
+   user/group 规则；主机侧必须证明 `sudo -l -U lmi` 的有效授权只有
+   `NOPASSWD: /usr/sbin/lmi-rootctl`，并把 passwd/group/shadow、sudoers
+   及完整 drop-in inventory 的摘要绑定进私有证据。
+6. 在重建/组装门禁中加入上述 account/sudo 负向测试；仅禁用 SSH password
+   authentication 不算通过，因为 key holder 仍可用 console password 绕过
+   rootctl。
+7. pmbootstrap 重建 rootfs（`scripts/21_build_pmos_v27_full_reproducible.sh` 同型
    流程，产新 userdata raw）。
-6. 重跑注入器 + 重组 sparse。
-7. 全链 hash 重钉（见 §3）。
-8. flash + 验证（需 owner 逐次批准）。
+8. 重跑注入器 + 重组 sparse。
+9. 全链 hash 重钉（见 §3）。
+10. flash + 验证（需 owner 逐次批准）；先 USB、后 WLAN 分别运行
+   `scripts/74_verify_lmi_ssh_full.sh`，不得用 USB 会话推断 WLAN SSH。
 
 ---
 
@@ -119,19 +134,12 @@ r143 `package()` install 了 `lmi-wlan-on.initd`，但运行级段**没有**
 
 ---
 
-## 5. 引擎 / 治理状态（需回退的 flash-boot 尝试残留）
+## 5. 引擎 / 治理状态
 
-`bringup_loop.py` 有一条 **ready 未消费**的 persistent 记录
-`notes/bringup-active.json`（`d110-boot-persist-1`），为"flash 旧 D110 boot
-持久化"而建，配对的是旧不完整镜像，**方向已变应作废**：
-
-- `rm notes/bringup-active.json`（ready 未 claim，无台账副作用）；
-- `config/governance/policy.json` 的 `authorized_profiles` 移除
-  `profiles/d110-terminal-boot.json` 条目（revision 回退）；
-- 未提交工作区改动 `config/governance/policy.json`、
-  `profiles/d110-terminal-boot.json`、`notes/bringup-active.json` 三者一并回退。
-
-新版本做好后按新 profile 重新走 per-profile 授权。
+2026-07-24 复核 `python3 scripts/bringup_loop.py validate` 结果为 safe idle，
+没有 `notes/bringup-active.json`。此前 `d110-boot-persist-1` 的 ready 记录已不再
+是当前状态；不要照历史笔记手工清理或回退治理文件。新版本做好后仍须按新
+profile 和精确镜像 hash 重新走 persistent per-profile 授权。
 
 ---
 
@@ -154,6 +162,7 @@ r143 `package()` install 了 `lmi-wlan-on.initd`，但运行级段**没有**
 
 以 `/mnt/c/Users/microstar/Documents/lmi_linx/.../device-xiaomi-lmi/` 的 **r143**
 为基线，补 `lmi-wlan-on`+`lmi-cnss-fs-ready` 两条 default 运行级链接、bump r144、
-改注入器 machine-id 为删除、pmbootstrap 重建 rootfs、重注入组装、按 §3 重钉全链
-hash，再 flash + 验证。这一版即含 **Wi-Fi 自动起 + rootctl 提权 + pd-mapper +
-不再黑屏**。
+改注入器 machine-id 为删除，移除 `lmi` 的 wheel/宽泛 sudo 并锁定本地密码，
+把 rootctl 固定为唯一 sudo 面，再 pmbootstrap 重建 rootfs、重注入组装、按 §3
+重钉全链 hash，最后才可申请 flash + 验证。全部门禁通过后，这一版才含
+**Wi-Fi 自动起 + rootctl 提权 + pd-mapper + 不再黑屏 + 安全的全功能 SSH**。

@@ -9,8 +9,16 @@ AuthenticationMethods publickey
 AuthorizedKeysFile .ssh/authorized_keys
 AllowUsers lmi
 UsePAM yes
+DisableForwarding no
+PermitTTY yes
+AllowAgentForwarding yes
+AllowTcpForwarding yes
+AllowStreamLocalForwarding yes
+PermitOpen any
+PermitListen any
+GatewayPorts no
 X11Forwarding no
-AllowTcpForwarding no
 PermitTunnel no
+PermitUserEnvironment no
 LogLevel VERBOSE
 Subsystem sftp internal-sftp

@@ -3,7 +3,7 @@
 description="Expose xiaomi-lmi stock firmware partitions"
 
 depend() {
-	before udev udev-trigger rmtfs tqftpserv wpa_supplicant bluetooth
+	before udev udev-trigger pd-mapper rmtfs tqftpserv wpa_supplicant bluetooth
 }
 
 start() {

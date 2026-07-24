@@ -75,7 +75,7 @@ class GeneratorTests(unittest.TestCase):
                 "!adsp-audio",
                 "!adsp-audio-openrc",
                 "alsa-utils",
-                "device-xiaomi-lmi=1-r107",
+                "device-xiaomi-lmi=1-r145",
                 "linux-xiaomi-lmi=4.19.325-r8",
                 "openrc",
                 "pd-mapper",
