@@ -1,5 +1,25 @@
 # D114 P2 r2 — weston r10 black-screen fix (2026-07-24)
 
+## ✅ CONFIRMED WORKING ON DEVICE (2026-07-24)
+Flashed the r10 userdata to the phone (serial 8336ded7, sparse `77ff1993`,
+fastboot exit 0), verified the r10 `.so`s on-disk from the initramfs debug shell,
+then RAM-booted the D110 boot (`2b264d64`, cmdline `d4f78f7d`/`f8eb7c4b`) via the
+sanctioned `scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot`
+(preflight → authorize-session → execute; one pinned `fastboot boot`). The device
+booted **past** the initramfs (no debug-shell drop — the r10 root mounted) and
+**the six-row Weston terminal rendered — no black screen.** The drm-formats
+assertion is resolved. Owner confirmed on-screen.
+
+Notes for next time:
+- The device does NOT persistently boot the r2/r10 image: its on-disk boot's
+  cmdline wants `pmos_root_uuid=df32eed6…` while the normalized userdata root is
+  `f8eb7c4b…`. Testing is via RAM-boot of the D110 boot each time (flashing D110
+  boot to the boot partition is still a deferred Tier-2 item).
+- The ramboot gate requires every `private/` ancestor dir at mode 0700 (this
+  worktree had `private/` and `private/lmi-p1/` at 755 — chmod 0700 to pass) and
+  uses the **Windows** fastboot, so `usbipd detach` the device from WSL first.
+
+
 ## Root cause (4th black-screen cause, verified on device)
 weston in the r2 base was **14.0.2-r5**, which aborts during DRM output creation:
 ```
