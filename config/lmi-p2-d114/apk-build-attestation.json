@@ -1,16 +1,16 @@
 {
     "artifact": {
-        "apk_sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
-        "apk_size": 8776,
+        "apk_sha256": "55d0bfe3353fa34559b21f11319da87894d52efc94a7275c7a72b01d8816aeb6",
+        "apk_size": 8777,
         "arch": "noarch",
         "builddate": 1784522705,
-        "commit": "uncommitted-p2-d114-source-lock-v4",
-        "datahash": "75c1621e2904797e0e04e3cb04486e782569337eae66211ee057f4aa3885cce4",
+        "commit": "uncommitted-p2-d114-source-lock-v5",
+        "datahash": "a8afd833c92979efcb5951a3650bd9c96a5ceab8fc6d95c14d1effa201cfa94f",
         "installed_size": 24926,
         "maintainer": "lmi P2 maintainers <noreply@example.invalid>",
         "name": "device-xiaomi-lmi-terminal",
         "packager": "lmi P2 private builder <noreply@example.invalid>",
-        "pkgver": "0.1.0-r2"
+        "pkgver": "0.1.0-r3"
     },
     "build": {
         "abuild_sha256": "74c5263e215aea4f19107dd58ab1ac80fc81aae491dc5015c06eeac33d977f7b",
@@ -24,24 +24,24 @@
     },
     "inputs": {
         "generated_overlay_path": "config/lmi-p2-d114/generated-overlay.json",
-        "generated_overlay_sha256": "0f7f62a3a73d654ff134da7b0cfa7f76045a7cb8c3f736913feb7a3ddfb3d567",
+        "generated_overlay_sha256": "88f45f54444a6a40d43f57209725018dbd83d126ef872f5e767a749aab2bdb9d",
         "source_lock_path": "config/lmi-p2-d114/source-lock.json",
-        "source_lock_sha256": "095edff64f5d8c6a998123a8d5eef6186d32eb16c9d2d3ced3450945b9b26bae"
+        "source_lock_sha256": "8dab718542f2dd797cb2b328ffee269bfdbb6e00455f32adacf21f63da66502e"
     },
     "reproducibility": {
         "byte_identical": true,
         "runs": [
             {
-                "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724/run1-device-xiaomi-lmi-terminal-0.1.0-r2.apk",
-                "sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
+                "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r3-userdata-integration-20260724/run1-device-xiaomi-lmi-terminal-0.1.0-r3.apk",
+                "sha256": "55d0bfe3353fa34559b21f11319da87894d52efc94a7275c7a72b01d8816aeb6",
                 "signature_verified": true,
-                "size": 8776
+                "size": 8777
             },
             {
-                "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724/run2-device-xiaomi-lmi-terminal-0.1.0-r2.apk",
-                "sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
+                "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r3-userdata-integration-20260724/run2-device-xiaomi-lmi-terminal-0.1.0-r3.apk",
+                "sha256": "55d0bfe3353fa34559b21f11319da87894d52efc94a7275c7a72b01d8816aeb6",
                 "signature_verified": true,
-                "size": 8776
+                "size": 8777
             }
         ]
     },

@@ -7,25 +7,25 @@
   },
   "artifact_contract": {
     "assembly_attestation": {
-      "sha256": "cfcf2cc4a1b9ad149ce0a303ab6b49b570c5e2cd78a988b06b8ca4a72c90b4da",
-      "size": 7232
+      "sha256": "ab4bbe2a3bb1f3b843036c3489979ad6d2d395d26a400c0ed7d70e179fc000d6",
+      "size": 7234
     },
     "candidate_raw": {
-      "sha256": "c3c3a51376417aeba94c3fbd536df7d68b3ab4559ca5ba19f0dd18d1e157a8de",
+      "sha256": "beb380238056e599d5dcb0e03aab6917d057c97fa1e2044b8320fa4881af2114",
       "size": 3436183552
     },
     "candidate_sparse": {
       "logical_size": 3436183552,
-      "roundtrip_raw_sha256": "c3c3a51376417aeba94c3fbd536df7d68b3ab4559ca5ba19f0dd18d1e157a8de",
-      "sha256": "77ff199311f71b3f3e4fdf3e3251138abc0f46664567b2deae409a79c960b2a1",
-      "size": 2236696908
+      "roundtrip_raw_sha256": "beb380238056e599d5dcb0e03aab6917d057c97fa1e2044b8320fa4881af2114",
+      "sha256": "a88a7335f6e0d3fcaeeaf1b987c380b0d81e68a8886034acc3d0a12033792081",
+      "size": 2236696936
     },
     "injection_attestation": {
-      "sha256": "ad14a24791e8b60d72787c756ea91a00fb3325491f5d6d62592ae44e2a352a9a",
-      "size": 7190
+      "sha256": "81b47f382803570acfd72b3d2d4a9036beb6a1c0ae7637ffb72a2deb385f3836",
+      "size": 7187
     },
     "p2_rootfs": {
-      "sha256": "a91a2090aea6a1d7338a7f51ba66590472cbb395386765d9e5a199856afba134",
+      "sha256": "4384dee649d86278d1965211c1cb8ddd556a4386fca25b50ccfdff43869c1305",
       "size": 2923429888
     },
     "rollback_sparse": {
@@ -53,8 +53,8 @@
     },
     "profile_template": {
       "path": "config/lmi-p2-d114/userdata-deploy-profile-wsl.template.json",
-      "sha256": "cd6a071425309a83442f4de3dbd71c68b7261cfb1deaac16686271757ac70800",
-      "size": 2653
+      "sha256": "a4830110cd0b35680c94cba9add96f61417c5405a2e7aa5bbbc32ff9c71ac023",
+      "size": 3109
     }
   },
   "device_gate": {
