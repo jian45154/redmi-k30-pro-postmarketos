@@ -18,14 +18,15 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 FILES = REPO / "files/lmi-weston-sixrow"
 LOCK_PATH = REPO / "config/lmi-weston-sixrow/source-lock.json"
-# r2 attestation lives in its own file: the r1 file's bytes are pinned by the
-# frozen D114 r1 deploy/injection chain and must not change.
-BUILD_ATTESTATION_PATH = REPO / "config/lmi-weston-sixrow/build-attestation-r2.json"
+# Each built package revision has an immutable attestation. The r1 and r2
+# records remain available to the frozen D114 deployment chains.
+BUILD_ATTESTATION_PATH = REPO / "config/lmi-weston-sixrow/build-attestation-r3.json"
 APKBUILD = FILES / "APKBUILD"
 PATCH_NAMES = (
     "0001-phone-input-terminal-text-input.patch",
     "0002-sixrow-control.patch",
     "0003-sixrow-paged-touch.patch",
+    "0004-terminal-touch-scrollback.patch",
 )
 COLUMNS = 11
 # Rows 0 (Esc/arrows/Home/End/PgUp/PgDn/Bksp), 4 (modifiers) and 5
@@ -271,6 +272,176 @@ def verify_terminal_control(terminal_source: str) -> None:
             raise VerificationError(f"ordinary text-input path was lost: {token}")
 
 
+TERMINAL_TOUCH_SCROLL_TOKENS = (
+    "enum terminal_touch_mode {",
+    "TERMINAL_TOUCH_PENDING",
+    "TERMINAL_TOUCH_SCROLL",
+    "TERMINAL_TOUCH_SELECT",
+    "int32_t touch_id;",
+    "#define TERMINAL_TOUCH_SLOP 12.0",
+    "#define TERMINAL_TOUCH_DECISION_SLOP (2.0 * TERMINAL_TOUCH_SLOP)",
+    "#define TERMINAL_TOUCH_VERTICAL_DOMINANCE 1.25",
+    "#define TERMINAL_TOUCH_SELECTION_HOLD_MSEC 350",
+    "terminal_scroll_view_lines(struct terminal *terminal,",
+    "if ((uint32_t)lines > terminal->saved_start - terminal->start)",
+    "if (neg_lines > terminal->log_size + terminal->start - terminal->end)",
+    "terminal->selection_start_row -= lines;",
+    "terminal->selection_end_row -= lines;",
+    "if (terminal->touch_mode != TERMINAL_TOUCH_NONE)",
+    "terminal_text_input_activate(terminal, input);",
+    "terminal->touch_id = id;",
+    "if (id != terminal->touch_id)",
+    "time - terminal->touch_down_time >=",
+    "abs_y >=\n\t\t\t   abs_x * TERMINAL_TOUCH_VERTICAL_DOMINANCE",
+    "terminal_begin_touch_selection(terminal, widget);",
+    "double line_height = terminal->extents.height;",
+    "terminal->touch_scroll_remainder -= y - terminal->touch_last_y;",
+    "lines = terminal->touch_scroll_remainder / line_height;",
+    "terminal->touch_scroll_remainder -= lines * line_height;",
+    "widget_set_touch_cancel_handler(terminal->widget, touch_cancel_handler);",
+)
+
+
+def _source_region(source: str, start: str, end: str) -> str:
+    start_index = source.find(start)
+    if start_index < 0:
+        raise VerificationError(f"terminal touch source region is missing: {start!r}")
+    end_index = source.find(end, start_index + len(start))
+    if end_index < 0:
+        raise VerificationError(f"terminal touch source region is unterminated: {start!r}")
+    return source[start_index:end_index]
+
+
+def verify_terminal_touch_scrollback(
+    terminal_source: str, *, final_source: bool
+) -> None:
+    for token in TERMINAL_TOUCH_SCROLL_TOKENS:
+        if token not in terminal_source:
+            raise VerificationError(
+                f"terminal touch scrollback contract is missing {token!r}"
+            )
+
+    down = _source_region(
+        terminal_source,
+        "static void\ntouch_down_handler(",
+        "static void\ntouch_up_handler(",
+    )
+    up = _source_region(
+        terminal_source,
+        "static void\ntouch_up_handler(",
+        "static void\ntouch_motion_handler(",
+    )
+    motion = _source_region(
+        terminal_source,
+        "static void\ntouch_motion_handler(",
+        "static void\ntouch_cancel_handler(",
+    )
+    axis = _source_region(
+        terminal_source,
+        "static void\naxis_handler(",
+        "static void\noutput_handler(",
+    )
+
+    if "click_handler(" in down or "click_handler(" in motion:
+        raise VerificationError(
+            "touch selection must be deferred until tap-up or explicit select mode"
+        )
+    if ("terminal->touch_mode == TERMINAL_TOUCH_PENDING" not in up or
+            "click_handler(" not in up):
+        raise VerificationError("a pending touch does not preserve tap behavior")
+    if "terminal_scroll_view_lines(terminal, widget, lines);" not in axis:
+        raise VerificationError("pointer axis bypasses the shared viewport helper")
+    if "terminal_scroll_view_lines(terminal, widget, lines);" not in motion:
+        raise VerificationError("touch motion bypasses the shared viewport helper")
+    if terminal_source.count("terminal_scroll_view_lines(") != 3:
+        raise VerificationError(
+            "viewport scroll helper must have exactly pointer and touch callers"
+        )
+    if terminal_source.count("terminal->touch_id = -1;") < 2:
+        raise VerificationError(
+            "touch owner sentinel must be initialized and reset after every gesture"
+        )
+    if final_source and "id == 0" in down + up + motion:
+        raise VerificationError("terminal touch handling is still hard-coded to id zero")
+
+
+def _model_touch_mode(elapsed_msec: int, dx: float, dy: float) -> str:
+    abs_x = abs(dx)
+    abs_y = abs(dy)
+    if elapsed_msec >= 350:
+        return "select"
+    if abs_x < 12.0 and abs_y < 12.0:
+        return "pending"
+    if abs_y >= abs_x * 1.25:
+        return "scroll"
+    if abs_x >= abs_y * 1.25:
+        return "select"
+    if abs_x < 24.0 and abs_y < 24.0:
+        return "pending"
+    return "scroll" if abs_y >= abs_x else "select"
+
+
+def _model_touch_scroll_step(
+    remainder: float, last_y: float, y: float, line_height: float
+) -> tuple[int, float]:
+    remainder -= y - last_y
+    lines = int(remainder / line_height)
+    return lines, remainder - lines * line_height
+
+
+def _model_viewport_clamp(
+    lines: int, *, scrolling: bool, start: int, saved_start: int,
+    end: int, log_size: int
+) -> int:
+    if lines > 0:
+        if not scrolling:
+            return 0
+        return min(lines, saved_start - start)
+    if lines < 0:
+        return max(lines, end - log_size - start)
+    return 0
+
+
+def verify_terminal_touch_behavior_model() -> None:
+    if _model_touch_mode(100, 4, 8) != "pending":
+        raise VerificationError("sub-slop terminal touch did not stay pending")
+    if _model_touch_mode(100, 0, 13) != "scroll":
+        raise VerificationError("quick vertical terminal touch did not scroll")
+    if _model_touch_mode(100, 13, 0) != "select":
+        raise VerificationError("quick horizontal terminal touch did not select")
+    if _model_touch_mode(100, 20, 19) != "pending":
+        raise VerificationError("small ambiguous diagonal touch was not deferred")
+    if _model_touch_mode(100, 24, 25) != "scroll":
+        raise VerificationError("large vertical diagonal touch did not scroll")
+    if _model_touch_mode(100, 25, 24) != "select":
+        raise VerificationError("large horizontal diagonal touch did not select")
+    if _model_touch_mode(350, 0, 13) != "select":
+        raise VerificationError("delayed first motion did not preserve selection mode")
+
+    lines, remainder = _model_touch_scroll_step(0, 100, 110, 20)
+    if (lines, remainder) != (0, -10):
+        raise VerificationError("first half-line downward drag was not accumulated")
+    lines, remainder = _model_touch_scroll_step(remainder, 110, 120, 20)
+    if (lines, remainder) != (-1, 0):
+        raise VerificationError("downward drag did not reveal one older line")
+    lines, remainder = _model_touch_scroll_step(0, 120, 100, 20)
+    if (lines, remainder) != (1, 0):
+        raise VerificationError("upward drag did not return one newer line")
+
+    if _model_viewport_clamp(
+        5, scrolling=False, start=100, saved_start=100, end=110, log_size=100
+    ) != 0:
+        raise VerificationError("live viewport moved beyond its saved bottom")
+    if _model_viewport_clamp(
+        20, scrolling=True, start=90, saved_start=100, end=110, log_size=100
+    ) != 10:
+        raise VerificationError("newer scroll did not clamp at the saved bottom")
+    if _model_viewport_clamp(
+        -100, scrolling=True, start=90, saved_start=100, end=100, log_size=100
+    ) != -90:
+        raise VerificationError("older scroll did not clamp at the history limit")
+
+
 def verify_recipe() -> None:
     lock = load_lock()
     if lock["architecture"] != "aarch64":
@@ -365,15 +536,20 @@ def verify_build_attestation(*, require_artifact: bool = False) -> bool:
         raise VerificationError("APK package version does not match its attestation")
     if "arch = aarch64" not in pkginfo:
         raise VerificationError("APK package architecture is not aarch64")
+    if artifact["package_version"] != "14.0.2-r3":
+        raise VerificationError("current build attestation is not the r3 touch fix")
 
     supersedes = attestation["supersedes"]
-    if supersedes["status"] != "SUPERSEDED_STATIC_ONLY_R1_TAP_KEYBOARD":
-        raise VerificationError("superseded r1 artifact is not explicitly marked")
+    if supersedes["status"] != "SUPERSEDED_R2_NO_TERMINAL_TOUCH_SCROLL":
+        raise VerificationError("superseded r2 artifact is not explicitly marked")
+    previous_attestation = REPO / supersedes["attestation"]
+    if digest(previous_attestation) != supersedes["attestation_sha256"]:
+        raise VerificationError("superseded r2 attestation hash does not match")
     old_artifact = REPO / supersedes["artifact"]
     if old_artifact == artifact_path:
         raise VerificationError("current and superseded APK paths must be distinct")
     if old_artifact.exists() and digest(old_artifact) != supersedes["sha256"]:
-        raise VerificationError("superseded r1 APK hash does not match its record")
+        raise VerificationError("superseded r2 APK hash does not match its record")
     return True
 
 
@@ -394,6 +570,11 @@ def verify_patch_contract() -> None:
     )
     verify_layout(combined)
     verify_terminal_control(combined)
+    verify_terminal_touch_scrollback(
+        _retained_patch_text(FILES / PATCH_NAMES[-1]),
+        final_source=False,
+    )
+    verify_terminal_touch_behavior_model()
     for token in KEYBOARD_BEHAVIOR_TOKENS + (
         "XKB_KEY_Escape",
         "XKB_KEY_BackSpace",
@@ -462,6 +643,7 @@ def verify_tarball(tarball: Path) -> None:
         verify_layout(keyboard_source)
         verify_keyboard_behavior(keyboard_source)
         verify_terminal_control(terminal_source)
+        verify_terminal_touch_scrollback(terminal_source, final_source=True)
         verify_meson_targets(meson_source)
 
 
@@ -473,7 +655,10 @@ def main() -> int:
     verify_build_attestation()
     verify_patch_contract()
     verify_tarball(args.tarball)
-    print("lmi Weston six-row source, patches, layout, Ctrl mapping, and install paths: OK")
+    print(
+        "lmi Weston six-row source, patches, layout, Ctrl mapping, "
+        "touch scrollback, and install paths: OK"
+    )
     return 0
 
 

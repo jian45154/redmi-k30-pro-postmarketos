@@ -1,0 +1,340 @@
+--- a/clients/terminal.c
++++ b/clients/terminal.c
+@@ -428,16 +428,23 @@
+ 
+ enum {
+ 	SELECT_NONE,
+ 	SELECT_CHAR,
+ 	SELECT_WORD,
+ 	SELECT_LINE
+ };
+ 
++enum terminal_touch_mode {
++	TERMINAL_TOUCH_NONE,
++	TERMINAL_TOUCH_PENDING,
++	TERMINAL_TOUCH_SCROLL,
++	TERMINAL_TOUCH_SELECT,
++};
++
+ struct terminal {
+ 	struct window *window;
+ 	struct widget *widget;
+ 	struct display *display;
+ 	char *title;
+ 	union utf8_char *data;
+ 	struct task io_task;
+ 	char *tab_ruler;
+@@ -487,16 +494,23 @@
+ 	struct wl_list link;
+ 	int pace_pipe;
+ 	struct zwp_text_input_v1 *text_input;
+ 	uint32_t text_input_serial;
+ 	char *text_input_preedit;
+ 	xkb_mod_mask_t text_input_shift_mask;
+ 	xkb_mod_mask_t text_input_alt_mask;
+ 	xkb_mod_mask_t text_input_control_mask;
++	int32_t touch_id;
++	enum terminal_touch_mode touch_mode;
++	uint32_t touch_down_time;
++	float touch_start_x;
++	float touch_start_y;
++	float touch_last_y;
++	double touch_scroll_remainder;
+ };
+ 
+ /* Create default tab stops, every 8 characters */
+ static void
+ terminal_init_tabs(struct terminal *terminal)
+ {
+ 	int i = 0;
+ 
+@@ -3061,124 +3075,238 @@
+ 	return CURSOR_IBEAM;
+ }
+ 
+ /* This magnitude is chosen rather arbitrarily. Really, the scrolling
+  * should happen on a (fractional) pixel basis, not a line basis. */
+ #define AXIS_UNITS_PER_LINE 256
+ 
+ static void
+-axis_handler(struct widget *widget,
+-	     struct input *input, uint32_t time,
+-	     uint32_t axis,
+-	     wl_fixed_t value,
+-	     void *data)
++terminal_scroll_view_lines(struct terminal *terminal,
++			   struct widget *widget, int lines)
+ {
+-	struct terminal *terminal = data;
+-	int lines;
+-
+-	if (axis != WL_POINTER_AXIS_VERTICAL_SCROLL)
+-		return;
+-
+-	terminal->smooth_scroll += value;
+-	lines = terminal->smooth_scroll / AXIS_UNITS_PER_LINE;
+-	terminal->smooth_scroll -= lines * AXIS_UNITS_PER_LINE;
+-
+ 	if (lines > 0) {
+ 		if (terminal->scrolling) {
+ 			if ((uint32_t)lines > terminal->saved_start - terminal->start)
+ 				lines = terminal->saved_start - terminal->start;
+ 		} else {
+ 			lines = 0;
+ 		}
+ 	} else if (lines < 0) {
+ 		uint32_t neg_lines = -lines;
+ 
+ 		if (neg_lines > terminal->log_size + terminal->start - terminal->end)
+ 			lines = terminal->end - terminal->log_size - terminal->start;
+ 	}
+ 
+-	if (lines) {
+-		if (!terminal->scrolling)
+-			terminal->saved_start = terminal->start;
+-		terminal->scrolling = 1;
++	if (!lines)
++		return;
+ 
+-		terminal->start += lines;
+-		terminal->row -= lines;
+-		terminal->selection_start_row -= lines;
+-		terminal->selection_end_row -= lines;
++	if (!terminal->scrolling)
++		terminal->saved_start = terminal->start;
++	terminal->scrolling = 1;
++
++	terminal->start += lines;
++	terminal->row -= lines;
++	terminal->selection_start_row -= lines;
++	terminal->selection_end_row -= lines;
+ 
+-		widget_schedule_redraw(widget);
+-	}
++	widget_schedule_redraw(widget);
++}
++
++static void
++axis_handler(struct widget *widget,
++	     struct input *input, uint32_t time,
++	     uint32_t axis,
++	     wl_fixed_t value,
++	     void *data)
++{
++	struct terminal *terminal = data;
++	int lines;
++
++	if (axis != WL_POINTER_AXIS_VERTICAL_SCROLL)
++		return;
++
++	terminal->smooth_scroll += value;
++	lines = terminal->smooth_scroll / AXIS_UNITS_PER_LINE;
++	terminal->smooth_scroll -= lines * AXIS_UNITS_PER_LINE;
++
++	terminal_scroll_view_lines(terminal, widget, lines);
+ }
+ 
+ static void
+ output_handler(struct window *window, struct output *output, int enter,
+ 	       void *data)
+ {
+ 	if (enter)
+ 		window_set_buffer_transform(window, output_get_transform(output));
+ 	window_set_buffer_scale(window, window_get_output_scale(window));
+ 	window_schedule_redraw(window);
+ }
+ 
++#define TERMINAL_TOUCH_SLOP 12.0
++#define TERMINAL_TOUCH_DECISION_SLOP (2.0 * TERMINAL_TOUCH_SLOP)
++#define TERMINAL_TOUCH_VERTICAL_DOMINANCE 1.25
++#define TERMINAL_TOUCH_SELECTION_HOLD_MSEC 350
++
++static void
++terminal_reset_touch(struct terminal *terminal)
++{
++	terminal->touch_id = -1;
++	terminal->touch_mode = TERMINAL_TOUCH_NONE;
++	terminal->touch_down_time = 0;
++	terminal->touch_start_x = 0;
++	terminal->touch_start_y = 0;
++	terminal->touch_last_y = 0;
++	terminal->touch_scroll_remainder = 0;
++	terminal->dragging = SELECT_NONE;
++}
++
++static void
++terminal_begin_touch_selection(struct terminal *terminal,
++			       struct widget *widget)
++{
++	terminal->click_time = 0;
++	terminal->click_count = 0;
++	terminal->dragging = SELECT_CHAR;
++	terminal->selection_end_x =
++		terminal->selection_start_x = terminal->touch_start_x;
++	terminal->selection_end_y =
++		terminal->selection_start_y = terminal->touch_start_y;
++	recompute_selection(terminal);
++	widget_schedule_redraw(widget);
++}
++
+ static void
+ touch_down_handler(struct widget *widget, struct input *input,
+ 		uint32_t serial, uint32_t time, int32_t id,
+ 		float x, float y, void *data)
+ {
+ 	struct terminal *terminal = data;
+ 
+-	if (id == 0) {
+-		terminal_text_input_activate(terminal, input);
+-		click_handler(widget, terminal, input, x, y, time);
+-	}
++	if (terminal->touch_mode != TERMINAL_TOUCH_NONE)
++		return;
++
++	terminal_text_input_activate(terminal, input);
++	terminal->touch_id = id;
++	terminal->touch_mode = TERMINAL_TOUCH_PENDING;
++	terminal->touch_down_time = time;
++	terminal->touch_start_x = x;
++	terminal->touch_start_y = y;
++	terminal->touch_last_y = y;
++	terminal->touch_scroll_remainder = 0;
+ }
+ 
+ static void
+ touch_up_handler(struct widget *widget, struct input *input,
+ 		uint32_t serial, uint32_t time, int32_t id, void *data)
+ {
+ 	struct terminal *terminal = data;
+ 
+-	if (id == 0)
+-		terminal->dragging = SELECT_NONE;
++	if (id != terminal->touch_id)
++		return;
++
++	if (terminal->touch_mode == TERMINAL_TOUCH_PENDING)
++		click_handler(widget, terminal, input,
++			      terminal->touch_start_x, terminal->touch_start_y,
++			      time);
++
++	terminal_reset_touch(terminal);
+ }
+ 
+ static void
+ touch_motion_handler(struct widget *widget, struct input *input,
+ 		uint32_t time, int32_t id, float x, float y, void *data)
+ {
+ 	struct terminal *terminal = data;
+ 
+-	if (terminal->dragging &&
+-		id == 0) {
++	if (id != terminal->touch_id)
++		return;
++
++	if (terminal->touch_mode == TERMINAL_TOUCH_PENDING) {
++		double dx = x - terminal->touch_start_x;
++		double dy = y - terminal->touch_start_y;
++		double abs_x = fabs(dx);
++		double abs_y = fabs(dy);
++
++		if (time - terminal->touch_down_time >=
++		    TERMINAL_TOUCH_SELECTION_HOLD_MSEC) {
++			terminal->touch_mode = TERMINAL_TOUCH_SELECT;
++		} else if (abs_x < TERMINAL_TOUCH_SLOP &&
++			   abs_y < TERMINAL_TOUCH_SLOP) {
++			return;
++		} else if (abs_y >=
++			   abs_x * TERMINAL_TOUCH_VERTICAL_DOMINANCE) {
++			terminal->touch_mode = TERMINAL_TOUCH_SCROLL;
++		} else if (abs_x >=
++			   abs_y * TERMINAL_TOUCH_VERTICAL_DOMINANCE) {
++			terminal->touch_mode = TERMINAL_TOUCH_SELECT;
++		} else if (abs_x < TERMINAL_TOUCH_DECISION_SLOP &&
++			   abs_y < TERMINAL_TOUCH_DECISION_SLOP) {
++			return;
++		} else if (abs_y >= abs_x) {
++			terminal->touch_mode = TERMINAL_TOUCH_SCROLL;
++		} else {
++			terminal->touch_mode = TERMINAL_TOUCH_SELECT;
++		}
++
++		if (terminal->touch_mode == TERMINAL_TOUCH_SELECT) {
++			terminal_begin_touch_selection(terminal, widget);
++		} else {
++			terminal->click_time = 0;
++			terminal->click_count = 0;
++			terminal->dragging = SELECT_NONE;
++		}
++	}
++
++	if (terminal->touch_mode == TERMINAL_TOUCH_SCROLL) {
++		double line_height = terminal->extents.height;
++		int lines;
++
++		if (line_height <= 0)
++			return;
++
++		terminal->touch_scroll_remainder -= y - terminal->touch_last_y;
++		terminal->touch_last_y = y;
++		lines = terminal->touch_scroll_remainder / line_height;
++		terminal->touch_scroll_remainder -= lines * line_height;
++		terminal_scroll_view_lines(terminal, widget, lines);
++	} else if (terminal->touch_mode == TERMINAL_TOUCH_SELECT) {
+ 		terminal->selection_end_x = (int)x;
+ 		terminal->selection_end_y = (int)y;
+ 
+ 		if (recompute_selection(terminal))
+ 			widget_schedule_redraw(widget);
+ 	}
+ }
+ 
++static void
++touch_cancel_handler(struct widget *widget, struct input *input, void *data)
++{
++	struct terminal *terminal = data;
++
++	terminal_reset_touch(terminal);
++}
++
+ #ifndef howmany
+ #define howmany(x, y) (((x) + ((y) - 1)) / (y))
+ #endif
+ 
+ static struct terminal *
+ terminal_create(struct display *display)
+ {
+ 	struct terminal *terminal;
+ 	cairo_surface_t *surface;
+ 	cairo_t *cr;
+ 	cairo_text_extents_t text_extents;
+ 
+ 	terminal = xzalloc(sizeof *terminal);
+ 	terminal->color_scheme = &DEFAULT_COLORS;
+ 	terminal_init(terminal);
++	terminal->touch_id = -1;
+ 	terminal->margin_top = 0;
+ 	terminal->margin_bottom = -1;
+ 	terminal->window = window_create(display);
+ 	terminal->widget = window_frame_create(terminal->window, terminal);
+ 	terminal->title = xstrdup("Wayland Terminal");
+ 	if (text_input_manager) {
+ 		terminal->text_input =
+ 			zwp_text_input_manager_v1_create_text_input(text_input_manager);
+@@ -3214,16 +3342,17 @@
+ 	widget_set_resize_handler(terminal->widget, resize_handler);
+ 	widget_set_button_handler(terminal->widget, button_handler);
+ 	widget_set_enter_handler(terminal->widget, enter_handler);
+ 	widget_set_motion_handler(terminal->widget, motion_handler);
+ 	widget_set_axis_handler(terminal->widget, axis_handler);
+ 	widget_set_touch_up_handler(terminal->widget, touch_up_handler);
+ 	widget_set_touch_down_handler(terminal->widget, touch_down_handler);
+ 	widget_set_touch_motion_handler(terminal->widget, touch_motion_handler);
++	widget_set_touch_cancel_handler(terminal->widget, touch_cancel_handler);
+ 
+ 	surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 0, 0);
+ 	cr = cairo_create(surface);
+ 	cairo_set_font_size(cr, option_font_size);
+ 	cairo_select_font_face (cr, option_font,
+ 				CAIRO_FONT_SLANT_NORMAL,
+ 				CAIRO_FONT_WEIGHT_BOLD);
+ 	terminal->font_bold = cairo_get_scaled_font (cr);
