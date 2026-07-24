@@ -1,0 +1,13 @@
+#!/sbin/openrc-run
+
+name="lmi-weston"
+description="Persistent Weston DRM session for the lmi panel"
+
+command="/usr/sbin/lmi-weston-wrapper"
+command_background="yes"
+pidfile="/run/$RC_SVCNAME.pid"
+
+depend() {
+	need lmi-seatd
+	after localmount
+}

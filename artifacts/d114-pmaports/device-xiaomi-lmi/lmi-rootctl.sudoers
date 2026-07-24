@@ -1,0 +1,4 @@
+# xiaomi-lmi remote hardware-debug convenience.
+# lmi-rootctl performs its own subcommand allowlisting and confirmation gates.
+# Do not grant a shell here.
+lmi ALL=(root) NOPASSWD: /usr/sbin/lmi-rootctl

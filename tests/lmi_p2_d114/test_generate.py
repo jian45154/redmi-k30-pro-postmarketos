@@ -84,7 +84,7 @@ class GeneratorTests(unittest.TestCase):
             package = generate_overlay(LOCK, Path(directory) / "overlay")
             apkbuild = (package / "APKBUILD").read_text(encoding="utf-8")
             self.assertIn("pkgname=device-xiaomi-lmi-terminal\n", apkbuild)
-            self.assertIn("pkgrel=1\n", apkbuild)
+            self.assertIn("pkgrel=2\n", apkbuild)
             self.assertIn('arch="noarch"\n', apkbuild)
             self.assertIn(
                 'maintainer="lmi P2 maintainers <noreply@example.invalid>"\n',
@@ -95,17 +95,17 @@ class GeneratorTests(unittest.TestCase):
                 apkbuild,
             )
             self.assertIn(
-                'export ABUILD_LAST_COMMIT="uncommitted-p2-d114-source-lock-v3"\n',
+                'export ABUILD_LAST_COMMIT="uncommitted-p2-d114-source-lock-v4"\n',
                 apkbuild,
             )
             self.assertIn("export SOURCE_DATE_EPOCH=1784522705\n", apkbuild)
             for dependency in (
-                "device-xiaomi-lmi=1-r142",
-                "linux-xiaomi-lmi=4.19.325-r9",
-                "lmi-weston-sixrow-clients=14.0.2-r1",
+                "device-xiaomi-lmi=1-r144",
+                "linux-xiaomi-lmi=4.19.325-r15",
+                "lmi-weston-sixrow-clients=14.0.2-r2",
                 "greetd=0.10.3-r11",
-                "weston=14.0.2-r10",
-                "weston-terminal=14.0.2-r10",
+                "weston=14.0.2-r5",
+                "weston-terminal=14.0.2-r5",
             ):
                 self.assertIn(f"\t{dependency}\n", apkbuild)
             self.assertIn(

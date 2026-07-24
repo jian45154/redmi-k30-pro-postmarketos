@@ -1,0 +1,5 @@
+# Candidate board data from the stock qca6390 firmware directory.
+# Override after boot with another bd_*.elf name before running lmi-wifi-start.
+LMI_WLAN_BOARDDATA="bd_j11.elf"
+LMI_WLAN_PRE_ON_DELAY="8"
+LMI_WLAN_POST_ON_DELAY="45"
