@@ -28,8 +28,8 @@ INJECTION_POLICY_LOCK = REPO / "config/lmi-p2-d114/injection-policy-lock.json"
 BUILD = REPO / "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724"
 SIXROW_APK = (
     REPO
-    / "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724"
-    / "lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk"
+    / "private/lmi-p1/recovery/d110-d114/p2-d114-r3-terminal-scroll-build-20260724"
+    / "lmi-weston-sixrow-clients-14.0.2-r3.apk"
 )
 
 EXPECTED_DELTA_OP_PATHS = (
@@ -89,17 +89,17 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         dependencies = (
             "device-xiaomi-lmi=1-r144 greetd=0.10.3-r11 greetd-openrc=0.10.3-r11 "
             "greetd-phrog=0.53.0-r0 libseat=0.9.3-r1 libweston=14.0.2-r5 "
-            "linux-xiaomi-lmi=4.19.325-r15 lmi-weston-sixrow-clients=14.0.2-r2 "
+            "linux-xiaomi-lmi=4.19.325-r15 lmi-weston-sixrow-clients=14.0.2-r3 "
             "openrc=0.63.2-r0 seatd=0.9.3-r1 "
             "seatd-openrc=0.9.3-r1 weston=14.0.2-r5 weston-backend-drm=14.0.2-r5 "
             "weston-shell-desktop=14.0.2-r5 weston-terminal=14.0.2-r5 /bin/sh"
         )
         lines = [
-            "C:Q1xmDSKg+38KWGNRvP8eE/06z1gTg=",
+            "C:Q1pN/EowCTsV6u3Xh4OibqPmxx0j8=",
             "P:device-xiaomi-lmi-terminal",
-            "V:0.1.0-r2",
+            "V:0.1.0-r3",
             "A:noarch",
-            "S:8776",
+            "S:8777",
             "I:24926",
             "T:Pinned non-root Weston terminal session for Xiaomi lmi D114",
             "U:https://postmarketos.org",
@@ -107,7 +107,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "o:device-xiaomi-lmi-terminal",
             "m:lmi P2 maintainers <noreply@example.invalid>",
             "t:1784522705",
-            "c:uncommitted-p2-d114-source-lock-v4",
+            "c:uncommitted-p2-d114-source-lock-v5",
             f"D:{dependencies}",
             "F:etc",
             "F:etc/lmi-p2-d114",
@@ -123,7 +123,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "Z:Q1fz2JibH7B8jAdosh8vogpdSyQZM=",
             "R:session",
             "a:0:0:755",
-            "Z:Q1VY+DEJK+eyq5Mv5rs4gUBmgVyD4=",
+            "Z:Q1a89yQInpgn+2tVL+RjJU8dNxhas=",
             "F:usr/share",
             "F:usr/share/lmi-p2-d114",
             "R:greetd.confd",
@@ -140,18 +140,19 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "so:libwayland-cursor.so.0 so:libxkbcommon.so.0"
         )
         lines = [
-            "C:Q1dyp8uNSMxPIjVUwuCP4wyyBBCs4=",
+            "C:Q1odSg8XdVLjAQRis4fXvp4hNFWCw=",
             "P:lmi-weston-sixrow-clients",
-            "V:14.0.2-r2",
+            "V:14.0.2-r3",
             "A:aarch64",
-            "S:121842",
+            "S:122316",
             "I:335416",
             "T:Hash-locked six-row Weston keyboard and text-input terminal for xiaomi-lmi",
             "U:https://gitlab.freedesktop.org/wayland/weston",
             "L:MIT",
             "o:lmi-weston-sixrow-clients",
             "m:Local lmi port work <noreply@example.invalid>",
-            "t:1784730238",
+            "t:1784851200",
+            "c:uncommitted-terminal-touch-scrollback-r3",
             f"D:{dependencies}",
             "F:usr",
             "F:usr/libexec",
@@ -161,7 +162,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "Z:Q1XSUCcmg4Qp6FPO9eNoHsqhU0Rls=",
             "R:weston-terminal-sixrow",
             "a:0:0:755",
-            "Z:Q1TfC5e5TmOzP1rew68T4D0bOCiE4=",
+            "Z:Q1NWFVkiRYpn0e4jIrHdpsPkRavKg=",
         ]
         return "\n".join(lines) + "\n\n"
 
@@ -365,13 +366,13 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_scripts_delta_runs_under_nounset_through_final_inventory_comparison(self) -> None:
         target_sources = {
-            "device-xiaomi-lmi-terminal-0.1.0-r2.post-install": (
+            "device-xiaomi-lmi-terminal-0.1.0-r3.post-install": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-install"
             ).read_bytes(),
-            "device-xiaomi-lmi-terminal-0.1.0-r2.post-upgrade": (
+            "device-xiaomi-lmi-terminal-0.1.0-r3.post-upgrade": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-upgrade"
             ).read_bytes(),
-            "device-xiaomi-lmi-terminal-0.1.0-r2.pre-deinstall": (
+            "device-xiaomi-lmi-terminal-0.1.0-r3.pre-deinstall": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.pre-deinstall"
             ).read_bytes(),
         }
@@ -395,10 +396,10 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_scripts_delta_failure_is_removed_by_exit_cleanup(self) -> None:
         target_sources = {
-            "device-xiaomi-lmi-terminal-0.1.0-r2.post-install": (
+            "device-xiaomi-lmi-terminal-0.1.0-r3.post-install": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-install"
             ).read_bytes(),
-            "device-xiaomi-lmi-terminal-0.1.0-r2.post-upgrade": (
+            "device-xiaomi-lmi-terminal-0.1.0-r3.post-upgrade": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-upgrade"
             ).read_bytes(),
         }
@@ -1732,14 +1733,14 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
                 (
                     "validate_p2_installed_record",
                     self.valid_p2_installed_record(),
-                    "C:Q1xmDSKg+38KWGNRvP8eE/06z1gTg=",
-                    "V:0.1.0-r2",
+                    "C:Q1pN/EowCTsV6u3Xh4OibqPmxx0j8=",
+                    "V:0.1.0-r3",
                 ),
                 (
                     "validate_sixrow_installed_record",
                     self.valid_sixrow_installed_record(),
-                    "C:Q1dyp8uNSMxPIjVUwuCP4wyyBBCs4=",
-                    "V:14.0.2-r2",
+                    "C:Q1odSg8XdVLjAQRis4fXvp4hNFWCw=",
+                    "V:14.0.2-r3",
                 ),
             )
             for parser, baseline, checksum, version in records:
