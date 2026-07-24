@@ -14,6 +14,6 @@ candidate_id={candidate_id}
 boot_uuid={boot_uuid}
 root_uuid={root_uuid}
 package_manifest_sha256={package_manifest_sha256}
-device_xiaomi_lmi=1-r107
+device_xiaomi_lmi=1-r145
 linux_xiaomi_lmi=4.19.325-r8
 build_utc={build_utc}

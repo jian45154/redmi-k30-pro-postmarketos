@@ -195,10 +195,73 @@ _PACKAGES = (
     "device-xiaomi-lmi",
 )
 _REQUIRED_PACKAGE_VERSIONS = {
-    "device-xiaomi-lmi": "1-r107",
+    "device-xiaomi-lmi": "1-r145",
     "linux-xiaomi-lmi": "4.19.325-r8",
 }
 _DHCP_PACKAGE_NAMES = ("unudhcpd", "unudhcpd-openrc")
+_SSH_CLIENT_PACKAGE_NAMES = (
+    "openssh-client-common",
+    "openssh-client-default",
+)
+_SSH_CLIENT_COMMAND_OWNERS = {
+    "/usr/bin/scp": "openssh-client-common",
+    "/usr/bin/sftp": "openssh-client-common",
+    "/usr/bin/ssh": "openssh-client-default",
+    "/usr/bin/ssh-add": "openssh-client-common",
+    "/usr/bin/ssh-agent": "openssh-client-common",
+    "/usr/bin/ssh-keyscan": "openssh-client-common",
+}
+_SSH_SERVER_PACKAGE_NAMES = (
+    "openssh-keygen",
+    "openssh-server-common",
+    "openssh-server-common-openrc",
+    "openssh-server-pam",
+)
+_SSH_SERVER_PAYLOAD_OWNERS = {
+    "/usr/bin/ssh-keygen": "openssh-keygen",
+    "/etc/ssh/sshd_config": "openssh-server-common",
+    "/etc/conf.d/sshd": "openssh-server-common-openrc",
+    "/etc/init.d/sshd": "openssh-server-common-openrc",
+    "/etc/pam.d/sshd": "openssh-server-pam",
+    "/usr/lib/ssh/sshd-auth.pam": "openssh-server-pam",
+    "/usr/lib/ssh/sshd-session.pam": "openssh-server-pam",
+    "/usr/sbin/sshd.pam": "openssh-server-pam",
+}
+_LINUX_PAM_VERSION = "1.7.1-r2"
+_LINUX_PAM_PAYLOADS = (
+    "/usr/lib/pam.d/base-auth",
+    "/usr/lib/pam.d/base-account",
+    "/usr/lib/pam.d/base-password",
+    "/usr/lib/pam.d/base-session",
+    "/usr/lib/pam.d/base-session-noninteractive",
+    "/usr/lib/security/pam_unix.so",
+    "/usr/lib/security/pam_nologin.so",
+    "/usr/lib/security/pam_env.so",
+    "/usr/lib/security/pam_limits.so",
+    "/usr/lib/libpam.so.0.85.1",
+)
+_LINUX_PAM_SYMLINK = "/usr/lib/libpam.so.0"
+_NETWORKMANAGER_PACKAGE_VERSIONS = {
+    "networkmanager": "1.52.2-r0",
+    "networkmanager-openrc": "1.52.2-r0",
+    "networkmanager-cli": "1.52.2-r0",
+    "networkmanager-wifi": "1.52.2-r0",
+}
+_NETWORKMANAGER_PAYLOAD_OWNERS = {
+    "/usr/sbin/NetworkManager": "networkmanager",
+    "/etc/init.d/networkmanager": "networkmanager-openrc",
+    "/usr/lib/NetworkManager/conf.d/00-interfaces.conf": "networkmanager",
+    "/usr/lib/NetworkManager/conf.d/20-dhcp-internal.conf": "networkmanager",
+    "/usr/bin/nmcli": "networkmanager-cli",
+    (
+        "/usr/lib/NetworkManager/1.52.2/"
+        "libnm-device-plugin-wifi.so"
+    ): "networkmanager-wifi",
+}
+_NETWORKMANAGER_INSTALL_ADD = ",".join(
+    f"{name}={version}"
+    for name, version in _NETWORKMANAGER_PACKAGE_VERSIONS.items()
+)
 _FORBIDDEN_DHCP_PACKAGE_NAMES = {
     "dhcp",
     "dhcp-server",
@@ -208,6 +271,13 @@ _FORBIDDEN_DHCP_PACKAGE_NAMES = {
     "kea-dhcp4",
     "networkmanager-dnsmasq",
     "udhcpd",
+}
+_FORBIDDEN_HEADLESS_SESSION_PACKAGE_NAMES = {
+    "greetd",
+    "phoc",
+    "phosh",
+    "postmarketos-base-ui",
+    "tinydm",
 }
 _FORBIDDEN_PACKAGE_IDS = {
     "device-xiaomi-lmi-1-r139",
@@ -928,7 +998,8 @@ def _known_good_install_add(package: Path) -> str:
     if not package.is_absolute() or package.name != _KNOWN_GOOD_INSTALL_APK_NAME:
         raise GateError("known-good kernel install path is not canonical")
     return (
-        "unudhcpd-openrc,"
+        f"{_NETWORKMANAGER_INSTALL_ADD},"
+        "unudhcpd-openrc,openssh-client-default,"
         f"{_KNOWN_GOOD_NAME}={_KNOWN_GOOD_VERSION},"
         + str(package)
     )
@@ -1714,7 +1785,11 @@ def _read_public_key_once(path: Path) -> tuple[str, str]:
 def _write_config(path: Path, public_key: Path) -> None:
     values = {
         "device": "xiaomi-lmi",
-        "ui": "shelli",
+        # Pinned pmbootstrap 3.11.1 treats "none" as the supported bare
+        # minimum selection and does not add a postmarketos-ui-* package.
+        # shelli hard-depends dnsmasq, which conflicts with the single-DHCP
+        # P1 management-network policy.
+        "ui": "none",
         "user": "lmi",
         "hostname": "lmi",
         "ssh_keys": "True",
@@ -1947,30 +2022,145 @@ def _verify_known_good_kernel_install(rootfs: Path, database: Path) -> None:
             )
 
 
+def _ssh_server_package_records(
+    path: Path,
+) -> tuple[dict[str, _ApkPackageRecord], dict[str, str]]:
+    records = _parse_apk_records(path)
+    by_name = {record.name: record for record in records}
+    missing = sorted(set(_SSH_SERVER_PACKAGE_NAMES) - set(by_name))
+    if missing:
+        raise GateError(f"missing installed SSH server package: {missing!r}")
+    packages = {name: by_name[name] for name in _SSH_SERVER_PACKAGE_NAMES}
+    versions = {package.version for package in packages.values()}
+    if len(versions) != 1:
+        raise GateError("installed OpenSSH server package versions differ")
+    for name, package in packages.items():
+        if package.architecture != "aarch64":
+            raise GateError(f"{name} architecture is not exactly aarch64")
+
+    checksums: dict[str, str] = {}
+    for file_path, expected_owner in _SSH_SERVER_PAYLOAD_OWNERS.items():
+        ownership = [
+            (record.name, checksum)
+            for record in records
+            for owned_path, checksum in record.files
+            if owned_path == file_path
+        ]
+        if len(ownership) != 1 or ownership[0][0] != expected_owner:
+            raise GateError(
+                f"{expected_owner} does not uniquely own {file_path}"
+            )
+        checksum = ownership[0][1]
+        if checksum is None:
+            raise GateError(f"{file_path} has no APK database checksum")
+        checksums[file_path] = checksum
+    return packages, checksums
+
+
 def _sshd_pam_package_record(
     path: Path,
 ) -> tuple[_ApkPackageRecord, str]:
+    packages, checksums = _ssh_server_package_records(path)
+    return packages["openssh-server-pam"], checksums["/usr/sbin/sshd.pam"]
+
+
+def _linux_pam_package_record(
+    path: Path,
+) -> tuple[_ApkPackageRecord, dict[str, str]]:
     records = _parse_apk_records(path)
-    matches = [record for record in records if record.name == "openssh-server-pam"]
+    matches = [record for record in records if record.name == "linux-pam"]
     if len(matches) != 1:
-        raise GateError("missing installed package: openssh-server-pam")
+        raise GateError("missing installed package: linux-pam")
     package = matches[0]
-    if package.architecture != "aarch64":
-        raise GateError("openssh-server-pam architecture is not exactly aarch64")
-    ownership = [
-        (record.name, checksum)
-        for record in records
-        for file_path, checksum in record.files
-        if file_path == "/usr/sbin/sshd.pam"
-    ]
-    if len(ownership) != 1 or ownership[0][0] != package.name:
-        raise GateError(
-            "openssh-server-pam does not uniquely own /usr/sbin/sshd.pam"
-        )
-    checksum = ownership[0][1]
-    if checksum is None:
-        raise GateError("sshd.pam has no APK database checksum")
-    return package, checksum
+    if package.version != _LINUX_PAM_VERSION or package.architecture != "aarch64":
+        raise GateError("linux-pam package pin or architecture is not canonical")
+    checksums: dict[str, str] = {}
+    for internal_path in (*_LINUX_PAM_PAYLOADS, _LINUX_PAM_SYMLINK):
+        owners = [
+            (record.name, checksum)
+            for record in records
+            for owned_path, checksum in record.files
+            if owned_path == internal_path
+        ]
+        if len(owners) != 1 or owners[0][0] != "linux-pam" or owners[0][1] is None:
+            raise GateError(f"linux-pam does not uniquely own {internal_path}")
+        checksums[internal_path] = str(owners[0][1])
+    return package, checksums
+
+
+def _ssh_client_package_records(
+    path: Path,
+    *,
+    expected_openssh_version: str,
+) -> tuple[dict[str, _ApkPackageRecord], dict[str, str]]:
+    records = _parse_apk_records(path)
+    by_name = {record.name: record for record in records}
+    missing = sorted(set(_SSH_CLIENT_PACKAGE_NAMES) - set(by_name))
+    if missing:
+        raise GateError(f"missing installed SSH client package: {missing!r}")
+    packages = {name: by_name[name] for name in _SSH_CLIENT_PACKAGE_NAMES}
+    for name, package in packages.items():
+        if package.architecture != "aarch64":
+            raise GateError(f"{name} architecture is not exactly aarch64")
+        if package.version != expected_openssh_version:
+            raise GateError(f"{name} version does not match openssh-server-pam")
+
+    checksums: dict[str, str] = {}
+    for command_path, expected_owner in _SSH_CLIENT_COMMAND_OWNERS.items():
+        ownership = [
+            (record.name, checksum)
+            for record in records
+            for file_path, checksum in record.files
+            if file_path == command_path
+        ]
+        if len(ownership) != 1 or ownership[0][0] != expected_owner:
+            raise GateError(
+                f"{command_path} does not have its canonical SSH client owner"
+            )
+        checksum = ownership[0][1]
+        if checksum is None:
+            raise GateError(f"{command_path} has no APK database checksum")
+        checksums[command_path] = checksum
+    return packages, checksums
+
+
+def _networkmanager_package_records(
+    path: Path,
+) -> tuple[dict[str, _ApkPackageRecord], dict[str, str]]:
+    records = _parse_apk_records(path)
+    by_name = {record.name: record for record in records}
+    missing = sorted(set(_NETWORKMANAGER_PACKAGE_VERSIONS) - set(by_name))
+    if missing:
+        raise GateError(f"missing installed NetworkManager package: {missing!r}")
+    packages = {
+        name: by_name[name] for name in _NETWORKMANAGER_PACKAGE_VERSIONS
+    }
+    for name, expected_version in _NETWORKMANAGER_PACKAGE_VERSIONS.items():
+        package = packages[name]
+        if package.architecture != "aarch64":
+            raise GateError(f"{name} architecture is not exactly aarch64")
+        if package.version != expected_version:
+            raise GateError(
+                f"{name} version differs from the pinned offline package"
+            )
+    checksums: dict[str, str] = {}
+    for file_path, expected_owner in _NETWORKMANAGER_PAYLOAD_OWNERS.items():
+        owners = [
+            (record.name, checksum)
+            for record in records
+            for owned_path, checksum in record.files
+            if owned_path == file_path
+        ]
+        if (
+            len(owners) != 1
+            or owners[0][0] != expected_owner
+            or owners[0][1] is None
+        ):
+            raise GateError(
+                f"{expected_owner} does not uniquely own {file_path}"
+            )
+        checksums[file_path] = str(owners[0][1])
+    return packages, checksums
 
 
 def _dhcp_package_records(
@@ -2530,26 +2720,60 @@ def _verify_aarch64_elf(
 def _verify_sshd_pam(
     rootfs: Path, installed_db: Path, expected_version: str
 ) -> dict[str, object]:
-    package, apk_checksum = _sshd_pam_package_record(installed_db)
+    packages, checksums = _ssh_server_package_records(installed_db)
+    linux_pam, linux_pam_checksums = _linux_pam_package_record(installed_db)
+    checksums.update(linux_pam_checksums)
+    package = packages["openssh-server-pam"]
+    apk_checksum = checksums["/usr/sbin/sshd.pam"]
     if package.version != expected_version:
         raise GateError("openssh-server-pam version changed during final install")
+    if any(record.version != expected_version for record in packages.values()):
+        raise GateError("OpenSSH server closure version changed during final install")
 
     target = rootfs / "usr/sbin/sshd.pam"
-    for parent in (rootfs / "usr", rootfs / "usr/sbin"):
+    for relative in (
+        "etc",
+        "etc/conf.d",
+        "etc/init.d",
+        "etc/pam.d",
+        "usr",
+        "usr/bin",
+        "usr/lib",
+        "usr/lib/pam.d",
+        "usr/lib/security",
+        "usr/lib/ssh",
+        "usr/sbin",
+    ):
+        parent = rootfs.joinpath(*PurePosixPath(relative).parts)
         try:
-            parent_mode = parent.lstat().st_mode
+            parent_metadata = parent.lstat()
         except OSError:
-            raise GateError("sshd.pam parent path must be a real directory") from None
-        if parent.is_symlink() or not stat.S_ISDIR(parent_mode):
-            raise GateError("sshd.pam parent path must be a real directory")
+            raise GateError(
+                f"OpenSSH server ancestry is not canonical: /{relative}"
+            ) from None
+        if (
+            parent.is_symlink()
+            or not stat.S_ISDIR(parent_metadata.st_mode)
+            or parent_metadata.st_uid != 0
+            or parent_metadata.st_gid != 0
+            or stat.S_IMODE(parent_metadata.st_mode) & 0o022
+        ):
+            raise GateError(
+                f"OpenSSH server ancestry is not canonical: /{relative}"
+            )
     try:
         before = target.lstat()
     except OSError:
         raise GateError("sshd.pam must be a regular non-symlink") from None
-    if target.is_symlink() or not stat.S_ISREG(before.st_mode):
+    if (
+        target.is_symlink()
+        or not stat.S_ISREG(before.st_mode)
+        or before.st_nlink != 1
+        or stat.S_IMODE(before.st_mode) != 0o755
+        or before.st_uid != 0
+        or before.st_gid != 0
+    ):
         raise GateError("sshd.pam must be a regular non-symlink")
-    if before.st_mode & 0o111 == 0:
-        raise GateError("sshd.pam is not executable")
 
     flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
     try:
@@ -2561,7 +2785,13 @@ def _verify_sshd_pam(
     try:
         with os.fdopen(descriptor, "rb") as stream:
             opened = os.fstat(stream.fileno())
-            if not stat.S_ISREG(opened.st_mode):
+            if (
+                not stat.S_ISREG(opened.st_mode)
+                or opened.st_nlink != 1
+                or stat.S_IMODE(opened.st_mode) != 0o755
+                or opened.st_uid != 0
+                or opened.st_gid != 0
+            ):
                 raise GateError("sshd.pam must be a regular non-symlink")
             for block in iter(lambda: stream.read(1024 * 1024), b""):
                 sha1.update(block)
@@ -2584,6 +2814,150 @@ def _verify_sshd_pam(
     actual_checksum = sha1.digest() if checksum_algorithm == "sha1" else sha256.digest()
     if actual_checksum != expected_checksum:
         raise GateError("sshd.pam does not match its APK database checksum")
+
+    support_specs = {
+        "/usr/bin/ssh-keygen": (0o755, "elf"),
+        "/etc/pam.d/sshd": (0o644, "pam"),
+        "/etc/conf.d/sshd": (0o644, "confd"),
+        "/etc/init.d/sshd": (0o755, "openrc"),
+        "/usr/lib/ssh/sshd-auth.pam": (0o755, "elf"),
+        "/usr/lib/ssh/sshd-session.pam": (0o755, "elf"),
+        "/usr/lib/pam.d/base-auth": (0o644, "pam-policy"),
+        "/usr/lib/pam.d/base-account": (0o644, "pam-policy"),
+        "/usr/lib/pam.d/base-password": (0o644, "pam-policy"),
+        "/usr/lib/pam.d/base-session": (0o644, "pam-policy"),
+        "/usr/lib/pam.d/base-session-noninteractive": (0o644, "pam-policy"),
+        "/usr/lib/security/pam_unix.so": (0o755, "elf"),
+        "/usr/lib/security/pam_nologin.so": (0o755, "elf"),
+        "/usr/lib/security/pam_env.so": (0o755, "elf"),
+        "/usr/lib/security/pam_limits.so": (0o755, "elf"),
+        "/usr/lib/libpam.so.0.85.1": (0o755, "elf"),
+    }
+    pam_policy_values: dict[str, bytes] = {}
+    for internal_path, (expected_mode, kind) in support_specs.items():
+        support = rootfs.joinpath(*PurePosixPath(internal_path).parts[1:])
+        try:
+            support_before = support.lstat()
+        except OSError:
+            raise GateError(
+                f"required OpenSSH server payload is missing: {internal_path}"
+            ) from None
+        if (
+            support.is_symlink()
+            or not stat.S_ISREG(support_before.st_mode)
+            or support_before.st_nlink != 1
+            or stat.S_IMODE(support_before.st_mode) != expected_mode
+            or support_before.st_uid != 0
+            or support_before.st_gid != 0
+            or support_before.st_size <= 0
+            or support_before.st_size > 32 * 1024 * 1024
+        ):
+            raise GateError(
+                f"OpenSSH server payload metadata is not canonical: {internal_path}"
+            )
+        flags = (
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
+        sha1 = hashlib.sha1(usedforsecurity=False)
+        sha256_support = hashlib.sha256()
+        prefix = b""
+        policy_value = bytearray()
+        try:
+            descriptor = os.open(support, flags)
+            with os.fdopen(descriptor, "rb") as stream:
+                support_opened = os.fstat(stream.fileno())
+                if (
+                    not stat.S_ISREG(support_opened.st_mode)
+                    or support_opened.st_nlink != 1
+                    or stat.S_IMODE(support_opened.st_mode) != expected_mode
+                    or support_opened.st_uid != 0
+                    or support_opened.st_gid != 0
+                ):
+                    raise GateError(
+                        "OpenSSH server payload metadata is not canonical: "
+                        f"{internal_path}"
+                    )
+                for block in iter(lambda: stream.read(1024 * 1024), b""):
+                    if len(prefix) < 64:
+                        prefix += block[: 64 - len(prefix)]
+                    if kind in {"pam", "confd", "pam-policy"}:
+                        policy_value.extend(block)
+                    sha1.update(block)
+                    sha256_support.update(block)
+                if kind == "elf":
+                    _verify_aarch64_elf(
+                        stream.fileno(), support_opened.st_size, "ssh-keygen"
+                    )
+        except OSError as error:
+            raise GateError(
+                f"could not securely read OpenSSH server payload "
+                f"{internal_path}: {error}"
+            ) from None
+        if kind == "openrc" and not prefix.startswith(b"#!/sbin/openrc-run\n"):
+            raise GateError("OpenSSH OpenRC service is not canonical")
+        if kind == "pam" and b"pam_" not in policy_value:
+            raise GateError("OpenSSH PAM policy is not canonical")
+        if kind == "confd":
+            try:
+                lines = policy_value.decode("utf-8").splitlines()
+            except UnicodeError:
+                raise GateError("OpenSSH conf.d policy is not UTF-8") from None
+            if any(line.strip() and not line.lstrip().startswith("#") for line in lines):
+                raise GateError("OpenSSH conf.d contains an active override")
+        if kind == "pam-policy":
+            pam_policy_values[internal_path] = bytes(policy_value)
+        try:
+            support_after = support.lstat()
+        except OSError:
+            raise GateError(
+                f"OpenSSH server payload changed while verified: {internal_path}"
+            ) from None
+        if not (
+            _stat_identity(support_before)
+            == _stat_identity(support_opened)
+            == _stat_identity(support_after)
+        ):
+            raise GateError(
+                f"OpenSSH server payload changed while verified: {internal_path}"
+            )
+        algorithm, expected = _apk_checksum(
+            checksums[internal_path], internal_path
+        )
+        actual = sha1.digest() if algorithm == "sha1" else sha256_support.digest()
+        if actual != expected:
+            raise GateError(
+                f"{internal_path} does not match its APK database checksum"
+            )
+    required_pam_markers = {
+        "/usr/lib/pam.d/base-auth": (b"pam_unix.so", b"pam_nologin.so", b"pam_env.so"),
+        "/usr/lib/pam.d/base-account": (b"pam_unix.so", b"pam_nologin.so"),
+        "/usr/lib/pam.d/base-password": (b"pam_unix.so",),
+        "/usr/lib/pam.d/base-session": (b"include base-session-noninteractive",),
+        "/usr/lib/pam.d/base-session-noninteractive": (
+            b"pam_env.so",
+            b"pam_limits.so",
+            b"pam_unix.so",
+        ),
+    }
+    for internal_path, markers in required_pam_markers.items():
+        if any(marker not in pam_policy_values[internal_path] for marker in markers):
+            raise GateError(f"linux-pam policy closure is incomplete: {internal_path}")
+    libpam_link = rootfs / "usr/lib/libpam.so.0"
+    try:
+        link_metadata = libpam_link.lstat()
+        link_target = os.readlink(libpam_link)
+    except OSError:
+        raise GateError("libpam SONAME symlink is missing") from None
+    if (
+        not stat.S_ISLNK(link_metadata.st_mode)
+        or link_metadata.st_nlink != 1
+        or link_metadata.st_uid != 0
+        or link_metadata.st_gid != 0
+        or link_target != "libpam.so.0.85.1"
+    ):
+        raise GateError("libpam SONAME symlink is not canonical")
     return {
         "schema": "lmi-sshd-pam-attestation/v1",
         "package": package.name,
@@ -2595,6 +2969,271 @@ def _verify_sshd_pam(
         "sha256": sha256.hexdigest(),
         "size": opened.st_size,
     }
+
+
+def _verify_ssh_client(
+    rootfs: Path,
+    installed_db: Path,
+    expected_versions: Mapping[str, str],
+    *,
+    expected_openssh_version: str,
+) -> None:
+    packages, checksums = _ssh_client_package_records(
+        installed_db,
+        expected_openssh_version=expected_openssh_version,
+    )
+    actual_versions = {name: package.version for name, package in packages.items()}
+    if actual_versions != dict(expected_versions):
+        raise GateError("SSH client package versions changed during final install")
+
+    for relative in ("usr", "usr/bin"):
+        directory = rootfs.joinpath(*PurePosixPath(relative).parts)
+        try:
+            metadata = directory.lstat()
+        except OSError:
+            raise GateError(
+                f"SSH client ancestry is not a safe real directory: /{relative}"
+            ) from None
+        if (
+            not stat.S_ISDIR(metadata.st_mode)
+            or metadata.st_uid != 0
+            or metadata.st_gid != 0
+            or stat.S_IMODE(metadata.st_mode) & 0o022
+        ):
+            raise GateError(
+                f"SSH client ancestry is not a safe real directory: /{relative}"
+            )
+
+    for command_path, apk_checksum in sorted(checksums.items()):
+        target = rootfs.joinpath(*PurePosixPath(command_path).parts[1:])
+        label = PurePosixPath(command_path).name
+        try:
+            before = target.lstat()
+        except OSError:
+            raise GateError(f"{label} must be a regular non-symlink") from None
+        if (
+            target.is_symlink()
+            or not stat.S_ISREG(before.st_mode)
+            or before.st_nlink != 1
+            or stat.S_IMODE(before.st_mode) != 0o755
+            or before.st_uid != 0
+            or before.st_gid != 0
+        ):
+            raise GateError(f"{label} metadata is not canonical")
+
+        flags = (
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
+        sha1 = hashlib.sha1(usedforsecurity=False)
+        sha256 = hashlib.sha256()
+        try:
+            descriptor = os.open(target, flags)
+            with os.fdopen(descriptor, "rb") as stream:
+                opened = os.fstat(stream.fileno())
+                if (
+                    not stat.S_ISREG(opened.st_mode)
+                    or opened.st_nlink != 1
+                    or stat.S_IMODE(opened.st_mode) != 0o755
+                    or opened.st_uid != 0
+                    or opened.st_gid != 0
+                ):
+                    raise GateError(f"{label} metadata is not canonical")
+                for block in iter(lambda: stream.read(1024 * 1024), b""):
+                    sha1.update(block)
+                    sha256.update(block)
+                _verify_aarch64_elf(stream.fileno(), opened.st_size, label)
+        except OSError as error:
+            raise GateError(f"could not securely read {label}: {error}") from None
+        try:
+            after = target.lstat()
+        except OSError:
+            raise GateError(f"{label} changed while it was being verified") from None
+        if (
+            not stat.S_ISREG(after.st_mode)
+            or after.st_nlink != 1
+            or stat.S_IMODE(after.st_mode) != 0o755
+            or after.st_uid != 0
+            or after.st_gid != 0
+            or not (
+                _stat_identity(before)
+                == _stat_identity(opened)
+                == _stat_identity(after)
+            )
+        ):
+            raise GateError(f"{label} changed while it was being verified")
+
+        checksum_algorithm, expected_checksum = _apk_checksum(apk_checksum, label)
+        actual_checksum = (
+            sha1.digest() if checksum_algorithm == "sha1" else sha256.digest()
+        )
+        if actual_checksum != expected_checksum:
+            raise GateError(f"{label} does not match its APK database checksum")
+
+
+def _verify_networkmanager_files(
+    rootfs: Path,
+    installed_db: Path,
+    expected_versions: Mapping[str, str],
+) -> None:
+    packages, checksums = _networkmanager_package_records(installed_db)
+    actual_versions = {
+        name: package.version for name, package in packages.items()
+    }
+    if actual_versions != dict(expected_versions):
+        raise GateError(
+            "NetworkManager package versions changed during final install"
+        )
+    for relative in (
+        "etc",
+        "etc/init.d",
+        "usr",
+        "usr/bin",
+        "usr/sbin",
+        "usr/lib",
+        "usr/lib/NetworkManager",
+        "usr/lib/NetworkManager/1.52.2",
+        "usr/lib/NetworkManager/conf.d",
+    ):
+        directory = rootfs.joinpath(*PurePosixPath(relative).parts)
+        try:
+            metadata = directory.lstat()
+        except OSError:
+            raise GateError(
+                f"NetworkManager ancestry is not a safe real directory: /{relative}"
+            ) from None
+        if (
+            not stat.S_ISDIR(metadata.st_mode)
+            or metadata.st_uid != 0
+            or metadata.st_gid != 0
+            or stat.S_IMODE(metadata.st_mode) & 0o022
+        ):
+            raise GateError(
+                f"NetworkManager ancestry is not a safe real directory: /{relative}"
+            )
+
+    vendor_directory = rootfs / "usr/lib/NetworkManager/conf.d"
+    try:
+        vendor_names = sorted(entry.name for entry in os.scandir(vendor_directory))
+    except OSError as error:
+        raise GateError(
+            f"could not inventory NetworkManager vendor configuration: {error}"
+        ) from None
+    if vendor_names != ["00-interfaces.conf", "20-dhcp-internal.conf"]:
+        raise GateError("NetworkManager vendor configuration inventory is not exact")
+    main_config = rootfs / "etc/NetworkManager/NetworkManager.conf"
+    if main_config.exists() or main_config.is_symlink():
+        raise GateError("NetworkManager main-config override must be absent")
+
+    for internal_path, apk_checksum in sorted(checksums.items()):
+        target = rootfs.joinpath(*PurePosixPath(internal_path).parts[1:])
+        label = internal_path
+        try:
+            before = target.lstat()
+        except OSError:
+            raise GateError(
+                f"required NetworkManager file is missing: {internal_path}"
+            ) from None
+        expected_mode = (
+            0o644
+            if internal_path.startswith("/usr/lib/NetworkManager/conf.d/")
+            else 0o755
+        )
+        if (
+            target.is_symlink()
+            or not stat.S_ISREG(before.st_mode)
+            or before.st_nlink != 1
+            or stat.S_IMODE(before.st_mode) != expected_mode
+            or before.st_uid != 0
+            or before.st_gid != 0
+            or before.st_size <= 0
+            or before.st_size > 32 * 1024 * 1024
+        ):
+            raise GateError(
+                f"NetworkManager file metadata is not canonical: {internal_path}"
+            )
+        flags = (
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
+        sha1 = hashlib.sha1(usedforsecurity=False)
+        sha256 = hashlib.sha256()
+        prefix = b""
+        try:
+            descriptor = os.open(target, flags)
+            with os.fdopen(descriptor, "rb") as stream:
+                opened = os.fstat(stream.fileno())
+                if (
+                    not stat.S_ISREG(opened.st_mode)
+                    or opened.st_nlink != 1
+                    or stat.S_IMODE(opened.st_mode) != expected_mode
+                    or opened.st_uid != 0
+                    or opened.st_gid != 0
+                    or opened.st_size <= 0
+                    or opened.st_size > 32 * 1024 * 1024
+                ):
+                    raise GateError(
+                        "NetworkManager file metadata is not canonical: "
+                        f"{internal_path}"
+                    )
+                for block in iter(lambda: stream.read(1024 * 1024), b""):
+                    if len(prefix) < 64:
+                        prefix += block[: 64 - len(prefix)]
+                    sha1.update(block)
+                    sha256.update(block)
+                if internal_path in (
+                    "/usr/bin/nmcli",
+                    "/usr/sbin/NetworkManager",
+                ):
+                    _verify_aarch64_elf(
+                        stream.fileno(),
+                        opened.st_size,
+                        PurePosixPath(internal_path).name,
+                    )
+        except OSError as error:
+            raise GateError(
+                f"could not securely read NetworkManager file: {internal_path}: {error}"
+            ) from None
+        if internal_path == "/etc/init.d/networkmanager":
+            if not prefix.startswith(b"#!/sbin/openrc-run\n"):
+                raise GateError("NetworkManager OpenRC service is not canonical")
+        elif internal_path.endswith("libnm-device-plugin-wifi.so"):
+            if (
+                len(prefix) < 20
+                or prefix[:7] != b"\x7fELF\x02\x01\x01"
+                or int.from_bytes(prefix[18:20], "little") != 183
+            ):
+                raise GateError(
+                    "NetworkManager Wi-Fi plugin is not an AArch64 ELF shared object"
+                )
+        try:
+            after = target.lstat()
+        except OSError:
+            raise GateError(
+                f"NetworkManager file changed while verified: {internal_path}"
+            ) from None
+        if (
+            _stat_identity(before)
+            != _stat_identity(opened)
+            or _stat_identity(after) != _stat_identity(opened)
+        ):
+            raise GateError(
+                f"NetworkManager file changed while verified: {internal_path}"
+            )
+        checksum_algorithm, expected_checksum = _apk_checksum(
+            apk_checksum, internal_path
+        )
+        actual_checksum = (
+            sha1.digest()
+            if checksum_algorithm == "sha1"
+            else sha256.digest()
+        )
+        if actual_checksum != expected_checksum:
+            raise GateError(
+                f"{internal_path} does not match its APK database checksum"
+            )
 
 
 def _verify_unudhcpd(
@@ -2673,6 +3312,7 @@ def _verify_package_policy(
 ) -> None:
     actual = set(packages)
     required = dict(_REQUIRED_PACKAGE_VERSIONS)
+    required.update(_NETWORKMANAGER_PACKAGE_VERSIONS)
     if extra_versions is not None:
         overlap = set(required) & set(extra_versions)
         if overlap:
@@ -2689,12 +3329,32 @@ def _verify_package_policy(
             for name in _FORBIDDEN_DHCP_PACKAGE_NAMES
         )
     )
-    if missing or forbidden or forbidden_dhcp:
+    forbidden_ui = sorted(
+        package for package in actual if package.startswith("postmarketos-ui-")
+    )
+    forbidden_headless_session = sorted(
+        package
+        for package in actual
+        if any(
+            package == name or package.startswith(name + "-")
+            for name in _FORBIDDEN_HEADLESS_SESSION_PACKAGE_NAMES
+        )
+    )
+    if (
+        missing
+        or forbidden
+        or forbidden_dhcp
+        or forbidden_ui
+        or forbidden_headless_session
+    ):
         raise GateError(
             "P1 package policy mismatch: "
             f"missing {sorted(missing)!r}, "
             f"forbidden {sorted(forbidden)!r}, "
-            f"second DHCP owner {forbidden_dhcp!r}"
+            f"second DHCP owner {forbidden_dhcp!r}, "
+            f"forbidden UI packages {forbidden_ui!r}, "
+            "forbidden headless session packages "
+            f"{forbidden_headless_session!r}"
         )
 
 
@@ -2748,6 +3408,7 @@ def _read_world(
 ) -> str:
     lines = _world_lines(path)
     required = dict(_REQUIRED_PACKAGE_VERSIONS)
+    required.update(_NETWORKMANAGER_PACKAGE_VERSIONS)
     if extra_versions is not None:
         overlap = set(required) & set(extra_versions)
         if overlap:
@@ -2931,6 +3592,11 @@ stage=/mnt/pmbootstrap/packages/lmi-p1-finalize
 /bin/mkdir -p /etc/ssh /usr/sbin /etc/sudoers.d /etc/doas.d /etc/apk \
 	/etc/NetworkManager/conf.d /etc/NetworkManager/system-connections \
 	/etc/conf.d /etc/init.d /home/lmi/.ssh
+/bin/rm -f /etc/NetworkManager/conf.d/* \
+	/etc/NetworkManager/conf.d/.[!.]* /etc/NetworkManager/conf.d/..?* \
+	/etc/NetworkManager/system-connections/* \
+	/etc/NetworkManager/system-connections/.[!.]* \
+	/etc/NetworkManager/system-connections/..?*
 /bin/cp "$stage/sshd_config" /etc/ssh/sshd_config
 /bin/cp "$stage/lmi-rootctl" /usr/sbin/lmi-rootctl
 /bin/cp "$stage/lmi-release-identity" /etc/lmi-release-identity
@@ -2962,18 +3628,60 @@ stage=/mnt/pmbootstrap/packages/lmi-p1-finalize
 /bin/chmod 0755 /usr/sbin/lmi-usb0-dhcp
 /bin/chmod 0755 /etc/init.d/lmi-usb0-dhcp
 /bin/chmod 0644 /etc/conf.d/unudhcpd.usb0
+/bin/chown root:root /home
+/bin/chown lmi:lmi /home/lmi
 /bin/chmod 0700 /home/lmi/.ssh
 /bin/chmod 0600 /home/lmi/.ssh/authorized_keys
 /bin/chown -R lmi:lmi /home/lmi/.ssh
+/bin/chmod 0755 /home
+/bin/chmod 0755 /home/lmi
+[ -d /home ] && [ ! -L /home ] || exit 65
+[ -d /home/lmi ] && [ ! -L /home/lmi ] || exit 66
+[ -d /home/lmi/.ssh ] && [ ! -L /home/lmi/.ssh ] || exit 67
+[ -f /home/lmi/.ssh/authorized_keys ] && \
+	[ ! -L /home/lmi/.ssh/authorized_keys ] || exit 68
+[ "$(/usr/bin/stat -c '%u:%g:%a' /home)" = 0:0:755 ] || exit 69
+[ "$(/usr/bin/stat -c '%u:%g:%a' /home/lmi)" = 10000:10000:755 ] || exit 70
+[ "$(/usr/bin/stat -c '%u:%g:%a' /home/lmi/.ssh)" = 10000:10000:700 ] || exit 71
+[ "$(/usr/bin/stat -c '%u:%g:%a:%h' /home/lmi/.ssh/authorized_keys)" = \
+	10000:10000:600:1 ] || exit 72
+lmi_passwd=$(/usr/bin/awk -F: '$1 == "lmi" { print }' /etc/passwd)
+[ "$lmi_passwd" = 'lmi:x:10000:10000::/home/lmi:/bin/ash' ] || exit 73
+[ "$(/usr/bin/id -u lmi)" = 10000 ] || exit 74
+[ "$(/usr/bin/id -g lmi)" = 10000 ] || exit 75
+[ -L /bin ] && [ "$(/usr/bin/readlink /bin)" = usr/bin ] || exit 77
+[ -L /usr/bin/ash ] && \
+	[ "$(/usr/bin/readlink /usr/bin/ash)" = /usr/bin/busybox ] || exit 78
+[ -f /usr/bin/busybox ] && [ ! -L /usr/bin/busybox ] && \
+	[ -x /usr/bin/busybox ] || exit 79
+[ "$(/usr/bin/stat -c '%u:%g:%a:%h' /usr/bin/busybox)" = \
+	0:0:755:1 ] || exit 80
+for nologin_path in /etc/nologin /run/nologin /var/run/nologin; do
+	[ ! -e "$nologin_path" ] && [ ! -L "$nologin_path" ] || exit 81
+done
 
 /bin/rm -f /etc/ssh/ssh_host_*
 for host_key in /etc/ssh/ssh_host_*; do
 	[ ! -e "$host_key" ] || exit 31
 done
+/bin/rm -f /etc/pam.d/base-auth /etc/pam.d/base-account \
+	/etc/pam.d/base-password /etc/pam.d/base-session \
+	/etc/pam.d/base-session-noninteractive
+for pam_override in /etc/pam.d/base-auth /etc/pam.d/base-account \
+	/etc/pam.d/base-password /etc/pam.d/base-session \
+	/etc/pam.d/base-session-noninteractive; do
+	[ ! -e "$pam_override" ] && [ ! -L "$pam_override" ] || exit 83
+done
+/bin/rm -f /etc/machine-id
+[ ! -e /etc/machine-id ] && [ ! -L /etc/machine-id ] || exit 58
 
+/bin/rm -f /etc/shadow.lmi-p1
 /usr/bin/awk -F: 'BEGIN { OFS=FS; root=0; lmi=0 }
 $1 == "root" { $2="!"; root++ }
-$1 == "lmi" { $2="!"; lmi++ }
+$1 == "lmi" {
+	$2="!"; $3=""; $4="0"; $5="99999"; $6="7"; $7=""; $8=""; $9="";
+	lmi++
+}
 { print }
 END { if (root != 1 || lmi != 1) exit 32 }' /etc/shadow > /etc/shadow.lmi-p1
 /bin/chown root:shadow /etc/shadow.lmi-p1
@@ -2981,6 +3689,17 @@ END { if (root != 1 || lmi != 1) exit 32 }' /etc/shadow > /etc/shadow.lmi-p1
 /bin/mv /etc/shadow.lmi-p1 /etc/shadow
 [ "$(/usr/bin/awk -F: '$1 == "root" { print $2 }' /etc/shadow)" = '!' ] || exit 33
 [ "$(/usr/bin/awk -F: '$1 == "lmi" { print $2 }' /etc/shadow)" = '!' ] || exit 34
+[ "$(/usr/bin/awk -F: '$1 == "lmi" { print }' /etc/shadow)" = \
+	'lmi:!::0:99999:7:::' ] || exit 76
+/bin/rm -f /etc/shadow-
+/bin/cp /etc/shadow /etc/shadow-
+/bin/chown root:shadow /etc/shadow-
+/bin/chmod 0640 /etc/shadow-
+[ -f /etc/shadow ] && [ ! -L /etc/shadow ] || exit 59
+[ -f /etc/shadow- ] && [ ! -L /etc/shadow- ] || exit 60
+/usr/bin/cmp -s /etc/shadow /etc/shadow- || exit 61
+[ "$(/usr/bin/stat -c '%U:%G:%a' /etc/shadow)" = root:shadow:640 ] || exit 62
+[ "$(/usr/bin/stat -c '%U:%G:%a' /etc/shadow-)" = root:shadow:640 ] || exit 63
 
 /usr/bin/cmp -s "$stage/authorized_keys" /home/lmi/.ssh/authorized_keys || exit 35
 key_lines=$(/usr/bin/awk 'NF { count++ } END { print count+0 }' /home/lmi/.ssh/authorized_keys)
@@ -2994,6 +3713,24 @@ expected_fingerprint=$(/bin/cat "$stage/expected-fingerprint")
 	/etc/NetworkManager/system-connections/lmi-usb0.nmconnection || exit 39
 /usr/bin/cmp -s "$stage/90-lmi-usb0-takeover.conf" \
 	/etc/NetworkManager/conf.d/90-lmi-usb0-takeover.conf || exit 48
+nm_conf_entries=0
+for nm_conf in /etc/NetworkManager/conf.d/* \
+	/etc/NetworkManager/conf.d/.[!.]* /etc/NetworkManager/conf.d/..?*; do
+	[ -e "$nm_conf" ] || continue
+	[ "$nm_conf" = /etc/NetworkManager/conf.d/90-lmi-usb0-takeover.conf ] || exit 84
+	nm_conf_entries=$((nm_conf_entries + 1))
+done
+[ "$nm_conf_entries" -eq 1 ] || exit 85
+nm_profile_entries=0
+for nm_profile in /etc/NetworkManager/system-connections/* \
+	/etc/NetworkManager/system-connections/.[!.]* \
+	/etc/NetworkManager/system-connections/..?*; do
+	[ -e "$nm_profile" ] || continue
+	[ "$nm_profile" = \
+		/etc/NetworkManager/system-connections/lmi-usb0.nmconnection ] || exit 86
+	nm_profile_entries=$((nm_profile_entries + 1))
+done
+[ "$nm_profile_entries" -eq 1 ] || exit 87
 /usr/bin/cmp -s "$stage/lmi-usb0-dhcp" /usr/sbin/lmi-usb0-dhcp || exit 49
 /usr/bin/cmp -s "$stage/lmi-usb0-dhcp.initd" /etc/init.d/lmi-usb0-dhcp || exit 50
 /usr/bin/cmp -s "$stage/unudhcpd.usb0.confd" /etc/conf.d/unudhcpd.usb0 || exit 51
@@ -3032,7 +3769,35 @@ for sudoers_rule in /etc/sudoers.d/* /etc/sudoers.d/.[!.]* /etc/sudoers.d/..?*; 
 done
 [ "$sudoers_entries" -eq 1 ] || exit 45
 /usr/bin/visudo -cf /etc/sudoers
+sudo_list="$stage/sudo-list"
+/bin/rm -f "$sudo_list"
+trap '/bin/rm -f "$sudo_list"' EXIT HUP INT TERM
+LC_ALL=C /usr/bin/sudo -n -l -U lmi > "$sudo_list"
+/usr/bin/awk '
+BEGIN { specs=0 }
+{
+	line=$0
+	sub(/^[[:space:]]+/, "", line)
+	sub(/[[:space:]]+$/, "", line)
+	if (line == "(root) NOPASSWD: /usr/sbin/lmi-rootctl") {
+		specs++
+		next
+	}
+	if (line ~ /(^|[[:space:],:()])ALL([[:space:],:()\\/]|$)/) exit 1
+	if (line ~ /^\\([^)]*\\)[[:space:]]/) exit 1
+	if (line ~ /(^|[[:space:]])(NOEXEC:|EXEC:|FOLLOW:|NOFOLLOW:|SETENV:|NOSETENV:|PASSWD:|NOPASSWD:)/) exit 1
+	if (line ~ /^!?\\//) exit 1
+}
+END { if (specs != 1) exit 1 }' "$sudo_list" || exit 64
+/bin/rm -f "$sudo_list"
+trap - EXIT HUP INT TERM
 
+/bin/rm -f /etc/conf.d/networkmanager
+/bin/rm -f /etc/NetworkManager/NetworkManager.conf
+[ ! -e /etc/conf.d/networkmanager ] && \
+	[ ! -L /etc/conf.d/networkmanager ] || exit 82
+[ ! -e /etc/NetworkManager/NetworkManager.conf ] && \
+	[ ! -L /etc/NetworkManager/NetworkManager.conf ] || exit 88
 /sbin/rc-update add sshd default
 /sbin/rc-update add networkmanager default
 /sbin/rc-update add lmi-usb0-dhcp default
@@ -3755,7 +4520,10 @@ def _build_candidate(
 
         invoke("checksum", "--verify", *_PACKAGES)
         build_packages = _PACKAGES
-        install_add = "unudhcpd-openrc"
+        install_add = (
+            f"{_NETWORKMANAGER_INSTALL_ADD},"
+            "unudhcpd-openrc,openssh-client-default"
+        )
         if sealed:
             _stage_known_good_kernel_status(
                 source_checkout,
@@ -3795,14 +4563,39 @@ def _build_candidate(
             _verify_known_good_kernel_install(rootfs, installed_db)
         keys_before = _all_key_hashes(pmb_work, rootfs)
         packages = _parse_apk_database(installed_db)
-        sshd_package, _ = _sshd_pam_package_record(installed_db)
+        ssh_server_packages, _ = _ssh_server_package_records(installed_db)
+        sshd_package = ssh_server_packages["openssh-server-pam"]
+        ssh_server_versions = {
+            name: package.version
+            for name, package in ssh_server_packages.items()
+        }
+        linux_pam_package, _ = _linux_pam_package_record(installed_db)
+        ssh_client_packages, _ = _ssh_client_package_records(
+            installed_db,
+            expected_openssh_version=sshd_package.version,
+        )
+        ssh_client_versions = {
+            name: package.version for name, package in ssh_client_packages.items()
+        }
+        networkmanager_packages, _ = _networkmanager_package_records(
+            installed_db
+        )
+        networkmanager_versions = {
+            name: package.version
+            for name, package in networkmanager_packages.items()
+        }
         dhcp_packages, _, _ = _dhcp_package_records(installed_db)
         dhcp_versions = {
             name: package.version for name, package in dhcp_packages.items()
         }
         _verify_package_policy(
             packages,
-            {sshd_package.name: sshd_package.version, **dhcp_versions},
+            {
+                **ssh_server_versions,
+                **ssh_client_versions,
+                **dhcp_versions,
+                linux_pam_package.name: linux_pam_package.version,
+            },
         )
         for name, version in _REQUIRED_PACKAGE_VERSIONS.items():
             allowed_current: tuple[str, ...] = ()
@@ -3821,13 +4614,25 @@ def _build_candidate(
         )
         _pin_exact_world_package(
             rootfs / "etc/apk/world",
+            "openssh-client-default",
+            ssh_client_versions["openssh-client-default"],
+        )
+        _pin_exact_world_package(
+            rootfs / "etc/apk/world",
             "unudhcpd-openrc",
             dhcp_versions["unudhcpd-openrc"],
         )
+        for name, version in networkmanager_versions.items():
+            _pin_exact_world_package(
+                rootfs / "etc/apk/world", name, version
+            )
         _read_world(
             rootfs / "etc/apk/world",
             {
                 sshd_package.name: sshd_package.version,
+                "openssh-client-default": ssh_client_versions[
+                    "openssh-client-default"
+                ],
                 "unudhcpd-openrc": dhcp_versions["unudhcpd-openrc"],
             },
         )
@@ -3847,6 +4652,15 @@ def _build_candidate(
         sshd_pam_attestation = _verify_sshd_pam(
             rootfs, installed_db, sshd_package.version
         )
+        _verify_ssh_client(
+            rootfs,
+            installed_db,
+            ssh_client_versions,
+            expected_openssh_version=sshd_package.version,
+        )
+        _verify_networkmanager_files(
+            rootfs, installed_db, networkmanager_versions
+        )
         _verify_unudhcpd(rootfs, installed_db, dhcp_versions)
         if sealed:
             _verify_known_good_kernel_install(rootfs, installed_db)
@@ -3860,12 +4674,20 @@ def _build_candidate(
             )
         _verify_package_policy(
             packages,
-            {sshd_package.name: sshd_package.version, **dhcp_versions},
+            {
+                **ssh_server_versions,
+                **ssh_client_versions,
+                **dhcp_versions,
+                linux_pam_package.name: linux_pam_package.version,
+            },
         )
         world_text = _read_world(
             rootfs / "etc/apk/world",
             {
                 sshd_package.name: sshd_package.version,
+                "openssh-client-default": ssh_client_versions[
+                    "openssh-client-default"
+                ],
                 "unudhcpd-openrc": dhcp_versions["unudhcpd-openrc"],
             },
         )
@@ -3958,9 +4780,44 @@ def _build_candidate(
 
         rootfs_bindings = RootfsBindings(
             apk_installed=installed_db,
+            busybox=rootfs / "usr/bin/busybox",
+            rootctl=payload / "lmi-rootctl",
+            sudoers=payload / "sudoers",
+            sudoers_dropin=payload / "90-lmi-rootctl",
+            nmcli=rootfs / "usr/bin/nmcli",
+            networkmanager_daemon=rootfs / "usr/sbin/NetworkManager",
+            networkmanager_service=rootfs / "etc/init.d/networkmanager",
+            networkmanager_wifi_plugin=rootfs
+            / "usr/lib/NetworkManager/1.52.2/libnm-device-plugin-wifi.so",
+            networkmanager_vendor_interfaces=rootfs
+            / "usr/lib/NetworkManager/conf.d/00-interfaces.conf",
+            networkmanager_vendor_dhcp=rootfs
+            / "usr/lib/NetworkManager/conf.d/20-dhcp-internal.conf",
             sshd_config=rootfs / "etc/ssh/sshd_config",
             sshd_service=rootfs / "etc/init.d/sshd",
             sshd_pam=rootfs / "usr/sbin/sshd.pam",
+            sshd_pam_config=rootfs / "etc/pam.d/sshd",
+            sshd_confd=rootfs / "etc/conf.d/sshd",
+            sshd_auth=rootfs / "usr/lib/ssh/sshd-auth.pam",
+            sshd_session=rootfs / "usr/lib/ssh/sshd-session.pam",
+            ssh_keygen=rootfs / "usr/bin/ssh-keygen",
+            pam_base_auth=rootfs / "usr/lib/pam.d/base-auth",
+            pam_base_account=rootfs / "usr/lib/pam.d/base-account",
+            pam_base_password=rootfs / "usr/lib/pam.d/base-password",
+            pam_base_session=rootfs / "usr/lib/pam.d/base-session",
+            pam_base_session_noninteractive=rootfs
+            / "usr/lib/pam.d/base-session-noninteractive",
+            pam_unix=rootfs / "usr/lib/security/pam_unix.so",
+            pam_nologin=rootfs / "usr/lib/security/pam_nologin.so",
+            pam_env=rootfs / "usr/lib/security/pam_env.so",
+            pam_limits=rootfs / "usr/lib/security/pam_limits.so",
+            libpam=rootfs / "usr/lib/libpam.so.0.85.1",
+            ssh=rootfs / "usr/bin/ssh",
+            scp=rootfs / "usr/bin/scp",
+            sftp=rootfs / "usr/bin/sftp",
+            ssh_add=rootfs / "usr/bin/ssh-add",
+            ssh_agent=rootfs / "usr/bin/ssh-agent",
+            ssh_keyscan=rootfs / "usr/bin/ssh-keyscan",
             authorized_keys=rootfs / "home/lmi/.ssh/authorized_keys",
             release_identity=rootfs / "etc/lmi-release-identity",
             networkmanager_profile=rootfs
@@ -3988,9 +4845,52 @@ def _build_candidate(
             / "main/postmarketos-initramfs/init_2nd.sh",
             "fstab": rootfs / "etc/fstab",
             "rootfs_apk_installed": rootfs_bindings.apk_installed,
+            "rootfs_busybox": rootfs_bindings.busybox,
+            "rootfs_rootctl": rootfs_bindings.rootctl,
+            "rootfs_sudoers": rootfs_bindings.sudoers,
+            "rootfs_sudoers_dropin": rootfs_bindings.sudoers_dropin,
+            "rootfs_nmcli": rootfs_bindings.nmcli,
+            "rootfs_networkmanager_daemon": (
+                rootfs_bindings.networkmanager_daemon
+            ),
+            "rootfs_networkmanager_service": (
+                rootfs_bindings.networkmanager_service
+            ),
+            "rootfs_networkmanager_wifi_plugin": (
+                rootfs_bindings.networkmanager_wifi_plugin
+            ),
+            "rootfs_networkmanager_vendor_interfaces": (
+                rootfs_bindings.networkmanager_vendor_interfaces
+            ),
+            "rootfs_networkmanager_vendor_dhcp": (
+                rootfs_bindings.networkmanager_vendor_dhcp
+            ),
             "rootfs_sshd_config": rootfs_bindings.sshd_config,
             "rootfs_sshd_service": rootfs_bindings.sshd_service,
             "rootfs_sshd_pam": rootfs_bindings.sshd_pam,
+            "rootfs_sshd_pam_config": rootfs_bindings.sshd_pam_config,
+            "rootfs_sshd_confd": rootfs_bindings.sshd_confd,
+            "rootfs_sshd_auth": rootfs_bindings.sshd_auth,
+            "rootfs_sshd_session": rootfs_bindings.sshd_session,
+            "rootfs_ssh_keygen": rootfs_bindings.ssh_keygen,
+            "rootfs_pam_base_auth": rootfs_bindings.pam_base_auth,
+            "rootfs_pam_base_account": rootfs_bindings.pam_base_account,
+            "rootfs_pam_base_password": rootfs_bindings.pam_base_password,
+            "rootfs_pam_base_session": rootfs_bindings.pam_base_session,
+            "rootfs_pam_base_session_noninteractive": (
+                rootfs_bindings.pam_base_session_noninteractive
+            ),
+            "rootfs_pam_unix": rootfs_bindings.pam_unix,
+            "rootfs_pam_nologin": rootfs_bindings.pam_nologin,
+            "rootfs_pam_env": rootfs_bindings.pam_env,
+            "rootfs_pam_limits": rootfs_bindings.pam_limits,
+            "rootfs_libpam": rootfs_bindings.libpam,
+            "rootfs_ssh": rootfs_bindings.ssh,
+            "rootfs_scp": rootfs_bindings.scp,
+            "rootfs_sftp": rootfs_bindings.sftp,
+            "rootfs_ssh_add": rootfs_bindings.ssh_add,
+            "rootfs_ssh_agent": rootfs_bindings.ssh_agent,
+            "rootfs_ssh_keyscan": rootfs_bindings.ssh_keyscan,
             "rootfs_authorized_keys": rootfs_bindings.authorized_keys,
             "rootfs_release_identity": rootfs_bindings.release_identity,
             "rootfs_networkmanager_profile": rootfs_bindings.networkmanager_profile,

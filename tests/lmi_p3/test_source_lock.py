@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -11,6 +12,7 @@ from scripts.lmi_p3.source_lock import LockError, load_source_lock
 
 REPO = Path(__file__).resolve().parents[2]
 LOCK = REPO / "config/lmi-p3/source-lock.json"
+P1_FILES = REPO / "files/lmi-p1"
 
 
 class SourceLockTests(unittest.TestCase):
@@ -26,6 +28,28 @@ class SourceLockTests(unittest.TestCase):
 
     def test_reviewed_lock_is_valid_but_never_release_ready(self) -> None:
         source_lock = load_source_lock(LOCK)
+        baseline = source_lock.value["baseline"]
+        identity_device_revisions = [
+            line.removeprefix("device_xiaomi_lmi=")
+            for line in (P1_FILES / "lmi-release-identity")
+            .read_text(encoding="utf-8")
+            .splitlines()
+            if line.startswith("device_xiaomi_lmi=")
+        ]
+        self.assertEqual(
+            identity_device_revisions,
+            [baseline["device_dependency"].removeprefix("device-xiaomi-lmi=")],
+        )
+        for field, filename in (
+            ("rootctl_sha256", "lmi-rootctl"),
+            ("sudoers_sha256", "sudoers"),
+            ("rootctl_sudoers_sha256", "90-lmi-rootctl"),
+        ):
+            with self.subTest(p1_boundary_file=filename):
+                self.assertEqual(
+                    baseline[field],
+                    hashlib.sha256((P1_FILES / filename).read_bytes()).hexdigest(),
+                )
         self.assertFalse(source_lock.release_eligible)
         self.assertRegex(source_lock.sha256, r"^[0-9a-f]{64}$")
         with self.assertRaisesRegex(LockError, "hardware evidence and approvals"):
@@ -147,7 +171,7 @@ class SourceLockTests(unittest.TestCase):
         for dependency in (
             "!adsp-audio",
             "!adsp-audio-openrc",
-            "device-xiaomi-lmi=1-r107",
+            "device-xiaomi-lmi=1-r145",
             "linux-xiaomi-lmi=4.19.325-r8",
         ):
             with self.subTest(dependency=dependency):

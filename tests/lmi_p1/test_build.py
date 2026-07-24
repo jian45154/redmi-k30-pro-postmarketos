@@ -59,9 +59,17 @@ AuthenticationMethods publickey
 AuthorizedKeysFile .ssh/authorized_keys
 AllowUsers lmi
 UsePAM yes
+DisableForwarding no
+PermitTTY yes
+AllowAgentForwarding yes
+AllowTcpForwarding yes
+AllowStreamLocalForwarding yes
+PermitOpen any
+PermitListen any
+GatewayPorts no
 X11Forwarding no
-AllowTcpForwarding no
 PermitTunnel no
+PermitUserEnvironment no
 LogLevel VERBOSE
 Subsystem sftp internal-sftp
 """
@@ -78,6 +86,94 @@ Subsystem sftp internal-sftp
             sudoers.read_text(),
             "root ALL=(ALL) ALL\n@includedir /etc/sudoers.d\n",
         )
+
+    def test_packaged_and_finalizer_rootctl_are_byte_identical_and_checksummed(self):
+        packaged = (
+            REPO / "artifacts/wsl-pmaports/device-xiaomi-lmi/lmi-rootctl"
+        )
+        finalizer = PAYLOAD / "lmi-rootctl"
+        self.assertEqual(packaged.read_bytes(), finalizer.read_bytes())
+        expected = hashlib.sha512(packaged.read_bytes()).hexdigest()
+        apkbuild = (
+            REPO / "artifacts/wsl-pmaports/device-xiaomi-lmi/APKBUILD"
+        ).read_text()
+        matches = re.findall(
+            rf"^([0-9a-f]{{128}})  {re.escape(packaged.name)}$",
+            apkbuild,
+            flags=re.MULTILINE,
+        )
+        self.assertEqual(matches, [expected])
+
+    def test_headless_package_policy_rejects_any_pmbootstrap_ui_package(self):
+        packages = [
+            "device-xiaomi-lmi-1-r145",
+            "linux-xiaomi-lmi-4.19.325-r8",
+            "postmarketos-ui-shelli-3-r8",
+        ]
+        with self.assertRaisesRegex(GateError, "forbidden UI packages.*shelli"):
+            build_module._verify_package_policy(packages)
+
+    def test_headless_package_has_no_display_manager_session_path(self):
+        package = REPO / "artifacts/wsl-pmaports/device-xiaomi-lmi"
+        apkbuild = (package / "APKBUILD").read_text()
+        post_install = (package / "device-xiaomi-lmi.post-install").read_text()
+        power_panel_init = (package / "lmi-power-panel.initd").read_text()
+        splash_release_init = (package / "lmi-splash-release.initd").read_text()
+        for prohibited in (
+            "greetd",
+            "lmi-greetd",
+            "lmi-phosh-session",
+            "phosh-session",
+            "\ttinydm\n",
+        ):
+            with self.subTest(prohibited=prohibited):
+                self.assertNotIn(prohibited, apkbuild)
+                self.assertNotIn(prohibited, post_install)
+        self.assertNotIn("greetd", power_panel_init)
+        self.assertNotIn("greetd", splash_release_init)
+        self.assertNotIn(
+            '"$pkgdir"/etc/runlevels/default/lmi-power-panel',
+            apkbuild,
+        )
+        self.assertNotIn(
+            '"$pkgdir"/etc/runlevels/default/lmi-splash-release',
+            apkbuild,
+        )
+        self.assertIn(
+            'exec /usr/sbin/lmi-display-takeover',
+            (package / "lmi-rootctl").read_text(),
+        )
+        for removed in (
+            "lmi-greetd-config.toml",
+            "lmi-greetd-log",
+            "lmi-phosh-session-log",
+        ):
+            with self.subTest(removed=removed):
+                self.assertFalse((package / removed).exists())
+
+    def test_headless_package_policy_rejects_display_session_packages(self):
+        for forbidden in (
+            "greetd-0.10.3-r11",
+            "greetd-openrc-0.10.3-r11",
+            "phoc-0.46.0-r0",
+            "phosh-0.46.0-r0",
+            "phosh-mobile-settings-0.46.0-r0",
+            "postmarketos-base-ui-tinydm-55-r0",
+            "tinydm-1.3.1-r1",
+            "tinydm-openrc-1.3.1-r1",
+        ):
+            with self.subTest(forbidden=forbidden):
+                packages = [
+                    "device-xiaomi-lmi-1-r145",
+                    "linux-xiaomi-lmi-4.19.325-r8",
+                    forbidden,
+                ]
+                with self.assertRaisesRegex(
+                    GateError,
+                    "forbidden headless session packages.*"
+                    + re.escape(forbidden),
+                ):
+                    build_module._verify_package_policy(packages)
 
     def test_usb0_networkmanager_profile_is_exact(self):
         expected = """\
@@ -135,6 +231,7 @@ keep-configuration=no
         for marker in (
             '/bin/cp "$stage/sudoers" /etc/sudoers',
             "/usr/bin/visudo -cf /etc/sudoers",
+            "/usr/bin/sudo -n -l -U lmi",
             "/usr/sbin/delgroup lmi wheel",
             "/usr/bin/id -nG lmi",
             "/bin/rm -f /etc/doas.conf /etc/doas.d/* /etc/doas.d/.[!.]* /etc/doas.d/..?*",
@@ -157,6 +254,16 @@ keep-configuration=no
             "/bin/chown root:root /etc/ssh/sshd_config",
             "/bin/chown root:root /usr/sbin/lmi-rootctl",
             "/bin/chown root:root /etc/lmi-release-identity",
+            "/bin/rm -f /etc/machine-id",
+            "/bin/cp /etc/shadow /etc/shadow-",
+            "/usr/bin/cmp -s /etc/shadow /etc/shadow-",
+            "lmi:x:10000:10000::/home/lmi:/bin/ash",
+            "lmi:!::0:99999:7:::",
+            '[ "$(/usr/bin/readlink /usr/bin/ash)" = /usr/bin/busybox ]',
+            "for nologin_path in /etc/nologin /run/nologin /var/run/nologin",
+            "/bin/rm -f /etc/conf.d/networkmanager",
+            "/etc/pam.d/base-session-noninteractive",
+            "(root) NOPASSWD: /usr/sbin/lmi-rootctl",
         ):
             self.assertIn(marker, finalizer)
 
@@ -245,6 +352,217 @@ keep-configuration=no
             self.assertFalse(
                 any(line.startswith("reboot") for line in calls.read_text().splitlines())
             )
+
+    def test_rootctl_preserves_r144_allowlist_and_optional_wifi_arguments(self):
+        source = (PAYLOAD / "lmi-rootctl").read_text()
+        self.assertIn("PATH=/usr/sbin:/usr/bin:/sbin:/bin", source)
+        self.assertNotIn("sh -c", source)
+        self.assertNotIn("eval", source)
+        self.assertNotIn('exec "$@"', source)
+        for service in (
+            "lmi-firmware-mount",
+            "lmi-qrtr-ns",
+            "lmi-cnss-daemon",
+            "lmi-cnss-fs-ready",
+            "lmi-wlan-on",
+            "pd-mapper",
+            "lmi-seatd",
+            "rmtfs",
+            "tqftpserv",
+            "wpa_supplicant",
+            "networkmanager",
+            "bluetooth",
+            "sshd",
+        ):
+            self.assertIn(service, source)
+        for command in (
+            "bluetooth-rfkill",
+            "adsp-boot",
+            "wifi-start",
+            "display-probe",
+            "display-takeover",
+            "poweroff",
+            "rc-status",
+        ):
+            self.assertIn(command, source)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            calls = root / "calls"
+
+            def make_fake(name: str, body: str) -> Path:
+                path = root / name
+                path.write_text("#!/bin/sh\n" + body)
+                path.chmod(0o755)
+                return path
+
+            fake_logger = make_fake(
+                "logger",
+                "printf 'logger' >> \"$LMI_TEST_CALLS\"\n"
+                "for argument do printf ' <%s>' \"$argument\" >> \"$LMI_TEST_CALLS\"; done\n"
+                "printf '\\n' >> \"$LMI_TEST_CALLS\"\n",
+            )
+            fake_rc_service = make_fake(
+                "rc-service",
+                "printf 'rc-service' >> \"$LMI_TEST_CALLS\"\n"
+                "for argument do printf ' <%s>' \"$argument\" >> \"$LMI_TEST_CALLS\"; done\n"
+                "printf '\\n' >> \"$LMI_TEST_CALLS\"\n",
+            )
+            fake_wifi = make_fake(
+                "lmi-wifi-start",
+                "printf 'wifi board=<%s> pre=<%s> post=<%s>' "
+                "\"${LMI_WLAN_BOARDDATA:-}\" \"${LMI_WLAN_PRE_ON_DELAY:-}\" "
+                "\"${LMI_WLAN_POST_ON_DELAY:-}\" >> \"$LMI_TEST_CALLS\"\n"
+                "for argument do printf ' <%s>' \"$argument\" >> \"$LMI_TEST_CALLS\"; done\n"
+                "printf '\\n' >> \"$LMI_TEST_CALLS\"\n",
+            )
+            fake_display_probe = make_fake(
+                "lmi-display-probe",
+                "printf 'display-probe' >> \"$LMI_TEST_CALLS\"\n"
+                "for argument do printf ' <%s>' \"$argument\" >> \"$LMI_TEST_CALLS\"; done\n"
+                "printf '\\n' >> \"$LMI_TEST_CALLS\"\n",
+            )
+            fake_display_takeover = make_fake(
+                "lmi-display-takeover",
+                "printf 'display-takeover\\n' >> \"$LMI_TEST_CALLS\"\n",
+            )
+            harness_source = source
+            for original, replacement in (
+                ("/usr/sbin/rc-service", str(fake_rc_service)),
+                ("/sbin/rc-service", str(fake_rc_service)),
+                ("/usr/bin/logger", str(fake_logger)),
+                ("/usr/sbin/lmi-wifi-start", str(fake_wifi)),
+                ("/usr/sbin/lmi-display-probe", str(fake_display_probe)),
+                ("/usr/sbin/lmi-display-takeover", str(fake_display_takeover)),
+            ):
+                harness_source = harness_source.replace(original, replacement)
+            harness = root / "lmi-rootctl"
+            harness.write_text(harness_source)
+            harness.chmod(0o755)
+            environment = dict(
+                os.environ,
+                LMI_TEST_CALLS=str(calls),
+                SUDO_USER="lmi",
+            )
+
+            def run(*arguments: str) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+                calls.write_text("")
+                completed = subprocess.run(
+                    [str(harness), *arguments],
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                    env=environment,
+                )
+                return completed, calls.read_text().splitlines()
+
+            completed, lines = run("service", "pd-mapper", "status")
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn("rc-service <pd-mapper> <status>", lines)
+
+            completed, lines = run(
+                "service",
+                "pd-mapper",
+                "restart",
+                "--confirm",
+                "service-state-change-xiaomi-lmi",
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn("rc-service <pd-mapper> <restart>", lines)
+
+            completed, lines = run(
+                "service",
+                "sshd",
+                "restart",
+                "--confirm",
+                "restart-sshd-lmi-p1",
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn("rc-service <sshd> <restart>", lines)
+
+            completed, lines = run("service", "unlisted", "status")
+            self.assertEqual(completed.returncode, 2)
+            self.assertFalse(any(line.startswith("rc-service") for line in lines))
+
+            completed, lines = run(
+                "wifi-start",
+                "--confirm",
+                "wifi-start-xiaomi-lmi",
+                "--fs-ready-only",
+                "--boarddata",
+                "bdwlan.bin",
+                "--pre-on-delay",
+                "2",
+                "--post-on-delay",
+                "3",
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn(
+                "wifi board=<bdwlan.bin> pre=<2> post=<3> <--fs-ready-only>",
+                lines,
+            )
+            for delay in ("0", "45", "120"):
+                with self.subTest(accepted_wifi_delay=delay):
+                    completed, lines = run(
+                        "wifi-start",
+                        "--confirm",
+                        "wifi-start-xiaomi-lmi",
+                        "--pre-on-delay",
+                        delay,
+                        "--post-on-delay",
+                        delay,
+                    )
+                    self.assertEqual(completed.returncode, 0, completed.stderr)
+                    self.assertIn(
+                        f"wifi board=<> pre=<{delay}> post=<{delay}>",
+                        lines,
+                    )
+            for option in ("--pre-on-delay", "--post-on-delay"):
+                for delay in (
+                    "121",
+                    "999999999999999999999999999999999999",
+                    "-1",
+                    "abc",
+                ):
+                    with self.subTest(rejected_wifi_delay=(option, delay)):
+                        completed, lines = run(
+                            "wifi-start",
+                            "--confirm",
+                            "wifi-start-xiaomi-lmi",
+                            option,
+                            delay,
+                        )
+                        self.assertEqual(completed.returncode, 2)
+                        self.assertFalse(
+                            any(line.startswith("wifi") for line in lines)
+                        )
+
+            completed, lines = run(
+                "wifi-start",
+                "--confirm",
+                "wifi-start-xiaomi-lmi",
+                "--boarddata",
+                "../unsafe",
+            )
+            self.assertEqual(completed.returncode, 2)
+            self.assertFalse(any(line.startswith("wifi") for line in lines))
+
+            completed, lines = run(
+                "display-probe",
+                "--active-all",
+                "--confirm",
+                "display-takeover-d62-openvt-cleanup-xiaomi-lmi",
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn("display-probe <--active-all>", lines)
+
+            completed, lines = run(
+                "display-takeover",
+                "--confirm",
+                "display-takeover-d67-clear129-plane58-then-weston-dsi-only-xiaomi-lmi",
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn("display-takeover", lines)
 
     def test_new_p1_production_files_reject_forbidden_literals(self):
         forbidden = (
@@ -620,11 +938,11 @@ class SourceLockAndKernelPolicyTests(unittest.TestCase):
 
 class BuilderTests(unittest.TestCase):
     package_lines = (
-        "device-xiaomi-lmi-1-r107",
+        "device-xiaomi-lmi-1-r145",
         "linux-xiaomi-lmi-4.19.325-r8",
     )
     required_versions = {
-        "device-xiaomi-lmi": "1-r107",
+        "device-xiaomi-lmi": "1-r145",
         "linux-xiaomi-lmi": "4.19.325-r8",
     }
     ephemeral = "runtime-generated-test-password"
@@ -853,9 +1171,40 @@ class BuilderTests(unittest.TestCase):
                 "staged_init_2nd",
                 "fstab",
                 "rootfs_apk_installed",
+                "rootfs_busybox",
+                "rootfs_rootctl",
+                "rootfs_sudoers",
+                "rootfs_sudoers_dropin",
+                "rootfs_nmcli",
+                "rootfs_networkmanager_daemon",
+                "rootfs_networkmanager_service",
+                "rootfs_networkmanager_wifi_plugin",
+                "rootfs_networkmanager_vendor_interfaces",
+                "rootfs_networkmanager_vendor_dhcp",
                 "rootfs_sshd_config",
                 "rootfs_sshd_service",
                 "rootfs_sshd_pam",
+                "rootfs_sshd_pam_config",
+                "rootfs_sshd_confd",
+                "rootfs_sshd_auth",
+                "rootfs_sshd_session",
+                "rootfs_ssh_keygen",
+                "rootfs_pam_base_auth",
+                "rootfs_pam_base_account",
+                "rootfs_pam_base_password",
+                "rootfs_pam_base_session",
+                "rootfs_pam_base_session_noninteractive",
+                "rootfs_pam_unix",
+                "rootfs_pam_nologin",
+                "rootfs_pam_env",
+                "rootfs_pam_limits",
+                "rootfs_libpam",
+                "rootfs_ssh",
+                "rootfs_scp",
+                "rootfs_sftp",
+                "rootfs_ssh_add",
+                "rootfs_ssh_agent",
+                "rootfs_ssh_keyscan",
                 "rootfs_authorized_keys",
                 "rootfs_release_identity",
                 "rootfs_networkmanager_profile",
@@ -890,6 +1239,230 @@ class BuilderTests(unittest.TestCase):
         )
         self.validate_artifact_pair = self.semantic_validator.start()
         self.addCleanup(self.semantic_validator.stop)
+        production_verify_sshd_pam = build_module._verify_sshd_pam
+        production_verify_ssh_client = build_module._verify_ssh_client
+        production_lstat = Path.lstat
+        production_fstat = os.fstat
+
+        def logical_root_metadata(
+            metadata: os.stat_result, *, uid: int = 0, gid: int = 0
+        ) -> os.stat_result:
+            fields = list(metadata)
+            fields[4] = uid
+            fields[5] = gid
+            return os.stat_result(fields)
+
+        def verify_sshd_pam_as_image_root(
+            rootfs: Path, installed_db: Path, expected_version: str
+        ) -> dict[str, object]:
+            server_files = {
+                "usr/sbin/sshd.pam",
+                "usr/bin/ssh-keygen",
+                "etc/pam.d/sshd",
+                "etc/conf.d/sshd",
+                "etc/init.d/sshd",
+                "usr/lib/ssh/sshd-auth.pam",
+                "usr/lib/ssh/sshd-session.pam",
+                "usr/lib/pam.d/base-auth",
+                "usr/lib/pam.d/base-account",
+                "usr/lib/pam.d/base-password",
+                "usr/lib/pam.d/base-session",
+                "usr/lib/pam.d/base-session-noninteractive",
+                "usr/lib/security/pam_unix.so",
+                "usr/lib/security/pam_nologin.so",
+                "usr/lib/security/pam_env.so",
+                "usr/lib/security/pam_limits.so",
+                "usr/lib/libpam.so.0",
+                "usr/lib/libpam.so.0.85.1",
+            }
+            server_ancestry = {
+                "usr",
+                "usr/sbin",
+                "usr/bin",
+                "etc",
+                "etc/pam.d",
+                "etc/conf.d",
+                "etc/init.d",
+                "usr/lib",
+                "usr/lib/ssh",
+                "usr/lib/pam.d",
+                "usr/lib/security",
+            }
+
+            def logical_lstat(path: Path) -> os.stat_result:
+                metadata = production_lstat(path)
+                try:
+                    relative = Path(path).relative_to(rootfs).as_posix()
+                except ValueError:
+                    return metadata
+                if relative in server_files | server_ancestry:
+                    return logical_root_metadata(metadata)
+                return metadata
+
+            def logical_fstat(descriptor: int) -> os.stat_result:
+                metadata = production_fstat(descriptor)
+                try:
+                    opened_path = Path(os.readlink(f"/proc/self/fd/{descriptor}"))
+                    relative = opened_path.relative_to(rootfs).as_posix()
+                except (OSError, ValueError):
+                    return metadata
+                if relative in server_files:
+                    return logical_root_metadata(metadata)
+                return metadata
+
+            with mock.patch.object(Path, "lstat", new=logical_lstat), mock.patch.object(
+                os, "fstat", new=logical_fstat
+            ):
+                return production_verify_sshd_pam(
+                    rootfs, installed_db, expected_version
+                )
+
+        self.ssh_server_verifier = mock.patch.object(
+            build_module,
+            "_verify_sshd_pam",
+            side_effect=verify_sshd_pam_as_image_root,
+        )
+        self.ssh_server_verifier.start()
+        self.addCleanup(self.ssh_server_verifier.stop)
+
+        def verify_ssh_client_as_image_root(
+            rootfs: Path,
+            installed_db: Path,
+            expected_versions: dict[str, str],
+            *,
+            expected_openssh_version: str,
+        ) -> None:
+            client_files = {
+                f"usr/bin/{name}"
+                for name in ("scp", "sftp", "ssh", "ssh-add", "ssh-agent", "ssh-keyscan")
+            }
+            client_ancestry = {"usr", "usr/bin"}
+            nonroot_uid = os.geteuid() or 1000
+            nonroot_gid = os.getegid() or 1000
+
+            def logical_owner(
+                metadata: os.stat_result, relative: str
+            ) -> os.stat_result:
+                user_owned = os.environ.get(
+                    "LMI_FAKE_OPENSSH_CLIENT_USER_OWNED"
+                )
+                nonroot_parent = os.environ.get(
+                    "LMI_FAKE_OPENSSH_CLIENT_NONROOT_PARENT"
+                )
+                if (
+                    relative == f"usr/bin/{user_owned}"
+                    or relative == nonroot_parent
+                ):
+                    return logical_root_metadata(
+                        metadata, uid=nonroot_uid, gid=nonroot_gid
+                    )
+                return logical_root_metadata(metadata)
+
+            def logical_lstat(path: Path) -> os.stat_result:
+                metadata = production_lstat(path)
+                try:
+                    relative = Path(path).relative_to(rootfs).as_posix()
+                except ValueError:
+                    return metadata
+                if relative in client_files | client_ancestry:
+                    return logical_owner(metadata, relative)
+                return metadata
+
+            def logical_fstat(descriptor: int) -> os.stat_result:
+                metadata = production_fstat(descriptor)
+                try:
+                    opened_path = Path(os.readlink(f"/proc/self/fd/{descriptor}"))
+                    relative = opened_path.relative_to(rootfs).as_posix()
+                except (OSError, ValueError):
+                    return metadata
+                if relative in client_files:
+                    return logical_owner(metadata, relative)
+                return metadata
+
+            # The unprivileged fake pmbootstrap cannot create uid/gid 0 files.
+            # Present its intended image ownership only while exercising the
+            # production verifier; explicit attack variables retain non-root ids.
+            with mock.patch.object(Path, "lstat", new=logical_lstat), mock.patch.object(
+                os, "fstat", new=logical_fstat
+            ):
+                production_verify_ssh_client(
+                    rootfs,
+                    installed_db,
+                    expected_versions,
+                    expected_openssh_version=expected_openssh_version,
+                )
+
+        self.ssh_client_verifier = mock.patch.object(
+            build_module,
+            "_verify_ssh_client",
+            side_effect=verify_ssh_client_as_image_root,
+        )
+        self.ssh_client_verifier.start()
+        self.addCleanup(self.ssh_client_verifier.stop)
+        production_verify_networkmanager_files = (
+            build_module._verify_networkmanager_files
+        )
+
+        def verify_networkmanager_files_as_image_root(
+            rootfs: Path,
+            installed_db: Path,
+            expected_versions: dict[str, str],
+        ) -> None:
+            networkmanager_files = {
+                "etc/init.d/networkmanager",
+                "usr/bin/nmcli",
+                "usr/sbin/NetworkManager",
+                "usr/lib/NetworkManager/1.52.2/libnm-device-plugin-wifi.so",
+                "usr/lib/NetworkManager/conf.d/00-interfaces.conf",
+                "usr/lib/NetworkManager/conf.d/20-dhcp-internal.conf",
+            }
+            networkmanager_ancestry = {
+                "etc",
+                "etc/init.d",
+                "usr",
+                "usr/bin",
+                "usr/sbin",
+                "usr/lib",
+                "usr/lib/NetworkManager",
+                "usr/lib/NetworkManager/1.52.2",
+                "usr/lib/NetworkManager/conf.d",
+            }
+
+            def logical_lstat(path: Path) -> os.stat_result:
+                metadata = production_lstat(path)
+                try:
+                    relative = Path(path).relative_to(rootfs).as_posix()
+                except ValueError:
+                    return metadata
+                if relative in networkmanager_files | networkmanager_ancestry:
+                    return logical_root_metadata(metadata)
+                return metadata
+
+            def logical_fstat(descriptor: int) -> os.stat_result:
+                metadata = production_fstat(descriptor)
+                try:
+                    opened_path = Path(os.readlink(f"/proc/self/fd/{descriptor}"))
+                    relative = opened_path.relative_to(rootfs).as_posix()
+                except (OSError, ValueError):
+                    return metadata
+                if relative in networkmanager_files:
+                    return logical_root_metadata(metadata)
+                return metadata
+
+            with mock.patch.object(Path, "lstat", new=logical_lstat), mock.patch.object(
+                os, "fstat", new=logical_fstat
+            ):
+                production_verify_networkmanager_files(
+                    rootfs, installed_db, expected_versions
+                )
+
+        self.networkmanager_verifier = mock.patch.object(
+            build_module,
+            "_verify_networkmanager_files",
+            side_effect=verify_networkmanager_files_as_image_root,
+        )
+        self.networkmanager_verifier.start()
+        self.addCleanup(self.networkmanager_verifier.stop)
         self.identity_rechecker = mock.patch.object(
             build_module,
             "recheck_input_identities",
@@ -1071,18 +1644,109 @@ def sshd_blob():
         blob[second + 48:second + 56] = (1).to_bytes(8, "little")
     return bytes(blob) + payload
 
+def sshd_service_blob():
+    return b"#!/sbin/openrc-run\ncommand=/usr/sbin/sshd.pam\n"
+
+def sshd_pam_config_blob():
+    return b"auth required pam_unix.so\naccount required pam_unix.so\n"
+
+def sshd_confd_blob():
+    return b"# OpenSSH daemon options are intentionally unset.\n"
+
 def openssh_record(version="9.9_p2-r0", *, owner="openssh-server-pam"):
     if os.environ.get("LMI_FAKE_OPENSSH_MISSING_PACKAGE") == "1":
         return ""
-    digest = base64.b64encode(hashlib.sha1(sshd_blob()).digest()).decode().rstrip("=")
+    elf_digest = base64.b64encode(hashlib.sha1(sshd_blob()).digest()).decode().rstrip("=")
+    service_digest = base64.b64encode(
+        hashlib.sha1(sshd_service_blob()).digest()
+    ).decode().rstrip("=")
+    pam_digest = base64.b64encode(
+        hashlib.sha1(sshd_pam_config_blob()).digest()
+    ).decode().rstrip("=")
+    confd_digest = base64.b64encode(
+        hashlib.sha1(sshd_confd_blob()).digest()
+    ).decode().rstrip("=")
     if os.environ.get("LMI_FAKE_OPENSSH_BAD_DB_CHECKSUM") == "1":
-        digest = base64.b64encode(b"x" * 20).decode().rstrip("=")
+        elf_digest = base64.b64encode(b"x" * 20).decode().rstrip("=")
     file_name = (
         "other-sshd" if os.environ.get("LMI_FAKE_OPENSSH_UNOWNED") == "1" else "sshd.pam"
     )
+    missing = os.environ.get("LMI_FAKE_OPENSSH_SERVER_MISSING_PACKAGE")
+    records = {
+        "openssh-keygen": (
+            f"P:openssh-keygen\nV:{version}\nA:aarch64\n"
+            f"F:usr/bin\nR:ssh-keygen\nZ:Q1{elf_digest}\n\n"
+        ),
+        "openssh-server-common": (
+            f"P:openssh-server-common\nV:{version}\nA:aarch64\n"
+            "F:etc/ssh\nR:sshd_config\nZ:Q1AAAAAAAAAAAAAAAAAAAAAAAAAAA\n\n"
+        ),
+        "openssh-server-common-openrc": (
+            f"P:openssh-server-common-openrc\nV:{version}\nA:aarch64\n"
+            f"F:etc/conf.d\nR:sshd\nZ:Q1{confd_digest}\n"
+            f"F:etc/init.d\nR:sshd\nZ:Q1{service_digest}\n\n"
+        ),
+        "openssh-server-pam": (
+            f"P:{owner}\nV:{version}\nA:aarch64\n"
+            f"F:etc/pam.d\nR:sshd\nZ:Q1{pam_digest}\n"
+            f"F:usr/lib/ssh\nR:sshd-auth.pam\nZ:Q1{elf_digest}\n"
+            f"R:sshd-session.pam\nZ:Q1{elf_digest}\n"
+            f"F:usr/sbin\nR:{file_name}\nZ:Q1{elf_digest}\n\n"
+        ),
+    }
+    if os.environ.get("LMI_FAKE_OPENSSH_SERVER_VERSION_MISMATCH") == "1":
+        records["openssh-keygen"] = records["openssh-keygen"].replace(
+            f"V:{version}", "V:9.9_p3-r0"
+        )
     return (
-        f"P:{owner}\nV:{version}\nA:aarch64\n"
-        f"F:usr/sbin\nR:{file_name}\nZ:Q1{digest}\n\n"
+        "".join(record for name, record in records.items() if name != missing)
+    )
+
+def linux_pam_records():
+    digest = base64.b64encode(hashlib.sha1(sshd_blob()).digest()).decode().rstrip("=")
+    policies = {
+        "base-auth": b"auth required pam_unix.so\nauth required pam_nologin.so\nauth required pam_env.so\n",
+        "base-account": b"account required pam_unix.so\naccount required pam_nologin.so\n",
+        "base-password": b"password required pam_unix.so\n",
+        "base-session": b"session include base-session-noninteractive\n",
+        "base-session-noninteractive": b"session required pam_env.so\nsession required pam_limits.so\nsession required pam_unix.so\n",
+    }
+    records = "P:linux-pam\nV:1.7.1-r2\nA:aarch64\nF:usr/lib\n"
+    records += "R:libpam.so.0\nZ:Q1AAAAAAAAAAAAAAAAAAAAAAAAAAA\n"
+    records += f"R:libpam.so.0.85.1\nZ:Q1{digest}\nF:usr/lib/pam.d\n"
+    for name, value in policies.items():
+        policy_digest = base64.b64encode(hashlib.sha1(value).digest()).decode().rstrip("=")
+        records += f"R:{name}\nZ:Q1{policy_digest}\n"
+    records += "F:usr/lib/security\n"
+    for name in ("pam_unix.so", "pam_nologin.so", "pam_env.so", "pam_limits.so"):
+        records += f"R:{name}\nZ:Q1{digest}\n"
+    return records + "\n"
+
+def ssh_client_records(version="9.9_p2-r0"):
+    if os.environ.get("LMI_FAKE_OPENSSH_CLIENT_MISSING") == "1":
+        return ""
+    digest = base64.b64encode(hashlib.sha1(sshd_blob()).digest()).decode().rstrip("=")
+    if os.environ.get("LMI_FAKE_OPENSSH_CLIENT_BAD_DB_CHECKSUM") == "1":
+        digest = base64.b64encode(b"y" * 20).decode().rstrip("=")
+    architecture = (
+        "x86_64"
+        if os.environ.get("LMI_FAKE_OPENSSH_CLIENT_WRONG_ARCH") == "1"
+        else "aarch64"
+    )
+    ssh_name = (
+        "other-ssh"
+        if os.environ.get("LMI_FAKE_OPENSSH_CLIENT_UNOWNED") == "1"
+        else "ssh"
+    )
+    return (
+        f"P:openssh-client-default\nV:{version}\nA:{architecture}\n"
+        f"F:usr/bin\nR:{ssh_name}\nZ:Q1{digest}\n\n"
+        f"P:openssh-client-common\nV:{version}\nA:{architecture}\n"
+        f"F:usr/bin\nR:scp\nZ:Q1{digest}\n"
+        f"R:sftp\nZ:Q1{digest}\n"
+        f"R:ssh-add\nZ:Q1{digest}\n"
+        f"R:ssh-agent\nZ:Q1{digest}\n"
+        f"R:ssh-keyscan\nZ:Q1{digest}\n\n"
     )
 
 def unudhcpd_service_blob():
@@ -1111,28 +1775,184 @@ def dhcp_records(version="0.1.4-r0"):
         extra = "P:dnsmasq\nV:2.91-r0\nA:aarch64\n\n"
     return binary + openrc + extra
 
+def networkmanager_records(version="1.52.2-r0"):
+    if os.environ.get("LMI_FAKE_NETWORKMANAGER_VERSION") == "1":
+        version = "1.52.3-r0"
+    digest = base64.b64encode(hashlib.sha1(sshd_blob()).digest()).decode().rstrip("=")
+    service_digest = base64.b64encode(
+        hashlib.sha1(networkmanager_service_blob()).digest()
+    ).decode().rstrip("=")
+    nmcli = (
+        "other-nmcli"
+        if os.environ.get("LMI_FAKE_NETWORKMANAGER_NMCLI_OWNER") == "1"
+        else "nmcli"
+    )
+    daemon = (
+        "other-NetworkManager"
+        if os.environ.get("LMI_FAKE_NETWORKMANAGER_DAEMON_OWNER") == "1"
+        else "NetworkManager"
+    )
+    daemon_digest = digest
+    interfaces_blob = b"[main]\nplugins=keyfile\n\n[ifupdown]\nmanaged=true\n"
+    dhcp_blob = b"[main]\ndhcp=internal\n"
+    interfaces_digest = base64.b64encode(
+        hashlib.sha1(interfaces_blob).digest()
+    ).decode().rstrip("=")
+    dhcp_digest = base64.b64encode(
+        hashlib.sha1(dhcp_blob).digest()
+    ).decode().rstrip("=")
+    if os.environ.get("LMI_FAKE_NETWORKMANAGER_VENDOR_BAD_DB_CHECKSUM") == "1":
+        interfaces_digest = base64.b64encode(b"v" * 20).decode().rstrip("=")
+    if os.environ.get("LMI_FAKE_NETWORKMANAGER_DAEMON_BAD_DB_CHECKSUM") == "1":
+        daemon_digest = base64.b64encode(b"n" * 20).decode().rstrip("=")
+    return (
+        f"P:networkmanager\nV:{version}\nA:aarch64\n"
+        f"F:usr/sbin\nR:{daemon}\nZ:Q1{daemon_digest}\n"
+        f"F:usr/lib/NetworkManager/conf.d\n"
+        f"R:00-interfaces.conf\nZ:Q1{interfaces_digest}\n"
+        f"R:20-dhcp-internal.conf\nZ:Q1{dhcp_digest}\n\n"
+        f"P:networkmanager-openrc\nV:{version}\nA:aarch64\n"
+        f"F:etc/init.d\nR:networkmanager\nZ:Q1{service_digest}\n\n"
+        f"P:networkmanager-cli\nV:{version}\nA:aarch64\n"
+        f"F:usr/bin\nR:{nmcli}\nZ:Q1{digest}\n\n"
+        f"P:networkmanager-wifi\nV:{version}\nA:aarch64\n"
+        f"F:usr/lib/NetworkManager/1.52.2\n"
+        f"R:libnm-device-plugin-wifi.so\nZ:Q1{digest}\n\n"
+    )
+
+def networkmanager_service_blob():
+    return b"#!/sbin/openrc-run\ncommand=/usr/sbin/NetworkManager\n"
+
+def install_networkmanager_files():
+    files = {
+        "etc/init.d/networkmanager": (networkmanager_service_blob(), 0o755),
+        "usr/bin/nmcli": (sshd_blob(), 0o755),
+        "usr/sbin/NetworkManager": (sshd_blob(), 0o755),
+        "usr/lib/NetworkManager/1.52.2/libnm-device-plugin-wifi.so": (
+            sshd_blob(),
+            0o755,
+        ),
+        "usr/lib/NetworkManager/conf.d/00-interfaces.conf": (
+            b"[main]\nplugins=keyfile\n\n[ifupdown]\nmanaged=true\n",
+            0o644,
+        ),
+        "usr/lib/NetworkManager/conf.d/20-dhcp-internal.conf": (
+            b"[main]\ndhcp=internal\n",
+            0o644,
+        ),
+    }
+    for relative, (blob, mode) in files.items():
+        target = rootfs / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if (
+            os.environ.get("LMI_FAKE_NETWORKMANAGER_MISSING_PAYLOAD")
+            == relative
+        ):
+            target.unlink(missing_ok=True)
+            continue
+        target.write_bytes(blob)
+        if (
+            os.environ.get("LMI_FAKE_NETWORKMANAGER_VENDOR_BAD_MODE") == "1"
+            and relative.endswith("20-dhcp-internal.conf")
+        ):
+            mode = 0o666
+        target.chmod(mode)
+
 def install_sshd_file():
     target = rootfs / "usr/sbin/sshd.pam"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.unlink(missing_ok=True)
-    if os.environ.get("LMI_FAKE_OPENSSH_MISSING_FILE") == "1":
-        return
-    if os.environ.get("LMI_FAKE_OPENSSH_SYMLINK") == "1":
+    missing_sshd = os.environ.get("LMI_FAKE_OPENSSH_MISSING_FILE") == "1"
+    symlink_sshd = os.environ.get("LMI_FAKE_OPENSSH_SYMLINK") == "1"
+    if symlink_sshd:
         target.symlink_to(rootfs / "missing-sshd-target")
-        return
-    blob = sshd_blob()
-    if os.environ.get("LMI_FAKE_OPENSSH_WRONG_ARCH") == "1":
-        blob = blob[:18] + (62).to_bytes(2, "little") + blob[20:]
-    if os.environ.get("LMI_FAKE_OPENSSH_TRUNCATED_ELF") == "1":
-        blob = blob[:24]
-    if os.environ.get("LMI_FAKE_OPENSSH_BAD_ELF_TYPE") == "1":
-        blob = blob[:16] + (0).to_bytes(2, "little") + blob[18:]
-    if os.environ.get("LMI_FAKE_OPENSSH_BAD_ELF_HEADER_SIZE") == "1":
-        blob = blob[:52] + (24).to_bytes(2, "little") + blob[54:]
-    if os.environ.get("LMI_FAKE_OPENSSH_BAD_PROGRAM_TABLE") == "1":
-        blob = blob[:32] + (len(blob) + 1).to_bytes(8, "little") + blob[40:]
-    target.write_bytes(blob)
-    target.chmod(0o755)
+    elif not missing_sshd:
+        blob = sshd_blob()
+        if os.environ.get("LMI_FAKE_OPENSSH_WRONG_ARCH") == "1":
+            blob = blob[:18] + (62).to_bytes(2, "little") + blob[20:]
+        if os.environ.get("LMI_FAKE_OPENSSH_TRUNCATED_ELF") == "1":
+            blob = blob[:24]
+        if os.environ.get("LMI_FAKE_OPENSSH_BAD_ELF_TYPE") == "1":
+            blob = blob[:16] + (0).to_bytes(2, "little") + blob[18:]
+        if os.environ.get("LMI_FAKE_OPENSSH_BAD_ELF_HEADER_SIZE") == "1":
+            blob = blob[:52] + (24).to_bytes(2, "little") + blob[54:]
+        if os.environ.get("LMI_FAKE_OPENSSH_BAD_PROGRAM_TABLE") == "1":
+            blob = blob[:32] + (len(blob) + 1).to_bytes(8, "little") + blob[40:]
+        target.write_bytes(blob)
+        target.chmod(0o755)
+    support_files = {
+        "usr/bin/ssh-keygen": (sshd_blob(), 0o755),
+        "etc/init.d/sshd": (sshd_service_blob(), 0o755),
+        "etc/conf.d/sshd": (sshd_confd_blob(), 0o644),
+        "etc/pam.d/sshd": (sshd_pam_config_blob(), 0o644),
+        "usr/lib/ssh/sshd-auth.pam": (sshd_blob(), 0o755),
+        "usr/lib/ssh/sshd-session.pam": (sshd_blob(), 0o755),
+        "usr/lib/pam.d/base-auth": (
+            b"auth required pam_unix.so\nauth required pam_nologin.so\nauth required pam_env.so\n",
+            0o644,
+        ),
+        "usr/lib/pam.d/base-account": (
+            b"account required pam_unix.so\naccount required pam_nologin.so\n",
+            0o644,
+        ),
+        "usr/lib/pam.d/base-password": (b"password required pam_unix.so\n", 0o644),
+        "usr/lib/pam.d/base-session": (
+            b"session include base-session-noninteractive\n",
+            0o644,
+        ),
+        "usr/lib/pam.d/base-session-noninteractive": (
+            b"session required pam_env.so\nsession required pam_limits.so\nsession required pam_unix.so\n",
+            0o644,
+        ),
+        "usr/lib/security/pam_unix.so": (sshd_blob(), 0o755),
+        "usr/lib/security/pam_nologin.so": (sshd_blob(), 0o755),
+        "usr/lib/security/pam_env.so": (sshd_blob(), 0o755),
+        "usr/lib/security/pam_limits.so": (sshd_blob(), 0o755),
+        "usr/lib/libpam.so.0.85.1": (sshd_blob(), 0o755),
+    }
+    missing_support = os.environ.get("LMI_FAKE_OPENSSH_SERVER_MISSING_PAYLOAD")
+    for relative, (value, mode) in support_files.items():
+        support = rootfs / relative
+        support.parent.mkdir(parents=True, exist_ok=True)
+        support.unlink(missing_ok=True)
+        if relative == missing_support:
+            continue
+        support.write_bytes(value)
+        support.chmod(mode)
+    libpam_link = rootfs / "usr/lib/libpam.so.0"
+    libpam_link.unlink(missing_ok=True)
+    libpam_link.symlink_to("libpam.so.0.85.1")
+
+def install_ssh_client_files():
+    client_directory = rootfs / "usr/bin"
+    if os.environ.get("LMI_FAKE_OPENSSH_CLIENT_PARENT_SYMLINK") == "1":
+        redirected = rootfs / "ssh-client-bin"
+        redirected.mkdir(parents=True, exist_ok=True)
+        if not client_directory.is_symlink():
+            if client_directory.exists():
+                shutil.rmtree(client_directory)
+            client_directory.symlink_to(redirected)
+    for name in ("scp", "sftp", "ssh", "ssh-add", "ssh-agent", "ssh-keyscan"):
+        target = client_directory / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.unlink(missing_ok=True)
+        if (
+            os.environ.get("LMI_FAKE_OPENSSH_CLIENT_MISSING_FILE") == name
+        ):
+            continue
+        if (
+            os.environ.get("LMI_FAKE_OPENSSH_CLIENT_SYMLINK") == name
+        ):
+            target.symlink_to(rootfs / "missing-ssh-client-target")
+            continue
+        blob = sshd_blob()
+        if os.environ.get("LMI_FAKE_OPENSSH_CLIENT_WRONG_ELF") == name:
+            blob = blob[:18] + (62).to_bytes(2, "little") + blob[20:]
+        target.write_bytes(blob)
+        target.chmod(0o755)
+    writable_parent = os.environ.get("LMI_FAKE_OPENSSH_CLIENT_WRITABLE_PARENT")
+    if writable_parent in {"usr", "usr/bin"}:
+        rootfs.joinpath(*Path(writable_parent).parts).chmod(0o775)
 
 def install_dhcp_files():
     binary = rootfs / "usr/bin/unudhcpd"
@@ -1149,7 +1969,7 @@ def install_dhcp_files():
 
 def write_bootstrap_rootfs():
     device_version = (
-        "1-r139" if os.environ.get("LMI_FAKE_DEVICE_R139") == "1" else "1-r107"
+        "1-r139" if os.environ.get("LMI_FAKE_DEVICE_R139") == "1" else "1-r145"
     )
     kernel_version = (
         "4.19.325-r9"
@@ -1162,18 +1982,39 @@ def write_bootstrap_rootfs():
         f"P:linux-xiaomi-lmi\nV:{kernel_version}\n\n"
         "P:weston\nV:14.0.2-r8\n\n"
         + openssh_record()
+        + linux_pam_records()
+        + ssh_client_records()
+        + networkmanager_records()
         + dhcp_records()
     )
     package_list.write_text(
         f"device-xiaomi-lmi-{device_version}\n"
         f"linux-xiaomi-lmi-{kernel_version}\n"
         "weston-14.0.2-r8\n"
+        "openssh-keygen-9.9_p2-r0\n"
+        "openssh-server-common-9.9_p2-r0\n"
+        "openssh-server-common-openrc-9.9_p2-r0\n"
         "openssh-server-pam-9.9_p2-r0\n"
+        "linux-pam-1.7.1-r2\n"
+        "openssh-client-common-9.9_p2-r0\n"
+        "openssh-client-default-9.9_p2-r0\n"
+        "networkmanager-1.52.2-r0\n"
+        "networkmanager-openrc-1.52.2-r0\n"
+        "networkmanager-cli-1.52.2-r0\n"
+        "networkmanager-wifi-1.52.2-r0\n"
         "unudhcpd-0.1.4-r0\n"
         "unudhcpd-openrc-0.1.4-r0\n"
     )
     world.parent.mkdir(parents=True, exist_ok=True)
-    world.write_text("device-xiaomi-lmi\npostmarketos-ui-shelli\nunudhcpd-openrc\n")
+    world.write_text(
+        "device-xiaomi-lmi\n"
+        "networkmanager\n"
+        "networkmanager-cli\n"
+        "networkmanager-openrc\n"
+        "networkmanager-wifi\n"
+        "openssh-client-default\n"
+        "unudhcpd-openrc\n"
+    )
     if os.environ.get("LMI_FAKE_CONFLICTING_WORLD") == "1":
         world.write_text(
             world.read_text().replace(
@@ -1183,7 +2024,7 @@ def write_bootstrap_rootfs():
     if os.environ.get("LMI_FAKE_TAGGED_WORLD") == "1":
         world.write_text(
             world.read_text().replace(
-                "device-xiaomi-lmi\n", "device-xiaomi-lmi@edge=1-r107\n"
+                "device-xiaomi-lmi\n", "device-xiaomi-lmi@edge=1-r145\n"
             )
         )
     if os.environ.get("LMI_FAKE_OPENSSH_WORLD_CONFLICT") == "1":
@@ -1191,6 +2032,7 @@ def write_bootstrap_rootfs():
     for key_root in (work / "config_apk_keys", rootfs / "etc/apk/keys"):
         key_root.mkdir(parents=True, exist_ok=True)
         (key_root / "pmos-current.rsa.pub").write_text("current-key\n")
+    install_networkmanager_files()
 
 if action == "checksum" or action == "build":
     raise SystemExit(0)
@@ -1202,10 +2044,10 @@ if action == "install":
         print("forced final install failure", file=sys.stderr)
         raise SystemExit(46)
     if os.environ.get("LMI_FAKE_FINAL_DEVICE_R139") == "1":
-        db.write_text(db.read_text().replace("V:1-r107", "V:1-r139", 1))
+        db.write_text(db.read_text().replace("V:1-r145", "V:1-r139", 1))
         package_list.write_text(
             package_list.read_text().replace(
-                "device-xiaomi-lmi-1-r107", "device-xiaomi-lmi-1-r139"
+                "device-xiaomi-lmi-1-r145", "device-xiaomi-lmi-1-r139"
             )
         )
     if os.environ.get("LMI_FAKE_FINAL_KERNEL_R9") == "1":
@@ -1226,6 +2068,23 @@ if action == "install":
                 "openssh-server-pam-9.9_p2-r0", "openssh-server-pam-9.9_p3-r0"
             )
         )
+    if os.environ.get("LMI_FAKE_OPENSSH_CLIENT_VERSION_CHANGE") == "1":
+        db.write_text(
+            db.read_text().replace(
+                ssh_client_records(), ssh_client_records(version="9.9_p3-r0")
+            )
+        )
+        package_list.write_text(
+            package_list.read_text()
+            .replace(
+                "openssh-client-common-9.9_p2-r0",
+                "openssh-client-common-9.9_p3-r0",
+            )
+            .replace(
+                "openssh-client-default-9.9_p2-r0",
+                "openssh-client-default-9.9_p3-r0",
+            )
+        )
     if os.environ.get("LMI_FAKE_UNUDHCPD_VERSION_CHANGE") == "1":
         db.write_text(db.read_text().replace(dhcp_records(), dhcp_records(version="0.1.5-r0")))
         package_list.write_text(
@@ -1234,6 +2093,7 @@ if action == "install":
             .replace("unudhcpd-openrc-0.1.4-r0", "unudhcpd-openrc-0.1.5-r0")
         )
     install_sshd_file()
+    install_ssh_client_files()
     install_dhcp_files()
     native_rootfs = work / "chroot_native/home/pmos/rootfs"
     native_rootfs.mkdir(parents=True, exist_ok=True)
@@ -1265,7 +2125,7 @@ if action == "install":
     if os.environ.get("LMI_FAKE_FINAL_INSTALL_BARE_WORLD") == "1":
         world.write_text(
             world.read_text().replace(
-                "device-xiaomi-lmi=1-r107\n", "device-xiaomi-lmi\n"
+                "device-xiaomi-lmi=1-r145\n", "device-xiaomi-lmi\n"
             )
         )
     raise SystemExit(0)
@@ -1281,8 +2141,10 @@ if action == "chroot":
         for name in (
             "finalize.sh",
             "lmi-release-identity",
+            "lmi-rootctl",
             "world",
             "sudoers",
+            "90-lmi-rootctl",
             "sshd_config",
             "lmi-usb0.nmconnection",
             "90-lmi-usb0-takeover.conf",
@@ -1576,7 +2438,9 @@ raise SystemExit(89)
                 "--no-image",
                 "--no-fde",
                 "--add",
-                "unudhcpd-openrc",
+                "networkmanager=1.52.2-r0,networkmanager-openrc=1.52.2-r0,"
+                "networkmanager-cli=1.52.2-r0,networkmanager-wifi=1.52.2-r0,"
+                "unudhcpd-openrc,openssh-client-default",
                 "--password",
                 self.ephemeral,
             ],
@@ -1589,7 +2453,12 @@ raise SystemExit(89)
         self.assertEqual(len(install_records), 2)
         for record in install_records:
             self.assertEqual(record.count("--add"), 1)
-            self.assertEqual(record[record.index("--add") + 1], "unudhcpd-openrc")
+            self.assertEqual(
+                record[record.index("--add") + 1],
+                "networkmanager=1.52.2-r0,networkmanager-openrc=1.52.2-r0,"
+                "networkmanager-cli=1.52.2-r0,networkmanager-wifi=1.52.2-r0,"
+                "unudhcpd-openrc,openssh-client-default",
+            )
             self.assertFalse(any("dnsmasq" in argument for argument in record))
         for record in records:
             self.assertNotIn("--allow-untrusted", record)
@@ -1606,7 +2475,9 @@ raise SystemExit(89)
                 "4096",
                 "--no-sparse",
                 "--add",
-                "unudhcpd-openrc",
+                "networkmanager=1.52.2-r0,networkmanager-openrc=1.52.2-r0,"
+                "networkmanager-cli=1.52.2-r0,networkmanager-wifi=1.52.2-r0,"
+                "unudhcpd-openrc,openssh-client-default",
                 "--password",
                 self.ephemeral,
             ]],
@@ -1624,7 +2495,7 @@ raise SystemExit(89)
         private_public_key = self.work / "config/authorized_key.pub"
         for expected in (
             "device = xiaomi-lmi",
-            "ui = shelli",
+            "ui = none",
             "user = lmi",
             "ssh_keys = True",
             f"ssh_key_glob = {private_public_key}",
@@ -1632,6 +2503,7 @@ raise SystemExit(89)
             "extra_packages = none",
         ):
             self.assertIn(expected, config)
+        self.assertNotIn("ui = shelli", config)
         self.assertEqual(private_public_key.read_text(), self.public_key.read_text())
         self.assertEqual(private_public_key.stat().st_mode & 0o777, 0o600)
 
@@ -1689,9 +2561,46 @@ raise SystemExit(89)
             rootfs / "etc/fstab",
             rootfs_bindings=build_module.RootfsBindings(
                 apk_installed=rootfs / "lib/apk/db/installed",
+                busybox=rootfs / "usr/bin/busybox",
+                rootctl=self.work / "source/files/lmi-p1/lmi-rootctl",
+                sudoers=self.work / "source/files/lmi-p1/sudoers",
+                sudoers_dropin=self.work
+                / "source"
+                / "files/lmi-p1/90-lmi-rootctl",
+                nmcli=rootfs / "usr/bin/nmcli",
+                networkmanager_daemon=rootfs / "usr/sbin/NetworkManager",
+                networkmanager_service=rootfs / "etc/init.d/networkmanager",
+                networkmanager_wifi_plugin=rootfs
+                / "usr/lib/NetworkManager/1.52.2/libnm-device-plugin-wifi.so",
+                networkmanager_vendor_interfaces=rootfs
+                / "usr/lib/NetworkManager/conf.d/00-interfaces.conf",
+                networkmanager_vendor_dhcp=rootfs
+                / "usr/lib/NetworkManager/conf.d/20-dhcp-internal.conf",
                 sshd_config=rootfs / "etc/ssh/sshd_config",
                 sshd_service=rootfs / "etc/init.d/sshd",
                 sshd_pam=rootfs / "usr/sbin/sshd.pam",
+                sshd_pam_config=rootfs / "etc/pam.d/sshd",
+                sshd_confd=rootfs / "etc/conf.d/sshd",
+                sshd_auth=rootfs / "usr/lib/ssh/sshd-auth.pam",
+                sshd_session=rootfs / "usr/lib/ssh/sshd-session.pam",
+                ssh_keygen=rootfs / "usr/bin/ssh-keygen",
+                pam_base_auth=rootfs / "usr/lib/pam.d/base-auth",
+                pam_base_account=rootfs / "usr/lib/pam.d/base-account",
+                pam_base_password=rootfs / "usr/lib/pam.d/base-password",
+                pam_base_session=rootfs / "usr/lib/pam.d/base-session",
+                pam_base_session_noninteractive=rootfs
+                / "usr/lib/pam.d/base-session-noninteractive",
+                pam_unix=rootfs / "usr/lib/security/pam_unix.so",
+                pam_nologin=rootfs / "usr/lib/security/pam_nologin.so",
+                pam_env=rootfs / "usr/lib/security/pam_env.so",
+                pam_limits=rootfs / "usr/lib/security/pam_limits.so",
+                libpam=rootfs / "usr/lib/libpam.so.0.85.1",
+                ssh=rootfs / "usr/bin/ssh",
+                scp=rootfs / "usr/bin/scp",
+                sftp=rootfs / "usr/bin/sftp",
+                ssh_add=rootfs / "usr/bin/ssh-add",
+                ssh_agent=rootfs / "usr/bin/ssh-agent",
+                ssh_keyscan=rootfs / "usr/bin/ssh-keyscan",
                 authorized_keys=rootfs / "home/lmi/.ssh/authorized_keys",
                 release_identity=rootfs / "etc/lmi-release-identity",
                 networkmanager_profile=rootfs
@@ -1728,9 +2637,56 @@ raise SystemExit(89)
                 / "pmaports/main/postmarketos-initramfs/init_2nd.sh",
                 "fstab": rootfs / "etc/fstab",
                 "rootfs_apk_installed": rootfs / "lib/apk/db/installed",
+                "rootfs_busybox": rootfs / "usr/bin/busybox",
+                "rootfs_rootctl": self.work
+                / "source/files/lmi-p1/lmi-rootctl",
+                "rootfs_sudoers": self.work
+                / "source/files/lmi-p1/sudoers",
+                "rootfs_sudoers_dropin": self.work
+                / "source"
+                / "files/lmi-p1/90-lmi-rootctl",
+                "rootfs_nmcli": rootfs / "usr/bin/nmcli",
+                "rootfs_networkmanager_daemon": rootfs
+                / "usr/sbin/NetworkManager",
+                "rootfs_networkmanager_service": rootfs
+                / "etc/init.d/networkmanager",
+                "rootfs_networkmanager_wifi_plugin": rootfs
+                / "usr/lib/NetworkManager/1.52.2/libnm-device-plugin-wifi.so",
+                "rootfs_networkmanager_vendor_interfaces": rootfs
+                / "usr/lib/NetworkManager/conf.d/00-interfaces.conf",
+                "rootfs_networkmanager_vendor_dhcp": rootfs
+                / "usr/lib/NetworkManager/conf.d/20-dhcp-internal.conf",
                 "rootfs_sshd_config": rootfs / "etc/ssh/sshd_config",
                 "rootfs_sshd_service": rootfs / "etc/init.d/sshd",
                 "rootfs_sshd_pam": rootfs / "usr/sbin/sshd.pam",
+                "rootfs_sshd_pam_config": rootfs / "etc/pam.d/sshd",
+                "rootfs_sshd_confd": rootfs / "etc/conf.d/sshd",
+                "rootfs_sshd_auth": rootfs / "usr/lib/ssh/sshd-auth.pam",
+                "rootfs_sshd_session": rootfs
+                / "usr/lib/ssh/sshd-session.pam",
+                "rootfs_ssh_keygen": rootfs / "usr/bin/ssh-keygen",
+                "rootfs_pam_base_auth": rootfs / "usr/lib/pam.d/base-auth",
+                "rootfs_pam_base_account": rootfs
+                / "usr/lib/pam.d/base-account",
+                "rootfs_pam_base_password": rootfs
+                / "usr/lib/pam.d/base-password",
+                "rootfs_pam_base_session": rootfs
+                / "usr/lib/pam.d/base-session",
+                "rootfs_pam_base_session_noninteractive": rootfs
+                / "usr/lib/pam.d/base-session-noninteractive",
+                "rootfs_pam_unix": rootfs / "usr/lib/security/pam_unix.so",
+                "rootfs_pam_nologin": rootfs
+                / "usr/lib/security/pam_nologin.so",
+                "rootfs_pam_env": rootfs / "usr/lib/security/pam_env.so",
+                "rootfs_pam_limits": rootfs
+                / "usr/lib/security/pam_limits.so",
+                "rootfs_libpam": rootfs / "usr/lib/libpam.so.0.85.1",
+                "rootfs_ssh": rootfs / "usr/bin/ssh",
+                "rootfs_scp": rootfs / "usr/bin/scp",
+                "rootfs_sftp": rootfs / "usr/bin/sftp",
+                "rootfs_ssh_add": rootfs / "usr/bin/ssh-add",
+                "rootfs_ssh_agent": rootfs / "usr/bin/ssh-agent",
+                "rootfs_ssh_keyscan": rootfs / "usr/bin/ssh-keyscan",
                 "rootfs_authorized_keys": rootfs
                 / "home/lmi/.ssh/authorized_keys",
                 "rootfs_release_identity": rootfs
@@ -1800,6 +2756,22 @@ raise SystemExit(89)
         for required in self.package_lines:
             self.assertIn(required, packages)
         self.assertIn("openssh-server-pam-9.9_p2-r0", packages)
+        self.assertIn("openssh-client-common-9.9_p2-r0", packages)
+        self.assertIn("openssh-client-default-9.9_p2-r0", packages)
+        for package in (
+            "networkmanager-1.52.2-r0",
+            "networkmanager-openrc-1.52.2-r0",
+            "networkmanager-cli-1.52.2-r0",
+            "networkmanager-wifi-1.52.2-r0",
+        ):
+            self.assertIn(package, packages)
+        self.assertFalse(
+            any(
+                package == "networkmanager-dnsmasq"
+                or package.startswith("networkmanager-dnsmasq-")
+                for package in packages
+            )
+        )
         self.assertIn("unudhcpd-0.1.4-r0", packages)
         self.assertIn("unudhcpd-openrc-0.1.4-r0", packages)
         sshd_pam = json.loads(result.sshd_pam.read_text())
@@ -1859,7 +2831,7 @@ raise SystemExit(89)
         self.assertEqual(identity["release_eligible"], "false")
         self.assertEqual(identity["publication"], "never-publish")
         self.assertEqual(identity["credential_state"], "owner-key-provisioned")
-        self.assertEqual(identity["device_xiaomi_lmi"], "1-r107")
+        self.assertEqual(identity["device_xiaomi_lmi"], "1-r145")
         self.assertEqual(identity["linux_xiaomi_lmi"], "4.19.325-r8")
         self.assertFalse(any(key.startswith("weston") for key in identity))
         self.assertNotIn("boot_sha256", identity)
@@ -1871,6 +2843,14 @@ raise SystemExit(89)
         }
         self.assertTrue(pinned_world.issubset(world))
         self.assertIn("openssh-server-pam=9.9_p2-r0", world)
+        self.assertIn("openssh-client-default=9.9_p2-r0", world)
+        for name in (
+            "networkmanager",
+            "networkmanager-openrc",
+            "networkmanager-cli",
+            "networkmanager-wifi",
+        ):
+            self.assertIn(f"{name}=1.52.2-r0", world)
         self.assertIn("unudhcpd-openrc=0.1.4-r0", world)
         self.assertTrue(set(self.required_versions).isdisjoint(world))
         self.assertEqual(
@@ -1879,6 +2859,17 @@ raise SystemExit(89)
         self.assertEqual(
             (self.finalizer_copy / "sudoers").read_bytes(),
             (PAYLOAD / "sudoers").read_bytes(),
+        )
+        self.assertEqual(
+            (self.finalizer_copy / "90-lmi-rootctl").read_bytes(),
+            (PAYLOAD / "90-lmi-rootctl").read_bytes(),
+        )
+        self.assertEqual(
+            (self.finalizer_copy / "lmi-rootctl").read_bytes(),
+            (
+                REPO
+                / "artifacts/wsl-pmaports/device-xiaomi-lmi/lmi-rootctl"
+            ).read_bytes(),
         )
         self.assertEqual(
             (self.finalizer_copy / "lmi-usb0.nmconnection").read_bytes(),
@@ -1950,7 +2941,7 @@ raise SystemExit(89)
                 "credential_state={credential_state}",
                 "credential_state=unprovisioned",
             ),
-            ("device_xiaomi_lmi=1-r107", "device_xiaomi_lmi=1-r139"),
+            ("device_xiaomi_lmi=1-r145", "device_xiaomi_lmi=1-r139"),
             ("linux_xiaomi_lmi=4.19.325-r8", "linux_xiaomi_lmi=4.19.325-r9"),
         ):
             with self.subTest(replacement=replacement):
@@ -2011,10 +3002,99 @@ raise SystemExit(89)
     def test_missing_openssh_server_pam_package_is_rejected_before_final_install(self):
         with mock.patch.dict(os.environ, {"LMI_FAKE_OPENSSH_MISSING_PACKAGE": "1"}):
             with self.assertRaisesRegex(
-                GateError, "missing installed package: openssh-server-pam"
+                GateError, "missing installed SSH server package"
             ):
                 build_candidate(self.ctx)
         self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+
+    def test_ssh_client_packages_and_command_owners_are_required(self):
+        cases = (
+            (
+                {"LMI_FAKE_OPENSSH_CLIENT_MISSING": "1"},
+                "missing installed SSH client package",
+            ),
+            (
+                {"LMI_FAKE_OPENSSH_CLIENT_WRONG_ARCH": "1"},
+                "openssh-client-.* architecture is not exactly aarch64",
+            ),
+            (
+                {"LMI_FAKE_OPENSSH_CLIENT_UNOWNED": "1"},
+                "/usr/bin/ssh does not have its canonical SSH client owner",
+            ),
+        )
+        for environment, message in cases:
+            with self.subTest(environment=environment):
+                try:
+                    with mock.patch.dict(os.environ, environment):
+                        with self.assertRaisesRegex(GateError, message):
+                            build_candidate(self.ctx)
+                    self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+                finally:
+                    if self.work.exists():
+                        shutil.rmtree(self.work)
+                    self.log.unlink(missing_ok=True)
+
+    def test_ssh_client_versions_and_binaries_are_frozen(self):
+        cases = (
+            (
+                {"LMI_FAKE_OPENSSH_CLIENT_VERSION_CHANGE": "1"},
+                "version does not match openssh-server-pam|versions changed",
+            ),
+            (
+                {"LMI_FAKE_OPENSSH_CLIENT_MISSING_FILE": "ssh"},
+                "ssh must be a regular non-symlink",
+            ),
+            (
+                {"LMI_FAKE_OPENSSH_CLIENT_WRONG_ELF": "ssh-add"},
+                "ssh-add is not a valid little-endian 64-bit AArch64 ELF",
+            ),
+            (
+                {"LMI_FAKE_OPENSSH_CLIENT_BAD_DB_CHECKSUM": "1"},
+                "does not match its APK database checksum",
+            ),
+        )
+        for environment, message in cases:
+            with self.subTest(environment=environment):
+                try:
+                    with mock.patch.dict(os.environ, environment):
+                        with self.assertRaisesRegex(GateError, message):
+                            build_candidate(self.ctx)
+                    self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+                finally:
+                    if self.work.exists():
+                        shutil.rmtree(self.work)
+                    self.log.unlink(missing_ok=True)
+
+    def test_ssh_client_files_and_ancestry_require_root_owned_safe_metadata(self):
+        cases = (
+            (
+                {"LMI_FAKE_OPENSSH_CLIENT_USER_OWNED": "ssh"},
+                "ssh metadata is not canonical",
+            ),
+            (
+                {"LMI_FAKE_OPENSSH_CLIENT_PARENT_SYMLINK": "1"},
+                "OpenSSH server ancestry is not canonical: /usr/bin",
+            ),
+            (
+                {"LMI_FAKE_OPENSSH_CLIENT_WRITABLE_PARENT": "usr/bin"},
+                "OpenSSH server ancestry is not canonical: /usr/bin",
+            ),
+            (
+                {"LMI_FAKE_OPENSSH_CLIENT_NONROOT_PARENT": "usr"},
+                "SSH client ancestry is not a safe real directory: /usr",
+            ),
+        )
+        for environment, message in cases:
+            with self.subTest(environment=environment):
+                try:
+                    with mock.patch.dict(os.environ, environment):
+                        with self.assertRaisesRegex(GateError, message):
+                            build_candidate(self.ctx)
+                    self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+                finally:
+                    if self.work.exists():
+                        shutil.rmtree(self.work)
+                    self.log.unlink(missing_ok=True)
 
     def test_dhcp_packages_are_exact_and_have_one_owner(self):
         cases = (
@@ -2029,6 +3109,45 @@ raise SystemExit(89)
             (
                 "LMI_FAKE_SECOND_DHCP_OWNER",
                 "second full-userland DHCP owner.*dnsmasq",
+            ),
+        )
+        for variable, message in cases:
+            with self.subTest(variable=variable):
+                try:
+                    with mock.patch.dict(os.environ, {variable: "1"}):
+                        with self.assertRaisesRegex(GateError, message):
+                            build_candidate(self.ctx)
+                    self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+                finally:
+                    if self.work.exists():
+                        shutil.rmtree(self.work)
+                    self.log.unlink(missing_ok=True)
+
+    def test_headless_networkmanager_closure_is_exact_and_owns_nmcli(self):
+        cases = (
+            (
+                "LMI_FAKE_NETWORKMANAGER_VERSION",
+                "networkmanager version differs from the pinned offline package",
+            ),
+            (
+                "LMI_FAKE_NETWORKMANAGER_NMCLI_OWNER",
+                "networkmanager-cli does not uniquely own /usr/bin/nmcli",
+            ),
+            (
+                "LMI_FAKE_NETWORKMANAGER_DAEMON_OWNER",
+                "networkmanager does not uniquely own /usr/sbin/NetworkManager",
+            ),
+            (
+                "LMI_FAKE_NETWORKMANAGER_DAEMON_BAD_DB_CHECKSUM",
+                "NetworkManager does not match its APK database checksum",
+            ),
+            (
+                "LMI_FAKE_NETWORKMANAGER_VENDOR_BAD_DB_CHECKSUM",
+                "00-interfaces.conf does not match its APK database checksum",
+            ),
+            (
+                "LMI_FAKE_NETWORKMANAGER_VENDOR_BAD_MODE",
+                "20-dhcp-internal.conf",
             ),
         )
         for variable, message in cases:
@@ -2089,6 +3208,36 @@ raise SystemExit(89)
             ):
                 build_candidate(self.ctx)
         self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+
+    def test_openssh_server_closure_packages_and_payloads_are_required(self):
+        cases = (
+            (
+                {"LMI_FAKE_OPENSSH_SERVER_MISSING_PACKAGE": "openssh-keygen"},
+                "missing installed SSH server package",
+            ),
+            (
+                {"LMI_FAKE_OPENSSH_SERVER_VERSION_MISMATCH": "1"},
+                "installed OpenSSH server package versions differ",
+            ),
+            (
+                {
+                    "LMI_FAKE_OPENSSH_SERVER_MISSING_PAYLOAD":
+                    "usr/lib/ssh/sshd-session.pam"
+                },
+                "required OpenSSH server payload is missing",
+            ),
+        )
+        for environment, message in cases:
+            with self.subTest(environment=environment):
+                try:
+                    with mock.patch.dict(os.environ, environment):
+                        with self.assertRaisesRegex(GateError, message):
+                            build_candidate(self.ctx)
+                    self.assertEqual(self._tail(self._records()[-1]), ["shutdown"])
+                finally:
+                    if self.work.exists():
+                        shutil.rmtree(self.work)
+                    self.log.unlink(missing_ok=True)
 
     def test_sshd_pam_must_be_a_real_aarch64_elf(self):
         elf_error = "sshd.pam is not a valid little-endian 64-bit AArch64 ELF"

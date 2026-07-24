@@ -196,7 +196,7 @@ class ControlFixture:
             "schema=lmi-p1-release-identity/v2\n"
             "scope=lmi-p1-ssh\n"
             "candidate_id=fixture\n"
-            "device_xiaomi_lmi=1-r107\n"
+            "device_xiaomi_lmi=1-r145\n"
             "linux_xiaomi_lmi=4.19.325-r8\n",
             encoding="utf-8",
         )
@@ -536,7 +536,7 @@ class ProbeFixture:
         self.dev.joinpath("subsys_adsp").touch()
 
         self.etc.joinpath("lmi-release-identity").write_text(
-            "device_xiaomi_lmi=1-r107\n"
+            "device_xiaomi_lmi=1-r145\n"
             "linux_xiaomi_lmi=4.19.325-r8\n"
             "serial=SERIAL-LEAK-123\n"
             "cpuid=CPUID-LEAK-456\n"
@@ -713,7 +713,7 @@ class RuntimePolicyTests(unittest.TestCase):
                     fixture.boot.unlink()
                 elif missing == "device-version":
                     fixture.identity.write_text(
-                        fixture.identity.read_text().replace("1-r107", "1-r139"),
+                        fixture.identity.read_text().replace("1-r145", "1-r139"),
                         encoding="utf-8",
                     )
                 elif missing == "kernel-package":
@@ -1093,7 +1093,9 @@ class RuntimePolicyTests(unittest.TestCase):
         fixture = self.route_fixture()
         result = fixture.run()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("no packaged ADSP bypass", result.stdout)
+        self.assertIn(
+            "no unpinned privilege or legacy ADSP service route", result.stdout
+        )
 
         mutations = ("rootctl", "sudoers-extra", "doas", "legacy-init", "runlevel", "systemd")
         for mutation in mutations:
@@ -1115,6 +1117,8 @@ class RuntimePolicyTests(unittest.TestCase):
                     fixture.systemd_usr.joinpath("adsp-audio.service").touch()
                 rejected = fixture.run()
                 self.assertNotEqual(rejected.returncode, 0)
+                if mutation == "rootctl":
+                    self.assertIn("active P1 r145 contract", rejected.stderr)
 
     def test_route_guard_requires_uid_zero_and_fixed_root_ownership(self) -> None:
         fixture = self.route_fixture()

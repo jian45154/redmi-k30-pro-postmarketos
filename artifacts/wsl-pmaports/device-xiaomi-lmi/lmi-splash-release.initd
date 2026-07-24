@@ -1,0 +1,11 @@
+#!/sbin/openrc-run
+
+name="lmi-splash-release"
+description="Manual downstream boot splash release for display bring-up"
+
+command="/usr/sbin/lmi-splash-release"
+
+depend() {
+	need lmi-seatd
+	after localmount
+}

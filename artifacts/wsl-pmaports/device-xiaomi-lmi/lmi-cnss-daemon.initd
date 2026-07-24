@@ -17,7 +17,7 @@ vendor_size=817250304
 
 depend() {
 	need lmi-firmware-mount lmi-qrtr-ns
-	after lmi-qrtr-ns
+	after lmi-qrtr-ns pd-mapper rmtfs tqftpserv
 	before lmi-cnss-fs-ready wpa_supplicant networkmanager
 }
 

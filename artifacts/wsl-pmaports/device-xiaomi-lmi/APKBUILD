@@ -3,16 +3,17 @@ maintainer=""
 pkgname=device-xiaomi-lmi
 pkgdesc="xiaomi lmi"
 pkgver=1
-pkgrel=107
+pkgrel=145
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
-options="!check !archcheck"
+options="!check !archcheck !fhs"
 install="$pkgname.post-install"
 depends="
 	alsa-utils
 	bluez
 	bluez-deprecated
+	evtest
 	iw
 	kmscube
 	libdrm-tests
@@ -20,13 +21,20 @@ depends="
 	mesa-demos
 	mesa-utils
 	mkbootimg
+	pd-mapper
+	pd-mapper-openrc
 	postmarketos-base
 	postmarketos-base-downstream
 	qrtr
 	rmtfs
-	tinydm
+	seatd
+	seatd-openrc
 	tqftpserv
 	weston
+	weston-backend-drm
+	weston-clients
+	weston-shell-desktop
+	weston-terminal
 	wpa_supplicant
 "
 makedepends="devicepkg-dev"
@@ -37,13 +45,27 @@ source="
 	lmi-cnss-daemon.initd
 	lmi-cnss-daemon-wrapper
 	lmi-cnss-fs-ready.initd
+	lmi-display-probe
+	lmi-display-takeover
 	lmi-firmware-mount.initd
+	lmi-power-panel
+	lmi-power-panel.initd
 	lmi-qrtr-ns
 	lmi-qrtr-ns.initd
+	lmi-rootctl
+	lmi-rootctl.sudoers
+	lmi-seatd.initd
+	lmi-seatd-wrapper
+	lmi-splash-release
+	lmi-splash-release.initd
+	lmi-splash-release-wrapper
+	lmi-weston.initd
+	lmi-weston-wrapper
 	lmi-wifi-start
 	lmi-wlan-firmware.confd
 	lmi-wlan-on.initd
 	modules-initfs
+	weston.ini
 "
 
 build() {
@@ -58,22 +80,50 @@ package() {
 	devicepkg_package $startdir $pkgname
 	install -Dm755 "$srcdir"/lmi-firmware-mount.initd \
 		"$pkgdir"/etc/init.d/lmi-firmware-mount
+	install -Dm755 "$srcdir"/lmi-power-panel \
+		"$pkgdir"/usr/sbin/lmi-power-panel
+	install -Dm755 "$srcdir"/lmi-power-panel.initd \
+		"$pkgdir"/etc/init.d/lmi-power-panel
 	install -Dm755 "$srcdir"/lmi-cnss-daemon.initd \
 		"$pkgdir"/etc/init.d/lmi-cnss-daemon
 	install -Dm755 "$srcdir"/lmi-cnss-daemon-wrapper \
 		"$pkgdir"/usr/sbin/lmi-cnss-daemon-wrapper
 	install -Dm755 "$srcdir"/liblmi_android_prop_shim.so \
 		"$pkgdir"/usr/lib/lmi/liblmi_android_prop_shim.so
+	install -Dm755 "$srcdir"/lmi-display-probe \
+		"$pkgdir"/usr/sbin/lmi-display-probe
+	install -Dm755 "$srcdir"/lmi-display-takeover \
+		"$pkgdir"/usr/sbin/lmi-display-takeover
 	install -Dm755 "$srcdir"/lmi-qrtr-ns \
 		"$pkgdir"/usr/sbin/lmi-qrtr-ns
 	install -Dm755 "$srcdir"/lmi-qrtr-ns.initd \
 		"$pkgdir"/etc/init.d/lmi-qrtr-ns
+	install -Dm755 "$srcdir"/lmi-rootctl \
+		"$pkgdir"/usr/sbin/lmi-rootctl
+	install -Dm440 "$srcdir"/lmi-rootctl.sudoers \
+		"$pkgdir"/etc/sudoers.d/90-lmi-rootctl
+	install -Dm755 "$srcdir"/lmi-seatd.initd \
+		"$pkgdir"/etc/init.d/lmi-seatd
+	install -Dm755 "$srcdir"/lmi-seatd-wrapper \
+		"$pkgdir"/usr/sbin/lmi-seatd-wrapper
+	install -Dm755 "$srcdir"/lmi-splash-release \
+		"$pkgdir"/usr/sbin/lmi-splash-release.real
+	install -Dm755 "$srcdir"/lmi-splash-release-wrapper \
+		"$pkgdir"/usr/sbin/lmi-splash-release
+	install -Dm755 "$srcdir"/lmi-splash-release.initd \
+		"$pkgdir"/etc/init.d/lmi-splash-release
+	install -Dm755 "$srcdir"/lmi-weston.initd \
+		"$pkgdir"/etc/init.d/lmi-weston
+	install -Dm755 "$srcdir"/lmi-weston-wrapper \
+		"$pkgdir"/usr/sbin/lmi-weston-wrapper
 	install -Dm755 "$srcdir"/lmi-cnss-fs-ready.initd \
 		"$pkgdir"/etc/init.d/lmi-cnss-fs-ready
 	install -Dm755 "$srcdir"/lmi-wlan-on.initd \
 		"$pkgdir"/etc/init.d/lmi-wlan-on
 	install -Dm755 "$srcdir"/lmi-wifi-start \
 		"$pkgdir"/usr/sbin/lmi-wifi-start
+	install -Dm644 "$srcdir"/weston.ini \
+		"$pkgdir"/etc/xdg/weston/weston.ini
 	install -Dm644 "$srcdir"/lmi-wlan-firmware.confd \
 		"$pkgdir"/etc/conf.d/lmi-wlan-firmware
 	install -Dm755 "$srcdir"/initramfs_mount_firmware.sh \
@@ -86,22 +136,42 @@ package() {
 		"$pkgdir"/etc/runlevels/default/lmi-qrtr-ns
 	ln -s /etc/init.d/lmi-cnss-daemon \
 		"$pkgdir"/etc/runlevels/default/lmi-cnss-daemon
+	ln -s /etc/init.d/pd-mapper "$pkgdir"/etc/runlevels/default/pd-mapper
+	ln -s /etc/init.d/lmi-seatd "$pkgdir"/etc/runlevels/default/lmi-seatd
 	ln -s /etc/init.d/rmtfs "$pkgdir"/etc/runlevels/default/rmtfs
 	ln -s /etc/init.d/tqftpserv "$pkgdir"/etc/runlevels/default/tqftpserv
+	ln -s /etc/init.d/lmi-cnss-fs-ready \
+		"$pkgdir"/etc/runlevels/default/lmi-cnss-fs-ready
+	ln -s /etc/init.d/lmi-wlan-on \
+		"$pkgdir"/etc/runlevels/default/lmi-wlan-on
 }
 
 sha512sums="
 d13a77a36c203ebee46b20cec08578053b524864c48c11469e0a9bbe9ea908000d1007f291cb49087d43c9cf44816c889007f132b47e6d8f4e1287ca320e19da  deviceinfo
 937a71dc8eecc6c7a2504f561ffa072b5e8991173788638cd8c173c9923e25fff9a0df497e2710cd1207120c834742b54495ea73f593dfa102a6ed7a26b3469c  initramfs_mount_firmware.sh
 37e56f21f96a167700f2a86914be2312eb6630e302f8428d6861f63882dcf945b56b38518f89304a123040d0470badf45cc94a3949304336372c6bdb9be47e84  lmi-android-prop-shim.c
-e325afef49506b9a51629ae1856ebbf75d84251524c93a94e6c856f57e12f86e2a1c5ae085fe0538e2eca2064e8e0b5b5c908859037b9c18fbeb00f991cc56bb  lmi-cnss-daemon.initd
+690c2205fb3840a7f8c84c714d6f98fc51b362a97fa36dc553f0d7852c99f28f281ffa6b305fffaf459369d873ff756f721e50327476fe8679c965524c78a80f  lmi-cnss-daemon.initd
 dd15ef8052ad6d796cd3c596a2f826fc047e0e083b10a4433b320abf806382fb54022d3face7c0ddd2c76e4a2d671412f84aed0587b7bfe3f4e1d72311c71731  lmi-cnss-daemon-wrapper
-3c614f6516997d73f417d20a8805b2dd2fb6e3de2ce3b60e7c81dfcfb8bf5536de560e3bf663120116b8e1c2aa55293baa5987b1f224271588e2fa8893c0edb7  lmi-cnss-fs-ready.initd
-22f0944a564c5ce0086be59e945f1d05580fc51664d4bbc3b1ed3e5cfe9e48cb33ddb22c94cf3ac7b247634bac5186f05e0af8a6cdd7934305e66ad5a7b2d29d  lmi-firmware-mount.initd
+d0cddc3425c1c98559f39d078cd79e0dfe15f270dac5c801b7798ad7b1330762b7240d696bfb7f1459e001334a4cf246ef02b7f5165fb2ee700209f0dacb2106  lmi-cnss-fs-ready.initd
+1fc2935036973e60222bb149ee15cffbf6ab36cc2701d5edcb8cd740c33239d0f60aa9628c86bda9cdf2d40abe860e7c713e07f83f3d442e7a4798be94b0e178  lmi-display-probe
+a07e8d1e27b8d4b3dc078248d6a218fe1116d5a0774eb2afbf940f017f13a639c863a096e9f35d05dd9d95298da9709a486097febfd85ee8406d4115014ad674  lmi-display-takeover
+70b3ea86016807d54e7ced038d6e3c93eff664437415b7cc85ef41d5deb00e1c45749cfa59751d09e96adca7d5774f49ba30c9db88f4e0e1bdfe190822928a57  lmi-firmware-mount.initd
+613392b9d55e38ed8c861e0a6ef48feeb33484507eb3e2197620b2db4b4d3d669680f740edbcd7f03d2bae5b8f82274f77d592580774ea24e92a15fc6e2e1c46  lmi-power-panel
+d37bb134b04bdb43e02d95ebd175abe2d182567fc4c39a0d57a3babe73bb54af56b715774ecd40e7ef723a97de2045eacc0252498c49d3a85ae4f367eb471060  lmi-power-panel.initd
 3683811361c6ce13ffc4e252073073d9e76004e05700f356685ae63aafdb13fc8819db72f319f9d6f3f98c0959ec1677e85a670acbc87c3ddbd0194cc26bb950  lmi-qrtr-ns
-2d330625bf4f3d3858fd7e0b0115f445369f043be240541e680dc5ab529ec8e7e0ffb5d40102a222960e90a7da39db471ca47dbbb5933026fe842aa057c59e8a  lmi-qrtr-ns.initd
+366331d24d21bc810d45f990f3ab59d2f6d43ca7c9cfc442749a226671acee6214114573b4fe9798bca577d8b77d78528dfc0f414bf57ea14fea3402f37fec11  lmi-qrtr-ns.initd
+56f34c87cc3d3032ca0ba8f5f30acb66eb1b96e0ef8a07953ea6e588d2be961a7e2a3eb21fb36bf6adacdaf38dc92799e87c179f7b83b99ab157a5db33ca6d07  lmi-rootctl
+4152b1004270a54e1a08b5873d2ccd75ca6d3e849b666d82000d3e5538c20d22af5f22289381c9acb55211ddd39c9b70dd7b6bb148a8f176484a6e7a0867c919  lmi-rootctl.sudoers
+1594c215d26c10ee03d7d2bc1b5921bc8e4f823835d967d76cbda71557973963b294fcbc162712fb01f0c18d8701c8ee497c91d73d7e8c387cf26c925df79db6  lmi-seatd.initd
+f449918be2a67e6fc93d8b23bd6b9a890ebbd401092cff52185ca8cd8233733030a0c9888495e74cbc63e7c3af416801bbab67636583b24a1a8f730e7e005686  lmi-seatd-wrapper
+11bfafad09e2ccf1e6f631bf7b4135fc8a59aa238f1211055b75b24009e6ccd589b6dc34020b73e8164e198b7df9c7fef118525447028f53b039d9021db0cb01  lmi-splash-release
+a38757c99a70e67dd62a3aea6b895137317544a16cb5a42fce72f159bb9ec359b1aad777b5d516b765efce5b30c11881fd8b998b5dd00f701d309c892b938eca  lmi-splash-release.initd
+ffd6d41122c747d3921b700c5a4909521a45b0e3851ec3b755ffc94512143be1283bc4ea6eedae421e5a3d7c9adef6b82db22fa80afe288c12c2c2ecbb5e29c3  lmi-splash-release-wrapper
+5d34809f9a101102d70eeb032177a20f5c741ac4e393d2cd9b2515a51506f8682057a2699864a4d43356acda1cb558203b4ee1141899ecd8502110ea03c95c76  lmi-weston.initd
+d857a3a4d3719648e874c48ab7a6c78803c7e6c5b3c4495bea1a4dcf9503c3ef853f22a7c490ffaa4958ab8c52b324c9df5ee40c5a2b319411d1892d29f580ad  lmi-weston-wrapper
 4e008fb4aaa834579a82f4b534655c8a6d22b14e6d5db42ebefaa2317453e102206b5d5ba4356f693b585289292487b2114eed767defa84f73650ddd922d9357  lmi-wifi-start
 9269c2bf1541993444bc0df8d833bcaa0943746e20454f4e28b38b7629d262492f70b702efedb4813595052449528ed7e0d50def4d0c80dabc0d1db468acca00  lmi-wlan-firmware.confd
-ff9a774d962e69a72bd819f26c4f1a33d0bcd696b71029007b6cbe04a6154f2838901ca3883d2adcde979e11385763bc4b2d5908b3d27e4e1264ae32b14309e0  lmi-wlan-on.initd
+5b1e18dabbd12c82e4209a8e2b2005dabbe5d1883b77f66f93a54498365f258968ce9ded62d1c8adb60ddff68a0935358b414a7b204408ae49e8117d0e7ff9a1  lmi-wlan-on.initd
 e70bae17df23dcaaaea0e2d3616556f04baa23f8ee1357785c0f539bf97282d8ddff53953e155b72689bb73beb38c2da3d08de2a61e866684edfa10a6593885d  modules-initfs
+c1d58ee4377c29e5e27a0c97af2b092ee0d3ebe637edccc7ffad30ef784f2ac3abc797a70507ac7e6a9dc22185961a886c891d80ed4d9bdc1607b2f871506589  weston.ini
 "

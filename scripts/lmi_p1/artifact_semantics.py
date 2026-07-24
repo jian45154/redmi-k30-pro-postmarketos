@@ -84,6 +84,117 @@ _REQUIRED_INITRAMFS = (
     "usr/share/deviceinfo/deviceinfo",
     "usr/share/misc/source_deviceinfo",
 )
+_SSH_CLIENT_SPECS: tuple[tuple[str, str, str], ...] = (
+    ("/usr/bin/ssh", "ssh", "openssh-client-default"),
+    ("/usr/bin/scp", "scp", "openssh-client-common"),
+    ("/usr/bin/sftp", "sftp", "openssh-client-common"),
+    ("/usr/bin/ssh-add", "ssh_add", "openssh-client-common"),
+    ("/usr/bin/ssh-agent", "ssh_agent", "openssh-client-common"),
+    ("/usr/bin/ssh-keyscan", "ssh_keyscan", "openssh-client-common"),
+)
+_SSH_SERVER_SPECS: tuple[tuple[str, str, str, int], ...] = (
+    ("/usr/bin/ssh-keygen", "ssh_keygen", "openssh-keygen", 0o755),
+    (
+        "/etc/ssh/sshd_config",
+        "sshd_config",
+        "openssh-server-common",
+        0o600,
+    ),
+    (
+        "/etc/init.d/sshd",
+        "sshd_service",
+        "openssh-server-common-openrc",
+        0o755,
+    ),
+    (
+        "/etc/conf.d/sshd",
+        "sshd_confd",
+        "openssh-server-common-openrc",
+        0o644,
+    ),
+    ("/etc/pam.d/sshd", "sshd_pam_config", "openssh-server-pam", 0o644),
+    (
+        "/usr/lib/ssh/sshd-auth.pam",
+        "sshd_auth",
+        "openssh-server-pam",
+        0o755,
+    ),
+    (
+        "/usr/lib/ssh/sshd-session.pam",
+        "sshd_session",
+        "openssh-server-pam",
+        0o755,
+    ),
+    ("/usr/sbin/sshd.pam", "sshd_pam", "openssh-server-pam", 0o755),
+)
+_LINUX_PAM_VERSION = "1.7.1-r2"
+_LINUX_PAM_SPECS: tuple[tuple[str, str, int], ...] = (
+    ("/usr/lib/pam.d/base-auth", "pam_base_auth", 0o644),
+    ("/usr/lib/pam.d/base-account", "pam_base_account", 0o644),
+    ("/usr/lib/pam.d/base-password", "pam_base_password", 0o644),
+    ("/usr/lib/pam.d/base-session", "pam_base_session", 0o644),
+    (
+        "/usr/lib/pam.d/base-session-noninteractive",
+        "pam_base_session_noninteractive",
+        0o644,
+    ),
+    ("/usr/lib/security/pam_unix.so", "pam_unix", 0o755),
+    ("/usr/lib/security/pam_nologin.so", "pam_nologin", 0o755),
+    ("/usr/lib/security/pam_env.so", "pam_env", 0o755),
+    ("/usr/lib/security/pam_limits.so", "pam_limits", 0o755),
+    ("/usr/lib/libpam.so.0.85.1", "libpam", 0o755),
+)
+_LINUX_PAM_SYMLINK = "/usr/lib/libpam.so.0"
+_NETWORKMANAGER_FILE_SPECS: tuple[tuple[str, str, str], ...] = (
+    (
+        "/usr/sbin/NetworkManager",
+        "networkmanager_daemon",
+        "networkmanager",
+    ),
+    ("/usr/bin/nmcli", "nmcli", "networkmanager-cli"),
+    (
+        "/etc/init.d/networkmanager",
+        "networkmanager_service",
+        "networkmanager-openrc",
+    ),
+    (
+        "/usr/lib/NetworkManager/1.52.2/libnm-device-plugin-wifi.so",
+        "networkmanager_wifi_plugin",
+        "networkmanager-wifi",
+    ),
+)
+_NETWORKMANAGER_VENDOR_SPECS: tuple[tuple[str, str, str], ...] = (
+    (
+        "/usr/lib/NetworkManager/conf.d/00-interfaces.conf",
+        "networkmanager_vendor_interfaces",
+        "networkmanager",
+    ),
+    (
+        "/usr/lib/NetworkManager/conf.d/20-dhcp-internal.conf",
+        "networkmanager_vendor_dhcp",
+        "networkmanager",
+    ),
+)
+_FORBIDDEN_HEADLESS_PACKAGE_NAMES = frozenset(
+    {"greetd", "phoc", "phosh", "postmarketos-base-ui", "tinydm"}
+)
+_FORBIDDEN_HEADLESS_PACKAGE_PREFIXES = (
+    "greetd-",
+    "phoc-",
+    "phosh-",
+    "postmarketos-base-ui-",
+    "tinydm-",
+)
+_FORBIDDEN_HEADLESS_PATHS = (
+    "/usr/sbin/greetd",
+    "/usr/bin/phosh-session",
+    "/etc/greetd/config.toml",
+    "/usr/local/bin/lmi-greetd-log",
+    "/usr/local/bin/lmi-phosh-session-log",
+    "/etc/runlevels/default/greetd",
+    "/etc/runlevels/default/lmi-splash-release",
+    "/etc/runlevels/default/lmi-power-panel",
+)
 _ROOTFS_FILE_SPECS: tuple[tuple[str, str, int, int], ...] = (
     ("/etc/fstab", "fstab", 0o644, 1024 * 1024),
     (
@@ -93,9 +204,35 @@ _ROOTFS_FILE_SPECS: tuple[tuple[str, str, int, int], ...] = (
         1024 * 1024,
     ),
     ("/lib/apk/db/installed", "apk_installed", 0o644, 64 * 1024 * 1024),
-    ("/etc/ssh/sshd_config", "sshd_config", 0o600, 1024 * 1024),
-    ("/etc/init.d/sshd", "sshd_service", 0o755, 4 * 1024 * 1024),
-    ("/usr/sbin/sshd.pam", "sshd_pam", 0o755, 32 * 1024 * 1024),
+    ("/usr/bin/busybox", "busybox", 0o755, 32 * 1024 * 1024),
+    ("/usr/sbin/lmi-rootctl", "rootctl", 0o755, 1024 * 1024),
+    ("/etc/sudoers", "sudoers", 0o440, 1024 * 1024),
+    (
+        "/etc/sudoers.d/90-lmi-rootctl",
+        "sudoers_dropin",
+        0o440,
+        1024 * 1024,
+    ),
+    *(
+        (internal_path, key, 0o755, 32 * 1024 * 1024)
+        for internal_path, key, _owner in _NETWORKMANAGER_FILE_SPECS
+    ),
+    *(
+        (internal_path, key, 0o644, 1024 * 1024)
+        for internal_path, key, _owner in _NETWORKMANAGER_VENDOR_SPECS
+    ),
+    *(
+        (internal_path, key, mode, 32 * 1024 * 1024)
+        for internal_path, key, _owner, mode in _SSH_SERVER_SPECS
+    ),
+    *(
+        (internal_path, key, mode, 32 * 1024 * 1024)
+        for internal_path, key, mode in _LINUX_PAM_SPECS
+    ),
+    *(
+        (internal_path, key, 0o755, 32 * 1024 * 1024)
+        for internal_path, key, _owner in _SSH_CLIENT_SPECS
+    ),
     ("/home/lmi/.ssh/authorized_keys", "authorized_keys", 0o600, 1024 * 1024),
     ("/etc/lmi-release-identity", "release_identity", 0o644, 1024 * 1024),
     (
@@ -116,7 +253,16 @@ _ROOTFS_FILE_SPECS: tuple[tuple[str, str, int, int], ...] = (
     ("/usr/sbin/lmi-usb0-dhcp", "usb_dhcp_wrapper", 0o755, 1024 * 1024),
     ("/etc/init.d/lmi-usb0-dhcp", "usb_dhcp_service", 0o755, 1024 * 1024),
 )
-_ROOT_OWNED_MANAGEMENT_KEYS = {
+_ROOT_OWNED_KEYS = {
+    *(key for _internal_path, key, _owner in _SSH_CLIENT_SPECS),
+    *(key for _internal_path, key, _owner, _mode in _SSH_SERVER_SPECS),
+    *(key for _internal_path, key, _mode in _LINUX_PAM_SPECS),
+    *(key for _internal_path, key, _owner in _NETWORKMANAGER_FILE_SPECS),
+    *(key for _internal_path, key, _owner in _NETWORKMANAGER_VENDOR_SPECS),
+    "rootctl",
+    "busybox",
+    "sudoers",
+    "sudoers_dropin",
     "networkmanager_profile",
     "networkmanager_takeover",
     "unudhcpd",
@@ -124,6 +270,39 @@ _ROOT_OWNED_MANAGEMENT_KEYS = {
     "unudhcpd_config",
     "usb_dhcp_wrapper",
     "usb_dhcp_service",
+}
+_LMI_OWNED_KEYS = {"authorized_keys"}
+_TRUSTED_BINDING_MODES = {
+    "sudoers": frozenset({0o440, 0o644}),
+    "sudoers_dropin": frozenset({0o440, 0o644}),
+}
+_EXPECTED_SUDOERS = b"""root ALL=(ALL) ALL
+@includedir /etc/sudoers.d
+"""
+_EXPECTED_SUDOERS_DROPIN = (
+    b"lmi ALL=(root) NOPASSWD: /usr/sbin/lmi-rootctl\n"
+)
+_EXPECTED_NETWORKMANAGER_VERSION = "1.52.2-r0"
+_EXPECTED_LMI_PASSWD = (
+    "lmi",
+    "x",
+    "10000",
+    "10000",
+    "",
+    "/home/lmi",
+    "/bin/ash",
+)
+_EXPECTED_LMI_SHADOW = ("lmi", "!", "", "0", "99999", "7", "", "", "")
+_R144_WIFI_DEFAULT_LINKS: Mapping[str, str] = {
+    "/etc/runlevels/default/lmi-qrtr-ns": "/etc/init.d/lmi-qrtr-ns",
+    "/etc/runlevels/default/lmi-cnss-daemon": "/etc/init.d/lmi-cnss-daemon",
+    "/etc/runlevels/default/pd-mapper": "/etc/init.d/pd-mapper",
+    "/etc/runlevels/default/rmtfs": "/etc/init.d/rmtfs",
+    "/etc/runlevels/default/tqftpserv": "/etc/init.d/tqftpserv",
+    "/etc/runlevels/default/lmi-cnss-fs-ready": (
+        "/etc/init.d/lmi-cnss-fs-ready"
+    ),
+    "/etc/runlevels/default/lmi-wlan-on": "/etc/init.d/lmi-wlan-on",
 }
 _EXPECTED_NETWORKMANAGER_PROFILE = b"""[connection]
 id=lmi-usb0
@@ -290,9 +469,40 @@ class RootfsBindings:
     """Trusted host-side copies of critical files required inside pmOS_root."""
 
     apk_installed: Path
+    busybox: Path
+    rootctl: Path
+    sudoers: Path
+    sudoers_dropin: Path
+    nmcli: Path
+    networkmanager_daemon: Path
+    networkmanager_service: Path
+    networkmanager_wifi_plugin: Path
+    networkmanager_vendor_interfaces: Path
+    networkmanager_vendor_dhcp: Path
     sshd_config: Path
     sshd_service: Path
     sshd_pam: Path
+    sshd_pam_config: Path
+    sshd_confd: Path
+    sshd_auth: Path
+    sshd_session: Path
+    ssh_keygen: Path
+    pam_base_auth: Path
+    pam_base_account: Path
+    pam_base_password: Path
+    pam_base_session: Path
+    pam_base_session_noninteractive: Path
+    pam_unix: Path
+    pam_nologin: Path
+    pam_env: Path
+    pam_limits: Path
+    libpam: Path
+    ssh: Path
+    scp: Path
+    sftp: Path
+    ssh_add: Path
+    ssh_agent: Path
+    ssh_keyscan: Path
     authorized_keys: Path
     release_identity: Path
     networkmanager_profile: Path
@@ -306,9 +516,40 @@ class RootfsBindings:
     def __post_init__(self) -> None:
         for field_name in (
             "apk_installed",
+            "busybox",
+            "rootctl",
+            "sudoers",
+            "sudoers_dropin",
+            "nmcli",
+            "networkmanager_daemon",
+            "networkmanager_service",
+            "networkmanager_wifi_plugin",
+            "networkmanager_vendor_interfaces",
+            "networkmanager_vendor_dhcp",
             "sshd_config",
             "sshd_service",
             "sshd_pam",
+            "sshd_pam_config",
+            "sshd_confd",
+            "sshd_auth",
+            "sshd_session",
+            "ssh_keygen",
+            "pam_base_auth",
+            "pam_base_account",
+            "pam_base_password",
+            "pam_base_session",
+            "pam_base_session_noninteractive",
+            "pam_unix",
+            "pam_nologin",
+            "pam_env",
+            "pam_limits",
+            "libpam",
+            "ssh",
+            "scp",
+            "sftp",
+            "ssh_add",
+            "ssh_agent",
+            "ssh_keyscan",
             "authorized_keys",
             "release_identity",
             "networkmanager_profile",
@@ -1744,7 +1985,10 @@ def _validate_ssh_policy(config: bytes, authorized_keys: bytes) -> None:
         if key in directives or len(fields) < 2:
             raise GateError("sshd_config policy is duplicated or malformed")
         directives[key] = fields[1:]
-    required = {
+    allowed = {
+        "port": ["22"],
+        "protocol": ["2"],
+        "hostkey": ["/etc/ssh/ssh_host_ed25519_key"],
         "permitrootlogin": ["no"],
         "pubkeyauthentication": ["yes"],
         "passwordauthentication": ["no"],
@@ -1753,8 +1997,28 @@ def _validate_ssh_policy(config: bytes, authorized_keys: bytes) -> None:
         "authorizedkeysfile": [".ssh/authorized_keys"],
         "allowusers": ["lmi"],
         "usepam": ["yes"],
+        "disableforwarding": ["no"],
+        "permittty": ["yes"],
+        "allowagentforwarding": ["yes"],
+        "allowtcpforwarding": ["yes"],
+        "allowstreamlocalforwarding": ["yes"],
+        "permitopen": ["any"],
+        "permitlisten": ["any"],
+        "gatewayports": ["no"],
+        "x11forwarding": ["no"],
+        "permittunnel": ["no"],
+        "permituserenvironment": ["no"],
+        "loglevel": ["verbose"],
+        "subsystem": ["sftp", "internal-sftp"],
     }
-    for key, expected in required.items():
+    unexpected = sorted(set(directives) - set(allowed))
+    missing = sorted(set(allowed) - set(directives))
+    if unexpected or missing:
+        raise GateError(
+            "sshd_config directive set is not the exact full-session policy: "
+            f"unexpected={unexpected!r}, missing={missing!r}"
+        )
+    for key, expected in allowed.items():
         actual = directives.get(key)
         if actual is None or [item.lower() for item in actual] != [
             item.lower() for item in expected
@@ -1786,49 +2050,375 @@ def _validate_ssh_policy(config: bytes, authorized_keys: bytes) -> None:
         raise GateError("authorized_keys public key blob does not match its key type")
 
 
-def _validate_dhcp_package_policy(installed: bytes) -> None:
+def _validate_aarch64_elf(value: bytes, label: str) -> None:
+    message = f"{label} is not a valid little-endian 64-bit AArch64 ELF"
+    if (
+        len(value) < 64
+        or value[:4] != b"\x7fELF"
+        or value[4:7] != b"\x02\x01\x01"
+        or int.from_bytes(value[16:18], "little") not in {2, 3}
+        or int.from_bytes(value[18:20], "little") != 183
+        or int.from_bytes(value[20:24], "little") != 1
+        or int.from_bytes(value[52:54], "little") != 64
+        or int.from_bytes(value[54:56], "little") != 56
+    ):
+        raise GateError(message)
+    entry_point = int.from_bytes(value[24:32], "little")
+    program_offset = int.from_bytes(value[32:40], "little")
+    program_entry_size = int.from_bytes(value[54:56], "little")
+    program_count = int.from_bytes(value[56:58], "little")
+    program_size = program_entry_size * program_count
+    if (
+        program_count == 0
+        or program_offset < 64
+        or program_offset > len(value)
+        or program_size > len(value) - program_offset
+    ):
+        raise GateError(message)
+    load_segment = False
+    entry_in_executable_load_segment = False
+    for index in range(program_count):
+        start = program_offset + index * program_entry_size
+        entry = value[start : start + program_entry_size]
+        segment_type = int.from_bytes(entry[0:4], "little")
+        flags = int.from_bytes(entry[4:8], "little")
+        offset = int.from_bytes(entry[8:16], "little")
+        virtual_address = int.from_bytes(entry[16:24], "little")
+        file_bytes = int.from_bytes(entry[32:40], "little")
+        memory_bytes = int.from_bytes(entry[40:48], "little")
+        alignment = int.from_bytes(entry[48:56], "little")
+        if (
+            (file_bytes and (offset > len(value) or file_bytes > len(value) - offset))
+            or (alignment > 1 and alignment & (alignment - 1))
+        ):
+            raise GateError(message)
+        if segment_type != 1:
+            continue
+        load_segment = True
+        if (
+            memory_bytes < file_bytes
+            or virtual_address > (1 << 64) - 1 - memory_bytes
+            or (
+                alignment > 1
+                and offset % alignment != virtual_address % alignment
+            )
+        ):
+            raise GateError(message)
+        segment_end = virtual_address + memory_bytes
+        if (
+            flags & 1
+            and memory_bytes > 0
+            and virtual_address <= entry_point < segment_end
+        ):
+            entry_in_executable_load_segment = True
+    if not load_segment or entry_point == 0 or not entry_in_executable_load_segment:
+        raise GateError(message)
+
+
+def _decode_apk_checksum(checksum: str, label: str) -> tuple[str, bytes]:
+    algorithms = {
+        "Q1": ("sha1", hashlib.sha1().digest_size),
+        "Q2": ("sha256", hashlib.sha256().digest_size),
+    }
+    prefix = checksum[:2]
+    if prefix not in algorithms or len(checksum) <= 2:
+        raise GateError(f"{label} has an unsupported APK database checksum")
+    encoded = checksum[2:] + "=" * (-len(checksum[2:]) % 4)
+    try:
+        decoded = base64.b64decode(encoded, validate=True)
+    except (ValueError, binascii.Error):
+        raise GateError(f"{label} has a malformed APK database checksum") from None
+    algorithm, size = algorithms[prefix]
+    if len(decoded) != size:
+        raise GateError(f"{label} has a malformed APK database checksum")
+    return algorithm, decoded
+
+
+def _validate_package_policy(
+    installed: bytes,
+    ssh_client_payloads: Mapping[str, bytes],
+    ssh_server_payloads: Mapping[str, bytes],
+    linux_pam_payloads: Mapping[str, bytes],
+    networkmanager_payloads: Mapping[str, bytes],
+) -> None:
     try:
         text = installed.decode("utf-8")
     except UnicodeError:
         raise GateError("trusted APK database is not UTF-8") from None
-    packages: dict[str, tuple[str | None, set[str]]] = {}
+    packages: dict[str, tuple[str, str | None, dict[str, str | None]]] = {}
     for block in re.split(r"\n\s*\n", text.strip()):
         name: str | None = None
+        version: str | None = None
         architecture: str | None = None
         directory: PurePosixPath | None = None
-        files: set[str] = set()
+        files: dict[str, str | None] = {}
+        last_file: str | None = None
         for line in block.splitlines():
             if line.startswith("P:"):
                 if name is not None:
                     raise GateError("trusted APK database has a duplicate package name field")
                 name = line[2:]
+            elif line.startswith("V:"):
+                if version is not None:
+                    raise GateError(
+                        "trusted APK database has a duplicate package version field"
+                    )
+                version = line[2:]
             elif line.startswith("A:"):
                 if architecture is not None:
                     raise GateError("trusted APK database has a duplicate architecture field")
                 architecture = line[2:]
             elif line.startswith("F:"):
                 directory = PurePosixPath(line[2:])
+                if (
+                    not line[2:]
+                    or directory.is_absolute()
+                    or any(part in {"", ".", ".."} for part in directory.parts)
+                ):
+                    raise GateError("trusted APK database has an unsafe directory")
+                last_file = None
             elif line.startswith("R:"):
                 member = PurePosixPath(line[2:])
-                if directory is None or len(member.parts) != 1:
+                if (
+                    directory is None
+                    or not line[2:]
+                    or member.is_absolute()
+                    or len(member.parts) != 1
+                    or member.name in {"", ".", ".."}
+                ):
                     raise GateError("trusted APK database has malformed file ownership")
-                files.add("/" + (directory / member).as_posix())
-        if name is None or not name or name in packages:
+                last_file = "/" + (directory / member).as_posix()
+                if last_file in files:
+                    raise GateError("trusted APK database has duplicate file ownership")
+                files[last_file] = None
+            elif line.startswith("Z:"):
+                if last_file is None or files[last_file] is not None:
+                    raise GateError(
+                        "trusted APK database has an orphan or duplicate checksum"
+                    )
+                files[last_file] = line[2:]
+        if (
+            name is None
+            or not name
+            or version is None
+            or not version
+            or name in packages
+        ):
             raise GateError("trusted APK database has malformed or duplicate packages")
-        packages[name] = (architecture, files)
-    for name in ("openssh-server-pam", "unudhcpd", "unudhcpd-openrc"):
+        packages[name] = (version, architecture, files)
+    forbidden_headless_packages = sorted(
+        name
+        for name in packages
+        if (
+            name in _FORBIDDEN_HEADLESS_PACKAGE_NAMES
+            or name.startswith(_FORBIDDEN_HEADLESS_PACKAGE_PREFIXES)
+        )
+    )
+    if forbidden_headless_packages:
+        raise GateError(
+            "trusted APK database contains packages forbidden by the ui=none "
+            f"owner-test policy: {forbidden_headless_packages!r}"
+        )
+    required_packages = (
+        "networkmanager",
+        "networkmanager-cli",
+        "networkmanager-openrc",
+        "networkmanager-wifi",
+        "openssh-client-common",
+        "openssh-client-default",
+        "openssh-keygen",
+        "openssh-server-common",
+        "openssh-server-common-openrc",
+        "openssh-server-pam",
+        "linux-pam",
+        "unudhcpd",
+        "unudhcpd-openrc",
+    )
+    for name in required_packages:
         if name not in packages:
             raise GateError(f"trusted APK database does not contain {name}")
-    if packages["unudhcpd"][0] != "aarch64":
-        raise GateError("trusted unudhcpd package is not aarch64")
-    owners = {
-        path: sorted(name for name, (_arch, files) in packages.items() if path in files)
-        for path in ("/usr/bin/unudhcpd", "/etc/init.d/unudhcpd")
+    for name in required_packages:
+        if packages[name][1] != "aarch64":
+            raise GateError(f"trusted {name} package is not aarch64")
+    if packages["linux-pam"][0] != _LINUX_PAM_VERSION:
+        raise GateError("trusted linux-pam package version is not pinned")
+    for name in (
+        "networkmanager",
+        "networkmanager-cli",
+        "networkmanager-openrc",
+        "networkmanager-wifi",
+    ):
+        if packages[name][0] != _EXPECTED_NETWORKMANAGER_VERSION:
+            raise GateError(f"trusted {name} package version is not pinned")
+    openssh_versions = {
+        packages[name][0]
+        for name in (
+            "openssh-client-common",
+            "openssh-client-default",
+            "openssh-keygen",
+            "openssh-server-common",
+            "openssh-server-common-openrc",
+            "openssh-server-pam",
+        )
     }
-    if owners["/usr/bin/unudhcpd"] != ["unudhcpd"]:
+    if len(openssh_versions) != 1:
+        raise GateError("trusted OpenSSH client/server package versions differ")
+    owned_paths = (
+        "/etc/init.d/networkmanager",
+        "/etc/init.d/sshd",
+        "/etc/conf.d/sshd",
+        "/etc/pam.d/sshd",
+        "/etc/ssh/sshd_config",
+        "/etc/init.d/unudhcpd",
+        "/usr/bin/nmcli",
+        "/usr/bin/scp",
+        "/usr/bin/sftp",
+        "/usr/bin/ssh",
+        "/usr/bin/ssh-add",
+        "/usr/bin/ssh-agent",
+        "/usr/bin/ssh-keyscan",
+        "/usr/bin/ssh-keygen",
+        "/usr/bin/unudhcpd",
+        "/usr/sbin/NetworkManager",
+        "/usr/sbin/sshd.pam",
+        "/usr/lib/ssh/sshd-auth.pam",
+        "/usr/lib/ssh/sshd-session.pam",
+        *[path for path, _key, _mode in _LINUX_PAM_SPECS],
+        _LINUX_PAM_SYMLINK,
+        (
+        "/usr/lib/NetworkManager/1.52.2/"
+            "libnm-device-plugin-wifi.so"
+        ),
+        *[
+            path
+            for path, _key, _owner in _NETWORKMANAGER_VENDOR_SPECS
+        ],
+    )
+    owners = {
+        path: sorted(
+            (name, files[path])
+            for name, (_version, _arch, files) in packages.items()
+            if path in files
+        )
+        for path in owned_paths
+    }
+    if [name for name, _checksum in owners["/usr/bin/unudhcpd"]] != [
+        "unudhcpd"
+    ]:
         raise GateError("trusted APK database has a second unudhcpd binary owner")
-    if owners["/etc/init.d/unudhcpd"] != ["unudhcpd-openrc"]:
+    if [name for name, _checksum in owners["/etc/init.d/unudhcpd"]] != [
+        "unudhcpd-openrc"
+    ]:
         raise GateError("trusted APK database has a noncanonical unudhcpd OpenRC owner")
+    expected_networkmanager_owners = {
+        "/usr/sbin/NetworkManager": ["networkmanager"],
+        "/etc/init.d/networkmanager": ["networkmanager-openrc"],
+        "/usr/bin/nmcli": ["networkmanager-cli"],
+        (
+            "/usr/lib/NetworkManager/1.52.2/"
+            "libnm-device-plugin-wifi.so"
+        ): ["networkmanager-wifi"],
+        **{
+            path: [owner]
+            for path, _key, owner in _NETWORKMANAGER_VENDOR_SPECS
+        },
+    }
+    for path, expected in expected_networkmanager_owners.items():
+        if [name for name, _checksum in owners[path]] != expected:
+            raise GateError(
+                f"trusted APK database has a noncanonical NetworkManager owner for {path}"
+            )
+        if owners[path][0][1] is None:
+            raise GateError(f"trusted APK database has no checksum for {path}")
+        checksum = str(owners[path][0][1])
+        algorithm, expected_digest = _decode_apk_checksum(checksum, path)
+        payload = networkmanager_payloads[path]
+        actual_digest = (
+            hashlib.sha1(payload, usedforsecurity=False).digest()
+            if algorithm == "sha1"
+            else hashlib.sha256(payload).digest()
+        )
+        if actual_digest != expected_digest:
+            raise GateError(f"{path} does not match its APK database checksum")
+    expected_ssh_server_owners = {
+        "/usr/bin/ssh-keygen": ["openssh-keygen"],
+        "/etc/ssh/sshd_config": ["openssh-server-common"],
+        "/etc/init.d/sshd": ["openssh-server-common-openrc"],
+        "/etc/conf.d/sshd": ["openssh-server-common-openrc"],
+        "/etc/pam.d/sshd": ["openssh-server-pam"],
+        "/usr/lib/ssh/sshd-auth.pam": ["openssh-server-pam"],
+        "/usr/lib/ssh/sshd-session.pam": ["openssh-server-pam"],
+        "/usr/sbin/sshd.pam": ["openssh-server-pam"],
+    }
+    for path, expected in expected_ssh_server_owners.items():
+        if [name for name, _checksum in owners[path]] != expected:
+            raise GateError(
+                f"trusted APK database has a noncanonical SSH server owner for {path}"
+            )
+        checksum = owners[path][0][1]
+        if checksum is None:
+            raise GateError(f"{path} has no APK database checksum")
+        # The finalizer intentionally replaces the packaged sshd_config with
+        # the separately bound, exact P1 policy. Its package ownership and
+        # recorded checksum must still exist, but the installed bytes are
+        # validated against that trusted policy rather than the package copy.
+        if path == "/etc/ssh/sshd_config":
+            continue
+        algorithm, expected_digest = _decode_apk_checksum(checksum, path)
+        payload = ssh_server_payloads[path]
+        actual_digest = (
+            hashlib.sha1(payload, usedforsecurity=False).digest()
+            if algorithm == "sha1"
+            else hashlib.sha256(payload).digest()
+        )
+        if actual_digest != expected_digest:
+            raise GateError(f"{path} does not match its APK database checksum")
+    for path, _key, _mode in _LINUX_PAM_SPECS:
+        if [name for name, _checksum in owners[path]] != ["linux-pam"]:
+            raise GateError(
+                f"trusted APK database has a noncanonical linux-pam owner for {path}"
+            )
+        checksum = owners[path][0][1]
+        if checksum is None:
+            raise GateError(f"{path} has no APK database checksum")
+        algorithm, expected_digest = _decode_apk_checksum(checksum, path)
+        payload = linux_pam_payloads[path]
+        actual_digest = (
+            hashlib.sha1(payload, usedforsecurity=False).digest()
+            if algorithm == "sha1"
+            else hashlib.sha256(payload).digest()
+        )
+        if actual_digest != expected_digest:
+            raise GateError(f"{path} does not match its APK database checksum")
+    if [name for name, _checksum in owners[_LINUX_PAM_SYMLINK]] != ["linux-pam"]:
+        raise GateError("trusted APK database has a noncanonical libpam SONAME owner")
+    if owners[_LINUX_PAM_SYMLINK][0][1] is None:
+        raise GateError("libpam SONAME symlink has no APK database checksum")
+    expected_ssh_owners = {
+        "/usr/bin/scp": ["openssh-client-common"],
+        "/usr/bin/sftp": ["openssh-client-common"],
+        "/usr/bin/ssh": ["openssh-client-default"],
+        "/usr/bin/ssh-add": ["openssh-client-common"],
+        "/usr/bin/ssh-agent": ["openssh-client-common"],
+        "/usr/bin/ssh-keyscan": ["openssh-client-common"],
+    }
+    for path, expected in expected_ssh_owners.items():
+        if [name for name, _checksum in owners[path]] != expected:
+            raise GateError(
+                f"trusted APK database has a noncanonical SSH client owner for {path}"
+            )
+        checksum = owners[path][0][1]
+        if checksum is None:
+            raise GateError(f"{path} has no APK database checksum")
+        algorithm, expected_digest = _decode_apk_checksum(checksum, path)
+        payload = ssh_client_payloads[path]
+        actual_digest = (
+            hashlib.sha1(payload, usedforsecurity=False).digest()
+            if algorithm == "sha1"
+            else hashlib.sha256(payload).digest()
+        )
+        if actual_digest != expected_digest:
+            raise GateError(f"{path} does not match its APK database checksum")
     forbidden = sorted(
         {
             "dhcp",
@@ -1847,6 +2437,7 @@ def _validate_dhcp_package_policy(installed: bytes) -> None:
 
 
 def _validate_management_policy(trusted: Mapping[str, bytes]) -> None:
+    _validate_aarch64_elf(trusted["busybox"], "/usr/bin/busybox")
     exact = {
         "networkmanager_profile": _EXPECTED_NETWORKMANAGER_PROFILE,
         "networkmanager_takeover": _EXPECTED_NETWORKMANAGER_TAKEOVER,
@@ -1870,7 +2461,105 @@ def _validate_management_policy(trusted: Mapping[str, bytes]) -> None:
         raise GateError("trusted unudhcpd is not an AArch64 ELF executable")
     if not trusted["unudhcpd_service"].startswith(b"#!/sbin/openrc-run\n"):
         raise GateError("trusted unudhcpd OpenRC service is not canonical")
-    _validate_dhcp_package_policy(trusted["apk_installed"])
+    ssh_client_payloads = {
+        internal_path: trusted[key]
+        for internal_path, key, _owner in _SSH_CLIENT_SPECS
+    }
+    for internal_path, value in ssh_client_payloads.items():
+        _validate_aarch64_elf(value, internal_path)
+    ssh_server_payloads = {
+        internal_path: trusted[key]
+        for internal_path, key, _owner, _mode in _SSH_SERVER_SPECS
+    }
+    for internal_path in (
+        "/usr/bin/ssh-keygen",
+        "/usr/lib/ssh/sshd-auth.pam",
+        "/usr/lib/ssh/sshd-session.pam",
+        "/usr/sbin/sshd.pam",
+    ):
+        _validate_aarch64_elf(ssh_server_payloads[internal_path], internal_path)
+    if not ssh_server_payloads["/etc/init.d/sshd"].startswith(
+        b"#!/sbin/openrc-run\n"
+    ):
+        raise GateError("trusted sshd OpenRC service is not canonical")
+    if b"pam_" not in ssh_server_payloads["/etc/pam.d/sshd"]:
+        raise GateError("trusted sshd PAM policy is not canonical")
+    try:
+        sshd_confd_lines = ssh_server_payloads["/etc/conf.d/sshd"].decode(
+            "utf-8"
+        ).splitlines()
+    except UnicodeError:
+        raise GateError("trusted sshd conf.d is not UTF-8") from None
+    if any(
+        line.strip() and not line.lstrip().startswith("#")
+        for line in sshd_confd_lines
+    ):
+        raise GateError("trusted sshd conf.d contains an active override")
+    linux_pam_payloads = {
+        internal_path: trusted[key]
+        for internal_path, key, _mode in _LINUX_PAM_SPECS
+    }
+    for internal_path in (
+        "/usr/lib/security/pam_unix.so",
+        "/usr/lib/security/pam_nologin.so",
+        "/usr/lib/security/pam_env.so",
+        "/usr/lib/security/pam_limits.so",
+        "/usr/lib/libpam.so.0.85.1",
+    ):
+        _validate_aarch64_elf(linux_pam_payloads[internal_path], internal_path)
+    required_pam_markers = {
+        "/usr/lib/pam.d/base-auth": (b"pam_unix.so", b"pam_nologin.so", b"pam_env.so"),
+        "/usr/lib/pam.d/base-account": (b"pam_unix.so", b"pam_nologin.so"),
+        "/usr/lib/pam.d/base-password": (b"pam_unix.so",),
+        "/usr/lib/pam.d/base-session": (b"include base-session-noninteractive",),
+        "/usr/lib/pam.d/base-session-noninteractive": (
+            b"pam_env.so",
+            b"pam_limits.so",
+            b"pam_unix.so",
+        ),
+    }
+    for internal_path, markers in required_pam_markers.items():
+        if any(marker not in linux_pam_payloads[internal_path] for marker in markers):
+            raise GateError(f"trusted linux-pam policy is incomplete: {internal_path}")
+    networkmanager_payloads = {
+        internal_path: trusted[key]
+        for internal_path, key, _owner in _NETWORKMANAGER_FILE_SPECS
+    }
+    networkmanager_payloads.update(
+        {
+            internal_path: trusted[key]
+            for internal_path, key, _owner in _NETWORKMANAGER_VENDOR_SPECS
+        }
+    )
+    _validate_aarch64_elf(
+        networkmanager_payloads["/usr/bin/nmcli"], "/usr/bin/nmcli"
+    )
+    _validate_aarch64_elf(
+        networkmanager_payloads["/usr/sbin/NetworkManager"],
+        "/usr/sbin/NetworkManager",
+    )
+    plugin = networkmanager_payloads[
+        "/usr/lib/NetworkManager/1.52.2/libnm-device-plugin-wifi.so"
+    ]
+    if (
+        len(plugin) < 20
+        or plugin[:7] != b"\x7fELF\x02\x01\x01"
+        or int.from_bytes(plugin[18:20], "little") != 183
+    ):
+        raise GateError(
+            "NetworkManager Wi-Fi plugin is not an AArch64 ELF shared object"
+        )
+    if not networkmanager_payloads["/etc/init.d/networkmanager"].startswith(
+        b"#!/sbin/openrc-run\n"
+    ):
+        raise GateError("NetworkManager OpenRC service is not canonical")
+    _validate_package_policy(
+        trusted["apk_installed"],
+        ssh_client_payloads,
+        ssh_server_payloads,
+        linux_pam_payloads,
+        networkmanager_payloads,
+    )
 
 
 def _debugfs_validate_symlink(
@@ -1902,8 +2591,41 @@ def _debugfs_validate_symlink(
     }
 
 
+def _debugfs_validate_directory(
+    image: Path,
+    internal_path: str,
+    label: str,
+    work: Path,
+) -> dict[str, object]:
+    kind, mode, size, links, uid, gid, target = _debugfs_stat(
+        image, internal_path, f"debugfs-stat-{label}", work
+    )
+    if (
+        kind != "directory"
+        or mode != 0o755
+        or links < 2
+        or (uid, gid) != (0, 0)
+        or target is not None
+    ):
+        raise GateError(
+            f"root filesystem {internal_path} directory ancestry is not canonical"
+        )
+    return {
+        "mode": mode,
+        "gid": gid,
+        "size": size,
+        "type": kind,
+        "uid": uid,
+    }
+
+
 def _debugfs_require_absent(
-    image: Path, internal_path: str, label: str, work: Path
+    image: Path,
+    internal_path: str,
+    label: str,
+    work: Path,
+    *,
+    error_message: str | None = None,
 ) -> None:
     run = _run_tool(
         _DEBUGFS,
@@ -1913,9 +2635,288 @@ def _debugfs_require_absent(
         _DEBUGFS_TIMEOUT_SECONDS,
     )
     if re.search(rb"Inode:\s+[0-9]+\s+Type:", run.output) is not None:
-        raise GateError(f"root filesystem has a second DHCP runlevel owner: {internal_path}")
+        raise GateError(
+            error_message
+            or f"root filesystem path must be absent: {internal_path}"
+        )
     if b"File not found" not in run.output:
         raise GateError(f"debugfs could not prove {internal_path} absent")
+
+
+def _debugfs_directory_inventory(
+    image: Path,
+    internal_path: str,
+    expected_names: tuple[str, ...],
+    label: str,
+    work: Path,
+) -> list[str]:
+    _debugfs_validate_directory(image, internal_path, label, work)
+    run = _run_tool(
+        _DEBUGFS,
+        ["-R", f"ls -p {internal_path}", str(image)],
+        f"debugfs-list-{label}",
+        work,
+        _DEBUGFS_TIMEOUT_SECONDS,
+    )
+    if run.returncode != 0:
+        raise GateError(f"debugfs failed while listing {internal_path}")
+    names: list[bytes] = []
+    entry = re.compile(
+        rb"^/[0-9]+/[0-7]{5,7}/[0-9]+/[0-9]+/([^/\r\n]+)/[0-9]*/$"
+    )
+    for line in run.output.splitlines():
+        if not line or line.startswith(b"debugfs "):
+            continue
+        matched = entry.fullmatch(line)
+        if matched is None:
+            raise GateError(
+                f"debugfs returned malformed directory data for {internal_path}"
+            )
+        names.append(matched.group(1))
+    expected = [b".", b"..", *(name.encode("ascii") for name in expected_names)]
+    if len(names) != len(expected) or sorted(names) != sorted(expected):
+        raise GateError(
+            f"root filesystem {internal_path} inventory is not exact"
+        )
+    return list(expected_names)
+
+
+def _debugfs_extract_private_regular(
+    image: Path,
+    internal_path: str,
+    expected_mode: int,
+    maximum: int,
+    expected_uid: int,
+    expected_gid: int,
+    label: str,
+    work: Path,
+) -> tuple[bytes, dict[str, object]]:
+    kind, mode, size, links, uid, gid, target = _debugfs_stat(
+        image, internal_path, f"debugfs-stat-{label}", work
+    )
+    if kind != "regular" or target is not None or links != 1:
+        raise GateError(
+            f"root filesystem {internal_path} is not one regular inode"
+        )
+    if mode != expected_mode:
+        raise GateError(
+            f"root filesystem {internal_path} mode is not {expected_mode:04o}"
+        )
+    if (uid, gid) != (expected_uid, expected_gid):
+        raise GateError(
+            f"root filesystem {internal_path} ownership is not canonical"
+        )
+    if size <= 0 or size > maximum:
+        raise GateError(f"root filesystem {internal_path} size is not safe")
+    destination = work / f"private-root-file-{label}"
+    run = _run_tool(
+        _DEBUGFS,
+        ["-R", f"dump -p {internal_path} {destination}", str(image)],
+        f"debugfs-dump-{label}",
+        work,
+        _DEBUGFS_TIMEOUT_SECONDS,
+    )
+    if run.returncode != 0:
+        raise GateError(f"debugfs failed while extracting {label}")
+    value = _read_small(
+        destination, f"private extracted root file {label}", maximum + 1
+    )
+    if len(value) != size:
+        raise GateError(
+            f"root filesystem {internal_path} changed during extraction"
+        )
+    # Deliberately omit content hashes.  In particular, shadow bytes and
+    # digests are private validation material and must never enter evidence.
+    return value, {
+        "gid": gid,
+        "mode": mode,
+        "size": size,
+        "type": kind,
+        "uid": uid,
+    }
+
+
+def _decode_private_account_file(value: bytes, label: str) -> list[list[str]]:
+    try:
+        text = value.decode("utf-8")
+    except UnicodeError:
+        raise GateError(f"{label} is not UTF-8") from None
+    if "\0" in text or not text.endswith("\n"):
+        raise GateError(f"{label} is not canonical")
+    lines = text.splitlines()
+    if not lines or any(not line for line in lines):
+        raise GateError(f"{label} is not canonical")
+    return [line.split(":") for line in lines]
+
+
+def _validate_account_policy(
+    root_image: Path, work: Path
+) -> tuple[dict[str, object], dict[str, dict[str, object]]]:
+    passwd, passwd_metadata = _debugfs_extract_private_regular(
+        root_image,
+        "/etc/passwd",
+        0o644,
+        1024 * 1024,
+        0,
+        0,
+        "passwd",
+        work,
+    )
+    group, group_metadata = _debugfs_extract_private_regular(
+        root_image,
+        "/etc/group",
+        0o644,
+        1024 * 1024,
+        0,
+        0,
+        "group",
+        work,
+    )
+    passwd_rows = _decode_private_account_file(passwd, "installed passwd")
+    group_rows = _decode_private_account_file(group, "installed group")
+    if any(len(row) != 7 for row in passwd_rows):
+        raise GateError("installed passwd has malformed records")
+    if any(len(row) != 4 for row in group_rows):
+        raise GateError("installed group has malformed records")
+    if len({row[0] for row in passwd_rows}) != len(passwd_rows):
+        raise GateError("installed passwd has duplicate account names")
+    if len({row[0] for row in group_rows}) != len(group_rows):
+        raise GateError("installed group has duplicate group names")
+    if any(
+        re.fullmatch(r"[a-z_][a-z0-9_-]{0,31}", row[0]) is None
+        or not row[2].isdigit()
+        or not row[3].isdigit()
+        for row in passwd_rows
+    ):
+        raise GateError("installed passwd has unsafe identity fields")
+    if any(
+        re.fullmatch(r"[a-z_][a-z0-9_-]{0,31}", row[0]) is None
+        or not row[2].isdigit()
+        for row in group_rows
+    ):
+        raise GateError("installed group has unsafe identity fields")
+    lmi_rows = [row for row in passwd_rows if row[0] == "lmi"]
+    lmi_group_rows = [row for row in group_rows if row[0] == "lmi"]
+    wheel_rows = [row for row in group_rows if row[0] == "wheel"]
+    shadow_group_rows = [row for row in group_rows if row[0] == "shadow"]
+    if (
+        len(lmi_rows) != 1
+        or len(lmi_group_rows) != 1
+        or len(wheel_rows) != 1
+        or len(shadow_group_rows) != 1
+    ):
+        raise GateError("installed account/group policy is incomplete")
+    if tuple(lmi_rows[0]) != _EXPECTED_LMI_PASSWD:
+        raise GateError(
+            "installed lmi passwd identity is not the exact session policy"
+        )
+    if lmi_group_rows[0] != ["lmi", "x", "10000", ""]:
+        raise GateError("installed lmi primary group is not canonical")
+    wheel_gid = int(wheel_rows[0][2])
+    shadow_gid = int(shadow_group_rows[0][2])
+    wheel_members = wheel_rows[0][3].split(",") if wheel_rows[0][3] else []
+    if (
+        len(wheel_members) != len(set(wheel_members))
+        or any(
+            re.fullmatch(r"[a-z_][a-z0-9_-]{0,31}", member) is None
+            for member in wheel_members
+        )
+    ):
+        raise GateError("installed wheel membership is malformed")
+    if int(lmi_rows[0][3]) == wheel_gid or "lmi" in wheel_members:
+        raise GateError("lmi remains a member of wheel")
+
+    shadow, shadow_metadata = _debugfs_extract_private_regular(
+        root_image,
+        "/etc/shadow",
+        0o640,
+        1024 * 1024,
+        0,
+        shadow_gid,
+        "shadow-active",
+        work,
+    )
+    shadow_backup, shadow_backup_metadata = _debugfs_extract_private_regular(
+        root_image,
+        "/etc/shadow-",
+        0o640,
+        1024 * 1024,
+        0,
+        shadow_gid,
+        "shadow-backup",
+        work,
+    )
+    if shadow != shadow_backup:
+        raise GateError("installed shadow backup is not an exact copy")
+    shadow_rows = _decode_private_account_file(shadow, "installed shadow")
+    if any(len(row) != 9 for row in shadow_rows):
+        raise GateError("installed shadow has malformed records")
+    if len({row[0] for row in shadow_rows}) != len(shadow_rows):
+        raise GateError("installed shadow has duplicate account names")
+    root_rows = [row for row in shadow_rows if row[0] == "root"]
+    shadow_lmi_rows = [row for row in shadow_rows if row[0] == "lmi"]
+    if (
+        len(root_rows) != 1
+        or len(shadow_lmi_rows) != 1
+        or root_rows[0][1] != "!"
+    ):
+        raise GateError("root and lmi are not exactly locked in installed shadow")
+    if tuple(shadow_lmi_rows[0]) != _EXPECTED_LMI_SHADOW:
+        raise GateError(
+            "installed lmi shadow fields are not session-usable and exact"
+        )
+
+    ancestry_files: dict[str, dict[str, object]] = {}
+    for internal_path, expected_mode, expected_uid, expected_gid in (
+        ("/home", 0o755, 0, 0),
+        ("/home/lmi", 0o755, 10000, 10000),
+        ("/home/lmi/.ssh", 0o700, 10000, 10000),
+    ):
+        label = internal_path.strip("/").replace("/", "-")
+        kind, mode, size, links, uid, gid, target = _debugfs_stat(
+            root_image,
+            internal_path,
+            f"debugfs-stat-{label}",
+            work,
+        )
+        if (
+            kind != "directory"
+            or mode != expected_mode
+            or links < 2
+            or (uid, gid) != (expected_uid, expected_gid)
+            or target is not None
+        ):
+            raise GateError(
+                f"root filesystem {internal_path} account ancestry is not canonical"
+            )
+        ancestry_files[internal_path] = {
+            "gid": gid,
+            "links": links,
+            "mode": mode,
+            "size": size,
+            "type": kind,
+            "uid": uid,
+        }
+    return (
+        {
+            "lmi_identity_exact": True,
+            "lmi_not_in_wheel": True,
+            "lmi_session_usable": True,
+            "lmi_shadow_locked": True,
+            "passwd_entry_count": len(passwd_rows),
+            "root_shadow_locked": True,
+            "shadow_copies_equal": True,
+            "shadow_entry_count": len(shadow_rows),
+            "wheel_member_count": len(wheel_members),
+        },
+        {
+            "/etc/group": group_metadata,
+            "/etc/passwd": passwd_metadata,
+            "/etc/shadow": shadow_metadata,
+            "/etc/shadow-": shadow_backup_metadata,
+            **ancestry_files,
+        },
+    )
 
 
 def _validate_rootfs_files(
@@ -1926,6 +2927,10 @@ def _validate_rootfs_files(
 ) -> dict[str, object]:
     _validate_ssh_policy(trusted["sshd_config"], trusted["authorized_keys"])
     _validate_management_policy(trusted)
+    if trusted["sudoers"] != _EXPECTED_SUDOERS:
+        raise GateError("trusted main sudoers is not the exact P1 policy")
+    if trusted["sudoers_dropin"] != _EXPECTED_SUDOERS_DROPIN:
+        raise GateError("trusted rootctl sudoers drop-in is not the exact P1 policy")
     if not trusted["sshd_service"].startswith(b"#!"):
         raise GateError("trusted sshd service is not a script")
     if not trusted["sshd_pam"].startswith(b"\x7fELF"):
@@ -1935,6 +2940,39 @@ def _validate_rootfs_files(
     ):
         raise GateError("trusted release identity has the wrong schema")
     files: dict[str, object] = {}
+    for internal_path in (
+        "/",
+        "/etc",
+        "/etc/conf.d",
+        "/etc/doas.d",
+        "/etc/init.d",
+        "/etc/NetworkManager",
+        "/etc/NetworkManager/conf.d",
+        "/etc/NetworkManager/system-connections",
+        "/etc/pam.d",
+        "/etc/ssh",
+        "/etc/sudoers.d",
+        "/usr",
+        "/usr/bin",
+        "/usr/lib",
+        "/usr/lib/NetworkManager",
+        "/usr/lib/NetworkManager/1.52.2",
+        "/usr/lib/NetworkManager/conf.d",
+        "/usr/lib/ssh",
+        "/usr/lib/pam.d",
+        "/usr/lib/security",
+        "/usr/sbin",
+        "/run",
+        "/var",
+    ):
+        label = (
+            "root"
+            if internal_path == "/"
+            else internal_path.strip("/").replace("/", "-")
+        )
+        files[internal_path] = _debugfs_validate_directory(
+            root_image, internal_path, label, work
+        )
     for internal_path, key, mode, maximum in _ROOTFS_FILE_SPECS:
         files[internal_path] = _debugfs_extract_regular(
             root_image,
@@ -1947,11 +2985,118 @@ def _validate_rootfs_files(
             key.replace("_", "-"),
             work,
         )
+    account_policy, account_files = _validate_account_policy(root_image, work)
+    files.update(account_files)
+    sudoers_inventory = _debugfs_directory_inventory(
+        root_image,
+        "/etc/sudoers.d",
+        ("90-lmi-rootctl",),
+        "sudoers-d",
+        work,
+    )
+    doas_inventory = _debugfs_directory_inventory(
+        root_image, "/etc/doas.d", (), "doas-d", work
+    )
+    networkmanager_conf_inventory = _debugfs_directory_inventory(
+        root_image,
+        "/etc/NetworkManager/conf.d",
+        ("90-lmi-usb0-takeover.conf",),
+        "networkmanager-conf-d",
+        work,
+    )
+    networkmanager_profile_inventory = _debugfs_directory_inventory(
+        root_image,
+        "/etc/NetworkManager/system-connections",
+        ("lmi-usb0.nmconnection",),
+        "networkmanager-system-connections",
+        work,
+    )
+    networkmanager_vendor_inventory = _debugfs_directory_inventory(
+        root_image,
+        "/usr/lib/NetworkManager/conf.d",
+        ("00-interfaces.conf", "20-dhcp-internal.conf"),
+        "networkmanager-vendor-conf-d",
+        work,
+    )
+    _debugfs_require_absent(
+        root_image,
+        "/etc/doas.conf",
+        "doas-conf",
+        work,
+        error_message="root filesystem contains a doas policy",
+    )
+    _debugfs_require_absent(
+        root_image,
+        "/etc/machine-id",
+        "machine-id",
+        work,
+        error_message="root filesystem machine-id must be absent for first boot",
+    )
+    _debugfs_require_absent(
+        root_image,
+        "/etc/conf.d/networkmanager",
+        "networkmanager-confd",
+        work,
+        error_message="root filesystem contains a NetworkManager OpenRC override",
+    )
+    _debugfs_require_absent(
+        root_image,
+        "/etc/NetworkManager/NetworkManager.conf",
+        "networkmanager-main-config",
+        work,
+        error_message="root filesystem contains a NetworkManager main-config override",
+    )
+    for pam_override in (
+        "/etc/pam.d/base-auth",
+        "/etc/pam.d/base-account",
+        "/etc/pam.d/base-password",
+        "/etc/pam.d/base-session",
+        "/etc/pam.d/base-session-noninteractive",
+    ):
+        _debugfs_require_absent(
+            root_image,
+            pam_override,
+            pam_override.rsplit("/", 1)[-1],
+            work,
+            error_message=f"root filesystem contains a PAM vendor override: {pam_override}",
+        )
+    for forbidden_path in _FORBIDDEN_HEADLESS_PATHS:
+        _debugfs_require_absent(
+            root_image,
+            forbidden_path,
+            "headless-" + forbidden_path.strip("/").replace("/", "-"),
+            work,
+            error_message=(
+                "root filesystem contains a path forbidden by the ui=none "
+                f"owner-test policy: {forbidden_path}"
+            ),
+        )
+    files["account_policy"] = account_policy
+    files["privilege_policy"] = {
+        "doas_conf_absent": True,
+        "doas_d_inventory": doas_inventory,
+        "sudoers_d_inventory": sudoers_inventory,
+    }
+    files["first_boot"] = {"machine_id_absent": True}
+    files["headless_ui_policy"] = {
+        "forbidden_paths_absent": list(_FORBIDDEN_HEADLESS_PATHS),
+        "ui": "none",
+    }
+    files["networkmanager_inventory"] = {
+        "conf_d": networkmanager_conf_inventory,
+        "system_connections": networkmanager_profile_inventory,
+        "vendor_conf_d": networkmanager_vendor_inventory,
+    }
     symlinks = {
+        "/bin": "usr/bin",
+        "/usr/bin/ash": "/usr/bin/busybox",
+        "/usr/lib/libpam.so.0": "libpam.so.0.85.1",
+        "/var/run": "../run",
         "/etc/init.d/unudhcpd.usb0": "unudhcpd",
         "/etc/runlevels/default/networkmanager": "/etc/init.d/networkmanager",
         "/etc/runlevels/default/lmi-usb0-dhcp": "/etc/init.d/lmi-usb0-dhcp",
         "/etc/runlevels/default/sshd": "/etc/init.d/sshd",
+        **_R144_WIFI_DEFAULT_LINKS,
     }
     for internal_path, target in symlinks.items():
         label = internal_path.strip("/").replace("/", "-").replace(".", "-")
@@ -1970,6 +3115,25 @@ def _validate_rootfs_files(
             forbidden_path,
             forbidden_path.rsplit("/", 1)[-1].replace(".", "-"),
             work,
+            error_message=(
+                "root filesystem has a second DHCP runlevel owner: "
+                f"{forbidden_path}"
+            ),
+        )
+    for nologin_path in (
+        "/etc/nologin",
+        "/run/nologin",
+        "/var/run/nologin",
+    ):
+        _debugfs_require_absent(
+            root_image,
+            nologin_path,
+            nologin_path.strip("/").replace("/", "-"),
+            work,
+            error_message=(
+                f"root filesystem contains a static login inhibitor: "
+                f"{nologin_path}"
+            ),
         )
     return files
 
@@ -2573,10 +3737,15 @@ def validate_artifact_pair(
             identities=identities,
             identity_label=f"rootfs_{key}",
         )
-        if identities[f"rootfs_{key}"]["mode"] != mode:
-            raise GateError(f"trusted rootfs {key} mode is not {mode:04o}")
-        if key in _ROOT_OWNED_MANAGEMENT_KEYS:
+        trusted_modes = _TRUSTED_BINDING_MODES.get(key, frozenset({mode}))
+        if identities[f"rootfs_{key}"]["mode"] not in trusted_modes:
+            raise GateError(
+                f"trusted rootfs {key} mode is not canonical"
+            )
+        if key in _ROOT_OWNED_KEYS:
             trusted_rootfs_owners[key] = (0, 0)
+        elif key in _LMI_OWNED_KEYS:
+            trusted_rootfs_owners[key] = (10000, 10000)
         else:
             trusted_rootfs_owners[key] = (
                 int(identities[f"rootfs_{key}"]["uid"]),
@@ -2824,9 +3993,40 @@ _INPUT_IDENTITY_LABELS = frozenset(
         "staged_init_2nd",
         "fstab",
         "rootfs_apk_installed",
+        "rootfs_busybox",
+        "rootfs_rootctl",
+        "rootfs_sudoers",
+        "rootfs_sudoers_dropin",
+        "rootfs_nmcli",
+        "rootfs_networkmanager_daemon",
+        "rootfs_networkmanager_service",
+        "rootfs_networkmanager_wifi_plugin",
+        "rootfs_networkmanager_vendor_interfaces",
+        "rootfs_networkmanager_vendor_dhcp",
         "rootfs_sshd_config",
         "rootfs_sshd_service",
         "rootfs_sshd_pam",
+        "rootfs_sshd_pam_config",
+        "rootfs_sshd_confd",
+        "rootfs_sshd_auth",
+        "rootfs_sshd_session",
+        "rootfs_ssh_keygen",
+        "rootfs_pam_base_auth",
+        "rootfs_pam_base_account",
+        "rootfs_pam_base_password",
+        "rootfs_pam_base_session",
+        "rootfs_pam_base_session_noninteractive",
+        "rootfs_pam_unix",
+        "rootfs_pam_nologin",
+        "rootfs_pam_env",
+        "rootfs_pam_limits",
+        "rootfs_libpam",
+        "rootfs_ssh",
+        "rootfs_scp",
+        "rootfs_sftp",
+        "rootfs_ssh_add",
+        "rootfs_ssh_agent",
+        "rootfs_ssh_keyscan",
         "rootfs_authorized_keys",
         "rootfs_release_identity",
         "rootfs_networkmanager_profile",

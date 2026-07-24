@@ -33,12 +33,19 @@ from tests.lmi_p1.image_fixtures import (
     DEVICEINFO,
     INIT_2ND,
     INIT_FUNCTIONS,
+    GROUP,
     NETWORKMANAGER_PROFILE,
+    PASSWD,
     ROOT_UUID,
     ROOT_FIRST_LBA,
     ROOT_LAST_LBA,
     SECTOR,
+    SSH_CLIENTS,
     SSHD_CONFIG,
+    SHADOW,
+    ROOTCTL,
+    SUDOERS,
+    SUDOERS_DROPIN,
     UNUDHCPD_CONFIG,
     USB_DHCP_SERVICE,
     USB_DHCP_WRAPPER,
@@ -164,6 +171,30 @@ class ArtifactSemanticsTests(unittest.TestCase):
         self.assertIn(repaired.returncode, {0, 1})
         image[start:end] = rootfs.read_bytes()
         self.fixture.userdata_img.write_bytes(image)
+
+    def replace_rootfs_file(
+        self,
+        internal_path: str,
+        value: bytes,
+        *,
+        mode: int,
+        uid: int = 0,
+        gid: int = 0,
+    ) -> None:
+        replacement = (
+            Path(self.temporary.name)
+            / ("replacement-" + internal_path.strip("/").replace("/", "-"))
+        )
+        replacement.write_bytes(value)
+        self.rewrite_rootfs_with_debugfs(
+            (
+                f"rm {internal_path}",
+                f"write {replacement} {internal_path}",
+                f"set_inode_field {internal_path} mode 010{mode:04o}",
+                f"set_inode_field {internal_path} uid {uid}",
+                f"set_inode_field {internal_path} gid {gid}",
+            )
+        )
 
     def test_partition_limits_are_the_recorded_lmi_capacities(self) -> None:
         self.assertEqual(PartitionLimits().boot_bytes, 0x08000000)
@@ -846,6 +877,24 @@ class ArtifactSemanticsTests(unittest.TestCase):
             self.validate()
 
     def test_root_image_critical_files_and_ssh_policy_are_bound(self) -> None:
+        report = self.validate()
+        for command in (
+            "ssh",
+            "scp",
+            "sftp",
+            "ssh-add",
+            "ssh-agent",
+            "ssh-keyscan",
+        ):
+            evidence = report["userdata"]["root_files"][f"/usr/bin/{command}"]
+            self.assertEqual(evidence["type"], "regular")
+            self.assertEqual(evidence["mode"], 0o755)
+            self.assertEqual((evidence["uid"], evidence["gid"]), (0, 0))
+            self.assertEqual(
+                evidence["sha256"],
+                hashlib.sha256(SSH_CLIENTS[command]).hexdigest(),
+            )
+
         image = bytearray(self.fixture.userdata_img.read_bytes())
         start = image.find(SSHD_CONFIG)
         self.assertGreaterEqual(start, 0)
@@ -854,13 +903,593 @@ class ArtifactSemanticsTests(unittest.TestCase):
         with self.assertRaisesRegex(GateError, "sshd_config.*trusted input"):
             self.validate()
 
-        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-root-policy")
-        self.fixture.sshd_config.write_bytes(
-            SSHD_CONFIG.replace(b"PasswordAuthentication no", b"PasswordAuthentication yes")
+        cases = (
+            (
+                b"PasswordAuthentication no",
+                b"PasswordAuthentication yes",
+                "passwordauthentication policy",
+            ),
+            (
+                b"PermitTTY yes",
+                b"PermitTTY no",
+                "permittty policy",
+            ),
+            (
+                b"AllowTcpForwarding yes",
+                b"AllowTcpForwarding no",
+                "allowtcpforwarding policy",
+            ),
+            (
+                b"Subsystem sftp internal-sftp",
+                b"Subsystem sftp /usr/lib/ssh/sftp-server",
+                "subsystem policy",
+            ),
         )
-        self.fixture.sshd_config.chmod(0o600)
-        with self.assertRaisesRegex(GateError, "passwordauthentication policy"):
+        for index, (current, replacement, message) in enumerate(cases):
+            with self.subTest(policy=current.decode()):
+                self.fixture = create_fixture(
+                    Path(self.temporary.name) / f"fixture-root-policy-{index}"
+                )
+                self.fixture.sshd_config.write_bytes(
+                    SSHD_CONFIG.replace(current, replacement)
+                )
+                self.fixture.sshd_config.chmod(0o600)
+                with self.assertRaisesRegex(GateError, message):
+                    self.validate()
+
+        for index, directive in enumerate(
+            (b"ForceCommand internal-sftp\n", b"MaxSessions 0\n")
+        ):
+            with self.subTest(directive=directive.decode().strip()):
+                self.fixture = create_fixture(
+                    Path(self.temporary.name) / f"fixture-root-extra-policy-{index}"
+                )
+                self.fixture.sshd_config.write_bytes(SSHD_CONFIG + directive)
+                self.fixture.sshd_config.chmod(0o600)
+                with self.assertRaisesRegex(
+                    GateError, "directive set is not the exact full-session policy"
+                ):
+                    self.validate()
+
+    def test_root_image_account_privilege_and_first_boot_policy_is_proven(self) -> None:
+        report = self.validate()
+        files = report["userdata"]["root_files"]
+        for path, value, mode in (
+            ("/usr/sbin/lmi-rootctl", ROOTCTL, 0o755),
+            ("/etc/sudoers", SUDOERS, 0o440),
+            ("/etc/sudoers.d/90-lmi-rootctl", SUDOERS_DROPIN, 0o440),
+        ):
+            evidence = files[path]
+            self.assertEqual(evidence["sha256"], hashlib.sha256(value).hexdigest())
+            self.assertEqual(evidence["mode"], mode)
+            self.assertEqual((evidence["uid"], evidence["gid"]), (0, 0))
+
+        self.assertEqual(
+            files["account_policy"],
+            {
+                "lmi_identity_exact": True,
+                "lmi_not_in_wheel": True,
+                "lmi_session_usable": True,
+                "lmi_shadow_locked": True,
+                "passwd_entry_count": 2,
+                "root_shadow_locked": True,
+                "shadow_copies_equal": True,
+                "shadow_entry_count": 3,
+                "wheel_member_count": 1,
+            },
+        )
+        for path in ("/etc/shadow", "/etc/shadow-"):
+            self.assertEqual(files[path]["mode"], 0o640)
+            self.assertEqual((files[path]["uid"], files[path]["gid"]), (0, 42))
+            self.assertNotIn("sha256", files[path])
+        self.assertEqual(
+            files["privilege_policy"],
+            {
+                "doas_conf_absent": True,
+                "doas_d_inventory": [],
+                "sudoers_d_inventory": ["90-lmi-rootctl"],
+            },
+        )
+        self.assertEqual(files["first_boot"], {"machine_id_absent": True})
+        self.assertEqual(
+            files["headless_ui_policy"],
+            {
+                "forbidden_paths_absent": [
+                    "/usr/sbin/greetd",
+                    "/usr/bin/phosh-session",
+                    "/etc/greetd/config.toml",
+                    "/usr/local/bin/lmi-greetd-log",
+                    "/usr/local/bin/lmi-phosh-session-log",
+                    "/etc/runlevels/default/greetd",
+                    "/etc/runlevels/default/lmi-splash-release",
+                    "/etc/runlevels/default/lmi-power-panel",
+                ],
+                "ui": "none",
+            },
+        )
+        serialized = json.dumps(report, sort_keys=True)
+        self.assertNotIn("$6$private-shadow-fixture", serialized)
+        self.assertNotIn(hashlib.sha256(SHADOW).hexdigest(), serialized)
+
+        wifi_links = {
+            "/etc/runlevels/default/lmi-qrtr-ns": "/etc/init.d/lmi-qrtr-ns",
+            "/etc/runlevels/default/lmi-cnss-daemon": "/etc/init.d/lmi-cnss-daemon",
+            "/etc/runlevels/default/pd-mapper": "/etc/init.d/pd-mapper",
+            "/etc/runlevels/default/rmtfs": "/etc/init.d/rmtfs",
+            "/etc/runlevels/default/tqftpserv": "/etc/init.d/tqftpserv",
+            "/etc/runlevels/default/lmi-cnss-fs-ready": (
+                "/etc/init.d/lmi-cnss-fs-ready"
+            ),
+            "/etc/runlevels/default/lmi-wlan-on": "/etc/init.d/lmi-wlan-on",
+        }
+        for path, target in wifi_links.items():
+            self.assertEqual(files[path]["link_target"], target)
+
+    def test_root_image_rejects_each_forbidden_headless_ui_package(self) -> None:
+        forbidden_packages = (
+            "greetd",
+            "greetd-openrc",
+            "phosh",
+            "phosh-session",
+            "phoc",
+            "phoc-doc",
+            "postmarketos-base-ui",
+            "postmarketos-base-ui-phosh",
+            "tinydm",
+            "tinydm-openrc",
+        )
+        for index, package in enumerate(forbidden_packages):
+            with self.subTest(package=package):
+                self.fixture = create_fixture(
+                    Path(self.temporary.name) / f"fixture-forbidden-ui-package-{index}"
+                )
+                database = self.fixture.apk_installed.read_bytes()
+                database += (
+                    f"P:{package}\nV:1-r0\nA:aarch64\n\n".encode("ascii")
+                )
+                self.fixture.apk_installed.write_bytes(database)
+                self.replace_rootfs_file(
+                    "/lib/apk/db/installed", database, mode=0o644
+                )
+                with self.assertRaisesRegex(
+                    GateError, "packages forbidden by the ui=none owner-test policy"
+                ):
+                    self.validate()
+
+    def test_root_image_rejects_each_forbidden_headless_ui_path(self) -> None:
+        payload = Path(self.temporary.name) / "forbidden-ui-payload"
+        payload.write_bytes(b"forbidden\n")
+        cases = (
+            ("/usr/sbin/greetd", ()),
+            ("/usr/bin/phosh-session", ()),
+            ("/etc/greetd/config.toml", ("mkdir /etc/greetd",)),
+            (
+                "/usr/local/bin/lmi-greetd-log",
+                ("mkdir /usr/local", "mkdir /usr/local/bin"),
+            ),
+            (
+                "/usr/local/bin/lmi-phosh-session-log",
+                ("mkdir /usr/local", "mkdir /usr/local/bin"),
+            ),
+            ("/etc/runlevels/default/greetd", ()),
+            ("/etc/runlevels/default/lmi-splash-release", ()),
+            ("/etc/runlevels/default/lmi-power-panel", ()),
+        )
+        for index, (internal_path, parent_commands) in enumerate(cases):
+            with self.subTest(path=internal_path):
+                self.fixture = create_fixture(
+                    Path(self.temporary.name) / f"fixture-forbidden-ui-path-{index}"
+                )
+                self.rewrite_rootfs_with_debugfs(
+                    (
+                        *parent_commands,
+                        f"write {payload} {internal_path}",
+                    )
+                )
+                with self.assertRaisesRegex(
+                    GateError,
+                    "path forbidden by the ui=none owner-test policy",
+                ):
+                    self.validate()
+
+    def test_root_image_rejects_privilege_payload_tampering_and_extra_sudo_rule(
+        self,
+    ) -> None:
+        image = self.fixture.userdata_img.read_bytes()
+        self.assertEqual(image.count(ROOTCTL), 1)
+        self.fixture.userdata_img.write_bytes(
+            image.replace(ROOTCTL, ROOTCTL.replace(b"false", b"truue"))
+        )
+        with self.assertRaisesRegex(GateError, "lmi-rootctl.*trusted input"):
             self.validate()
+
+        self.fixture = create_fixture(
+            Path(self.temporary.name) / "fixture-tampered-main-sudoers"
+        )
+        self.fixture.sudoers.chmod(0o640)
+        self.rewrite_bound_root_file(
+            self.fixture.sudoers,
+            b"root ALL=(ALL) ALL",
+            b"root FOO=(FOO) FOO",
+        )
+        self.fixture.sudoers.chmod(0o440)
+        with self.assertRaisesRegex(GateError, "main sudoers.*exact P1 policy"):
+            self.validate()
+
+        self.fixture = create_fixture(
+            Path(self.temporary.name) / "fixture-tampered-sudoers-dropin"
+        )
+        self.fixture.sudoers_dropin.chmod(0o640)
+        self.rewrite_bound_root_file(
+            self.fixture.sudoers_dropin,
+            b"NOPASSWD",
+            b"PASSWD: ",
+        )
+        self.fixture.sudoers_dropin.chmod(0o440)
+        with self.assertRaisesRegex(GateError, "sudoers drop-in.*exact P1 policy"):
+            self.validate()
+
+        self.fixture = create_fixture(
+            Path(self.temporary.name) / "fixture-extra-sudo-rule"
+        )
+        self.rewrite_rootfs_with_debugfs(
+            ("symlink /etc/sudoers.d/91-extra /etc/sudoers",)
+        )
+        with self.assertRaisesRegex(GateError, "sudoers.d inventory is not exact"):
+            self.validate()
+
+    def test_root_image_rejects_unlocked_or_unsafe_shadow_backup(self) -> None:
+        unlocked = SHADOW.replace(b"lmi:!::0:", b"lmi:x::0:")
+        self.replace_rootfs_file(
+            "/etc/shadow-", unlocked, mode=0o640, gid=42
+        )
+        with self.assertRaisesRegex(GateError, "shadow backup is not an exact copy"):
+            self.validate()
+
+        self.fixture = create_fixture(
+            Path(self.temporary.name) / "fixture-unsafe-shadow-backup"
+        )
+        self.rewrite_rootfs_with_debugfs(
+            ("set_inode_field /etc/shadow- mode 0100644",)
+        )
+        with self.assertRaisesRegex(GateError, "shadow- mode is not 0640"):
+            self.validate()
+
+    def test_root_image_rejects_lmi_wheel_membership(self) -> None:
+        wheel_member_group = GROUP.replace(
+            b"wheel:x:10:root\n", b"wheel:x:10:root,lmi\n"
+        )
+        self.replace_rootfs_file(
+            "/etc/group", wheel_member_group, mode=0o644
+        )
+        with self.assertRaisesRegex(GateError, "lmi remains a member of wheel"):
+            self.validate()
+
+        self.fixture = create_fixture(
+            Path(self.temporary.name) / "fixture-primary-wheel"
+        )
+        primary_wheel = PASSWD.replace(
+            b"lmi:x:10000:10000:", b"lmi:x:10000:10:"
+        )
+        self.replace_rootfs_file("/etc/passwd", primary_wheel, mode=0o644)
+        with self.assertRaisesRegex(GateError, "lmi passwd identity"):
+            self.validate()
+
+    def test_root_image_rejects_unusable_lmi_identity_shadow_and_home(self) -> None:
+        bad_shell = PASSWD.replace(b":/home/lmi:/bin/ash\n", b":/home/lmi:/bin/zsh\n")
+        self.replace_rootfs_file("/etc/passwd", bad_shell, mode=0o644)
+        with self.assertRaisesRegex(GateError, "lmi passwd identity"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-expired-lmi")
+        expired = SHADOW.replace(b"lmi:!::0:99999:7:::", b"lmi:!::0:99999:7::1:")
+        self.replace_rootfs_file("/etc/shadow", expired, mode=0o640, gid=42)
+        self.replace_rootfs_file("/etc/shadow-", expired, mode=0o640, gid=42)
+        with self.assertRaisesRegex(GateError, "shadow fields.*session-usable"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-open-ssh-dir")
+        self.rewrite_rootfs_with_debugfs(
+            ("set_inode_field /home/lmi/.ssh mode 040777",)
+        )
+        with self.assertRaisesRegex(GateError, "account ancestry is not canonical"):
+            self.validate()
+
+    def test_root_image_rejects_missing_shell_target_and_static_nologin(self) -> None:
+        self.rewrite_rootfs_with_debugfs(
+            (
+                "unlink /usr/bin/ash",
+                "symlink /usr/bin/ash /usr/bin/missing-shell",
+            )
+        )
+        with self.assertRaisesRegex(GateError, "/usr/bin/ash symlink is not canonical"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-busybox-mode")
+        self.rewrite_rootfs_with_debugfs(
+            ("set_inode_field /usr/bin/busybox mode 0100644",)
+        )
+        with self.assertRaisesRegex(GateError, "/usr/bin/busybox mode is not 0755"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-nologin")
+        self.rewrite_rootfs_with_debugfs(
+            ("symlink /etc/nologin /etc/passwd",)
+        )
+        with self.assertRaisesRegex(GateError, "static login inhibitor"):
+            self.validate()
+
+    def test_root_image_rejects_incomplete_ssh_server_and_pam_closure(self) -> None:
+        self.rewrite_bound_root_file(
+            self.fixture.apk_installed,
+            b"P:openssh-keygen",
+            b"P:missing-keygen",
+        )
+        with self.assertRaisesRegex(GateError, "does not contain openssh-keygen"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-sshd-child")
+        self.rewrite_rootfs_with_debugfs(("unlink /usr/lib/ssh/sshd-auth.pam",))
+        with self.assertRaisesRegex(GateError, "sshd-auth"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-sshd-owner")
+        self.rewrite_bound_root_file(
+            self.fixture.apk_installed,
+            b"R:sshd-auth.pam",
+            b"R:evil-auth.pam",
+        )
+        with self.assertRaisesRegex(GateError, "noncanonical SSH server owner"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-sshd-tamper")
+        child = self.fixture.sshd_session.read_bytes()
+        tampered_child = child[:-1] + bytes([child[-1] ^ 1])
+        self.rewrite_bound_root_file(
+            self.fixture.sshd_session, child, tampered_child
+        )
+        with self.assertRaisesRegex(GateError, "sshd-session.pam.*APK database checksum"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-pam-override")
+        self.rewrite_rootfs_with_debugfs(
+            ("symlink /etc/pam.d/base-auth /etc/passwd",)
+        )
+        with self.assertRaisesRegex(GateError, "PAM vendor override"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-pam-limits")
+        self.rewrite_rootfs_with_debugfs(
+            ("unlink /usr/lib/security/pam_limits.so",)
+        )
+        with self.assertRaisesRegex(GateError, "pam-limits|pam_limits"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-libpam-link")
+        self.rewrite_rootfs_with_debugfs(
+            (
+                "unlink /usr/lib/libpam.so.0",
+                "symlink /usr/lib/libpam.so.0 libpam.so.attacker",
+            )
+        )
+        with self.assertRaisesRegex(GateError, "libpam.so.0 symlink is not canonical"):
+            self.validate()
+
+    def test_root_image_rejects_ssh_and_networkmanager_overrides(self) -> None:
+        self.fixture.sshd_confd.chmod(0o640)
+        self.rewrite_bound_root_file(
+            self.fixture.sshd_confd,
+            b"# OpenSSH daemon options are intentionally unset.\n",
+            b"SSHD_BINARY=/usr/bin/attacker####################\n",
+        )
+        self.fixture.sshd_confd.chmod(0o644)
+        with self.assertRaisesRegex(GateError, "sshd conf.d contains an active override"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-nm-confd")
+        self.rewrite_rootfs_with_debugfs(
+            ("symlink /etc/conf.d/networkmanager /etc/passwd",)
+        )
+        with self.assertRaisesRegex(GateError, "NetworkManager OpenRC override"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-nm-extra")
+        self.rewrite_rootfs_with_debugfs(
+            ("symlink /etc/NetworkManager/conf.d/99-evil.conf /etc/passwd",)
+        )
+        with self.assertRaisesRegex(GateError, "conf.d inventory is not exact"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-nm-main")
+        self.rewrite_rootfs_with_debugfs(
+            ("symlink /etc/NetworkManager/NetworkManager.conf /etc/passwd",)
+        )
+        with self.assertRaisesRegex(GateError, "main-config override"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-nm-vendor-extra")
+        self.rewrite_rootfs_with_debugfs(
+            ("symlink /usr/lib/NetworkManager/conf.d/99-evil.conf /etc/passwd",)
+        )
+        with self.assertRaisesRegex(
+            GateError, "usr/lib/NetworkManager/conf.d inventory is not exact"
+        ):
+            self.validate()
+
+    def test_root_image_rejects_networkmanager_daemon_closure_failures(self) -> None:
+        self.rewrite_rootfs_with_debugfs(("unlink /usr/sbin/NetworkManager",))
+        with self.assertRaisesRegex(GateError, "networkmanager-daemon|NetworkManager"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-nm-owner")
+        self.rewrite_bound_root_file(
+            self.fixture.apk_installed,
+            b"R:NetworkManager",
+            b"R:XetworkManager",
+        )
+        with self.assertRaisesRegex(GateError, "noncanonical NetworkManager owner"):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-nm-checksum")
+        daemon = self.fixture.networkmanager_daemon.read_bytes()
+        tampered = daemon[:-1] + bytes([daemon[-1] ^ 1])
+        self.rewrite_bound_root_file(
+            self.fixture.networkmanager_daemon, daemon, tampered
+        )
+        with self.assertRaisesRegex(GateError, "NetworkManager.*APK database checksum"):
+            self.validate()
+
+    def test_root_image_rejects_networkmanager_vendor_config_corruption(self) -> None:
+        vendor = self.fixture.networkmanager_vendor_interfaces.read_bytes()
+        tampered = vendor.replace(b"managed=true", b"managed=evil")
+        self.rewrite_bound_root_file(
+            self.fixture.networkmanager_vendor_interfaces, vendor, tampered
+        )
+        with self.assertRaisesRegex(
+            GateError, "00-interfaces.conf.*APK database checksum"
+        ):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-nm-vendor-owner")
+        database = self.fixture.apk_installed.read_bytes()
+        checksum_line = next(
+            line
+            for line in database.splitlines()
+            if line.startswith(b"Z:Q1")
+        )
+        extra_owner = (
+            b"P:evil-networkmanager\nV:1-r0\nA:aarch64\n"
+            b"F:usr/lib/NetworkManager/conf.d\n"
+            b"R:00-interfaces.conf\n" + checksum_line + b"\n\n"
+        )
+        database += extra_owner
+        self.fixture.apk_installed.write_bytes(database)
+        self.replace_rootfs_file(
+            "/lib/apk/db/installed", database, mode=0o644
+        )
+        with self.assertRaisesRegex(
+            GateError, "noncanonical NetworkManager owner"
+        ):
+            self.validate()
+
+        self.fixture = create_fixture(Path(self.temporary.name) / "fixture-nm-vendor-mode")
+        self.rewrite_rootfs_with_debugfs(
+            (
+                "set_inode_field /usr/lib/NetworkManager/conf.d/20-dhcp-internal.conf mode 0100666",
+            )
+        )
+        with self.assertRaisesRegex(
+            GateError, "20-dhcp-internal.conf mode is not 0644"
+        ):
+            self.validate()
+
+    def test_root_image_rejects_doas_policy_and_machine_id_even_when_empty(
+        self,
+    ) -> None:
+        self.rewrite_rootfs_with_debugfs(
+            ("symlink /etc/doas.conf /etc/passwd",)
+        )
+        with self.assertRaisesRegex(GateError, "contains a doas policy"):
+            self.validate()
+
+        self.fixture = create_fixture(
+            Path(self.temporary.name) / "fixture-doas-dropin"
+        )
+        self.rewrite_rootfs_with_debugfs(
+            ("symlink /etc/doas.d/admin.conf /etc/passwd",)
+        )
+        with self.assertRaisesRegex(GateError, "doas.d inventory is not exact"):
+            self.validate()
+
+        self.fixture = create_fixture(
+            Path(self.temporary.name) / "fixture-empty-machine-id"
+        )
+        self.replace_rootfs_file("/etc/machine-id", b"", mode=0o444)
+        with self.assertRaisesRegex(GateError, "machine-id must be absent"):
+            self.validate()
+
+    def test_root_image_rejects_wrong_r144_wifi_default_link(self) -> None:
+        self.rewrite_rootfs_with_debugfs(
+            (
+                "unlink /etc/runlevels/default/lmi-wlan-on",
+                "symlink /etc/runlevels/default/lmi-wlan-on /etc/init.d/lmi-wlan-off",
+            )
+        )
+        with self.assertRaisesRegex(GateError, "lmi-wlan-on symlink is not canonical"):
+            self.validate()
+
+    def test_root_image_ssh_clients_are_bound_elfs_with_canonical_metadata(self) -> None:
+        image = bytearray(self.fixture.userdata_img.read_bytes())
+        start = image.find(SSH_CLIENTS["ssh"])
+        self.assertGreaterEqual(start, 0)
+        image[start + 18 : start + 20] = (62).to_bytes(2, "little")
+        self.fixture.userdata_img.write_bytes(image)
+        with self.assertRaisesRegex(
+            GateError, "/usr/bin/ssh differs from its trusted input"
+        ):
+            self.validate()
+
+        self.fixture = create_fixture(
+            Path(self.temporary.name) / "fixture-ssh-client-wrong-elf"
+        )
+        client = bytearray(self.fixture.ssh.read_bytes())
+        client[18:20] = (62).to_bytes(2, "little")
+        self.fixture.ssh.write_bytes(client)
+        with self.assertRaisesRegex(
+            GateError, "/usr/bin/ssh is not a valid.*AArch64 ELF"
+        ):
+            self.validate()
+
+        metadata_cases = (
+            (
+                ("set_inode_field /usr/bin/ssh mode 0100644",),
+                "/usr/bin/ssh mode is not 0755",
+            ),
+            (
+                ("set_inode_field /usr/bin/ssh uid 1000",),
+                "/usr/bin/ssh ownership differs",
+            ),
+            (
+                ("ln /usr/bin/ssh /usr/bin/ssh-second-link",),
+                "/usr/bin/ssh is not one regular inode",
+            ),
+            (
+                ("set_inode_field /usr/bin mode 040777",),
+                "/usr/bin directory ancestry is not canonical",
+            ),
+        )
+        for index, (commands, message) in enumerate(metadata_cases):
+            with self.subTest(commands=commands):
+                self.fixture = create_fixture(
+                    Path(self.temporary.name) / f"fixture-ssh-client-metadata-{index}"
+                )
+                self.rewrite_rootfs_with_debugfs(commands)
+                with self.assertRaisesRegex(GateError, message):
+                    self.validate()
+
+    def test_root_image_ssh_clients_require_canonical_apk_owner_and_checksum(self) -> None:
+        cases = (
+            (b"R:ssh\n", b"R:zzz\n", "noncanonical SSH client owner"),
+            (None, None, "/usr/bin/ssh does not match its APK database checksum"),
+        )
+        for index, (old, new, message) in enumerate(cases):
+            with self.subTest(message=message):
+                self.fixture = create_fixture(
+                    Path(self.temporary.name) / f"fixture-ssh-client-apk-{index}"
+                )
+                if old is None:
+                    lines = self.fixture.apk_installed.read_bytes().splitlines(
+                        keepends=True
+                    )
+                    ssh_record = lines.index(b"R:ssh\n")
+                    old = lines[ssh_record + 1]
+                    self.assertTrue(old.startswith(b"Z:Q1"))
+                    replacement = b"A" if old[4:5] != b"A" else b"B"
+                    new = old[:4] + replacement + old[5:]
+                assert old is not None and new is not None
+                self.rewrite_bound_root_file(self.fixture.apk_installed, old, new)
+                with self.assertRaisesRegex(GateError, message):
+                    self.validate()
 
     def test_usb_management_profile_rejects_shared_mode_and_bad_interface(self) -> None:
         cases = (
@@ -917,6 +1546,11 @@ class ArtifactSemanticsTests(unittest.TestCase):
     def test_usb_management_rejects_missing_package_and_second_dhcp_owner(self) -> None:
         cases = (
             (b"unudhcpd-openrc", b"notdhcpd-openrc", "does not contain unudhcpd-openrc"),
+            (
+                b"networkmanager-openrc",
+                b"notworkmanager-openrc",
+                "does not contain networkmanager-openrc",
+            ),
             (b"notdhcp", b"dnsmasq", "second DHCP owner"),
         )
         for old, new, message in cases:

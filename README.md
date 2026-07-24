@@ -30,7 +30,9 @@ The source/tooling review is green, but the historical D114 userdata is still a
 private hardware-test baseline and is not a public ready-to-flash image. Its
 dirty-source kernel/package lineage must be replaced by a clean, matching
 boot/userdata rebuild and exact-hash hardware validation before a binary
-prerelease is created.
+prerelease is created. The secure full-function SSH source contract and its
+remaining sealed-cache/D114 acceptance gates are recorded in
+[`notes/ssh-full-function-contract-2026-07-24.md`](notes/ssh-full-function-contract-2026-07-24.md).
 
 ## Status
 
@@ -43,15 +45,17 @@ prerelease is created.
   (`0525:a4a2 POSTMARKETOS`, host `172.16.42.2`, device `172.16.42.1`).
 - ✅ **Persistent downstream v27 boot was installed**: `boot` and `userdata` boot into
   postmarketOS without `fastboot boot`.
-- ✅ **Downstream Wi-Fi bring-up works at `D-v46`**: SSH is reachable, `wlan0`
-  is up with a default route, and `p2p0` plus `wifi-aware0` are present. `D-v43`
-  remains the earlier Wi-Fi baseline.
+- ✅ **Downstream Wi-Fi bring-up works at `D-v43`**: `wlan0`, `p2p0`, and
+  `wifi-aware0` are present and a scan succeeded while USB SSH remained the
+  control path. An authenticated SSH session over WLAN is not yet separately
+  evidenced. `D-v46` is a later build-only service cleanup.
 - ⏳ **Latest built downstream artifact is `D-v52`** (`v52-d50-service-foundation`);
-  it is runtime-unverified. It matches current source package `1-r113`, carries
-  the target-side `lmi-rootctl` confirmation gates, and its rootfs static
-  verifier proves the `pd-mapper` service-foundation content is present. `D-v51`
-  remains an older rootctl target-gate artifact and must not be used to claim
-  the D-v52 service-foundation changes on hardware.
+  it is runtime-unverified and matches its then-current source package
+  `1-r113`. It carries the target-side `lmi-rootctl` confirmation gates, and
+  its rootfs static verifier proves the `pd-mapper` service-foundation content
+  is present. Current source has advanced to the unbuilt, hardware-unverified
+  `1-r145` SSH candidate. `D-v51` remains an older rootctl target-gate artifact
+  and must not be used to claim the D-v52 service-foundation changes on hardware.
 - ⚠️ **Mainline/copydown reached `M-r7` but is not boot-verified**. `M-r6` and
   `M-r7` writes were accepted, but reboot testing stopped at the Redmi logo with
   no postmarketOS USB, telnet, SSH, ADB, or fastboot interface observed.

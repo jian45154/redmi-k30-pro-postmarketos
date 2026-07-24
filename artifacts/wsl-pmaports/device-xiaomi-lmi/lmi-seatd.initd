@@ -1,0 +1,13 @@
+#!/sbin/openrc-run
+
+name="lmi-seatd"
+description="Seat management daemon for the lmi user session"
+
+command="/usr/sbin/lmi-seatd-wrapper"
+command_background="yes"
+pidfile="/run/$RC_SVCNAME.pid"
+
+depend() {
+	after localmount
+	before sshd
+}
