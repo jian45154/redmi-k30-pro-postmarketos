@@ -1,0 +1,39 @@
+diff --git a/security/security.c b/security/security.c
+--- a/security/security.c
++++ b/security/security.c
+@@ -17,6 +17,7 @@
+ #include <linux/export.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
++#include <linux/fs_context.h>
+ #include <linux/lsm_hooks.h>
+ #include <linux/integrity.h>
+ #include <linux/ima.h>
+@@ -784,7 +785,26 @@ void security_bprm_committed_creds(struct linux_binprm *bprm)
+ 
+ int security_fs_context_parse_param(struct fs_context *fc, struct fs_parameter *param)
+ {
+-	return call_int_hook(fs_context_parse_param, -ENOPARAM, fc, param);
++	struct security_hook_list *p;
++	bool trace_tmpfs_param;
++	int ret = -ENOPARAM;
++
++	trace_tmpfs_param = fc->fs_type && param->key &&
++		!strcmp(fc->fs_type->name, "tmpfs") &&
++		(!strcmp(param->key, "mode") ||
++		 !strcmp(param->key, "uid") ||
++		 !strcmp(param->key, "gid"));
++
++	hlist_for_each_entry(p, &security_hook_heads.fs_context_parse_param, list) {
++		ret = p->hook.fs_context_parse_param(fc, param);
++		if (trace_tmpfs_param)
++			pr_err("LMI_VFS_DIAG security_hook lsm=%s key=%s ret=%d\n",
++			       p->lsm, param->key, ret);
++		if (ret != 0)
++			break;
++	}
++
++	return ret;
+ }
+ 
+ int security_sb_alloc(struct super_block *sb)

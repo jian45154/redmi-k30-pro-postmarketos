@@ -149,7 +149,7 @@ class Fixture:
                 "candidate": {"logical_size": contract.raw_size, "path": "private/userdata.sparse", "representation": "android-sparse", "roundtrip_raw_sha256": contract.raw_sha256, "sha256": contract.sparse_sha256, "size": contract.sparse_size},
                 "candidate_raw": {"path": "private/userdata.raw", "sha256": contract.raw_sha256, "size": contract.raw_size},
                 "completed_actions_lock": {"path": "config/lmi-p2-d114/completed-userdata-actions-lock.json", "sha256": contract.completed_sha256, "size": contract.completed_size},
-                "deploy_policy_lock": {"path": "config/lmi-p2-d114/userdata-deploy-policy-lock-wsl-r1.json", "sha256": "1" * 64, "size": 1},
+                "deploy_policy_lock": {"path": "config/lmi-p2-d114/userdata-deploy-policy-lock-wsl-r2.json", "sha256": "1" * 64, "size": 1},
                 "fastboot_runtime_lock": {"path": "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json", "sha256": contract.runtime_sha256, "size": contract.runtime_size},
                 "p2_injection_attestation": {"path": "private/injection.json", "sha256": contract.injection_sha256, "size": contract.injection_size},
                 "p2_rootfs": {"path": "private/rootfs.ext4", "sha256": contract.rootfs_sha256, "size": contract.rootfs_size},
@@ -734,7 +734,7 @@ class PostwriteRevalidateWslTests(unittest.TestCase):
         config.mkdir(parents=True)
         source_config = deploy.REPO / "config" / "lmi-p2-d114"
         names = (
-            "userdata-deploy-policy-lock-wsl-r1.json",
+            "userdata-deploy-policy-lock-wsl-r2.json",
             "fastboot-wsl-runtime-lock.json",
             "physical-userdata-mapping.json",
             "completed-userdata-actions-lock.json",
@@ -753,7 +753,7 @@ class PostwriteRevalidateWslTests(unittest.TestCase):
         profile = self.fixture.make_profile()
         artifacts = profile["artifacts"]
         artifact_names = {
-            "deploy_policy_lock": "userdata-deploy-policy-lock-wsl-r1.json",
+            "deploy_policy_lock": "userdata-deploy-policy-lock-wsl-r2.json",
             "fastboot_runtime_lock": "fastboot-wsl-runtime-lock.json",
             "physical_mapping_evidence": "physical-userdata-mapping.json",
             "completed_actions_lock": "completed-userdata-actions-lock.json",

@@ -1,0 +1,43 @@
+#!/bin/sh
+set -eu
+
+root=${LMI_ROOT:-}
+conf=$root/etc/conf.d/rmtfs
+greetd_bin=$root/usr/sbin/greetd
+greetd_init=$root/etc/init.d/greetd
+greetd_runlevel=$root/etc/runlevels/default/greetd
+
+if [ -f "$conf" ] && ! grep -q '^command_args=' "$conf"; then
+	cat >> "$conf" <<'EOF'
+
+# xiaomi-lmi downstream 4.19 exposes Qualcomm subsystems through /dev/subsys_*
+# rather than mainline remoteproc. Do not pass -s, which requires rprocfd.
+command_args="-P -r"
+EOF
+fi
+
+[ -e "$greetd_bin" ] || exit 0
+[ -f "$greetd_init" ] || {
+	echo 'greetd is installed but /etc/init.d/greetd is missing' >&2
+	exit 1
+}
+
+[ "$(grep -Fxc 'command=/usr/sbin/greetd' "$greetd_init")" -eq 1 ] || {
+	echo 'expected exactly one upstream greetd command' >&2
+	exit 1
+}
+
+greetd_tmp=$greetd_init.tmp.$$
+trap 'rm -f "$greetd_tmp"' EXIT HUP INT TERM
+cp -p "$greetd_init" "$greetd_tmp"
+sed -i 's#^command=/usr/sbin/greetd$#command=/usr/local/bin/lmi-greetd-log#' "$greetd_tmp"
+[ "$(grep -Fxc 'command=/usr/local/bin/lmi-greetd-log' "$greetd_tmp")" -eq 1 ] || {
+	echo 'failed to install exactly one wrapped greetd command' >&2
+	exit 1
+}
+mv "$greetd_tmp" "$greetd_init"
+trap - EXIT HUP INT TERM
+
+mkdir -p "$(dirname "$greetd_runlevel")"
+rm -f "$greetd_runlevel"
+ln -s /etc/init.d/greetd "$greetd_runlevel"

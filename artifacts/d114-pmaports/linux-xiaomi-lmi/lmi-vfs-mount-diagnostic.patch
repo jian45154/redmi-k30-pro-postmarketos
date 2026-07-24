@@ -1,0 +1,181 @@
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 0b81f90..d15c535 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -2131,11 +2131,16 @@ struct block_device *lookup_bdev(const char *pathname)
+ 	if (!pathname || !*pathname)
+ 		return ERR_PTR(-EINVAL);
+ 
++	pr_err("LMI_VFS_DIAG lookup_bdev enter path=%s\n", pathname);
+ 	error = kern_path(pathname, LOOKUP_FOLLOW, &path);
+-	if (error)
++	if (error) {
++		pr_err("LMI_VFS_DIAG lookup_bdev kern_path fail err=%d\n", error);
+ 		return ERR_PTR(error);
++	}
+ 
+ 	inode = d_backing_inode(path.dentry);
++	pr_err("LMI_VFS_DIAG lookup_bdev inode mode=0%o rdev=%u:%u\n",
++	       inode->i_mode, MAJOR(inode->i_rdev), MINOR(inode->i_rdev));
+ 	error = -ENOTBLK;
+ 	if (!S_ISBLK(inode->i_mode))
+ 		goto fail;
+@@ -2144,12 +2149,17 @@ struct block_device *lookup_bdev(const char *pathname)
+ 		goto fail;
+ 	error = -ENOMEM;
+ 	bdev = bd_acquire(inode);
+-	if (!bdev)
++	if (!bdev) {
++		pr_err("LMI_VFS_DIAG lookup_bdev bd_acquire fail\n");
+ 		goto fail;
++	}
++	pr_err("LMI_VFS_DIAG lookup_bdev ok dev=%u:%u\n",
++	       MAJOR(bdev->bd_dev), MINOR(bdev->bd_dev));
+ out:
+ 	path_put(&path);
+ 	return bdev;
+ fail:
++	pr_err("LMI_VFS_DIAG lookup_bdev fail err=%d\n", error);
+ 	bdev = ERR_PTR(error);
+ 	goto out;
+ }
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 16c4ddc..5bafb74 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3728,6 +3728,9 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	unsigned int journal_ioprio = DEFAULT_JOURNAL_IOPRIO;
+ 	ext4_group_t first_not_zeroed;
+ 
++	pr_err("LMI_VFS_DIAG ext4_fill_super enter dev=%u:%u data=%s\n",
++	       MAJOR(sb->s_bdev->bd_dev), MINOR(sb->s_bdev->bd_dev),
++	       data ? (char *)data : "(null)");
+ 	if ((data && !orig_data) || !sbi)
+ 		goto out_free_base;
+ 
+@@ -4841,7 +4844,10 @@ out_free_base:
+ 	kfree(sbi);
+ 	kfree(orig_data);
+ 	fs_put_dax(dax_dev);
+-	return err ? err : ret;
++	ret = err ? err : ret;
++	pr_err("LMI_VFS_DIAG ext4_fill_super exit dev=%u:%u ret=%d\n",
++	       MAJOR(sb->s_bdev->bd_dev), MINOR(sb->s_bdev->bd_dev), ret);
++	return ret;
+ }
+ 
+ /*
+diff --git a/fs/fs_context.c b/fs/fs_context.c
+index 71b2426..0dab48a 100644
+--- a/fs/fs_context.c
++++ b/fs/fs_context.c
+@@ -471,10 +471,16 @@ static int legacy_get_tree(struct fs_context *fc)
+ 	struct super_block *sb;
+ 	struct dentry *root;
+ 
++	pr_err("LMI_VFS_DIAG legacy_get_tree enter fs=%s source=%s flags=0x%x\n",
++	       fc->fs_type->name, fc->source ?: "(null)", fc->sb_flags);
+ 	root = fc->fs_type->mount(fc->fs_type, fc->sb_flags,
+ 				      fc->source, ctx->legacy_data);
+-	if (IS_ERR(root))
++	if (IS_ERR(root)) {
++		pr_err("LMI_VFS_DIAG legacy_get_tree fail fs=%s err=%ld\n",
++		       fc->fs_type->name, PTR_ERR(root));
+ 		return PTR_ERR(root);
++	}
++	pr_err("LMI_VFS_DIAG legacy_get_tree ok fs=%s\n", fc->fs_type->name);
+ 
+ 	sb = root->d_sb;
+ 	BUG_ON(!sb);
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 4a69b91..1310b73 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2625,6 +2625,9 @@ static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
+ 	const char *subtype = NULL;
+ 	int err = 0;
+ 
++	pr_err("LMI_VFS_DIAG do_new_mount enter fstype=%s name=%s data=%s\n",
++	       fstype ?: "(null)", name ?: "(null)", data ? (char *)data : "(null)");
++
+ 	if (!fstype)
+ 		return -EINVAL;
+ 
+@@ -2655,6 +2658,10 @@ static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
+ 		err = vfs_parse_fs_string(fc, "source", name, strlen(name));
+ 	if (!err)
+ 		err = parse_monolithic_mount_data(fc, data);
++	if (!err && name && !fc->source)
++		fc->source = kstrdup(name, GFP_KERNEL);
++	pr_err("LMI_VFS_DIAG do_new_mount pre_get_tree fs=%s name=%s err=%d fc_source=%s\n",
++	       fstype, name ?: "(null)", err, fc->source ?: "(null)");
+ 	if (!err)
+ 		err = vfs_get_tree(fc);
+ 	if (!err)
+@@ -2663,4 +2678,18 @@ static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
+-	if (!err)
+-		err = vfs_get_tree(fc);
+-	if (!err)
+-		err = do_new_mount_fc(fc, path, mnt_flags);
++	if (!err) {
++		err = vfs_get_tree(fc);
++		pr_err("LMI_VFS_DIAG do_new_mount post_get_tree fs=%s err=%d root=%p\n",
++		       fstype, err, fc->root);
++		if (!err && fc->root) {
++			struct inode *root_inode = d_backing_inode(fc->root);
++
++			pr_err("LMI_VFS_DIAG do_new_mount root mode=0%o uid=%u gid=%u\n",
++			       root_inode->i_mode,
++			       from_kuid(&init_user_ns, root_inode->i_uid),
++			       from_kgid(&init_user_ns, root_inode->i_gid));
++		}
++	}
++	if (!err) {
++		err = do_new_mount_fc(fc, path, mnt_flags);
++		pr_err("LMI_VFS_DIAG do_new_mount post_attach fs=%s err=%d\n",
++		       fstype, err);
++	}
+diff --git a/fs/super.c b/fs/super.c
+index 6bbd639..f08c5ed 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -1365,12 +1365,19 @@ struct dentry *mount_bdev(struct file_system_type *fs_type,
+ 	fmode_t mode = FMODE_READ | FMODE_EXCL;
+ 	int error = 0;
+ 
++	pr_err("LMI_VFS_DIAG mount_bdev enter fs=%s dev=%s flags=0x%x\n",
++	       fs_type->name, dev_name ?: "(null)", flags);
+ 	if (!(flags & SB_RDONLY))
+ 		mode |= FMODE_WRITE;
+ 
+ 	bdev = blkdev_get_by_path(dev_name, mode, fs_type);
+-	if (IS_ERR(bdev))
++	if (IS_ERR(bdev)) {
++		pr_err("LMI_VFS_DIAG mount_bdev blkdev_get fail err=%ld\n",
++		       PTR_ERR(bdev));
+ 		return ERR_CAST(bdev);
++	}
++	pr_err("LMI_VFS_DIAG mount_bdev blkdev_get ok dev=%u:%u\n",
++	       MAJOR(bdev->bd_dev), MINOR(bdev->bd_dev));
+ 
+ 	/*
+ 	 * once the super is inserted into the list by sget, s_umount
+@@ -1411,6 +1418,8 @@ struct dentry *mount_bdev(struct file_system_type *fs_type,
+ 		snprintf(s->s_id, sizeof(s->s_id), "%pg", bdev);
+ 		sb_set_blocksize(s, block_size(bdev));
+ 		error = fill_super(s, data, flags & SB_SILENT ? 1 : 0);
++		pr_err("LMI_VFS_DIAG mount_bdev fill_super fs=%s ret=%d\n",
++		       fs_type->name, error);
+ 		if (error) {
+ 			deactivate_locked_super(s);
+ 			goto error;
+@@ -1534,6 +1543,9 @@ int vfs_get_tree(struct fs_context *fc)
+ 	struct super_block *sb;
+ 	int error;
+ 
++	pr_err("LMI_VFS_DIAG vfs_get_tree enter fs=%s fs_flags=0x%x source=%s root=%p\n",
++	       fc->fs_type->name, fc->fs_type->fs_flags, fc->source ?: "(null)", fc->root);
++
+ 	if (fc->fs_type->fs_flags & FS_REQUIRES_DEV && !fc->source)
+ 		return -ENOENT;
+ 

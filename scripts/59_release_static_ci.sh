@@ -137,6 +137,9 @@ if grep -q '^- HEAD:' "$archive_handoff"; then
 	exit 1
 fi
 
+echo "release static CI: P2-D114 hash consistency"
+python3 -m scripts.lmi_p2_d114.hash_consistency verify
+
 echo "release static CI: lmi release safety lint"
 bash scripts/65_lmi_release_safety_lint.sh
 

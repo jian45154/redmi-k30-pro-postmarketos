@@ -38,43 +38,43 @@
   "input": {
     "apks": {
       "p2": {
-        "build_attestation_sha256": "2a1b4dde55fe1544811337252d34c04acfb1438180d5589c0c5315d545748b61",
+        "build_attestation_sha256": "f0193caac2ab580d5e8a154539e34419ad0a04b25a24a8de5b84fbb12beb40a3",
         "sandbox_path": "/tools/p2.apk",
-        "sha256": "7cab262bd73b0bed23b5cc2b5b62d38c66ea715f49afa6b0ad7dd24246dd1db1",
-        "source_path": "private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722/run2-device-xiaomi-lmi-terminal-0.1.0-r1.apk"
+        "sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
+        "source_path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724/run2-device-xiaomi-lmi-terminal-0.1.0-r2.apk"
       },
       "sixrow": {
-        "build_attestation_sha256": "b4642db49c85e31a3b0b388968e1af94f4820d02ee712f09baa625c456e43e99",
+        "build_attestation_sha256": "5bb55928ae0b4109ad028d1a24e29de0dc74d2078f31d33628fd683cfbbaa0a2",
         "sandbox_path": "/tools/sixrow.apk",
-        "sha256": "ff8dbb02208959db4af9f1da735cb7b4f8765138388b6f7daebabce161fe208b",
-        "source_path": "private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722/lmi-weston-sixrow-clients-14.0.2-r1.apk"
+        "sha256": "8d2f23522eb737432577b33ee7dd012b76d06012f1d6918eac289853f6f015e7",
+        "source_path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724/lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk"
       }
     },
-    "base_sha256": "76f032775b110855a5984b1ed45b10f9653c59af69b070ceac0e73e7216eb96c",
+    "base_sha256": "5f351c9184fec53070886f3e9aa6a04178d2be8858ec2237b13af19e4a0e8cf6",
     "candidate_rebuild_lock_schema": "lmi-p2-d114-candidate-rebuild-lock/v1",
-    "candidate_rebuild_lock_sha256": "1122fae16487ab77406fe444f1fc96da4848fcfb277fd4ad71dc51d81da01489",
-    "candidate_sha256": "90b9f0ab94198f78eb251cff0d4c521f7b4bb47fb50967a7c661eacc026e0e82",
-    "candidate_size": 2826960896,
+    "candidate_rebuild_lock_sha256": "80c4952c9f71eda4bb49d72facd451630927a53a5550103caffe9e818469a7a2",
+    "candidate_sha256": "d331433af3b7fdb78e42732a1d6b5530a5cf9e6a90a4f4e648f7a97aa696f790",
+    "candidate_size": 2923429888,
     "candidate_uuid": "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f",
     "keys": {
       "p2_sha256": "c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79e936736",
-      "sixrow_sha256": "0d4b877df515c5a202abefc4d15f7b839ea0d1615045f9a7f656d5aef0496c52"
+      "sixrow_sha256": "c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79e936736"
     },
-    "raw_sha256": "61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6",
-    "repair_epoch": 1784551824,
-    "repair_log_sha256": "9a3b20f3e422ee80cb6615158f1cc8b08fd71dda9a2e49745642404decf60837",
-    "sparse_sha256": "e8a30dc37cb4b75508d89725a9603bc15a985f4e51af77384e8d43c2928f8d68",
-    "verify_log_sha256": "4e23b50bc020fddde6daacf5b5a9a4f5472bcc156e7c58c5c932a8ba4c6ffc4f"
+    "raw_sha256": "33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8",
+    "repair_epoch": 1784734606,
+    "repair_log_sha256": "b2256b9695e96bf57505a107edb2ca1581bcc307b70fc04997e1f016e936daf5",
+    "sparse_sha256": "1315e3a06ddff42e91f930f01b16a62ab30ab3d4f490e8e8e40d0af89c657279",
+    "verify_log_sha256": "b2256b9695e96bf57505a107edb2ca1581bcc307b70fc04997e1f016e936daf5"
   },
   "normalization": {
     "fixed": {
+      "all_free_blocks_zero": true,
       "allocated_only_command": [
         "e2image",
         "-r",
         "-a",
         "-p"
       ],
-      "all_free_blocks_zero": true,
       "inactive_journal": {
         "block_count": 16383,
         "first_block": 327681,
@@ -85,10 +85,7 @@
         "first_block": 327680
       },
       "proof": "second-e2image-byte-identical",
-      "reviewed_freed_blocks": [
-        586227,
-        661606
-      ]
+      "reviewed_freed_blocks": []
     },
     "positive_integer_fields": [
       "sparse_st_blocks"
@@ -106,14 +103,14 @@
     "fixed": {
       "mode": "0640",
       "packages": [
-        "device-xiaomi-lmi-terminal=0.1.0-r1",
-        "lmi-weston-sixrow-clients=14.0.2-r1"
+        "device-xiaomi-lmi-terminal=0.1.0-r2",
+        "lmi-weston-sixrow-clients=14.0.2-r2"
       ],
-      "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722/lmi-d114-rootfs-p2-r1-sixrow-injected-20260722.bundle/rootfs.ext4",
-      "size": 2826960896,
-      "triggers_sha256": "ee66cbf049c70c6c992f27da83d45166a02c9b16c1efcf4b2206791a0adcacf7",
+      "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-injected-20260724/lmi-d114-rootfs-p2-r2-most-complete-injected-20260724.bundle/rootfs.ext4",
+      "size": 2923429888,
+      "triggers_sha256": "8847b2f186ea9b5a8705a2aa020fd0c00595531f1b25550ced1bc7f803952286",
       "uuid": "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f",
-      "world_sha256": "00a770856b6f2a1d15063c9e5085a3fea7e0e2d5ee5f421138ee90a06217a465"
+      "world_sha256": "d2db0f373a095db97676afe6c088ba98cc9ebdf78c3576cae6a3d17b053d02eb"
     },
     "sha256_fields": [
       "filesystem_delta_sha256",
@@ -144,13 +141,13 @@
       "pid",
       "uts"
     ],
-    "sealed_injector_script_sha256": "dd85c28a013a766e4efb2e9f93f0f8a2c9cd9b291dd10d93ef3d555fa21a41c2"
+    "sealed_injector_script_sha256": "0da273703f808f3ad0d599835c71812f415b03651a4ee75767e9a38f4a4c213d"
   },
   "sanitization": {
     "apk_cache": "exact-four-index-members-removed",
     "apk_log": "empty",
-    "authorized_keys": "removed",
-    "machine_id": "empty",
+    "authorized_keys": "absent-in-base",
+    "machine_id": "baked-fixed-hardware-test",
     "resolv_conf": "empty",
     "shadow_backup": "exact-copy-of-locked-active-shadow",
     "ssh_password_authentication": "disabled-by-locked-drop-in"

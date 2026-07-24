@@ -1,0 +1,2 @@
+LMI_VFS_DIAG shmem_monolithic before key=
+LMI_VFS_DIAG shmem_monolithic after key=

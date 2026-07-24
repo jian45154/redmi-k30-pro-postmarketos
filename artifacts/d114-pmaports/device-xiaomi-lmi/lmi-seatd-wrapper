@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+
+exec /usr/bin/seatd -g lmi -l debug >>/run/lmi-seatd.log 2>&1

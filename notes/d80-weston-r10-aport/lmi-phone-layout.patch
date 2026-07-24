@@ -1,0 +1,103 @@
+diff --git a/clients/keyboard.c b/clients/keyboard.c
+index 2a77c15..47a75eb 100644
+--- a/clients/keyboard.c
++++ b/clients/keyboard.c
+@@ -111,7 +111,6 @@ static const struct key normal_keys[] = {
+ 	{ keytype_default, "i", "I", "8", 1},
+ 	{ keytype_default, "o", "O", "9", 1},
+ 	{ keytype_default, "p", "P", "0", 1},
+-	{ keytype_backspace, "<--", "<--", "<--", 2},
+ 
+ 	{ keytype_tab, "->|", "->|", "->|", 1},
+ 	{ keytype_default, "a", "A", "-", 1},
+@@ -123,9 +122,8 @@ static const struct key normal_keys[] = {
+ 	{ keytype_default, "j", "J", "(", 1},
+ 	{ keytype_default, "k", "K", ")", 1},
+ 	{ keytype_default, "l", "L", "~", 1},
+-	{ keytype_enter, "Enter", "Enter", "Enter", 2},
+ 
+-	{ keytype_switch, "ABC", "abc", "ABC", 2},
++	{ keytype_switch, "Shift", "shift", "Shift", 1},
+ 	{ keytype_default, "z", "Z", "/", 1},
+ 	{ keytype_default, "x", "X", "\'", 1},
+ 	{ keytype_default, "c", "C", "\"", 1},
+@@ -133,17 +131,16 @@ static const struct key normal_keys[] = {
+ 	{ keytype_default, "b", "B", "=", 1},
+ 	{ keytype_default, "n", "N", "?", 1},
+ 	{ keytype_default, "m", "M", "!", 1},
+-	{ keytype_default, ",", ",", "\\", 1},
+-	{ keytype_default, ".", ".", "|", 1},
+-	{ keytype_switch, "ABC", "abc", "ABC", 1},
++	{ keytype_backspace, "<--", "<--", "<--", 1},
++	{ keytype_enter, "Enter", "Enter", "Enter", 1},
+ 
+ 	{ keytype_symbols, "?123", "?123", "abc", 1},
+-	{ keytype_space, "", "", "", 5},
++	{ keytype_space, "", "", "", 4},
+ 	{ keytype_arrow_up, "/\\", "/\\", "/\\", 1},
+ 	{ keytype_arrow_left, "<", "<", "<", 1},
+ 	{ keytype_arrow_right, ">", ">", ">", 1},
+ 	{ keytype_arrow_down, "\\/", "\\/", "\\/", 1},
+-	{ keytype_style, "", "", "", 2}
++	{ keytype_style, "", "", "", 1}
+ };
+ 
+ static const struct key numeric_keys[] = {
+@@ -157,15 +154,25 @@ static const struct key numeric_keys[] = {
+ 	{ keytype_default, "8", "8", "8", 1},
+ 	{ keytype_default, "9", "9", "9", 1},
+ 	{ keytype_default, "0", "0", "0", 1},
+-	{ keytype_backspace, "<--", "<--", "<--", 2},
+ 
++	{ keytype_default, "-", "-", "-", 1},
++	{ keytype_default, "@", "@", "@", 1},
++	{ keytype_default, "*", "*", "*", 1},
++	{ keytype_default, "^", "^", "^", 1},
++	{ keytype_default, ":", ":", ":", 1},
++	{ keytype_default, ";", ";", ";", 1},
++	{ keytype_default, "(", "(", "(", 1},
++	{ keytype_default, ")", ")", ")", 1},
++	{ keytype_default, "~", "~", "~", 1},
++	{ keytype_backspace, "<--", "<--", "<--", 1},
++
++	{ keytype_symbols, "ABC", "ABC", "ABC", 1},
+ 	{ keytype_space, "", "", "", 4},
+-	{ keytype_enter, "Enter", "Enter", "Enter", 2},
+ 	{ keytype_arrow_up, "/\\", "/\\", "/\\", 1},
+ 	{ keytype_arrow_left, "<", "<", "<", 1},
+ 	{ keytype_arrow_right, ">", ">", ">", 1},
+ 	{ keytype_arrow_down, "\\/", "\\/", "\\/", 1},
+-	{ keytype_style, "", "", "", 2}
++	{ keytype_enter, "Enter", "Enter", "Enter", 1}
+ };
+ 
+ static const struct key arabic_keys[] = {
+@@ -220,7 +227,7 @@ static const struct key arabic_keys[] = {
+ static const struct layout normal_layout = {
+ 	normal_keys,
+ 	sizeof(normal_keys) / sizeof(*normal_keys),
+-	12,
++	10,
+ 	4,
+ 	"en",
+ 	ZWP_TEXT_INPUT_V1_TEXT_DIRECTION_LTR
+@@ -229,8 +236,8 @@ static const struct layout normal_layout = {
+ static const struct layout numeric_layout = {
+ 	numeric_keys,
+ 	sizeof(numeric_keys) / sizeof(*numeric_keys),
+-	12,
+-	2,
++	10,
++	3,
+ 	"en",
+ 	ZWP_TEXT_INPUT_V1_TEXT_DIRECTION_LTR
+ };
+@@ -256,7 +263,7 @@ static const char *style_labels[] = {
+ };
+ 
+ static const double key_width = 60;
+-static const double key_height = 50;
++static const double key_height = 70;
+ /* DSI-1 is 540 logical pixels wide at the phone's configured scale. */
+ static const double keyboard_scale_x = 0.90;
+ static const double keyboard_scale_y = 1.05;

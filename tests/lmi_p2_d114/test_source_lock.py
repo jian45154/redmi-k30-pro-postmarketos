@@ -31,6 +31,33 @@ class SourceLockTests(unittest.TestCase):
         with self.assertRaisesRegex(LockError, "physical-input evidence"):
             source_lock.require_release_ready()
 
+    def test_session_script_child_sha256_match_runtime_components(self) -> None:
+        # Cross-check that the runtime keyboard/terminal SHA-256 the session
+        # script hardcodes (to validate its live children) equals the value
+        # pinned in source-lock runtime.component_sha256. Skipping this is how
+        # the r2 six-row keyboard black screen shipped: source-lock was bumped
+        # but the session copy went stale, with no test catching the drift.
+        session = (REPO / "files/lmi-p2-d114/lmi-p2-d114-session").read_text(
+            encoding="utf-8"
+        )
+        components = self.value["runtime"]["component_sha256"]
+        for path in (
+            "/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow",
+            "/usr/libexec/lmi-p2-d114/weston-terminal-sixrow",
+        ):
+            expected = components[path]
+            self.assertIn(
+                expected,
+                session,
+                f"session script does not reference the source-lock SHA for {path}",
+            )
+        # And it must not still reference a now-superseded child SHA.
+        stale = "88d06d99f7c2d3eb1da64e7f89a0f5e37b87bc4c93f8b6778b1ca6491bf1dba6"
+        if stale not in components.values():
+            self.assertNotIn(
+                stale, session, "session script pins a keyboard SHA not in source-lock"
+            )
+
     def test_rejects_unknown_duplicate_and_wrong_schema_fields(self) -> None:
         unknown = deepcopy(self.value)
         unknown["fastboot"] = "flash userdata"
@@ -69,10 +96,10 @@ class SourceLockTests(unittest.TestCase):
 
     def test_rejects_dependency_or_package_weakening(self) -> None:
         for dependency in (
-            "device-xiaomi-lmi=1-r142",
-            "linux-xiaomi-lmi=4.19.325-r9",
-            "lmi-weston-sixrow-clients=14.0.2-r1",
-            "weston=14.0.2-r10",
+            "device-xiaomi-lmi=1-r144",
+            "linux-xiaomi-lmi=4.19.325-r15",
+            "lmi-weston-sixrow-clients=14.0.2-r2",
+            "weston=14.0.2-r5",
             "greetd=0.10.3-r11",
         ):
             with self.subTest(dependency=dependency):

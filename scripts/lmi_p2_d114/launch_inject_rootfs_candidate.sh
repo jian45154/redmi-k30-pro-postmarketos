@@ -22,12 +22,12 @@ readonly LAUNCHER_CANONICAL
 }
 readonly REPO="${LAUNCHER_CANONICAL%"$LAUNCHER_SUFFIX"}"
 [[ -n "$REPO" && "$REPO" == /* && -d "$REPO" && ! -L "$REPO" ]] || exit 1
-readonly BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722"
+readonly BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-injected-20260724"
 readonly INJECTOR="$REPO/scripts/lmi_p2_d114/inject_rootfs_candidate.sh"
 # Updated only after the injector passes its focused tests.
-readonly INJECTOR_SHA256=dd85c28a013a766e4efb2e9f93f0f8a2c9cd9b291dd10d93ef3d555fa21a41c2
+readonly INJECTOR_SHA256=0da273703f808f3ad0d599835c71812f415b03651a4ee75767e9a38f4a4c213d
 readonly ROOT_SEAL_DIR=/run/lmi-p2-d114-inject
-readonly OUTPUT_BUNDLE="$BUILD_DIR/lmi-d114-rootfs-p2-r1-sixrow-injected-20260722.bundle"
+readonly OUTPUT_BUNDLE="$BUILD_DIR/lmi-d114-rootfs-p2-r2-most-complete-injected-20260724.bundle"
 readonly OUTPUT="$OUTPUT_BUNDLE/rootfs.ext4"
 readonly ATTESTATION="$OUTPUT_BUNDLE/attestation.json"
 readonly WSL_ROOT_WINDOWS_DIR=/mnt/c/WINDOWS

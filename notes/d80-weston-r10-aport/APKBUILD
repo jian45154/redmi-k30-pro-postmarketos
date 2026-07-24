@@ -1,0 +1,154 @@
+# Based on Alpine community/weston 14.0.2-r5.
+pkgname=weston
+pkgver=14.0.2
+pkgrel=10
+_libname=lib$pkgname
+_libdir=$_libname-${pkgver%%.*}
+pkgdesc="Reference Wayland server with downstream legacy DRM format compatibility"
+url="https://wayland.freedesktop.org/"
+arch="all"
+license="MIT"
+depends_dev="$pkgname=$pkgver-r$pkgrel"
+makedepends="
+	colord-dev
+	dbus-dev
+	freerdp-dev
+	glu-dev
+	gst-plugins-base-dev
+	gstreamer-dev
+	lcms2-dev
+	libdisplay-info-dev
+	libevdev-dev
+	libinput-dev
+	libjpeg-turbo-dev
+	libseat-dev
+	libunwind-dev
+	libva-dev
+	libwebp-dev
+	libxcb-dev
+	libxcursor-dev
+	libxkbcommon-dev
+	linux-pam-dev
+	meson
+	mtdev-dev
+	neatvnc-dev
+	pango-dev
+	pipewire-dev
+	wayland-dev
+	wayland-protocols
+	xcb-util-cursor-dev
+	xkeyboard-config
+	xwayland-dev
+	"
+_shell="shell-desktop shell-fullscreen shell-ivi"
+_client="terminal wcap-decode"
+_backend="
+	backend-drm
+	backend-headless
+	backend-rdp
+	backend-wayland
+	backend-x11
+	"
+for _sub in $_shell $_client $_backend; do
+	subpackages="$subpackages $pkgname-$_sub:_sub"
+done
+subpackages="
+	$pkgname-dev
+	$pkgname-doc
+	$subpackages
+	$pkgname-clients
+	$_libname:libs
+	$pkgname-xwayland
+	$pkgname-desktop-x11:_x11:noarch
+	"
+source="https://gitlab.freedesktop.org/wayland/weston/-/releases/$pkgver/downloads/weston-$pkgver.tar.xz
+	libdisplayinfo-0.3.0.patch
+	lmi-dedupe-legacy-plane-formats.patch
+	lmi-phone-input-safearea.patch
+	lmi-phone-layout.patch
+	"
+options="!check"
+install="$pkgname.pre-install"
+
+prepare() {
+	default_prepare
+	git init -q .
+}
+
+build() {
+	abuild-meson \
+		-Db_lto=true \
+		-Dbackend-vnc=false \
+		-Dsystemd=false \
+		-Dtests=false \
+		build
+	meson compile -C build
+}
+
+check() {
+	meson test --print-errorlogs -C build
+}
+
+package() {
+	DESTDIR="$pkgdir" meson install --no-rebuild -C build
+	mkdir -p "$pkgdir"/usr/lib
+	mv "$pkgdir"/usr/share/pkgconfig/* "$pkgdir"/usr/lib/pkgconfig/
+}
+
+libs() {
+	depends="xkeyboard-config"
+	default_libs
+}
+
+clients() {
+	pkgdesc="Weston example clients"
+	mkdir -p "$subpkgdir"/usr/bin
+	mv "$pkgdir"/usr/bin/$pkgname-* "$subpkgdir"/usr/bin
+}
+
+xwayland() {
+	pkgdesc="Wayland module to run X Clients"
+	mkdir -p "$subpkgdir"/usr/lib/$_libdir
+	mv "$pkgdir"/usr/lib/$_libdir/xwayland.so "$subpkgdir"/usr/lib/$_libdir
+}
+
+_x11() {
+	pkgdesc="Weston desktop helper pack (x11 backend)"
+	depends="$pkgname $pkgname-shell-desktop $pkgname-xwayland
+		$pkgname-backend-x11 $pkgname-terminal"
+	mkdir -p "$subpkgdir"
+}
+
+_sub() {
+	local name path
+	case $subpkgname in
+	*-shell-*)
+		name=${subpkgname#"$pkgname"-shell-}
+		path=usr/lib/$pkgname
+		pkgdesc="Weston shell: $name"
+		name="*$name-shell*"
+		;;
+	*-backend-*)
+		name=${subpkgname#"$pkgname"-backend-}
+		path=usr/lib/$_libdir
+		pkgdesc="Weston backend: $name"
+		name=$name-backend.so
+		grep -q cairo "$pkgdir"/$path/$name && depends="mesa-dri-gallium"
+		;;
+	*)
+		name=$subpkgname
+		path=usr/bin
+		[ -x "$pkgdir"/$path/$name ] || name=${subpkgname#"$pkgname"-}
+		pkgdesc="Weston client: $name"
+		;;
+	esac
+	amove $path/$name
+}
+
+sha512sums="
+e8214ec893e6c3ae94eb3c92feba104b0201843e9143f726a3e9a4d396d02523c94da706c1348cf934bc339fb1a4bc1fecdb865f0ea914115fd346d9eda091f5  weston-14.0.2.tar.xz
+c3df5dbaf9f94c2236b2c9ea33072111a277d3a9959090fa6931fa832a09867342464bdc6c9c5c86c8caea79873c5744dc22d018599988d432446aa01811a5d7  libdisplayinfo-0.3.0.patch
+45aeb18b89734b9bfd8a3bf5e5e338a04d5281264c2300fb71adb89352d637fabb9b7b52241d83d790469ffc432064da19d110bb44b03e43a570af8884c0ce3d  lmi-dedupe-legacy-plane-formats.patch
+42fb44f7edde37d7b2e748f04e364b4638a44f64c4e65216a363a1695e86743ba18d277dc833b563fa3d61280e5ff99c39da44f46be6b3b20bd7be25627bca53  lmi-phone-input-safearea.patch
+7a91a2d47e6211b84dd64f046dc5a4d7f8b7c1dcd404d4f913503953f1945689c7585b5f690404a5ba94f5805ed86b6776efd8d8048541dfb6a5732eedc4f755  lmi-phone-layout.patch
+"

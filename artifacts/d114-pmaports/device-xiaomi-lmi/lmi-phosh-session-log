@@ -1,0 +1,9 @@
+#!/bin/bash
+log=/tmp/lmi-phosh-session.log
+if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ] && [ -w "$XDG_RUNTIME_DIR" ]; then
+	log="$XDG_RUNTIME_DIR/lmi-phosh-session.log"
+fi
+: > "$log"
+exec >> "$log" 2>&1
+echo 'lmi-phosh-session diagnostic wrapper: begin target=/usr/bin/phosh-session'
+exec /usr/bin/phosh-session "$@"
