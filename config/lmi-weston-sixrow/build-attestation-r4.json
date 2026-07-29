@@ -1,0 +1,73 @@
+{
+  "schema": "lmi-weston-sixrow-build-attestation/v1",
+  "generated_at": "2026-07-29T00:36:47Z",
+  "status": "BUILT_REPRODUCIBLE_STATIC_AUDIT_PASSED_NOT_DEVICE_TESTED",
+  "device": "xiaomi-lmi",
+  "architecture": "aarch64",
+  "source": {
+    "weston_version": "14.0.2",
+    "source_lock": "config/lmi-weston-sixrow/source-lock.json",
+    "source_lock_sha256": "8aecb43ceea5682a14944e8f9fc25e4f8dc61015bc8ec426ad88a9101f9f924b",
+    "apkbuild": "files/lmi-weston-sixrow/APKBUILD",
+    "apkbuild_sha256": "5c4b5b6d29d9db0ecb69df75bbfb7a7ed89924f633703a54738673cda8a40d0e",
+    "verification_sources": [
+      {
+        "path": "scripts/lmi_weston_sixrow/verify.py",
+        "sha256": "7135f9c736761b1adfacfbe3ad7428628fb81d7c57e6a936c02c61c4f523b50a"
+      },
+      {
+        "path": "tests/lmi_weston_sixrow/test_static.py",
+        "sha256": "05085fb3b865c4f088a5b571bb6ea9a8d945a89be7af5f4546993839c000e990"
+      }
+    ],
+    "build_method": "Two clean unprivileged aarch64 builds from the recorded offline pmbootstrap cache: apk.static under a single-uid user namespace materialized the same 199-package Alpine edge build root (aarch64 install scripts and triggers cannot exec without binfmt; the busybox applet farm and abuild group were replayed inside the guest), then proot -0 with PROOT_NO_SECCOMP=1 translated child execs through qemu-aarch64 11.0.2-r1 and abuild 3.18.0_rc3-r1 ran with -F -d against the hash-locked local Weston tarball and four patches. Both runs used SOURCE_DATE_EPOCH=1785283200 and ABUILD_LAST_COMMIT=uncommitted-sixrow-modern-layout-r4.",
+    "signing_key": "pmos@local-6a5d38f2",
+    "signing_note": "Both APKs were directly signed during abuild with the readable canonical P2-track key pmos@local-6a5d38f2, whose public key is committed at config/lmi-p2-d114/pmos@local-6a5d38f2.rsa.pub."
+  },
+  "reproducibility": {
+    "runs": 2,
+    "run1_sha256": "5bf587a355c7c91865a6f69bbb08c5e092e64eec2401d3b8f564bf1b6c3d18a0",
+    "run2_sha256": "5bf587a355c7c91865a6f69bbb08c5e092e64eec2401d3b8f564bf1b6c3d18a0",
+    "byte_identical": true
+  },
+  "artifact": {
+    "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r4-modern-layout-build-20260729/lmi-weston-sixrow-clients-14.0.2-r4.apk",
+    "sha256": "5bf587a355c7c91865a6f69bbb08c5e092e64eec2401d3b8f564bf1b6c3d18a0",
+    "compressed_size": 122302,
+    "installed_size": 335416,
+    "package_version": "14.0.2-r4",
+    "payload": {
+      "/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow": "8cb3865b8afdd535905d99ac8c9d1d34ae8b730024381b11a899e916d39eb8b1",
+      "/usr/libexec/lmi-p2-d114/weston-terminal-sixrow": "ed3cda9c8dcdcd197385d125c84e3fdaa0429790b1b166d62f6206c4f853cf24"
+    }
+  },
+  "elf": {
+    "class": "ELF64",
+    "endianness": "little",
+    "machine": "AArch64",
+    "type": "PIE",
+    "interpreter": "/lib/ld-musl-aarch64.so.1",
+    "required_sonames_present_in_recorded_d114_rootfs": true
+  },
+  "verification": {
+    "unit_tests": "13 passed, 1 skipped across 14 tests (tests/lmi_weston_sixrow with the official tarball and local r4 APK present; the disabled r2 transient exact-stage fixture remains absent)",
+    "official_tarball_sha256_and_sha512_verified": true,
+    "patches_applied_with_fuzz_zero": true,
+    "layout_and_shift_map_verified": true,
+    "modern_layout_changes": [
+      "Shift moved to the leftmost slot of the modifier row",
+      "shared bottom row carries always-available / : - . keys on both pages",
+      "backslash and pipe are adjacent and shift-paired on the symbol page",
+      "digit and bracket keys carry physical-keyboard shift pairs"
+    ],
+    "shared_pointer_and_touch_viewport_helper_verified": true,
+    "touch_behavior_payload_unchanged_from_r3": true
+  },
+  "supersedes": {
+    "status": "SUPERSEDED_R3_CENTER_SHIFT_NO_PERSISTENT_PATH_KEYS",
+    "attestation": "config/lmi-weston-sixrow/build-attestation-r3.json",
+    "attestation_sha256": "b8666eb60e60253cdfe671b859c1563ba80652022fedb3b1e80da7c10fd50742",
+    "artifact": "private/lmi-p1/recovery/d110-d114/p2-d114-r3-terminal-scroll-build-20260724/lmi-weston-sixrow-clients-14.0.2-r3.apk",
+    "sha256": "9310963550ac26e28b187a3a1b0a202f9e917c8103a30e0a1dbaaf182626d010"
+  }
+}

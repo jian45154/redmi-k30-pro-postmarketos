@@ -48,7 +48,7 @@
  	char *label;
  	char *uppercase;
  	char *symbol;
-@@ -98,222 +103,213 @@
+@@ -98,222 +103,222 @@
  
  	uint32_t columns;
  	uint32_t rows;
@@ -77,8 +77,9 @@
 -	{ keytype_default, "-", "_", "_", 1 },
 -	{ keytype_default, "=", "+", "+", 1 },
 +/*
-+ * Two 11-column pages share fixed rows 0 (navigation), 4 (modifiers) and 5
-+ * (page tag + space); only rows 1-3 change when the page is switched.
++ * Two 11-column pages share fixed rows 0 (navigation), 4 (modifiers, Shift
++ * leftmost) and 5 (page tag, always-available / : - . path keys and space);
++ * only rows 1-3 change when the page is switched.
 + */
 +static const struct key letter_keys[] = {
 +	{ keytype_escape, "Esc", "Esc", "Esc", 1 },
@@ -130,18 +131,21 @@
 +	{ keytype_default, "'", "\"", "\"", 1 },
  	{ keytype_default, ",", "<", "<", 1 },
 -	{ keytype_default, ".", ">", ">", 1 },
--	{ keytype_default, "/", "?", "?", 1 },
--	{ keytype_default, "\\", "|", "|", 1 },
--	{ keytype_switch, "Shift", "Shift", "Shift", 1 },
 +	{ keytype_default, ".", ">", ">", 2 },
 +
++	{ keytype_switch, "Shift", "Shift", "Shift", 3 },
 +	{ keytype_tab, "Tab", "Tab", "Tab", 2 },
 +	{ keytype_control, "Ctrl", "Ctrl", "Ctrl", 2 },
-+	{ keytype_switch, "Shift", "Shift", "Shift", 3 },
 +	{ keytype_enter, "Enter", "Enter", "Enter", 4 },
 +
 +	{ keytype_symbols, "ABC/#&", "ABC/#&", "ABC/#&", 2 },
-+	{ keytype_space, "Space", "Space", "Space", 9 }
+ 	{ keytype_default, "/", "?", "?", 1 },
+-	{ keytype_default, "\\", "|", "|", 1 },
+-	{ keytype_switch, "Shift", "Shift", "Shift", 1 },
++	{ keytype_space, "Space", "Space", "Space", 5 },
++	{ keytype_default, ":", ":", ":", 1 },
++	{ keytype_default, "-", "_", "_", 1 },
++	{ keytype_default, ".", ">", ">", 1 }
 +};
  
 -	{ keytype_space, "Space", "Space", "Space", 8 },
@@ -158,42 +162,6 @@
 +	{ keytype_page_up, "PgU", "PgU", "PgU", 1 },
 +	{ keytype_page_down, "PgD", "PgD", "PgD", 1 },
 +	{ keytype_backspace, "Bksp", "Bksp", "Bksp", 2 },
-+
-+	{ keytype_default, "1", "1", "1", 1 },
-+	{ keytype_default, "2", "2", "2", 1 },
-+	{ keytype_default, "3", "3", "3", 1 },
-+	{ keytype_default, "4", "4", "4", 1 },
-+	{ keytype_default, "5", "5", "5", 1 },
-+	{ keytype_default, "6", "6", "6", 1 },
-+	{ keytype_default, "7", "7", "7", 1 },
-+	{ keytype_default, "8", "8", "8", 1 },
-+	{ keytype_default, "9", "9", "9", 1 },
-+	{ keytype_default, "0", "0", "0", 1 },
-+	{ keytype_default, "_", "_", "_", 1 },
-+
-+	{ keytype_default, "~", "~", "~", 1 },
-+	{ keytype_default, "!", "!", "!", 1 },
-+	{ keytype_default, "@", "@", "@", 1 },
-+	{ keytype_default, "#", "#", "#", 1 },
-+	{ keytype_default, "$", "$", "$", 1 },
-+	{ keytype_default, "%", "%", "%", 1 },
-+	{ keytype_default, "^", "^", "^", 1 },
-+	{ keytype_default, "&", "&", "&", 1 },
-+	{ keytype_default, "*", "*", "*", 1 },
-+	{ keytype_default, "`", "`", "`", 1 },
-+	{ keytype_default, "|", "|", "|", 1 },
-+
-+	{ keytype_default, "(", "(", "(", 1 },
-+	{ keytype_default, ")", ")", ")", 1 },
-+	{ keytype_default, "[", "[", "[", 1 },
-+	{ keytype_default, "]", "]", "]", 1 },
-+	{ keytype_default, "{", "{", "{", 1 },
-+	{ keytype_default, "}", "}", "}", 1 },
-+	{ keytype_default, "\\", "\\", "\\", 1 },
-+	{ keytype_default, "=", "=", "=", 1 },
-+	{ keytype_default, "+", "+", "+", 1 },
-+	{ keytype_default, "&&", "&&", "&&", 1 },
-+	{ keytype_default, "||", "||", "||", 1 },
  
 -static const struct key numeric_keys[] = {
 -	{ keytype_default, "1", "1", "1", 1},
@@ -216,10 +184,17 @@
 -	{ keytype_arrow_down, "\\/", "\\/", "\\/", 1},
 -	{ keytype_style, "", "", "", 2}
 -};
-+	{ keytype_tab, "Tab", "Tab", "Tab", 2 },
-+	{ keytype_control, "Ctrl", "Ctrl", "Ctrl", 2 },
-+	{ keytype_switch, "Shift", "Shift", "Shift", 3 },
-+	{ keytype_enter, "Enter", "Enter", "Enter", 4 },
++	{ keytype_default, "1", "!", "!", 1 },
++	{ keytype_default, "2", "@", "@", 1 },
++	{ keytype_default, "3", "#", "#", 1 },
++	{ keytype_default, "4", "$", "$", 1 },
++	{ keytype_default, "5", "%", "%", 1 },
++	{ keytype_default, "6", "^", "^", 1 },
++	{ keytype_default, "7", "&", "&", 1 },
++	{ keytype_default, "8", "*", "*", 1 },
++	{ keytype_default, "9", "(", "(", 1 },
++	{ keytype_default, "0", ")", ")", 1 },
++	{ keytype_default, "_", "_", "_", 1 },
  
 -static const struct key arabic_keys[] = {
 -	{ keytype_default, "ض", "ﹶ", "۱", 1},
@@ -267,11 +242,44 @@
 -	{ keytype_default, ".", "ذ", "]", 1},
 -	{ keytype_default, "ط", "ﺝ", "[", 1},
 -	{ keytype_style, "", "", "", 2}
-+	{ keytype_symbols, "ABC/#&", "ABC/#&", "ABC/#&", 2 },
-+	{ keytype_space, "Space", "Space", "Space", 9 }
- };
+-};
++	{ keytype_default, "~", "~", "~", 1 },
++	{ keytype_default, "!", "!", "!", 1 },
++	{ keytype_default, "@", "@", "@", 1 },
++	{ keytype_default, "#", "#", "#", 1 },
++	{ keytype_default, "$", "$", "$", 1 },
++	{ keytype_default, "%", "%", "%", 1 },
++	{ keytype_default, "^", "^", "^", 1 },
++	{ keytype_default, "&", "&", "&", 1 },
++	{ keytype_default, "*", "*", "*", 1 },
++	{ keytype_default, "\\", "|", "|", 1 },
++	{ keytype_default, "|", "|", "|", 1 },
  
--
++	{ keytype_default, "(", "(", "(", 1 },
++	{ keytype_default, ")", ")", ")", 1 },
++	{ keytype_default, "[", "{", "{", 1 },
++	{ keytype_default, "]", "}", "}", 1 },
++	{ keytype_default, "{", "{", "{", 1 },
++	{ keytype_default, "}", "}", "}", 1 },
++	{ keytype_default, "`", "~", "~", 1 },
++	{ keytype_default, "=", "+", "+", 1 },
++	{ keytype_default, "+", "+", "+", 1 },
++	{ keytype_default, "&&", "&&", "&&", 1 },
++	{ keytype_default, "||", "||", "||", 1 },
++
++	{ keytype_switch, "Shift", "Shift", "Shift", 3 },
++	{ keytype_tab, "Tab", "Tab", "Tab", 2 },
++	{ keytype_control, "Ctrl", "Ctrl", "Ctrl", 2 },
++	{ keytype_enter, "Enter", "Enter", "Enter", 4 },
++
++	{ keytype_symbols, "ABC/#&", "ABC/#&", "ABC/#&", 2 },
++	{ keytype_default, "/", "?", "?", 1 },
++	{ keytype_space, "Space", "Space", "Space", 5 },
++	{ keytype_default, ":", ":", ":", 1 },
++	{ keytype_default, "-", "_", "_", 1 },
++	{ keytype_default, ".", ">", ">", 1 }
++};
+ 
 -static const struct layout normal_layout = {
 -	normal_keys,
 -	sizeof(normal_keys) / sizeof(*normal_keys),
@@ -392,7 +400,7 @@
  #ifdef DEBUG
  	va_list argp;
  
-@@ -322,88 +318,256 @@
+@@ -322,88 +327,256 @@
  	va_end(argp);
  #endif
  }
@@ -690,7 +698,7 @@
  	struct keyboard *keyboard = data;
  	cairo_surface_t *surface;
  	struct rectangle allocation;
-@@ -431,24 +595,27 @@
+@@ -431,24 +604,27 @@
  	cairo_set_source_rgba(cr, 1, 1, 1, 0.75);
  	cairo_rectangle(cr, 0, 0, layout->columns * key_width, layout->rows * key_height);
  	cairo_paint(cr);
@@ -719,7 +727,7 @@
  resize_handler(struct widget *widget,
  	       int32_t width, int32_t height, void *data)
  {
-@@ -575,289 +742,422 @@
+@@ -575,289 +751,422 @@
  	s = xrealloc(s1, len1 + len2 + 1);
  	memcpy(s + len1, s2, len2);
  	s[len1 + len2] = '\0';
@@ -1260,14 +1268,14 @@
 +	slot->active = false;
 +	widget_schedule_redraw(keyboard->widget);
 +}
- 
--  touch_handler(input, time, x, y,
--		WL_POINTER_BUTTON_STATE_RELEASED, data);
++
 +static void
 +touch_cancel_handler(struct widget *widget, struct input *input, void *data)
 +{
 +	struct keyboard *keyboard = data;
-+
+ 
+-  touch_handler(input, time, x, y,
+-		WL_POINTER_BUTTON_STATE_RELEASED, data);
 +	if (keyboard->shift_touch_id >= 0)
 +		shift_release(keyboard);
 +	if (keyboard->ctrl_touch_id >= 0)
@@ -1285,7 +1293,7 @@
  			const char *text,
  			uint32_t cursor,
  			uint32_t anchor)
-@@ -970,16 +1270,25 @@
+@@ -970,16 +1279,25 @@
  		      struct zwp_input_method_context_v1 *context)
  {
  	struct virtual_keyboard *keyboard = data;
@@ -1311,7 +1319,7 @@
  		free(keyboard->preedit_string);
  
  	keyboard->preedit_string = strdup("");
-@@ -1099,32 +1408,40 @@
+@@ -1099,32 +1417,40 @@
  	const struct layout *layout;
  
  	layout = get_current_layout(virtual_keyboard);
@@ -1352,7 +1360,7 @@
  	display_set_output_configure_handler(virtual_keyboard->display,
  					     display_output_handler);
  }
-@@ -1136,16 +1453,17 @@
+@@ -1136,16 +1462,17 @@
  		zwp_input_panel_surface_v1_destroy(virtual_keyboard->ips);
  
  	if (virtual_keyboard->input_panel)
