@@ -33,12 +33,12 @@ if [ "$#" -ne 0 ]; then
 	exit 2
 fi
 
-failures=0
-
-fail() {
-	printf 'FAIL: %s\n' "$*" >&2
-	failures=$((failures + 1))
-}
+# Shared assertion vocabulary in count-and-continue mode: fail() prints
+# "FAIL: ..." to stderr and increments $release_checks_failures. All
+# safety pattern data (allowlists, forbidden operation patterns) stays in
+# this file by design; the library holds only generic helpers.
+RELEASE_CHECKS_MODE=count
+. "$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib/release_checks.sh"
 
 echo "lmi safety lint: fastboot invoker set"
 # Scripts permitted to contain fastboot state-change command text.
@@ -101,7 +101,7 @@ if ! python3 scripts/bringup_loop.py validate >/dev/null; then
 	fail "bringup governance validation failed (constants/policy/active record)"
 fi
 
-if [ "$failures" -ne 0 ]; then
+if [ "$release_checks_failures" -ne 0 ]; then
 	exit 1
 fi
 

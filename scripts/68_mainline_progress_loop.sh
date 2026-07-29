@@ -34,10 +34,14 @@ Environment overrides:
 EOF
 }
 
-repo=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-bundle_dir=${LMI_RELEASE_BUNDLE_DIR:-/tmp/lmi-release-r6-bootmem-20260624}
-copydown_dir=${OUT_DIR:-/tmp/lmi-copydown-r6-bootmem-20260624}
-release_tag=${LMI_RELEASE_TAG:-r6-bootmem}
+# Shared release env defaults and repo-root discovery: the loop audits
+# the same directories scripts/47_make_lmi_release_bundle.sh builds.
+. "$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib/mainline_r6_env.sh"
+
+repo=$lmi_repo
+bundle_dir=$lmi_default_bundle_dir
+copydown_dir=$lmi_default_out_dir
+release_tag=$lmi_default_release_tag
 report=${LMI_MAINLINE_LOOP_REPORT:-$bundle_dir/MAINLINE_PROGRESS_LOOP.txt}
 iterations=1
 interval_s=300
