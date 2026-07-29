@@ -1,0 +1,22 @@
+d111-key-repair-wifi-validation-20260729 evidence (RAM boot D111 fd1c8009 + attested key repair)
+- claim consumed; exact_command executed: fastboot boot .../pmos-lmi-ramboot-d111-debug-shell-key-recovery-20260720.img
+- debug shell held pre-subpartition-discovery (telnet/23), as designed
+- v1 repair attempt failed: losetup default 512B sectors -> inner GPT unparsed, no loop0pN; wrote only to initramfs tmpfs (RAM, discarded)
+- v2 repair with --sector-size 4096 (matches deviceinfo_rootfs_image_sector_size and assembly attestation logical_sector_size):
+  loop0p1 LABEL=pmOS_boot UUID=d4f78f7d-f5b5-4edc-94d5-ba5e6c877888 ext2
+  loop0p2 LABEL=pmOS_root UUID=f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f ext4  (= attested P2 root)
+  /home/lmi/.ssh/authorized_keys created: sha256 b86935a28483b74ad88314a9263773481d856b3cb3829434a47b730ad2b73edf, 81 bytes, uid/gid 10000, dir 700, file 600
+  pre-existing state: NO_SSH_DIR_YET (confirms sanitization.authorized_keys="removed"; no key was ever installed)
+  unmounted and loop released cleanly (CLEANUP_OK)
+- pmos_continue_boot -> full OS; sshd listening after ~96s
+- SSH key-only login SUCCEEDED as lmi with owner-test-ed25519:
+  Linux xiaomi-lmi 4.19.325-cip128-st12-perf #16-postmarketOS SMP PREEMPT Mon Jul 13 13:14:24 UTC 2026 aarch64
+  uid=10000(lmi) gid=10000(lmi) groups=10(wheel),18(audio),27(video),28(netdev),102(plugdev),103(feedbackd),10000(lmi)
+- WIFI UP AT BOOT WITHOUT MANUAL INTERVENTION: iw dev shows wlan0, p2p0, wifi-aware0 on phy#0
+- default runlevel services started: lmi-qrtr-ns, tqftpserv, rmtfs, lmi-cnss-daemon, lmi-cnss-fs-ready, lmi-wlan-on, wpa_supplicant, networkmanager
+- scan (read-only, no join): nmcli dev wifi list returned 11+ SSIDs; kernel log "scan id 40961 type COMPLETED reason COMPLETED scan found 23 bss"
+- sudo grants on this image: lmi may run "(ALL) ALL" plus "(root) NOPASSWD: /usr/sbin/lmi-rootctl"; lmi is in group wheel
+- helpers present: lmi-wifi-start, lmi-rootctl, lmi-display-probe/takeover, lmi-weston-wrapper, lmi-power-panel, lmi-seatd-wrapper, lmi-splash-release, lmi-cnss-daemon-wrapper, lmi-qrtr-ns
+- correction to prior claim: notes/lmi-d114-p2-next-version-handoff-2026-07-22.md said lmi-wlan-on / lmi-cnss-fs-ready are not linked into the default runlevel. On this rootfs they ARE linked and started; wlan0 came up at boot with no manual lmi-wifi-start.
+- not attempted: joining a network (owner credentials required); SSH over WLAN therefore still unproven
+route_status=success

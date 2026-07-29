@@ -1,0 +1,10 @@
+d114-p2-r1-reboot-wifi-probe-20260729 evidence capture (initramfs debug shell, read-only)
+- fastboot reboot OKAY; RNDIS enumerated; ping 172.16.42.1 ok; ssh port 22 refused >3min; port 23 open
+- kernel: Linux 4.19.325-cip128-st12-perf #9-postmarketOS Wed Jun 24 09:10:09 UTC 2026; initrd 3.12.0-r0
+- /pmOS_init.log: "Trying to mount subpartitions for 10 seconds..." x6 "Mount subpartitions of /dev/sda34" then "ERROR: failed to mount subpartitions!"
+- which kpartx -> not found (only losetup present)
+- cmdline: pmos_boot_uuid=c9e06598-f9a3-4b19-96c7-915552d5f4f7 pmos_root_uuid=df32eed6-6956-4457-9f0c-7aca6d172c46 (= v46 full image manifest pair); androidboot.serialno=<device-serial>
+- blkid: no df32eed6 filesystem anywhere; /dev/sda34 userdata PTTYPE=gpt PTUUID=45721c80-e267-4963-bb34-42ada8fad697 (D114 assembled baseline; p2 root uuid f8eb7c4b pairs with D110 boot d4f78f7d)
+- initramfs UI: "cannot open framebuffer device"; lvgl "No draw buffer" repeats
+Conclusion: persistent boot cannot succeed: v46 boot over D114 userdata + kpartx absent. Full analysis: notes/d114-boot-pairing-mismatch-2026-07-29.md
+route_status=failure

@@ -1,0 +1,11 @@
+d110-ramboot-wifi-validation-20260729 evidence
+- claim consumed; exact_command executed: fastboot boot .../pmos-lmi-normalboot-v110-...-20260713.img; Sending OKAY 9.2s, Booting OKAY
+- RNDIS re-enumerated on Windows (mirrored net; WSL attach of RNDIS produced unconfigured cdc_subset enu1i1 -> detached; Windows-bound adapter mirrored as eth4; ping 172.16.42.1 ok)
+- full OS reached: sshd listening on 22 (initramfs port 23 closed)
+- SSH publickey DENIED for both candidate owner keys:
+  host-ssh/id_ed25519 SHA256:QMT19AUeyibUPyrMBkJV+Qb1+HbkbZRW5NXgEgAGl+g
+  owner-test-ed25519  SHA256:ZaN3rlzaVFcF2JBOZe73q64KyCCVf7VaA6GbEn7zcmw
+- root cause: r1 rootfs injection attestation records sanitization.authorized_keys="removed"; no key was ever installed on-disk
+- wifi validation not reachable this session; discriminator negative (SSH precondition failed)
+- designed repair: pmos-lmi-ramboot-d111-debug-shell-key-recovery-20260720.img (same D110 payload + pmos.debug-shell token; manifest authorized_key_repair_intent fingerprint ZaN3rlza..., canonical line sha b86935a2..., 81 bytes; replacement_is_automatic=false)
+route_status=failure
