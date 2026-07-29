@@ -41,7 +41,14 @@ ansi_quote = re.compile(r"\$(\x27)((?:\\.|[^\x27])*)\1")
 
 def decode(match):
     try:
-        return codecs.decode(match.group(2), "unicode_escape")
+        raw = re.sub(
+            r"\\c(.)",
+            lambda control: chr(ord(control.group(1).upper()) & 0x1f),
+            match.group(2),
+        )
+        # Bash cannot retain NUL in an argument. Removing it here mirrors the
+        # spelling that reaches execve and avoids command-substitution warnings.
+        return codecs.decode(raw, "unicode_escape").replace("\x00", "")
     except (UnicodeDecodeError, ValueError):
         return ""
 
