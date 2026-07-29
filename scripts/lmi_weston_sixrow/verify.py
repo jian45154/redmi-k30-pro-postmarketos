@@ -18,9 +18,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 FILES = REPO / "files/lmi-weston-sixrow"
 LOCK_PATH = REPO / "config/lmi-weston-sixrow/source-lock.json"
-# Each built package revision has an immutable attestation. The r1 and r2
+# Each built package revision has an immutable attestation. The r1-r3
 # records remain available to the frozen D114 deployment chains.
-BUILD_ATTESTATION_PATH = REPO / "config/lmi-weston-sixrow/build-attestation-r3.json"
+BUILD_ATTESTATION_PATH = REPO / "config/lmi-weston-sixrow/build-attestation-r4.json"
 APKBUILD = FILES / "APKBUILD"
 PATCH_NAMES = (
     "0001-phone-input-terminal-text-input.patch",
@@ -29,15 +29,18 @@ PATCH_NAMES = (
     "0004-terminal-touch-scrollback.patch",
 )
 COLUMNS = 11
-# Rows 0 (Esc/arrows/Home/End/PgUp/PgDn/Bksp), 4 (modifiers) and 5
-# (page tag + space) are fixed and identical on both pages; only rows 1-3
-# change when the [ABC/#&] tag is tapped.
+# Rows 0 (Esc/arrows/Home/End/PgUp/PgDn/Bksp), 4 (modifiers, Shift leftmost)
+# and 5 (page tag, always-available / : - . path keys and space) are fixed and
+# identical on both pages; only rows 1-3 change when the [ABC/#&] tag is
+# tapped.
 FIXED_NAV_ROW = (
     ("Esc", 1), ("←", 1), ("↑", 1), ("↓", 1), ("→", 1),
     ("Hom", 1), ("End", 1), ("PgU", 1), ("PgD", 1), ("Bksp", 2),
 )
-FIXED_MODIFIER_ROW = (("Tab", 2), ("Ctrl", 2), ("Shift", 3), ("Enter", 4))
-FIXED_BOTTOM_ROW = (("ABC/#&", 2), ("Space", 9))
+FIXED_MODIFIER_ROW = (("Shift", 3), ("Tab", 2), ("Ctrl", 2), ("Enter", 4))
+FIXED_BOTTOM_ROW = (
+    ("ABC/#&", 2), ("/", 1), ("Space", 5), (":", 1), ("-", 1), (".", 1),
+)
 EXPECTED_LETTER_ROWS = (
     FIXED_NAV_ROW,
     tuple((key, 1) for key in "q w e r t y u i o p /".split()),
@@ -49,19 +52,29 @@ EXPECTED_LETTER_ROWS = (
 EXPECTED_SYMBOL_ROWS = (
     FIXED_NAV_ROW,
     tuple((key, 1) for key in "1 2 3 4 5 6 7 8 9 0 _".split()),
-    tuple((key, 1) for key in "~ ! @ # $ % ^ & * ` |".split()),
-    tuple((key, 1) for key in ["(", ")", "[", "]", "{", "}", "\\", "=", "+", "&&", "||"]),
+    tuple((key, 1) for key in "~ ! @ # $ % ^ & * \\ |".split()),
+    tuple((key, 1) for key in ["(", ")", "[", "]", "{", "}", "`", "=", "+", "&&", "||"]),
     FIXED_MODIFIER_ROW,
     FIXED_BOTTOM_ROW,
 )
 EXPECTED_SHIFTED = {
     "/": "?", ";": ":", "-": "_", "'": '"', ",": "<", ".": ">",
 }
+# Physical-keyboard muscle-memory pairs on the symbol page: shift on a digit
+# or bracket key produces what a hardware keyboard would.
+EXPECTED_SYMBOL_SHIFTED = {
+    "1": "!", "2": "@", "3": "#", "4": "$", "5": "%",
+    "6": "^", "7": "&", "8": "*", "9": "(", "0": ")",
+    "[": "{", "]": "}", "\\": "|", "`": "~", "=": "+",
+    "/": "?", "-": "_", ".": ">",
+}
 # Terminal high-frequency characters that must be one tap away on the
-# symbol page.
+# symbol page (the / : - . path keys live on the shared bottom row, so they
+# are one tap away on both pages).
 SYMBOL_PAGE_REQUIRED = {
     "~", "\\", "|", "_", "#", "$", "@", "&", "(", ")",
     "[", "]", "{", "}", "&&", "||", "`", "!", "%", "^", "*", "=", "+",
+    "/", ":", "-", ".",
 }
 class VerificationError(RuntimeError):
     """Raised when the locked recipe or patched source violates its contract."""
@@ -142,6 +155,15 @@ def verify_layout(keyboard_source: str) -> None:
     for key, expected in EXPECTED_SHIFTED.items():
         if shifted.get(key) != expected:
             raise VerificationError(f"shifted mapping for {key!r} is not {expected!r}")
+
+    symbol_shifted = {
+        label: upper for row in symbol_rows for label, upper, _width in row
+    }
+    for key, expected in EXPECTED_SYMBOL_SHIFTED.items():
+        if symbol_shifted.get(key) != expected:
+            raise VerificationError(
+                f"symbol page shifted mapping for {key!r} is not {expected!r}"
+            )
 
     symbol_labels = {label for row in symbol_rows for label, _upper, _width in row}
     missing = SYMBOL_PAGE_REQUIRED - symbol_labels
@@ -536,20 +558,20 @@ def verify_build_attestation(*, require_artifact: bool = False) -> bool:
         raise VerificationError("APK package version does not match its attestation")
     if "arch = aarch64" not in pkginfo:
         raise VerificationError("APK package architecture is not aarch64")
-    if artifact["package_version"] != "14.0.2-r3":
-        raise VerificationError("current build attestation is not the r3 touch fix")
+    if artifact["package_version"] != "14.0.2-r4":
+        raise VerificationError("current build attestation is not the r4 modern layout")
 
     supersedes = attestation["supersedes"]
-    if supersedes["status"] != "SUPERSEDED_R2_NO_TERMINAL_TOUCH_SCROLL":
-        raise VerificationError("superseded r2 artifact is not explicitly marked")
+    if supersedes["status"] != "SUPERSEDED_R3_CENTER_SHIFT_NO_PERSISTENT_PATH_KEYS":
+        raise VerificationError("superseded r3 artifact is not explicitly marked")
     previous_attestation = REPO / supersedes["attestation"]
     if digest(previous_attestation) != supersedes["attestation_sha256"]:
-        raise VerificationError("superseded r2 attestation hash does not match")
+        raise VerificationError("superseded r3 attestation hash does not match")
     old_artifact = REPO / supersedes["artifact"]
     if old_artifact == artifact_path:
         raise VerificationError("current and superseded APK paths must be distinct")
     if old_artifact.exists() and digest(old_artifact) != supersedes["sha256"]:
-        raise VerificationError("superseded r2 APK hash does not match its record")
+        raise VerificationError("superseded r3 APK hash does not match its record")
     return True
 
 
