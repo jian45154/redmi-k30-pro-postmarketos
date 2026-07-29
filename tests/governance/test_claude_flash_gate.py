@@ -93,6 +93,9 @@ class ClaudeFlashGateTests(unittest.TestCase):
             "fastboot -s SERIAL flash userdata candidate.img",
             "/usr/bin/fastboot --slot all reboot",
             "fastboot.exe -s SERIAL boot candidate.img",
+            "fastboot \\\n-s SERIAL flash userdata candidate.img",
+            r"fastboot -s SERIAL fl\ash userdata candidate.img",
+            "fa''stboot -s SERIAL flash userdata candidate.img",
         )
         for command in commands:
             with self.subTest(command=command):
@@ -103,6 +106,8 @@ class ClaudeFlashGateTests(unittest.TestCase):
             "dd if=image of=/dev/mapper/userdata",
             "/usr/bin/dd if=image of=/dev/disk/by-id/phone",
             "dd if=image of=/dev/mmcblk0",
+            "dd \\\nif=image of=/dev/mmcblk0",
+            r"d\d if=image of=/dev/mmcblk0",
         )
         for command in commands:
             with self.subTest(command=command):
