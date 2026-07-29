@@ -452,13 +452,15 @@ _TERM = "/usr/libexec/lmi-p2-d114/weston-terminal-sixrow"
 _WESTON = "/usr/bin/weston"
 
 
-def _payload_artifact(name, component, add_file_meta, session_sites):
-    """Frozen D114 keyboard/terminal payload sites share one layout."""
+def _payload_artifact(name, component, add_file_meta, session_sites,
+                      attestation=_BUILD_ATTESTATION,
+                      attestation_tag="build-attestation"):
+    """Injected D114 keyboard/terminal payload sites share one layout."""
     return Artifact(
         name=name,
         truth=Site(
-            label="build-attestation.artifact.payload[%s]" % component,
-            path=_BUILD_ATTESTATION,
+            label="%s.artifact.payload[%s]" % (attestation_tag, component),
+            path=attestation,
             kind="json",
             pointer=("artifact", "payload", component),
         ),
@@ -541,18 +543,6 @@ REGISTRY = (
         ),
         sites=(
             Site(
-                label="injection-policy-lock.input.apks.sixrow.sha256",
-                path=_INJECTION_POLICY_LOCK,
-                kind="json",
-                pointer=("input", "apks", "sixrow", "sha256"),
-            ),
-            Site(
-                label="inject_rootfs_candidate.SIXROW_APK_SHA256",
-                path=_INJECT_SH,
-                kind="shell_var",
-                var="SIXROW_APK_SHA256",
-            ),
-            Site(
                 label="readiness-doc frozen r1 APK digest (prose)",
                 path=_READINESS_DOC,
                 kind="regex",
@@ -564,13 +554,40 @@ REGISTRY = (
             ),
         ),
     ),
+    # The r2-most-complete injection chain injects the canonically re-signed
+    # r2 APK, whose identity is the r2 attestation's artifact.sha256; the
+    # earlier NO-GO transient trial below keeps the pre-resign hash, which
+    # the same attestation retains as source.resigned_from_sha256.
     Artifact(
-        name="sixrow-clients-apk-transient-r2",
+        name="sixrow-clients-apk-injected-r2-resigned",
         truth=Site(
             label="build-attestation-r2.artifact.sha256",
             path=_BUILD_ATTESTATION_R2,
             kind="json",
             pointer=("artifact", "sha256"),
+        ),
+        sites=(
+            Site(
+                label="injection-policy-lock.input.apks.sixrow.sha256",
+                path=_INJECTION_POLICY_LOCK,
+                kind="json",
+                pointer=("input", "apks", "sixrow", "sha256"),
+            ),
+            Site(
+                label="inject_rootfs_candidate.SIXROW_APK_SHA256",
+                path=_INJECT_SH,
+                kind="shell_var",
+                var="SIXROW_APK_SHA256",
+            ),
+        ),
+    ),
+    Artifact(
+        name="sixrow-clients-apk-transient-r2",
+        truth=Site(
+            label="build-attestation-r2.source.resigned_from_sha256",
+            path=_BUILD_ATTESTATION_R2,
+            kind="json",
+            pointer=("source", "resigned_from_sha256"),
         ),
         sites=(
             Site(
@@ -614,10 +631,15 @@ REGISTRY = (
             ),
         ),
     ),
+    # The injected keyboard binary follows the r2 attestation payload (the
+    # r1 keyboard was superseded); the terminal binary is byte-identical in
+    # r1 and r2, so its entry keeps the r1 attestation as truth.
     _payload_artifact(
-        name="weston-keyboard-sixrow-binary-frozen-d114-r1",
+        name="weston-keyboard-sixrow-binary-injected-r2",
         component=_KBD,
         add_file_meta=r"755\|134456",
+        attestation=_BUILD_ATTESTATION_R2,
+        attestation_tag="build-attestation-r2",
         session_sites=(
             Site(
                 label="session-gate check_sha256/stop/wait[%s]" % _KBD,
@@ -699,8 +721,8 @@ REGISTRY = (
     Artifact(
         name="build-attestation-file-hash",
         truth=Site(
-            label="sha256(%s)" % _BUILD_ATTESTATION,
-            path=_BUILD_ATTESTATION,
+            label="sha256(%s)" % _BUILD_ATTESTATION_R2,
+            path=_BUILD_ATTESTATION_R2,
             kind="file_sha256",
         ),
         sites=(

@@ -393,7 +393,7 @@ class RealRegistryShapeTest(unittest.TestCase):
             if artifact.truth.kind == "file_sha256"
         ]
         self.assertIn(
-            "config/lmi-weston-sixrow/build-attestation.json", hashed
+            "config/lmi-weston-sixrow/build-attestation-r2.json", hashed
         )
         self.assertIn("config/lmi-p2-d114/source-lock.json", hashed)
         self.assertIn(
