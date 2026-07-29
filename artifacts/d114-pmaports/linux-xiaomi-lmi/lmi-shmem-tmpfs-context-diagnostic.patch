@@ -1,0 +1,37 @@
+diff --git a/mm/shmem.c b/mm/shmem.c
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -3469,5 +3469,10 @@ static int shmem_parse_one(struct fs_context *fc, struct fs_parameter *param)
+ 		goto unsupported_parameter;
+ 	}
++	if (opt == Opt_mode || opt == Opt_uid || opt == Opt_gid)
++		pr_err("LMI_VFS_DIAG shmem_parse option=%s ctx mode=0%o uid=%u gid=%u\n",
++		       param->key, ctx->mode,
++		       from_kuid(&init_user_ns, ctx->uid),
++		       from_kgid(&init_user_ns, ctx->gid));
+ 	return 0;
+ 
+ unsupported_parameter:
+@@ -3657,6 +3662,11 @@ static int shmem_fill_super(struct super_block *sb, void *data, int silent)
+ 	sbinfo->mode = ctx->mode;
+ 	sbinfo->huge = ctx->huge;
+ 	sbinfo->mpol = ctx->mpol;
+ 	ctx->mpol = NULL;
++	pr_err("LMI_VFS_DIAG shmem_fill_super ctx=0%o:%u:%u sb=0%o:%u:%u\n",
++	       ctx->mode, from_kuid(&init_user_ns, ctx->uid),
++	       from_kgid(&init_user_ns, ctx->gid), sbinfo->mode,
++	       from_kuid(&init_user_ns, sbinfo->uid),
++	       from_kgid(&init_user_ns, sbinfo->gid));
+ 
+ 	spin_lock_init(&sbinfo->stat_lock);
+@@ -3683,6 +3695,10 @@ static int shmem_fill_super(struct super_block *sb, void *data, int silent)
+ 		goto failed;
+ 	inode->i_uid = sbinfo->uid;
+ 	inode->i_gid = sbinfo->gid;
++	pr_err("LMI_VFS_DIAG shmem_root inode mode=0%o uid=%u gid=%u\n",
++	       inode->i_mode,
++	       from_kuid(&init_user_ns, inode->i_uid),
++	       from_kgid(&init_user_ns, inode->i_gid));
+ 	sb->s_root = d_make_root(inode);
+ 	if (!sb->s_root)
+ 		goto failed;

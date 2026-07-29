@@ -7,9 +7,11 @@ otherwise.
 
 ## Safety Rules
 
-- Do not write `boot`, `userdata`, `dtbo`, `vbmeta`, `super`, modem/EFS,
-  `persist`, or calibration partitions without a separate preflight note and
-  explicit approval for the exact command.
+- Device actions are governed by the bringup governance engine
+  (`scripts/bringup_loop.py`; tiers, receipts, and the claims ledger are
+  defined there and summarized in `AGENTS.md`). This document does not
+  restate those rules; partition writes additionally require a hash-bound
+  per-profile authorization from the owner.
 - Prefer read-only SSH probes on the current v27 install.
 - Prefer rebuilding a new rootfs image over mutating the live install.
 - Keep USB/RNDIS and SSH as the primary debug path until Wi-Fi is stable.

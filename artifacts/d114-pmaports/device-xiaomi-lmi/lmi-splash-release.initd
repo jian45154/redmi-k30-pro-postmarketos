@@ -1,0 +1,12 @@
+#!/sbin/openrc-run
+
+name="lmi-splash-release"
+description="Release the downstream boot splash before the Phosh session"
+
+command="/usr/sbin/lmi-splash-release"
+
+depend() {
+	need lmi-seatd
+	before greetd
+	after localmount
+}

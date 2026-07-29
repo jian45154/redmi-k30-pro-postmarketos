@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%" alt="Redmi K30 Pro → Linux: A provenance-first postmarketOS port with guarded hardware milestones">
+</p>
+
 # Redmi K30 Pro (`lmi`) → postmarketOS / Linux
 
 Turning a **Redmi K30 Pro / POCO F2 Pro** (`lmi`, Qualcomm **SM8250 / Snapdragon 865**)
@@ -86,6 +90,14 @@ The `lmi-r6-current-handoff-20260624.md` file is older than the r6/r7 result
 documents. Use those result files only for historical outcomes and
 [`docs/tracks/mainline.md`](docs/tracks/mainline.md) for current status.
 
+Hardware-affecting actions are governed by the bringup governance engine
+(`scripts/bringup_loop.py`): actions are tiered by the irreversibility of
+their consequences, claims consume one-shot receipts recorded in an
+append-only ledger, and partition writes always require a hash-bound
+per-profile owner authorization. The intent summary lives in
+[`AGENTS.md`](AGENTS.md); the landing rationale is recorded in
+[`notes/governance-v4-landing-2026-07-22.md`](notes/governance-v4-landing-2026-07-22.md).
+
 Static release checks, including the installer and P1, P2, P2-D114, and P3 host
 test suites, can be run locally with `scripts/59_release_static_ci.sh`. A GitHub
 Actions workflow template is kept at
@@ -158,6 +170,8 @@ status, and require a fresh reviewed release plan for any future device write.
 
 ## Repo layout
 
+- [`AGENTS.md`](AGENTS.md) — governance rules for any coding agent working in
+  this repo (safety gates, data hygiene, workflow, multi-agent rules).
 - `docs/` — the porting write-up (EN + 中文) and the pmaports MR notes.
 - `docs/tracks/` — current downstream/mainline split, version labels, features,
   and progress.
@@ -225,7 +239,9 @@ repair notes under [`notes/`](notes/).
 
 Stock/recovery boot images for the device (proprietary third-party binaries),
 full pmOS images, and rejected flash candidates are **not** distributed here —
-they are gitignored. Raw device logs (which contain serial numbers, CPU IDs,
+they are gitignored. Pinned recovery/tool images are archived in an
+owner-only private vault; the full resource tiers and usage rules are in
+[`docs/resource-inventory-and-usage-20260722.md`](docs/resource-inventory-and-usage-20260722.md). Raw device logs (which contain serial numbers, CPU IDs,
 bootloader tokens, and MAC addresses) are gitignored too. Only explicitly
 redacted logs may be committed.
 

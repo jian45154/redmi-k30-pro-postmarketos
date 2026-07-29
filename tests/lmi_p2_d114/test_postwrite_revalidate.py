@@ -7,6 +7,8 @@ from pathlib import Path
 import re
 import tempfile
 import unittest
+
+from tests.lmi_p2_d114 import host_bound
 from unittest import mock
 
 from scripts.lmi_p2_d114 import postwrite_revalidate as postwrite
@@ -420,6 +422,7 @@ class PostwriteRevalidationTests(unittest.TestCase):
         self.assertLess(containment, completed)
 
     def test_current_completed_write_accepts_fake_readonly_device_result(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private")
         audit = postwrite.local_audit(
             postwrite.REPO / postwrite.PRODUCTION.profile_path,
             postwrite.PRODUCTION.profile_sha256,

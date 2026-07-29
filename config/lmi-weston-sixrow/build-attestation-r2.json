@@ -1,0 +1,71 @@
+{
+  "schema": "lmi-weston-sixrow-build-attestation/v1",
+  "generated_at": "2026-07-22T14:34:49Z",
+  "status": "BUILT_STATIC_AUDIT_PASSED_NOT_DEVICE_TESTED",
+  "device": "xiaomi-lmi",
+  "architecture": "aarch64",
+  "source": {
+    "weston_version": "14.0.2",
+    "source_lock": "config/lmi-weston-sixrow/source-lock.json",
+    "source_lock_sha256": "263e3ca5580a5a3620d11d4a1676afaabb4fdb71e3c425b8d94eed88e7d98aed",
+    "apkbuild": "files/lmi-weston-sixrow/APKBUILD",
+    "apkbuild_sha256": "a42ab2a6d90dbab6972e002a2d4574e4178ca10a5d90154dedd17dde39cf490d",
+    "verification_sources": [
+      {
+        "path": "scripts/lmi_weston_sixrow/verify.py",
+        "sha256": "088f10f76c7bb32b7afd345a73a14e55c4183fd96cd813122d52e89200d02a4f"
+      },
+      {
+        "path": "tests/lmi_weston_sixrow/test_static.py",
+        "sha256": "d076458921b7ea5f113f5a50a3925340fff33808436e835a33c833b51db24729"
+      }
+    ],
+    "build_method": "Unprivileged user-namespace aarch64 chroot: apk.static --initdb over the recorded pmbootstrap edge cache_apk_aarch64 package set (199 packages), qemu-aarch64 (static-pie, Alpine 11.0.2-r1) as the registered binfmt interpreter, then abuild -F -d with the locked tarball and patches. Same inputs as the pmbootstrap 3.11.1 chroot flow used for r1; sudo was unavailable in this session.",
+    "signing_key": "pmos@local-6a5d38f2",
+    "signing_note": "Built and initially signed with a session-generated abuild key (noreply@example.invalid-6a60d375) because the canonical pmos@local-6a5fb853 private key is root-owned. The session signature segment was then stripped and the untouched control.tar.gz re-signed (abuild-sign, control-segment-only) with the readable canonical P2-track key pmos@local-6a5d38f2; apk verify OK against that key. data.tar.gz and control.tar.gz bytes are unchanged from the session build, so the payload whitelist and datahash chain below still bind the original build.",
+    "resigned_from_sha256": "23756d255515757d67050ad25ca43d07863a6dec7be89136fa22f8f71ac7ac19"
+  },
+  "artifact": {
+    "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk",
+    "sha256": "8d2f23522eb737432577b33ee7dd012b76d06012f1d6918eac289853f6f015e7",
+    "compressed_size": 121842,
+    "installed_size": 335416,
+    "package_version": "14.0.2-r2",
+    "payload": {
+      "/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow": "d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a",
+      "/usr/libexec/lmi-p2-d114/weston-terminal-sixrow": "6602f7ac8e0c11892eec1d9db0411397e95f704a1655b94e0885a1220962a8cf"
+    }
+  },
+  "elf": {
+    "class": "ELF64",
+    "endianness": "little",
+    "machine": "AArch64",
+    "type": "PIE",
+    "interpreter": "/lib/ld-musl-aarch64.so.1",
+    "required_sonames_present_in_recorded_d114_rootfs": true
+  },
+  "verification": {
+    "unit_tests": "12 passed (tests/lmi_weston_sixrow, incl. official tarball fuzz-0 dry run and r2 APK payload whitelist)",
+    "official_tarball_sha256_and_sha512_verified": true,
+    "patches_applied_with_fuzz_zero": true,
+    "layout_and_shift_map_verified": true,
+    "paged_layout_fixed_rows_verified": true,
+    "shift_chord_and_one_shot_verified": true,
+    "ctrl_tap_latch_and_hold_chord_verified": true,
+    "ctrl_space_nul_path_verified": true,
+    "long_press_magnifier_slide_select_verified": true,
+    "shared_physical_and_text_input_key_encoder_verified": true,
+    "normal_and_application_cursor_paths_verified": true,
+    "apk_content_whitelist_verified": true,
+    "stock_paths_overwritten": false,
+    "phone_connected_or_modified": false,
+    "persistent_install_performed": false,
+    "physical_touch_test_performed": false
+  },
+  "supersedes": {
+    "artifact": ".work/pmbootstrap-sixrow/packages/edge/aarch64/lmi-weston-sixrow-clients-14.0.2-r1.apk",
+    "sha256": "ff8dbb02208959db4af9f1da735cb7b4f8765138388b6f7daebabce161fe208b",
+    "status": "SUPERSEDED_STATIC_ONLY_R1_TAP_KEYBOARD"
+  },
+  "claim_limit": "This attests one exact local APK and its static checks. It does not prove runtime loading, physical key geometry, touch behavior, terminal byte semantics on the phone, persistence, or release readiness. Rebuilds may differ in package metadata or signature even when source inputs are unchanged."
+}

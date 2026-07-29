@@ -1,0 +1,45 @@
+diff --git a/fs/fs_context.c b/fs/fs_context.c
+--- a/fs/fs_context.c
++++ b/fs/fs_context.c
+@@ -123,22 +123,41 @@ int vfs_parse_fs_param(struct fs_context *fc, struct fs_parameter *param)
+ {
+ 	int ret;
++	bool trace_tmpfs_param;
+ 
+ 	if (!param->key)
+ 		return invalf(fc, "Unnamed parameter\n");
+ 
++	trace_tmpfs_param = fc->fs_type &&
++		!strcmp(fc->fs_type->name, "tmpfs") &&
++		(!strcmp(param->key, "mode") ||
++		 !strcmp(param->key, "uid") ||
++		 !strcmp(param->key, "gid"));
++
+ 	ret = vfs_parse_sb_flag(fc, param->key);
++	if (trace_tmpfs_param)
++		pr_err("LMI_VFS_DIAG vfs_param stage=sb_flag key=%s ret=%d\n",
++		       param->key, ret);
+ 	if (ret != -ENOPARAM)
+ 		return ret;
+ 
+ 	ret = security_fs_context_parse_param(fc, param);
++	if (trace_tmpfs_param)
++		pr_err("LMI_VFS_DIAG vfs_param stage=security key=%s ret=%d\n",
++		       param->key, ret);
+ 	if (ret != -ENOPARAM)
+ 		/* Param belongs to the LSM or is disallowed by the LSM; so
+ 		 * don't pass to the FS.
+ 		 */
+ 		return ret;
+ 
+ 	if (fc->ops->parse_param) {
++		if (trace_tmpfs_param)
++			pr_err("LMI_VFS_DIAG vfs_param stage=fs_callback_enter key=%s\n",
++			       param->key);
+ 		ret = fc->ops->parse_param(fc, param);
++		if (trace_tmpfs_param)
++			pr_err("LMI_VFS_DIAG vfs_param stage=fs_callback_exit key=%s ret=%d\n",
++			       param->key, ret);
+ 		if (ret != -ENOPARAM)
+ 			return ret;
+ 	}

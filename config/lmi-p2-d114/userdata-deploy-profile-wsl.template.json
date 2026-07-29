@@ -1,0 +1,22 @@
+{
+  "_template_status": "NOT_EXECUTABLE_PRIVATE_SERIAL_AND_NONCE_REQUIRED_D114_USERDATA_ONLY",
+  "artifacts": {
+    "assembly_attestation": {"path": "__PRIVATE_BUNDLE__/assembly-attestation.json", "sha256": "__SHA256__", "size": 0},
+    "candidate": {"logical_size": 3339714560, "path": "__PRIVATE_BUNDLE__/userdata.android-sparse.img", "representation": "android-sparse", "roundtrip_raw_sha256": "__SHA256__", "sha256": "__SHA256__", "size": 0},
+    "candidate_raw": {"path": "__PRIVATE_BUNDLE__/userdata.raw", "sha256": "__SHA256__", "size": 3339714560},
+    "completed_actions_lock": {"path": "config/lmi-p2-d114/completed-userdata-actions-lock.json", "sha256": "__SHA256__", "size": 0},
+    "deploy_policy_lock": {"path": "config/lmi-p2-d114/userdata-deploy-policy-lock-wsl-r1.json", "sha256": "__SHA256__", "size": 0},
+    "fastboot_runtime_lock": {"path": "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json", "sha256": "__SHA256__", "size": 0},
+    "p2_injection_attestation": {"path": "__PRIVATE_BUNDLE__/injection-attestation.json", "sha256": "__SHA256__", "size": 0},
+    "p2_rootfs": {"path": "__PRIVATE_INJECTION_BUNDLE__/rootfs.ext4", "sha256": "__SHA256__", "size": 2826960896},
+    "physical_mapping_evidence": {"path": "config/lmi-p2-d114/physical-userdata-mapping.json", "sha256": "59f27854ac595a9b615bddeb91aa72e6bf1e0dacd9341cda2783a19bb050014f", "size": 3879},
+    "rollback": {"logical_size": 3339714560, "path": "__PRIVATE_REVIEWED_ROLLBACK__.android-sparse.img", "representation": "android-sparse", "roundtrip_raw_sha256": "61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6", "sha256": "e8a30dc37cb4b75508d89725a9603bc15a985f4e51af77384e8d43c2928f8d68", "size": 2192400084}
+  },
+  "compatibility": {"d110_boot": {"authorization": false, "sha256": "2b264d64d2ed22f0ab5c3c2615b0bda9ed821fa5d8d5d691ea513e5d2f071487", "size": 52944896}},
+  "device": {"expected_product": "lmi", "expected_userdata_capacity": 114898743296, "minimum_battery_mv": 3800, "minimum_max_download_size": 52944896, "partition_type": "f2fs"},
+  "execution": {"automatic_retry": false, "claim_kind": "flash-userdata", "max_attempts": 1, "operation": "flash", "partition": "userdata", "slot_layout_claim": "not-proven", "write_timeout_seconds": 1800},
+  "identity": {"expected_nonce_scoped_serial_sha256": "__SHA256__", "expected_serial": "__PRIVATE_SERIAL__", "privacy_nonce": "__SHA256__"},
+  "ledgers": {"candidate_attempts": "__PRIVATE_PROFILE_PARENT__/wsl-attempt-ledger", "claim_consumption": "__PRIVATE_PROFILE_PARENT__/wsl-claim-ledger"},
+  "profile_id": "__PRIVATE_PROFILE_ID__",
+  "schema": "lmi-p2-d114-userdata-deploy-profile-wsl/v1"
+}
