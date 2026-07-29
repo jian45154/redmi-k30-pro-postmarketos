@@ -24,6 +24,17 @@ class SixRowStaticTests(unittest.TestCase):
     def test_layout_and_ctrl_are_present_in_locked_patches(self) -> None:
         verify.verify_patch_contract()
 
+    def test_terminal_touch_scrollback_patch_contract(self) -> None:
+        verify.verify_terminal_touch_scrollback(
+            verify._retained_patch_text(
+                verify.FILES / "0004-terminal-touch-scrollback.patch"
+            ),
+            final_source=False,
+        )
+
+    def test_terminal_touch_gesture_sequences_and_bounds(self) -> None:
+        verify.verify_terminal_touch_behavior_model()
+
     def test_official_tarball_patch_dry_run_and_source_contract(self) -> None:
         value = os.environ.get("LMI_WESTON_14_0_2_TARBALL")
         if not value:

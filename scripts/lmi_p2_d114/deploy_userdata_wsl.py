@@ -3,9 +3,12 @@
 
 ``local-audit`` is host-only.  ``preflight`` uses fixed read-only fastboot
 queries.  ``approve`` creates a 120-second, one-use claim from an exact fresh
-preflight.  ``execute`` consumes the claim, repeats the complete device gate,
-fsyncs a pre-attempt intent, and can issue exactly one physical, unsuffixed
-``userdata`` flash using the already-open candidate file descriptor.
+preflight.  ``deploy-once`` is the operator-facing write path: it performs
+those phases under one held-artifact audit, consumes the claim, repeats the
+complete device gate, fsyncs a pre-attempt intent, and can issue exactly one
+physical, unsuffixed ``userdata`` flash using the already-open candidate file
+descriptor.  The split ``execute`` path has the same explicit operation and
+candidate-hash authorization requirement.
 
 Nothing in this module boots, reboots, erases, formats, selects fastbootd,
 falls back to ``super``, or writes a slotted partition.  There is no automatic
@@ -93,24 +96,24 @@ class DeployError(RuntimeError):
 
 @dataclass(frozen=True)
 class Contract:
-    assembly_sha256: str = "cfcf2cc4a1b9ad149ce0a303ab6b49b570c5e2cd78a988b06b8ca4a72c90b4da"
-    assembly_size: int = 7_232
-    injection_sha256: str = "ad14a24791e8b60d72787c756ea91a00fb3325491f5d6d62592ae44e2a352a9a"
-    injection_size: int = 7_190
-    rootfs_sha256: str = "a91a2090aea6a1d7338a7f51ba66590472cbb395386765d9e5a199856afba134"
+    assembly_sha256: str = "ab4bbe2a3bb1f3b843036c3489979ad6d2d395d26a400c0ed7d70e179fc000d6"
+    assembly_size: int = 7_234
+    injection_sha256: str = "81b47f382803570acfd72b3d2d4a9036beb6a1c0ae7637ffb72a2deb385f3836"
+    injection_size: int = 7_187
+    rootfs_sha256: str = "4384dee649d86278d1965211c1cb8ddd556a4386fca25b50ccfdff43869c1305"
     rootfs_size: int = 2_923_429_888
-    raw_sha256: str = "c3c3a51376417aeba94c3fbd536df7d68b3ab4559ca5ba19f0dd18d1e157a8de"
+    raw_sha256: str = "beb380238056e599d5dcb0e03aab6917d057c97fa1e2044b8320fa4881af2114"
     raw_size: int = 3_436_183_552
-    sparse_sha256: str = "77ff199311f71b3f3e4fdf3e3251138abc0f46664567b2deae409a79c960b2a1"
-    sparse_size: int = 2_236_696_908
+    sparse_sha256: str = "a88a7335f6e0d3fcaeeaf1b987c380b0d81e68a8886034acc3d0a12033792081"
+    sparse_size: int = 2_236_696_936
     mapping_sha256: str = "59f27854ac595a9b615bddeb91aa72e6bf1e0dacd9341cda2783a19bb050014f"
     mapping_size: int = 3_879
     runtime_sha256: str = "a2db2d343aeeead7400da9b0487de536ba0842d20a3861fdde23ca647d71c65d"
     runtime_size: int = 8_066
     completed_sha256: str = "5c7c9b79baf58366167bf5d58bc65554d4e54a9f1e07b160d705d2cf58a837df"
     completed_size: int = 1_160
-    template_sha256: str = "cd6a071425309a83442f4de3dbd71c68b7261cfb1deaac16686271757ac70800"
-    template_size: int = 2_653
+    template_sha256: str = "a4830110cd0b35680c94cba9add96f61417c5405a2e7aa5bbbc32ff9c71ac023"
+    template_size: int = 3_109
     old_sparse_sha256: str = "39d45c6de7d2708f59154b1dd9352573849fc0a51434ebfd9d0f493c36841583"
     d110_boot_sha256: str = "2b264d64d2ed22f0ab5c3c2615b0bda9ed821fa5d8d5d691ea513e5d2f071487"
     d110_boot_size: int = 52_944_896
@@ -1487,14 +1490,26 @@ def _transport_completed(result: CommandResult) -> bool:
         or result.timed_out
         or result.output_limited
         or result.returncode != 0
-        or result.stdout != b""
     ):
         return False
+    # The locked Debian fastboot build has been observed emitting its complete
+    # successful write transcript on stdout, while the same exact transcript
+    # shape is emitted on stderr by the other supported invocation.  Accept
+    # only one complete stream; mixed streams stay outcome-unknown.
+    if (result.stdout == b"") == (result.stderr == b""):
+        return False
+    transcript = result.stderr if result.stdout == b"" else result.stdout
+    if not transcript.endswith(b"\n") or b"\r" in transcript:
+        return False
     try:
-        lines = result.stderr.decode("ascii").splitlines()
+        lines = transcript[:-1].decode("ascii").split("\n")
     except UnicodeDecodeError:
         return False
-    if not lines or re.fullmatch(r"Finished\. Total time: [0-9]+(?:\.[0-9]+)?s", lines[-1]) is None:
+    if (
+        not lines
+        or any(line == "" for line in lines)
+        or re.fullmatch(r"Finished\. Total time: [0-9]+(?:\.[0-9]+)?s", lines[-1]) is None
+    ):
         return False
     sending = re.compile(
         r"Sending sparse 'userdata'(?: (?P<index>[0-9]+)/(?P<total>[0-9]+))? \([0-9]+ KB\)[ .]*OKAY \[[ ]*[0-9]+(?:\.[0-9]+)?s\]"
@@ -1818,6 +1833,21 @@ def execute(
     return route, _publish(report_path, report, audit, "execute report")
 
 
+def _validate_explicit_write_authorization(
+    audit: Audit,
+    approved_operation: str | None,
+    approved_sparse_sha256: str | None,
+) -> None:
+    candidate_sha256 = audit.profile["artifacts"]["candidate"]["sha256"]
+    if approved_operation != "flash-userdata":
+        raise DeployError("write path requires --approved-operation flash-userdata")
+    if (
+        approved_sparse_sha256 != candidate_sha256
+        or _sha(approved_sparse_sha256, "approved sparse hash") != candidate_sha256
+    ):
+        raise DeployError("write authorization does not bind the exact sparse candidate")
+
+
 def deploy_once(
     audit: Audit,
     preflight_path: Path,
@@ -1839,10 +1869,9 @@ def deploy_once(
     """
 
     candidate_sha256 = audit.profile["artifacts"]["candidate"]["sha256"]
-    if approved_operation != "flash-userdata":
-        raise DeployError("combined deployment requires --approved-operation flash-userdata")
-    if approved_sparse_sha256 != candidate_sha256 or _sha(approved_sparse_sha256, "approved sparse hash") != candidate_sha256:
-        raise DeployError("combined deployment approval does not bind the exact sparse candidate")
+    _validate_explicit_write_authorization(
+        audit, approved_operation, approved_sparse_sha256
+    )
     _validate_completed(audit.completed, audit.contract, candidate_sha256)
     caller_outputs = (
         (preflight_path, "preflight report"),
@@ -1944,6 +1973,11 @@ def operate(
         if mode == "execute":
             if None in (preflight_path, preflight_sha256, approval_path, approval_sha256, consumed_path, intent_path):
                 raise DeployError("execute requires exact preflight, approval, consumed-claim, and intent inputs")
+            if approved_operation is None or approved_sparse_sha256 is None:
+                raise DeployError("execute requires exact operation/hash authorization")
+            _validate_explicit_write_authorization(
+                audit, approved_operation, approved_sparse_sha256
+            )
             return execute(
                 audit, preflight_path, preflight_sha256, approval_path, approval_sha256,
                 consumed_path, intent_path, report_path, process_runner=process_runner, clock=clock,

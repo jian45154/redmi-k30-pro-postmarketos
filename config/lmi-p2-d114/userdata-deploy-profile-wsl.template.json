@@ -1,16 +1,16 @@
 {
   "_template_status": "NOT_EXECUTABLE_PRIVATE_SERIAL_AND_NONCE_REQUIRED_D114_USERDATA_ONLY",
   "artifacts": {
-    "assembly_attestation": {"path": "__PRIVATE_BUNDLE__/assembly-attestation.json", "sha256": "__SHA256__", "size": 0},
-    "candidate": {"logical_size": 3339714560, "path": "__PRIVATE_BUNDLE__/userdata.android-sparse.img", "representation": "android-sparse", "roundtrip_raw_sha256": "__SHA256__", "sha256": "__SHA256__", "size": 0},
-    "candidate_raw": {"path": "__PRIVATE_BUNDLE__/userdata.raw", "sha256": "__SHA256__", "size": 3339714560},
-    "completed_actions_lock": {"path": "config/lmi-p2-d114/completed-userdata-actions-lock.json", "sha256": "__SHA256__", "size": 0},
-    "deploy_policy_lock": {"path": "config/lmi-p2-d114/userdata-deploy-policy-lock-wsl-r1.json", "sha256": "__SHA256__", "size": 0},
-    "fastboot_runtime_lock": {"path": "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json", "sha256": "__SHA256__", "size": 0},
-    "p2_injection_attestation": {"path": "__PRIVATE_BUNDLE__/injection-attestation.json", "sha256": "__SHA256__", "size": 0},
-    "p2_rootfs": {"path": "__PRIVATE_INJECTION_BUNDLE__/rootfs.ext4", "sha256": "__SHA256__", "size": 2826960896},
+    "assembly_attestation": {"path": "__PRIVATE_BUNDLE__/assembly-attestation.json", "sha256": "ab4bbe2a3bb1f3b843036c3489979ad6d2d395d26a400c0ed7d70e179fc000d6", "size": 7234},
+    "candidate": {"logical_size": 3436183552, "path": "__PRIVATE_BUNDLE__/userdata.android-sparse.img", "representation": "android-sparse", "roundtrip_raw_sha256": "beb380238056e599d5dcb0e03aab6917d057c97fa1e2044b8320fa4881af2114", "sha256": "a88a7335f6e0d3fcaeeaf1b987c380b0d81e68a8886034acc3d0a12033792081", "size": 2236696936},
+    "candidate_raw": {"path": "__PRIVATE_BUNDLE__/userdata.raw", "sha256": "beb380238056e599d5dcb0e03aab6917d057c97fa1e2044b8320fa4881af2114", "size": 3436183552},
+    "completed_actions_lock": {"path": "config/lmi-p2-d114/completed-userdata-actions-lock.json", "sha256": "5c7c9b79baf58366167bf5d58bc65554d4e54a9f1e07b160d705d2cf58a837df", "size": 1160},
+    "deploy_policy_lock": {"path": "config/lmi-p2-d114/userdata-deploy-policy-lock-wsl-r2.json", "sha256": "__SHA256__", "size": 4590},
+    "fastboot_runtime_lock": {"path": "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json", "sha256": "a2db2d343aeeead7400da9b0487de536ba0842d20a3861fdde23ca647d71c65d", "size": 8066},
+    "p2_injection_attestation": {"path": "__PRIVATE_BUNDLE__/injection-attestation.json", "sha256": "81b47f382803570acfd72b3d2d4a9036beb6a1c0ae7637ffb72a2deb385f3836", "size": 7187},
+    "p2_rootfs": {"path": "__PRIVATE_INJECTION_BUNDLE__/rootfs.ext4", "sha256": "4384dee649d86278d1965211c1cb8ddd556a4386fca25b50ccfdff43869c1305", "size": 2923429888},
     "physical_mapping_evidence": {"path": "config/lmi-p2-d114/physical-userdata-mapping.json", "sha256": "59f27854ac595a9b615bddeb91aa72e6bf1e0dacd9341cda2783a19bb050014f", "size": 3879},
-    "rollback": {"logical_size": 3339714560, "path": "__PRIVATE_REVIEWED_ROLLBACK__.android-sparse.img", "representation": "android-sparse", "roundtrip_raw_sha256": "61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6", "sha256": "e8a30dc37cb4b75508d89725a9603bc15a985f4e51af77384e8d43c2928f8d68", "size": 2192400084}
+    "rollback": {"logical_size": 3436183552, "path": "__PRIVATE_REVIEWED_ROLLBACK__.android-sparse.img", "representation": "android-sparse", "roundtrip_raw_sha256": "33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8", "sha256": "1315e3a06ddff42e91f930f01b16a62ab30ab3d4f490e8e8e40d0af89c657279", "size": 2269624624}
   },
   "compatibility": {"d110_boot": {"authorization": false, "sha256": "2b264d64d2ed22f0ab5c3c2615b0bda9ed821fa5d8d5d691ea513e5d2f071487", "size": 52944896}},
   "device": {"expected_product": "lmi", "expected_userdata_capacity": 114898743296, "minimum_battery_mv": 3800, "minimum_max_download_size": 52944896, "partition_type": "f2fs"},

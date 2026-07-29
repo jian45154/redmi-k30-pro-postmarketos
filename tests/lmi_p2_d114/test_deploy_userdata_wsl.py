@@ -39,10 +39,10 @@ class FakeFastboot:
         self.calls: list[tuple[tuple[str, ...], int, tuple[int, ...], dict[str, str]]] = []
         self.write_result = write_result or deploy.CommandResult(
             0,
-            b"",
             b"Sending sparse 'userdata' 1/1 (123 KB) OKAY [  1.000s]\n"
             b"Writing 'userdata' OKAY [  2.000s]\n"
             b"Finished. Total time: 3.000s\n",
+            b"",
         )
         self.battery_values = battery_values
         self.devices_stdout = (
@@ -632,7 +632,12 @@ class DeployUserdataWslTests(unittest.TestCase):
         self.assertEqual(list((self.fixture.private / "claim-ledger").iterdir()), [])
         self.assertEqual(list((self.fixture.private / "attempt-ledger").iterdir()), [])
 
-    def test_transport_parser_rejects_partial_fraction_even_with_rc0_and_finished(self) -> None:
+    def test_transport_parser_accepts_only_complete_single_stream_transcripts(self) -> None:
+        transcript = (
+            b"Sending sparse 'userdata' 1/1 (123 KB) OKAY [  1.000s]\n"
+            b"Writing 'userdata' OKAY [  2.000s]\n"
+            b"Finished. Total time: 3.000s\n"
+        )
         partial = deploy.CommandResult(
             0,
             b"",
@@ -642,6 +647,19 @@ class DeployUserdataWslTests(unittest.TestCase):
         )
         self.assertFalse(deploy._transport_completed(partial))
         self.assertTrue(deploy._transport_completed(FakeFastboot().write_result))
+        self.assertTrue(deploy._transport_completed(deploy.CommandResult(0, b"", transcript)))
+        for result in (
+            deploy.CommandResult(0, transcript, b"noise\n"),
+            deploy.CommandResult(0, b"noise\n" + transcript, b""),
+            deploy.CommandResult(0, b"", transcript + b"noise\n"),
+            deploy.CommandResult(0, transcript[:-1], b""),
+            deploy.CommandResult(0, transcript.replace(b"OKAY", b"OKAY\xff", 1), b""),
+            deploy.CommandResult(0, b"Finished. Total time: 3.000s\n", b""),
+            deploy.CommandResult(1, transcript, b""),
+            deploy.CommandResult(0, b"", b""),
+        ):
+            with self.subTest(result=result):
+                self.assertFalse(deploy._transport_completed(result))
 
     def test_preflight_uses_exact_fixed_read_only_queries_and_redacts_serial(self) -> None:
         audit = self.fixture.audit()
@@ -961,6 +979,41 @@ class DeployUserdataWslTests(unittest.TestCase):
                     )
                 self.assertEqual(audit_calls, 0)
                 self.assertEqual(runner.calls, [])
+
+    def test_execute_requires_exact_operation_and_candidate_hash_before_device_query(self) -> None:
+        for operation, digest in (
+            (None, None),
+            ("boot", deploy.PRODUCTION.sparse_sha256),
+            ("flash-userdata", "0" * 64),
+        ):
+            runner = FakeFastboot()
+            audit_calls = 0
+
+            def audit_factory(*_args: object, **_kwargs: object) -> deploy.Audit:
+                nonlocal audit_calls
+                audit_calls += 1
+                return self.fixture.audit()
+
+            with self.assertRaises(deploy.DeployError):
+                deploy.operate(
+                    "execute",
+                    self.fixture.path("profile.json"),
+                    self.fixture.path(f"execute-auth-{audit_calls}.json"),
+                    preflight_path=self.fixture.path("preflight-auth.json"),
+                    preflight_sha256="1" * 64,
+                    approval_path=self.fixture.path("approval-auth.json"),
+                    approval_sha256="2" * 64,
+                    consumed_path=self.fixture.path("consumed-auth.json"),
+                    intent_path=self.fixture.path("intent-auth.json"),
+                    approved_operation=operation,
+                    approved_sparse_sha256=digest,
+                    repo_root=self.fixture.root,
+                    process_runner=runner,
+                    audit_factory=audit_factory,
+                    now_unix=1000,
+                )
+            self.assertEqual(audit_calls, 1)
+            self.assertEqual(runner.calls, [])
 
     def test_runner_failures_publish_unknown_after_consumed_attempt_and_intent(self) -> None:
         variants: tuple[deploy.CommandResult | Exception, ...] = (

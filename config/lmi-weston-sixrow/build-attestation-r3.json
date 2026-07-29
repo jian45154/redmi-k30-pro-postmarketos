@@ -1,0 +1,82 @@
+{
+  "schema": "lmi-weston-sixrow-build-attestation/v1",
+  "generated_at": "2026-07-24T05:08:11Z",
+  "status": "BUILT_REPRODUCIBLE_STATIC_AUDIT_PASSED_NOT_DEVICE_TESTED",
+  "device": "xiaomi-lmi",
+  "architecture": "aarch64",
+  "source": {
+    "weston_version": "14.0.2",
+    "source_lock": "config/lmi-weston-sixrow/source-lock.json",
+    "source_lock_sha256": "e6b72fdfe21714cb728ed54f701efeed16fa1350cb8eb147251def23dda86462",
+    "apkbuild": "files/lmi-weston-sixrow/APKBUILD",
+    "apkbuild_sha256": "e8225be2e512852ab522c3e6873f642287cddcc40df89faa9cfacca6b2483aa7",
+    "verification_sources": [
+      {
+        "path": "scripts/lmi_weston_sixrow/verify.py",
+        "sha256": "02cfb9cda6edb1b56fb76b79f6d60c565c8e46077c9076b1d7b4ac43cfad3efe"
+      },
+      {
+        "path": "tests/lmi_weston_sixrow/test_static.py",
+        "sha256": "05085fb3b865c4f088a5b571bb6ea9a8d945a89be7af5f4546993839c000e990"
+      }
+    ],
+    "build_method": "Two clean unprivileged aarch64 builds from the recorded offline pmbootstrap cache: apk.static materialized the same 199-package Alpine edge build root, proot translated child execs through qemu-aarch64 11.0.2-r1, and abuild 3.18.0_rc3-r1 ran with -F -d against the hash-locked local Weston tarball and four patches. Both runs used SOURCE_DATE_EPOCH=1784851200 and ABUILD_LAST_COMMIT=uncommitted-terminal-touch-scrollback-r3.",
+    "signing_key": "pmos@local-6a5d38f2",
+    "signing_note": "Both APKs were directly signed during abuild with the readable canonical P2-track key pmos@local-6a5d38f2. apk-tools 3.0.6-r0 verified the retained artifact against config/lmi-p2-d114/pmos@local-6a5d38f2.rsa.pub."
+  },
+  "reproducibility": {
+    "runs": 2,
+    "run1_sha256": "9310963550ac26e28b187a3a1b0a202f9e917c8103a30e0a1dbaaf182626d010",
+    "run2_sha256": "9310963550ac26e28b187a3a1b0a202f9e917c8103a30e0a1dbaaf182626d010",
+    "byte_identical": true
+  },
+  "artifact": {
+    "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r3-terminal-scroll-build-20260724/lmi-weston-sixrow-clients-14.0.2-r3.apk",
+    "sha256": "9310963550ac26e28b187a3a1b0a202f9e917c8103a30e0a1dbaaf182626d010",
+    "compressed_size": 122316,
+    "installed_size": 335416,
+    "package_version": "14.0.2-r3",
+    "payload": {
+      "/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow": "d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a",
+      "/usr/libexec/lmi-p2-d114/weston-terminal-sixrow": "ed3cda9c8dcdcd197385d125c84e3fdaa0429790b1b166d62f6206c4f853cf24"
+    }
+  },
+  "elf": {
+    "class": "ELF64",
+    "endianness": "little",
+    "machine": "AArch64",
+    "type": "PIE",
+    "interpreter": "/lib/ld-musl-aarch64.so.1",
+    "required_sonames_present_in_recorded_d114_rootfs": true
+  },
+  "verification": {
+    "unit_tests": "13 passed, 1 skipped across 14 tests (tests/lmi_weston_sixrow with the official tarball and local r3 APK present; the disabled r2 transient exact-stage fixture remains absent)",
+    "official_tarball_sha256_and_sha512_verified": true,
+    "patches_applied_with_fuzz_zero": true,
+    "layout_and_shift_map_verified": true,
+    "paged_keyboard_payload_unchanged_from_r2": true,
+    "shared_pointer_and_touch_viewport_helper_verified": true,
+    "touch_direction_and_fractional_line_model_verified": true,
+    "viewport_history_and_saved_bottom_bounds_model_verified": true,
+    "tap_selection_and_touch_cancel_source_contract_verified": true,
+    "apk_content_whitelist_verified": true,
+    "apk_signature_verified": true,
+    "stock_paths_overwritten": false,
+    "phone_connected_or_modified": false,
+    "persistent_install_performed": false,
+    "physical_touch_test_performed": false
+  },
+  "supersedes": {
+    "attestation": "config/lmi-weston-sixrow/build-attestation-r2.json",
+    "attestation_sha256": "5bb55928ae0b4109ad028d1a24e29de0dc74d2078f31d33628fd683cfbbaa0a2",
+    "artifact": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260723/lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk",
+    "sha256": "8d2f23522eb737432577b33ee7dd012b76d06012f1d6918eac289853f6f015e7",
+    "status": "SUPERSEDED_R2_NO_TERMINAL_TOUCH_SCROLL"
+  },
+  "known_limitations": [
+    "The 350 ms selection hold is evaluated on touch motion; a stationary hold does not enter selection before touch-up.",
+    "A first motion after 350 ms chooses text selection even when that motion is predominantly vertical.",
+    "The frozen D114 r2/r10 userdata and disabled transient path still contain or pin r2; this r3 APK is not integrated into a device image."
+  ],
+  "claim_limit": "This attests one exact local r3 APK, two byte-identical host builds, and static/model checks. It does not prove touch feel, terminal scrolling on the phone, image integration, persistence, or release readiness. The owner's RAM-boot rendering and Wi-Fi observation applies to the earlier r2/r10 image, not this r3 package."
+}
