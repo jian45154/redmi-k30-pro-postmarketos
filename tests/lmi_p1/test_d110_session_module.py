@@ -15,6 +15,8 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
+import subprocess
 import tempfile
 import time
 import unittest
@@ -51,19 +53,24 @@ class SessionModulePinTests(unittest.TestCase):
     def test_stage_script_keeps_isolated_interpreter_and_fd3_serial_protocol(self) -> None:
         script = STAGE_SCRIPT.read_text(encoding="utf-8")
         self.assertIn(
-            '/usr/bin/python3 -I -S -B "$session_module_exec" device-identity '
+            'run_session_module device-identity '
             '"$privacy_nonce" "$expected_identity" "$historical_fingerprint" '
             '3<<< "$device_serial"',
             script,
         )
-        for line in script.splitlines():
-            if "$session_module_exec" in line and "python3" in line:
-                self.assertIn("/usr/bin/python3 -I -S -B", line)
-                # The raw serial must never be an argv item; it is only ever
-                # attached via the fd-3 herestring redirection.
-                self.assertNotIn("$device_serial", line.split("3<<<")[0])
+        serial_line = next(
+            line for line in script.splitlines()
+            if "run_session_module device-identity" in line
+        )
+        # The raw serial must never be an argv item; it is only ever attached
+        # via the fd-3 herestring redirection.
+        self.assertNotIn("$device_serial", serial_line.split("3<<<")[0])
         self.assertNotIn(
             '/usr/bin/python3 -I -S -B "$session_module" ',
+            script,
+        )
+        self.assertNotIn(
+            '/usr/bin/python3 -I -S -B "$session_module_exec" ',
             script,
         )
         self.assertIn('exec 9<"$session_module"', script)
@@ -71,12 +78,89 @@ class SessionModulePinTests(unittest.TestCase):
             "readonly session_module_exec=/proc/self/fd/$session_module_fd",
             script,
         )
+        self.assertIn("source = b''.join(parts)", script)
+        self.assertIn("hashlib.sha256(source).hexdigest() != expected", script)
+        self.assertIn("exec(compile(source, display_path, 'exec')", script)
         # The module pin is captured in the main flow before the first module
         # invocation (capture_helper_identity).
         self.assertLess(
             script.index("\ncapture_session_module\n"),
             script.index("\ncapture_helper_identity\n"),
         )
+
+    def test_snapshot_runner_rejects_in_place_tamper_and_ignores_path_swap(
+        self,
+    ) -> None:
+        script = STAGE_SCRIPT.read_text(encoding="utf-8")
+        match = re.search(
+            r'readonly SESSION_MODULE_RUNNER="(.*?)"\n\nmode=',
+            script,
+            flags=re.DOTALL,
+        )
+        self.assertIsNotNone(match)
+        runner = match.group(1)
+        trusted = (
+            b"from pathlib import Path\n"
+            b"import sys\n"
+            b"Path(sys.argv[1]).write_text('trusted', encoding='utf-8')\n"
+        )
+        malicious = (
+            b"from pathlib import Path\n"
+            b"import sys\n"
+            b"Path(sys.argv[1]).write_text('malicious', encoding='utf-8')\n"
+        )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            module = root / "module.py"
+            marker = root / "marker"
+            module.write_bytes(trusted)
+            expected = hashlib.sha256(trusted).hexdigest()
+
+            with module.open("rb") as retained:
+                module.write_bytes(malicious)
+                refused = subprocess.run(
+                    [
+                        "/usr/bin/python3",
+                        "-I",
+                        "-S",
+                        "-B",
+                        "-c",
+                        runner,
+                        str(retained.fileno()),
+                        expected,
+                        "/proc/self/fd/test",
+                        str(marker),
+                    ],
+                    pass_fds=(retained.fileno(),),
+                    check=False,
+                )
+            self.assertEqual(refused.returncode, 2)
+            self.assertFalse(marker.exists())
+
+            module.write_bytes(trusted)
+            replacement = root / "replacement.py"
+            replacement.write_bytes(malicious)
+            with module.open("rb") as retained:
+                os.replace(replacement, module)
+                accepted = subprocess.run(
+                    [
+                        "/usr/bin/python3",
+                        "-I",
+                        "-S",
+                        "-B",
+                        "-c",
+                        runner,
+                        str(retained.fileno()),
+                        expected,
+                        "/proc/self/fd/test",
+                        str(marker),
+                    ],
+                    pass_fds=(retained.fileno(),),
+                    check=False,
+                )
+            self.assertEqual(accepted.returncode, 0)
+            self.assertEqual(marker.read_text(encoding="utf-8"), "trusted")
 
     def test_module_contains_no_fastboot_invocation(self) -> None:
         text = MODULE_PATH.read_text(encoding="utf-8")
