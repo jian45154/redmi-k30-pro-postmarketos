@@ -82,15 +82,16 @@ target `userdata`)** — the higher-value wiring, because persistent writes
 are where duplicated approval logic is most dangerous:
 
 1. Owner records a profile file (e.g.
-   `config/governance/profiles/d114-p2-userdata-<rev>.json`) pinning the
-   candidate sparse image SHA-256/size and the rollback artifact, and adds
-   the hash-bound `authorized_profiles` entry to `policy.json` (via the
-   `authorize-profile` verb once that revision lands; by reviewed manual
-   edit before then).
+   `profiles/d114-p2-userdata-<rev>.json`) pinning the candidate sparse image
+   SHA-256/size and the rollback artifact. After the hardened engine revision
+   lands, the owner records its hash-bound `authorized_profiles` entry only
+   through the host-only `bringup_loop.py authorize-profile` TTY ceremony.
+   There is no manual-edit fallback: before that command exists on the target
+   branch, persistent-profile authorization remains unavailable.
 2. The deployer's `approve` step additionally runs
    `bringup_loop.py new --operation partition_write` (artifact = the sparse
    image, rollback = the distinct-hash rollback artifact) and
-   `bringup_loop.py approve` (dry-run of every gate, changes nothing).
+   `bringup_loop.py preflight` (dry-run of every gate, changes nothing).
 3. The deployer's `execute` step calls `bringup_loop.py claim` immediately
    before invoking the platform helper, and refuses to proceed unless its
    own fixed flash command equals the engine's returned `exact_command`.
