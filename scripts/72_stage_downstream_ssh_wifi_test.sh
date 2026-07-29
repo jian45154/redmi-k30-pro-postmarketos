@@ -69,6 +69,32 @@ session_module=$script_dir/lmi_d110_session.py
 readonly session_module_fd=9
 readonly session_module_exec=/proc/self/fd/$session_module_fd
 session_module_identity=
+# Each invocation reads a private byte snapshot from the retained descriptor,
+# verifies that snapshot against the literal pin, and compiles those same
+# bytes. A writer may still alter the underlying inode, but it cannot create a
+# verify-to-exec gap: changed bytes fail the digest and verified bytes are no
+# longer reopened before execution.
+readonly SESSION_MODULE_RUNNER="import hashlib, os, sys
+fd = int(sys.argv[1])
+expected = sys.argv[2]
+display_path = sys.argv[3]
+size = os.fstat(fd).st_size
+parts = []
+offset = 0
+while offset < size:
+    part = os.pread(fd, min(1048576, size - offset), offset)
+    if not part:
+        break
+    parts.append(part)
+    offset += len(part)
+source = b''.join(parts)
+if len(source) != size or hashlib.sha256(source).hexdigest() != expected:
+    raise SystemExit(2)
+sys.argv = [display_path] + sys.argv[4:]
+exec(compile(source, display_path, 'exec'), {
+    '__name__': '__main__',
+    '__file__': display_path,
+})"
 
 mode=
 stage=
@@ -120,9 +146,10 @@ done
 # The pinned session module carries the exact Python bodies that used to be
 # embedded here as heredocs. A heredoc could not be swapped without changing
 # this file (which the helper-identity checkpoints detect); the module file
-# regains that property by being opened once, hashed against
-# TRUSTED_SESSION_MODULE_SHA256, and executed only through the retained fd.
-# Path identity is still re-verified at every helper-identity checkpoint.
+# regains that property by being opened once and hashed against
+# TRUSTED_SESSION_MODULE_SHA256. Every invocation then hashes and compiles one
+# private snapshot read from the retained fd. Path identity is still
+# re-verified at every helper-identity checkpoint as tamper detection.
 capture_session_module() {
 	local actual_sha before after path_identity
 	[[ $TRUSTED_SESSION_MODULE_SHA256 =~ ^[0-9a-f]{64}$ ]] || fail "the session module pin is not a literal SHA-256"
@@ -141,6 +168,11 @@ capture_session_module() {
 	session_module_identity=$before
 }
 
+run_session_module() {
+	/usr/bin/python3 -I -S -B -c "$SESSION_MODULE_RUNNER" \
+		"$session_module_fd" "$TRUSTED_SESSION_MODULE_SHA256" "$session_module_exec" "$@"
+}
+
 verify_session_module() {
 	local actual_sha current path_identity
 	[ ! -L "$session_module" ] && [ -f "$session_module" ] || fail "the session module changed type"
@@ -155,7 +187,7 @@ verify_session_module() {
 capture_helper_identity() {
 	local output status
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" helper-identity "$script_path")
+	output=$(run_session_module helper-identity "$script_path")
 	status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "the helper identity could not be captured safely"
@@ -178,7 +210,7 @@ verify_helper_identity() {
 capture_local_policy() {
 	local output
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" local-policy "$repo" "$policy_path" "$TRUSTED_POLICY_SHA256")
+	output=$(run_session_module local-policy "$repo" "$policy_path" "$TRUSTED_POLICY_SHA256")
 	local status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "private D110 policy or pinned local evidence validation failed"
@@ -338,7 +370,7 @@ read_getvar() {
 parse_uint() {
 	local input=$1 output status
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" parse-uint "$input")
+	output=$(run_session_module parse-uint "$input")
 	status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "a numeric fastboot property is invalid"
@@ -348,7 +380,7 @@ parse_uint() {
 verify_private_device_identity() {
 	local status
 	set +e
-	/usr/bin/python3 -I -S -B "$session_module_exec" device-identity "$privacy_nonce" "$expected_identity" "$historical_fingerprint" 3<<< "$device_serial"
+	run_session_module device-identity "$privacy_nonce" "$expected_identity" "$historical_fingerprint" 3<<< "$device_serial"
 	status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "the connected handset does not match the private D199/D200 identity policy"
@@ -385,7 +417,7 @@ preflight_device() {
 capture_session_scope() {
 	local output status
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" session-scope)
+	output=$(run_session_module session-scope)
 	status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "a valid current CODEX_THREAD_ID session scope is required"
@@ -398,7 +430,7 @@ capture_session_scope() {
 prepare_session_storage() {
 	local create=$1 status
 	set +e
-	/usr/bin/python3 -I -S -B "$session_module_exec" session-storage "$grant_dir" "$create"
+	run_session_module session-storage "$grant_dir" "$create"
 	status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "the private session grant storage is missing or unsafe"
@@ -435,7 +467,7 @@ create_session_grant() {
 		return 0
 	fi
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" grant-create "$grant_dir" "$thread_binding" \
+	output=$(run_session_module grant-create "$grant_dir" "$thread_binding" \
 		"$host_boot_id_sha" "$TRUSTED_POLICY_SHA256" "$action_digest" "$boot_sha" \
 		"$expected_identity" "$fastboot_sha" "$fastboot_identity" "$stage" "$helper_sha" \
 		"$session_max_seconds")
@@ -450,7 +482,7 @@ verify_session_grant() {
 	local status
 	grant_path=$grant_dir/active/grant-$thread_binding.json
 	set +e
-	/usr/bin/python3 -I -S -B "$session_module_exec" grant-verify "$grant_path" "$thread_binding" "$host_boot_id_sha" \
+	run_session_module grant-verify "$grant_path" "$thread_binding" "$host_boot_id_sha" \
 		"$TRUSTED_POLICY_SHA256" "$action_digest" "$boot_sha" "$expected_identity" \
 		"$fastboot_sha" "$fastboot_identity" "$stage" "$helper_sha" "$session_max_seconds"
 	status=$?
@@ -461,7 +493,7 @@ verify_session_grant() {
 revoke_session_grant() {
 	local status
 	set +e
-	/usr/bin/python3 -I -S -B "$session_module_exec" grant-revoke "$grant_dir" "$thread_binding"
+	run_session_module grant-revoke "$grant_dir" "$thread_binding"
 	status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "the session grant could not be atomically revoked"
@@ -470,7 +502,7 @@ revoke_session_grant() {
 create_attempt_receipt() {
 	local output status
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" receipt-create "$receipt_dir" "$TRUSTED_POLICY_SHA256" \
+	output=$(run_session_module receipt-create "$receipt_dir" "$TRUSTED_POLICY_SHA256" \
 		"$action_digest" "$boot_sha" "$expected_identity" "$thread_binding" \
 		"$host_boot_id_sha" "$helper_sha" "$fastboot_identity" "$stage" "$device_battery_mv" \
 		"$device_max_download" "$receipt_ttl")
@@ -483,7 +515,7 @@ create_attempt_receipt() {
 consume_attempt_receipt() {
 	local output status
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" receipt-consume "$receipt_dir" "$pending_receipt" \
+	output=$(run_session_module receipt-consume "$receipt_dir" "$pending_receipt" \
 		"$TRUSTED_POLICY_SHA256" "$action_digest" "$boot_sha" "$expected_identity" \
 		"$thread_binding" "$host_boot_id_sha" "$helper_sha" "$fastboot_identity" "$stage" "$receipt_ttl")
 	status=$?
