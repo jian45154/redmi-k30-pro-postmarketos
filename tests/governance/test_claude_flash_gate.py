@@ -96,6 +96,9 @@ class ClaudeFlashGateTests(unittest.TestCase):
             "fastboot \\\n-s SERIAL flash userdata candidate.img",
             r"fastboot -s SERIAL fl\ash userdata candidate.img",
             "fa''stboot -s SERIAL flash userdata candidate.img",
+            "fa$'st'boot -s SERIAL flash userdata candidate.img",
+            r"fa$'\x73\x74'boot -s SERIAL flash userdata candidate.img",
+            'fa$"st"boot -s SERIAL flash userdata candidate.img',
         )
         for command in commands:
             with self.subTest(command=command):
@@ -108,6 +111,8 @@ class ClaudeFlashGateTests(unittest.TestCase):
             "dd if=image of=/dev/mmcblk0",
             "dd \\\nif=image of=/dev/mmcblk0",
             r"d\d if=image of=/dev/mmcblk0",
+            "d$'d' if=image of=/dev/mmcblk0",
+            r"d$'\x64' if=image of=/dev/mmcblk0",
         )
         for command in commands:
             with self.subTest(command=command):
