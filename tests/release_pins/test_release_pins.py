@@ -119,6 +119,7 @@ def _fixture_registry():
                         r"check_sha256 /usr/bin/tool \\\s*"
                         r"([0-9a-f]{64})"
                     ),
+                    exact_count=1,
                 ),
             ),
         ),
@@ -199,6 +200,22 @@ class VerifyRegistryFixtureTest(unittest.TestCase):
             self._failed_labels(findings),
             ["session.check_sha256[/usr/bin/tool]"],
         )
+
+    def test_duplicate_session_gate_line_is_unreadable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            _fixture_repo(root)
+            session = root / "files/session"
+            session.write_text(
+                session.read_text(encoding="utf-8")
+                + "check_sha256 /usr/bin/tool \\\n\t%s\n" % GOOD,
+                encoding="utf-8",
+            )
+            findings = pins.verify_registry(root, _fixture_registry())
+        by_label = {finding.site_label: finding for finding in findings}
+        finding = by_label["session.check_sha256[/usr/bin/tool]"]
+        self.assertEqual(finding.status, "UNREADABLE")
+        self.assertIn("need exactly 1", finding.detail)
 
     def test_second_order_pin_is_checked_against_real_file_hash(self):
         findings = self._verify(second_order_pin=STALE)
@@ -358,6 +375,16 @@ class RealRegistryShapeTest(unittest.TestCase):
         self.assertIn("weston-terminal-sixrow", labels)
         self.assertIn("session-gate", labels)
         self.assertIn("/usr/bin/weston", labels)
+        session_sites = [
+            site
+            for artifact in pins.REGISTRY
+            for site in artifact.sites
+            if site.label.startswith("session-gate")
+        ]
+        self.assertEqual(
+            sorted(site.exact_count for site in session_sites),
+            [1, 2, 3, 3],
+        )
 
     def test_second_order_file_hash_truths_are_registered(self):
         hashed = [

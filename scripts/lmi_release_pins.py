@@ -58,6 +58,7 @@ class Site:
     selector: tuple = ()  # python_const: keys/indices into the value
     pattern: str = ""  # regex: context-anchored, one capture group
     min_count: int = 1  # regex: minimum required occurrences
+    exact_count: int = 0  # regex: nonzero means exactly this many occurrences
     value_pattern: str = ""  # post-filter applied to extracted values
     expected_transform: str = ""  # "" | "prefix:N" | "int"
     best_effort: bool = False  # prose site: unreadable warns, not fails
@@ -229,6 +230,11 @@ def _extract_regex(root, site):
             "invalid site pattern for %s: %s" % (site.label, error)
         ) from error
     values = [match.group(1) for match in pattern.finditer(text)]
+    if site.exact_count and len(values) != site.exact_count:
+        raise SiteUnreadable(
+            "pattern for %s matched %d time(s) in %s (need exactly %d)"
+            % (site.label, len(values), site.path, site.exact_count)
+        )
     if len(values) < site.min_count:
         raise SiteUnreadable(
             "pattern for %s matched %d time(s) in %s (need >= %d)"
@@ -592,6 +598,7 @@ REGISTRY = (
                 kind="regex",
                 pattern=_session_path_digest(_KBD),
                 min_count=1,
+                exact_count=1,
             ),
             Site(
                 label="session-gate process_sha256_valid[keyboard pid]",
@@ -602,6 +609,7 @@ REGISTRY = (
                     r" \\\s*" + _SHA256_HEX
                 ),
                 min_count=2,
+                exact_count=2,
             ),
         ),
     ),
@@ -616,6 +624,7 @@ REGISTRY = (
                 kind="regex",
                 pattern=_session_path_digest(_TERM),
                 min_count=3,
+                exact_count=3,
             ),
         ),
     ),
@@ -648,6 +657,7 @@ REGISTRY = (
                 kind="regex",
                 pattern=_session_path_digest(_WESTON),
                 min_count=3,
+                exact_count=3,
             ),
         ),
     ),
