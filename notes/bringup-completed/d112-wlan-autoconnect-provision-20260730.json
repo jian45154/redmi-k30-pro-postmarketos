@@ -1,0 +1,54 @@
+{
+  "schema_version": 4,
+  "status": "completed",
+  "experiment_id": "d112-wlan-autoconnect-provision-20260730",
+  "tier": "ram_rw",
+  "hypothesis": "Provisioning a NetworkManager keyfile connection offline from the D111 debug shell makes wlan0 auto-join the owner network at boot, and a polkit rule granting the wheel group NetworkManager control restores runtime network management over SSH; together these yield authenticated key-only SSH over the WLAN transport.",
+  "discriminator": "Positive: after boot continuation, wlan0 holds an IPv4 address from the owner AP AND ssh as lmi to that WLAN address succeeds with SSH_CONNECTION showing the WLAN peer. Negative: no IPv4 on wlan0, association failure, or SSH over WLAN denied.",
+  "next_if_positive": "Unplug USB and re-verify untethered SSH; run scripts/74 suite over WLAN as v1 evidence; record the WLAN transport milestone.",
+  "next_if_negative": "Capture wpa_supplicant/NM logs and dmesg; if SAE is the failure, retry with a WPA2-only AP or hotspot; no further writes without a new receipt.",
+  "timebox_seconds": 1800,
+  "lanes": [],
+  "observations": [],
+  "result": {
+    "outcome": "success",
+    "evidence": "logs/d112-wlan-autoconnect-provision-20260730.txt",
+    "evidence_sha256": "87f89503aaaa6b8ea9e37ec41f7fec2f764d5bbc7460de6a97d93b1a261ea1e5",
+    "recorded_at": "2026-07-29T15:21:37Z",
+    "note": "WLAN auto-connect provisioned offline; wlan0 got <lan-ip> via DHCP; key-only SSH over WLAN verified (SSH_CONNECTION peer <lan-ip>). scripts/74 passes 4/5 over WLAN; local-forward blocked by device-side AllowTcpForwarding no (r145 sshd_config gap)."
+  },
+  "action": {
+    "operation": "ram_boot",
+    "target": "ram",
+    "profile": null,
+    "profile_sha256": null,
+    "artifact": "private/lmi-p1/recovery/d110-d114/pmos-lmi-ramboot-d111-debug-shell-key-recovery-20260720.img",
+    "artifact_sha256": "fd1c80093adccdcb74b8a31ab767760fa26245eaccf262b47f40bff4f896dadc",
+    "artifact_size": 52944896,
+    "exact_command": [
+      "fastboot",
+      "boot",
+      "private/lmi-p1/recovery/d110-d114/pmos-lmi-ramboot-d111-debug-shell-key-recovery-20260720.img"
+    ]
+  },
+  "gates": {
+    "identity": {
+      "expected_product": "lmi"
+    },
+    "persistent_media": {
+      "acknowledged": true,
+      "rebuild_reference": "userdata rebuildable from vault recovery-20260722 assembled image or scripts/lmi_p2_d114 reassembly; this experiment writes only /etc/NetworkManager/system-connections/<ssid>.nmconnection and /etc/polkit-1/rules.d/50-lmi-network-control.rules on subpartition p2"
+    },
+    "rollback": null
+  },
+  "repeat_guard": null,
+  "receipt": {
+    "issued_at": "2026-07-29T15:14:30Z",
+    "expires_at": "2026-07-29T15:29:30Z",
+    "consumed_at": "2026-07-29T15:14:30Z",
+    "authority": "standing-policy",
+    "policy_revision": "2026-07-22.1",
+    "policy_sha256": "d3175b836f1e12d57751e18a11489acbaa24c9c6e55321402382d3a4a015d24f",
+    "action_digest": "32d15642e6315369f01d83138c12444a2f229b5b43cfd6c3af5375484f43a95c"
+  }
+}

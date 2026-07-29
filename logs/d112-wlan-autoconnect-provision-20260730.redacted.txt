@@ -1,0 +1,26 @@
+d112-wlan-autoconnect-provision-20260730 evidence
+- claim consumed; exact_command executed: fastboot boot .../pmos-lmi-ramboot-d111-debug-shell-key-recovery-20260720.img
+- debug shell up ~15s; losetup --sector-size 4096 -> loop0p1/p2; mounted p2
+- provisioned offline, root:root:
+  /etc/NetworkManager/system-connections/lmi-owner.nmconnection (0600, 310 bytes, key-mgmt=wpa-psk, autoconnect=true, priority 100, ifname wlan0)
+  /etc/polkit-1/rules.d/50-lmi-network-control.rules (0644, wheel group -> org.freedesktop.NetworkManager.*)
+  unmounted, loop released (CLEANUP_OK)
+- pmos_continue_boot -> sshd up ~88s
+- WLAN association SUCCEEDED on WPA2-PSK: EAPOL 1-4 exchanged with AP, "link becomes ready"
+- DHCP completed: DISCOVER -> OFFER -> REQUEST -> ACK; wlan0 inet <lan-ip>/24; default route via <lan-ip> dev wlan0 metric 600
+- nmcli: <owner-ssid>:wlan0:activated ; dev status wlan0:connected
+- V1 GATE PASSED — authenticated key-only SSH over the WLAN transport:
+  peer as seen by device: SSH_CONNECTION="<lan-ip> 46462 <lan-ip> 22"
+  hostname xiaomi-lmi, user lmi, OpenSSH_10.4 on device
+  client trace: 'Authenticated to <lan-ip> ([<lan-ip>]:22) using "publickey".'
+- scripts/74_verify_lmi_ssh_full.sh over WLAN (<lan-ip>:22):
+  PASS remote-command, PASS pty, PASS sftp-metadata, PASS scp-sftp-download
+  FAIL local-forward -> root cause: device /etc/ssh/sshd_config has "AllowTcpForwarding no"
+  This is an image-policy gap, not a transport fault: the r145 full-SSH contract requires client-originated
+  local/remote/dynamic/Unix-socket forwarding. The running r142-era image also lacks PermitRootLogin,
+  PasswordAuthentication and AllowUsers directives (stock defaults). The public image must ship the hardened
+  r145 sshd_config to satisfy both the contract and this suite.
+- host-side bug fixed while gathering this evidence: scripts/74 auth matcher did not strip CR from OpenSSH -E
+  log lines, so it rejected a genuine 'Authenticated ... using "publickey".' line. Fixed in-place.
+- no network was joined beyond the owner AP; no device config was changed at runtime
+route_status=success

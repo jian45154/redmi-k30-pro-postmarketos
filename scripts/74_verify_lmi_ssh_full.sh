@@ -374,6 +374,9 @@ fi
 	fail "the non-interactive remote command returned unexpected stderr"
 authenticated_with_publickey=
 while IFS= read -r auth_line; do
+	# OpenSSH may terminate -E log lines with CRLF; the PTY check below strips
+	# \r for the same reason.
+	auth_line=${auth_line//$'\r'/}
 	case "$auth_line" in
 		'Authenticated to '*' using "publickey".')
 			authenticated_with_publickey=yes

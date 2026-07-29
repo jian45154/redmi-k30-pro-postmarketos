@@ -91,9 +91,11 @@ if tool == "ssh":
         if command != "printf '%s\\n' lmi-ssh-command-ok":
             raise SystemExit(82)
         method = "password" if failure == "auth-wrong-method" else "publickey"
+        # Real OpenSSH terminates -E log lines with CRLF; keep that here so the
+        # helper's matcher is exercised against the on-hardware format.
         authentication = (
             'Authenticated to 172.16.42.1 ([172.16.42.1]:2222) '
-            f'using "{method}".\n'
+            f'using "{method}".\r\n'
         )
         Path(argv[argv.index("-E") + 1]).write_text(
             authentication,
