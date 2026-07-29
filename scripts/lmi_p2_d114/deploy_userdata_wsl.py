@@ -30,15 +30,13 @@ import subprocess
 import sys
 import tempfile
 import time
+import types
 from typing import Any, BinaryIO, Callable, Mapping, Sequence
-
-if __package__ in {None, ""}:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
-from scripts.lmi_p2_d114 import fastboot_transcript
 
 
 REPO = Path(__file__).resolve().parents[2]
+FASTBOOT_TRANSCRIPT_SHA256 = "a15bb7bc0f79585dad76d12d1dc8183dd6cff81560344d611c13044b59ad1621"
+FASTBOOT_TRANSCRIPT_MAX_BYTES = 64 * 1024
 PROFILE_SCHEMA = "lmi-p2-d114-userdata-deploy-profile-wsl/v1"
 POLICY_SCHEMA = "lmi-p2-d114-userdata-deploy-policy-lock-wsl/v1"
 RUNTIME_SCHEMA = "lmi-p2-d114-fastboot-wsl-runtime-lock/v2"
@@ -88,6 +86,78 @@ QUERY_NAMES = (
 )
 
 SAFE_ENV = {"LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"}
+
+
+def _stat_identity(info: os.stat_result) -> tuple[int, ...]:
+    return (
+        info.st_dev,
+        info.st_ino,
+        info.st_mode,
+        info.st_nlink,
+        info.st_uid,
+        info.st_size,
+        info.st_mtime_ns,
+        info.st_ctime_ns,
+    )
+
+
+def _load_pinned_fastboot_transcript() -> types.ModuleType:
+    """Load the transcript grammar from one verified, retained byte snapshot."""
+
+    path = Path(__file__).with_name("fastboot_transcript.py")
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as error:
+        raise RuntimeError("cannot open the pinned fastboot transcript grammar") from error
+    try:
+        before = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or before.st_uid != os.geteuid()
+            or before.st_nlink != 1
+            or stat.S_IMODE(before.st_mode) & 0o022
+            or before.st_size > FASTBOOT_TRANSCRIPT_MAX_BYTES
+        ):
+            raise RuntimeError("unsafe fastboot transcript grammar metadata")
+        chunks = []
+        remaining = FASTBOOT_TRANSCRIPT_MAX_BYTES + 1
+        while remaining:
+            chunk = os.read(descriptor, min(1 << 16, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        source = b"".join(chunks)
+        after = os.fstat(descriptor)
+    finally:
+        os.close(descriptor)
+    if (
+        len(source) > FASTBOOT_TRANSCRIPT_MAX_BYTES
+        or len(source) != before.st_size
+        or _stat_identity(before) != _stat_identity(after)
+        or hashlib.sha256(source).hexdigest() != FASTBOOT_TRANSCRIPT_SHA256
+    ):
+        raise RuntimeError("fastboot transcript grammar does not match its pinned bytes")
+
+    module_name = "scripts.lmi_p2_d114.fastboot_transcript"
+    module = types.ModuleType(module_name)
+    module.__file__ = str(path)
+    module.__package__ = "scripts.lmi_p2_d114"
+    previous = sys.modules.get(module_name)
+    sys.modules[module_name] = module
+    try:
+        exec(compile(source, str(path), "exec"), module.__dict__)
+    except BaseException:
+        if previous is None:
+            del sys.modules[module_name]
+        else:
+            sys.modules[module_name] = previous
+        raise
+    return module
+
+
+fastboot_transcript = _load_pinned_fastboot_transcript()
 LOADER_ENV_NAMES = frozenset(
     {"LD_AUDIT", "LD_DEBUG", "LD_LIBRARY_PATH", "LD_PRELOAD", "LD_PROFILE"}
 )

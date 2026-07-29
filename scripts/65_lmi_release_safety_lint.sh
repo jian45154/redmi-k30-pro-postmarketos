@@ -6,14 +6,16 @@ usage() {
 Usage:
   scripts/65_lmi_release_safety_lint.sh
 
-Static safety lint (bringup governance v4). Three checks, all read-only:
+Static safety lint (bringup governance v4). Four checks, all read-only:
 
 1. Invoker set: fastboot state-change command text (flash/boot/reboot/
    erase/format) may only appear in the enumerated script set below. Adding
    a new fastboot-invoking script requires editing this allowlist in review.
 2. Forbidden operations: no live shell script may contain erase/format/
    relock commands or flash targets outside the governed set.
-3. Governance data: config/governance/constants.json and policy.json must
+3. D114 Python transition TCB: the WSL deployer must pin and load the
+   transcript grammar from verified bytes; the grammar may not invoke tools.
+4. Governance data: config/governance/constants.json and policy.json must
    validate against scripts/bringup_loop.py, which asserts that the data
    file's forbidden_command_words match the engine's hardcoded copy.
 
@@ -95,6 +97,20 @@ reject_pattern "forbidden pmbootstrap flasher write helper in scripts" \
 	'flasher[[:space:]]+(flash_kernel|flash_dtbo|flash_vbmeta|sideload)'
 reject_pattern "forbidden erase/format/relock in scripts" \
 	'(fastboot|"\$fastboot_bin")[^[:cntrl:]]*(erase|format|oem[[:space:]]+lock|flashing[[:space:]]+lock)'
+
+echo "lmi safety lint: D114 Python transition TCB"
+transcript_path=scripts/lmi_p2_d114/fastboot_transcript.py
+deployer_path=scripts/lmi_p2_d114/deploy_userdata_wsl.py
+transcript_sha=$(/usr/bin/sha256sum -- "$transcript_path" | /usr/bin/awk 'NR == 1 { print $1 }')
+if ! grep -Fqx "FASTBOOT_TRANSCRIPT_SHA256 = \"$transcript_sha\"" "$deployer_path"; then
+	fail "D114 WSL deployer does not pin the exact transcript grammar"
+fi
+if ! grep -Fqx 'fastboot_transcript = _load_pinned_fastboot_transcript()' "$deployer_path"; then
+	fail "D114 WSL deployer does not load the transcript grammar through its pinned loader"
+fi
+if grep -Eq 'subprocess|os\.(exec|system)' "$transcript_path"; then
+	fail "D114 transcript grammar contains device-process vocabulary"
+fi
 
 echo "lmi safety lint: governance data consistency"
 if ! python3 scripts/bringup_loop.py validate >/dev/null; then
