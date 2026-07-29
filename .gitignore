@@ -28,3 +28,8 @@ __pycache__/
 
 # Bringup governance engine advisory lock (no data; ledger itself is tracked)
 notes/bringup-claims/.lock
+
+# Claude Code: the live permission grant (.claude/settings.json) is created
+# by a human from docs/claude-code-flash-gate.md and stays local-only, as do
+# per-operator overrides and agent worktrees
+.claude/
