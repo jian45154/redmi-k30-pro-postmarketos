@@ -8,13 +8,17 @@ device-write authorization to the bringup governance v4 chain.
 
 | Bash tool call | Decision | Decided by |
 | --- | --- | --- |
-| Invokes `scripts/72_stage_downstream_ssh_wifi_test.sh` (governed D110 executor) | **allow** if `scripts/65_lmi_release_safety_lint.sh` passes, **deny** if it fails | the safety lint, at call time |
+| One exact canonical invocation of `scripts/72_stage_downstream_ssh_wifi_test.sh` (governed D110 executor) | **allow** if `scripts/65_lmi_release_safety_lint.sh` passes, **deny** if it fails | the safety lint, at call time |
 | Raw `fastboot flash/boot/reboot/erase/format`, or `dd` onto a block device | **deny**, always | the hook (mirrors lint check 1/2) |
 | D114 Python/PowerShell transition entrypoints | no opinion — normal permission prompt | the operator (until D114 is wired to v4 claims) |
 | Everything else | no opinion — normal permission flow / allowlist | harness |
 
 The hook lives at `scripts/hooks/claude_flash_gate.sh` and is tracked. It
 never talks to the phone itself; it only runs the (read-only) safety lint.
+The allow rule is anchored to the complete Bash command. Compound commands,
+pipelines, redirects, environment prefixes, and command substitutions are not
+auto-approved. Raw fastboot state changes and `dd` writes to `/dev/*` are
+checked first and denied even when a governed executor also appears.
 
 ## Activation — a human step, by design
 
