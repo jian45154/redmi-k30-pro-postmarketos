@@ -223,6 +223,7 @@ class DeployUserdataWslTests(unittest.TestCase):
             "reject-except-exact-locked-interpreter-usrmerge-chain",
         )
         profile_path = root / "private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722/lmi-d114-userdata-p2-r1-sixrow-wsl-deploy-profile-20260722.json"
+        host_bound.require_path(profile_path)
         profile = json.loads(profile_path.read_text())
         for name, path in (
             ("fastboot_runtime_lock", root / "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json"),
@@ -642,6 +643,39 @@ class DeployUserdataWslTests(unittest.TestCase):
         )
         self.assertFalse(deploy._transport_completed(partial))
         self.assertTrue(deploy._transport_completed(FakeFastboot().write_result))
+
+    def test_transport_parser_accepts_observed_nonsparse_and_crlf_success(self) -> None:
+        nonsparse = deploy.CommandResult(
+            0,
+            b"",
+            b"Sending 'userdata' (2109484 KB)                    OKAY [ 47.585s]\n"
+            b"Writing 'userdata'                                 OKAY [  0.986s]\n"
+            b"Finished. Total time: 48.571s\n",
+        )
+        self.assertTrue(deploy._transport_completed(nonsparse))
+        crlf = deploy.CommandResult(
+            0, b"", FakeFastboot().write_result.stderr.replace(b"\n", b"\r\n")
+        )
+        self.assertTrue(deploy._transport_completed(crlf))
+        trailing_blank = deploy.CommandResult(
+            0, b"", FakeFastboot().write_result.stderr + b"\n"
+        )
+        self.assertTrue(deploy._transport_completed(trailing_blank))
+        for incomplete in (
+            deploy.CommandResult(1, b"", nonsparse.stderr),
+            deploy.CommandResult(0, b"stdout", nonsparse.stderr),
+            deploy.CommandResult(0, b"", nonsparse.stderr, timed_out=True),
+            deploy.CommandResult(0, b"", nonsparse.stderr, output_limited=True),
+            deploy.CommandResult(0, b"", nonsparse.stderr, started=False),
+            deploy.CommandResult(
+                0,
+                b"",
+                b"Sending 'userdata' (123 KB) FAILED (remote: 'data too large')\n"
+                b"fastboot: error: Command failed\n",
+            ),
+        ):
+            with self.subTest(incomplete=incomplete):
+                self.assertFalse(deploy._transport_completed(incomplete))
 
     def test_preflight_uses_exact_fixed_read_only_queries_and_redacts_serial(self) -> None:
         audit = self.fixture.audit()
