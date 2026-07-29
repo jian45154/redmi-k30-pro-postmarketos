@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-copydown_dir=${OUT_DIR:-/tmp/lmi-copydown-r6-bootmem-20260624}
-export_dir=${PMOS_EXPORT_DIR:-/tmp/postmarketOS-export}
-bundle_dir=${LMI_RELEASE_BUNDLE_DIR:-/tmp/lmi-release-r6-bootmem-20260624}
-release_tag=${LMI_RELEASE_TAG:-r6-bootmem}
+# Shared release env defaults (OUT_DIR/PMOS_EXPORT_DIR/
+# LMI_RELEASE_BUNDLE_DIR/LMI_RELEASE_TAG overrides win).
+. "$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib/mainline_r6_env.sh"
+
+copydown_dir=$lmi_default_out_dir
+export_dir=$lmi_default_export_dir
+bundle_dir=$lmi_default_bundle_dir
+release_tag=$lmi_default_release_tag
 
 boot_img=$copydown_dir/boot-linux-copydown-lmi.img
 manifest=$copydown_dir/boot-linux-copydown-lmi.manifest

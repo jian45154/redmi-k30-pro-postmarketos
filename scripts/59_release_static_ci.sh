@@ -1,18 +1,45 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Shared assertion vocabulary; this script uses the default exit-fast mode.
+. "$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib/release_checks.sh"
+
 max_tracked_file_bytes=${LMI_MAX_TRACKED_FILE_BYTES:-10485760}
 known_good_kernel_apk=artifacts/lmi-p1/known-good-kernel/linux-xiaomi-lmi-4.19.325-r8-p1-known-good.apk
 known_good_kernel_apk_size=17418891
 known_good_kernel_apk_sha256=01b199611407c100c621599bd3060084c19e1fd90f8e9df64cc10966f6949eb0
 
 echo "release static CI: shell syntax"
+# The ':(glob)' pathspec with '**' is explicitly recursive: nested helpers
+# such as scripts/lmi_p2_d114/*.sh are always covered. The sentinel check
+# fails CI if the pattern ever stops matching the nested tree.
+shell_scripts=$(git ls-files ':(glob)scripts/**/*.sh' | sort)
+if ! printf '%s\n' "$shell_scripts" |
+	grep -qx 'scripts/lmi_p2_d114/inject_rootfs_candidate.sh'; then
+	echo "shell syntax coverage lost scripts/lmi_p2_d114/inject_rootfs_candidate.sh" >&2
+	exit 1
+fi
 while IFS= read -r script; do
-	echo "  bash -n $script"
-	bash -n "$script"
-done < <(git ls-files 'scripts/*.sh' | sort)
+	shebang=$(head -n 1 "$script")
+	case $shebang in
+		'#!/bin/sh'*|'#!/usr/bin/env sh'*)
+			echo "  sh -n $script"
+			sh -n "$script"
+			;;
+		*)
+			echo "  bash -n $script"
+			bash -n "$script"
+			;;
+	esac
+done <<<"$shell_scripts"
 
 echo "release static CI: python syntax"
+python_scripts=$(git ls-files ':(glob)scripts/**/*.py' | sort)
+if ! printf '%s\n' "$python_scripts" |
+	grep -qx 'scripts/lmi_p1/common.py'; then
+	echo "python syntax coverage lost scripts/lmi_p1/common.py" >&2
+	exit 1
+fi
 while IFS= read -r script; do
 	echo "  compile $script"
 	python3 - "$script" <<'PY'
@@ -23,7 +50,7 @@ path = pathlib.Path(sys.argv[1])
 source = path.read_text()
 compile(source, str(path), "exec")
 PY
-done < <(git ls-files 'scripts/*.py' | sort)
+done <<<"$python_scripts"
 
 echo "release static CI: governance, installer, P1/P2/P2-D114/P3, six-row, and pin-registry host test suites"
 for suite in governance lmi_installer lmi_p1 lmi_p2 lmi_p2_d114 lmi_p3 lmi_weston_sixrow release_pins; do
@@ -47,29 +74,8 @@ archive_migration=docs/lmi-mainline-migration-plan-20260623.md
 archive_overlay=docs/lmi-mainline-overlay-build-20260623.md
 archive_flash_boundary=docs/lmi-mainline-flash-boundary-20260624.md
 
-require_file() {
-	local path=$1
-	[ -f "$path" ] || {
-		printf 'missing release contract file: %s\n' "$path" >&2
-		exit 1
-	}
-}
-
-require_literal() {
-	local path=$1 expected=$2
-	if ! grep -Fq -- "$expected" "$path"; then
-		printf 'missing release contract in %s: %s\n' "$path" "$expected" >&2
-		exit 1
-	fi
-}
-
-reject_literal() {
-	local path=$1 retired=$2
-	if grep -Fq -- "$retired" "$path"; then
-		printf 'retired release contract remains in %s: %s\n' "$path" "$retired" >&2
-		exit 1
-	fi
-}
+# require_file, require_literal, and reject_literal come from
+# scripts/lib/release_checks.sh (exit-fast mode).
 
 reject_direct_fastboot_boot() {
 	local path=$1

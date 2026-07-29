@@ -1210,6 +1210,13 @@ class MainlineProgressPasswordTests(unittest.TestCase):
         self.loop_script = self.scripts / LOOP_SCRIPT.name
         shutil.copyfile(LOOP_SCRIPT, self.loop_script)
         self.loop_script.chmod(0o755)
+        # The loop sources the shared release env defaults; stage them too.
+        lib_dir = self.scripts / "lib"
+        lib_dir.mkdir()
+        shutil.copyfile(
+            REPO / "scripts/lib/mainline_r6_env.sh",
+            lib_dir / "mainline_r6_env.sh",
+        )
         self.fake_bin = self.root / "bin"
         self.fake_bin.mkdir()
         self.pmbootstrap_log = self.root / "pmbootstrap.log"
