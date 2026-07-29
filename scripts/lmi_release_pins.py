@@ -427,6 +427,7 @@ def _session_path_digest(component):
 # ---------------------------------------------------------------------------
 
 _BUILD_ATTESTATION = "config/lmi-weston-sixrow/build-attestation.json"
+_BUILD_ATTESTATION_R2 = "config/lmi-weston-sixrow/build-attestation-r2.json"
 _TRANSIENT_STAGE_LOCK = "config/lmi-weston-sixrow/transient-stage-lock.json"
 _INJECTION_POLICY_LOCK = "config/lmi-p2-d114/injection-policy-lock.json"
 _CANDIDATE_REBUILD_LOCK = "config/lmi-p2-d114/candidate-rebuild-lock.json"
@@ -452,7 +453,7 @@ _WESTON = "/usr/bin/weston"
 
 
 def _payload_artifact(name, component, add_file_meta, session_sites):
-    """keyboard/terminal payload binaries share the same site layout."""
+    """Frozen D114 keyboard/terminal payload sites share one layout."""
     return Artifact(
         name=name,
         truth=Site(
@@ -475,13 +476,6 @@ def _payload_artifact(name, component, add_file_meta, session_sites):
                 kind="python_const",
                 const="EXPECTED_RUNTIME",
                 selector=("component_sha256", component),
-            ),
-            Site(
-                label="stage_transient.PAYLOAD[%s]" % component.lstrip("/"),
-                path=_STAGE_TRANSIENT,
-                kind="python_const",
-                const="PAYLOAD",
-                selector=(component.lstrip("/"), 1),
             ),
             Site(
                 label="inject_rootfs_candidate.add_file[%s]" % component,
@@ -514,12 +508,67 @@ def _payload_artifact(name, component, add_file_meta, session_sites):
     )
 
 
+def _transient_payload_artifact(name, component):
+    """One r2 transient payload, intentionally separate from frozen D114 r1."""
+    return Artifact(
+        name=name,
+        truth=Site(
+            label="build-attestation-r2.artifact.payload[%s]" % component,
+            path=_BUILD_ATTESTATION_R2,
+            kind="json",
+            pointer=("artifact", "payload", component),
+        ),
+        sites=(
+            Site(
+                label="stage_transient.PAYLOAD[%s]" % component.lstrip("/"),
+                path=_STAGE_TRANSIENT,
+                kind="python_const",
+                const="PAYLOAD",
+                selector=(component.lstrip("/"), 1),
+            ),
+        ),
+    )
+
+
 REGISTRY = (
     Artifact(
-        name="sixrow-clients-apk",
+        name="sixrow-clients-apk-frozen-d114-r1",
         truth=Site(
             label="build-attestation.artifact.sha256",
             path=_BUILD_ATTESTATION,
+            kind="json",
+            pointer=("artifact", "sha256"),
+        ),
+        sites=(
+            Site(
+                label="injection-policy-lock.input.apks.sixrow.sha256",
+                path=_INJECTION_POLICY_LOCK,
+                kind="json",
+                pointer=("input", "apks", "sixrow", "sha256"),
+            ),
+            Site(
+                label="inject_rootfs_candidate.SIXROW_APK_SHA256",
+                path=_INJECT_SH,
+                kind="shell_var",
+                var="SIXROW_APK_SHA256",
+            ),
+            Site(
+                label="readiness-doc frozen r1 APK digest (prose)",
+                path=_READINESS_DOC,
+                kind="regex",
+                pattern=(
+                    r"`lmi-weston-sixrow-clients-14\.0\.2-r1\.apk`[^`]*"
+                    r"SHA-256 `" + _SHA256_HEX + r"`"
+                ),
+                best_effort=True,
+            ),
+        ),
+    ),
+    Artifact(
+        name="sixrow-clients-apk-transient-r2",
+        truth=Site(
+            label="build-attestation-r2.artifact.sha256",
+            path=_BUILD_ATTESTATION_R2,
             kind="json",
             pointer=("artifact", "sha256"),
         ),
@@ -535,7 +584,7 @@ REGISTRY = (
                 path=_TRANSIENT_STAGE_LOCK,
                 kind="json",
                 pointer=("remote_root",),
-                value_pattern=r"-r1-([0-9a-f]{12})$",
+                value_pattern=r"-r2-([0-9a-f]{12})$",
                 expected_transform="prefix:12",
             ),
             Site(
@@ -546,20 +595,8 @@ REGISTRY = (
                 path=_TRANSIENT_STAGE_LOCK,
                 kind="json",
                 pointer=("trial_contract", "allowed_write_roots", 0),
-                value_pattern=r"-r1-([0-9a-f]{12})$",
+                value_pattern=r"-r2-([0-9a-f]{12})$",
                 expected_transform="prefix:12",
-            ),
-            Site(
-                label="injection-policy-lock.input.apks.sixrow.sha256",
-                path=_INJECTION_POLICY_LOCK,
-                kind="json",
-                pointer=("input", "apks", "sixrow", "sha256"),
-            ),
-            Site(
-                label="inject_rootfs_candidate.SIXROW_APK_SHA256",
-                path=_INJECT_SH,
-                kind="shell_var",
-                var="SIXROW_APK_SHA256",
             ),
             Site(
                 label="stage_transient.EXPECTED_APK_SHA256",
@@ -572,23 +609,13 @@ REGISTRY = (
                 path=_STAGE_TRANSIENT,
                 kind="python_const",
                 const="REMOTE_ROOT",
-                value_pattern=r"-r1-([0-9a-f]{12})$",
+                value_pattern=r"-r2-([0-9a-f]{12})$",
                 expected_transform="prefix:12",
-            ),
-            Site(
-                label="readiness-doc frozen r1 APK digest (prose)",
-                path=_READINESS_DOC,
-                kind="regex",
-                pattern=(
-                    r"`lmi-weston-sixrow-clients-14\.0\.2-r1\.apk`[^`]*"
-                    r"SHA-256 `" + _SHA256_HEX + r"`"
-                ),
-                best_effort=True,
             ),
         ),
     ),
     _payload_artifact(
-        name="weston-keyboard-sixrow-binary",
+        name="weston-keyboard-sixrow-binary-frozen-d114-r1",
         component=_KBD,
         add_file_meta=r"755\|134456",
         session_sites=(
@@ -613,8 +640,12 @@ REGISTRY = (
             ),
         ),
     ),
+    _transient_payload_artifact(
+        name="weston-keyboard-sixrow-binary-transient-r2",
+        component=_KBD,
+    ),
     _payload_artifact(
-        name="weston-terminal-sixrow-binary",
+        name="weston-terminal-sixrow-binary-frozen-d114-r1",
         component=_TERM,
         add_file_meta=r"755\|200960",
         session_sites=(
@@ -627,6 +658,10 @@ REGISTRY = (
                 exact_count=3,
             ),
         ),
+    ),
+    _transient_payload_artifact(
+        name="weston-terminal-sixrow-binary-transient-r2",
+        component=_TERM,
     ),
     Artifact(
         name="stock-weston-binary",
