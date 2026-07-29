@@ -1,0 +1,325 @@
+#!/bin/sh
+set -eu
+
+active=0
+active_mode=all
+probe_status=0
+case "${1:-}" in
+	"") ;;
+	--active) active=1; active_mode=all ;;
+	--active-all) active=1; active_mode=all ;;
+	--active-kmscube) active=1; active_mode=kmscube ;;
+	--active-weston) active=1; active_mode=weston ;;
+	*) echo "usage: lmi-display-probe [--active|--active-kmscube|--active-weston|--active-all]" >&2; exit 2 ;;
+esac
+[ "$#" -le 1 ] || {
+	echo "usage: lmi-display-probe [--active|--active-kmscube|--active-weston|--active-all]" >&2
+	exit 2
+}
+
+section() {
+	echo
+	echo "=== $1 ==="
+}
+
+run() {
+	echo "\$ $*"
+	"$@" 2>&1 || true
+}
+
+cat_file() {
+	path=$1
+	[ -e "$path" ] || return 0
+	printf "%s=" "$path"
+	cat "$path" 2>/dev/null || true
+}
+
+terminate_pid() {
+	pid=$1
+	case "$pid" in
+		''|*[!0-9]*) return 0 ;;
+	esac
+	kill -0 "$pid" 2>/dev/null || return 0
+	kill "$pid" 2>/dev/null || true
+	for _wait in 1 2 3; do
+		kill -0 "$pid" 2>/dev/null || return 0
+		sleep 1
+	done
+	kill -9 "$pid" 2>/dev/null || true
+	sleep 1
+	! kill -0 "$pid" 2>/dev/null
+}
+
+reap_launcher_if_done() {
+	pid=$1
+	case "$pid" in
+		''|*[!0-9]*) return 0 ;;
+	esac
+	state=$(awk '{ print $3 }' "/proc/$pid/stat" 2>/dev/null || true)
+	if [ -e "/proc/$pid" ] && [ "$state" != Z ]; then
+		return 1
+	fi
+	set +e
+	wait "$pid" 2>/dev/null
+	launcher_status=$?
+	set -e
+	return 0
+}
+
+terminate_launcher() {
+	pid=$1
+	reap_launcher_if_done "$pid" && return 0
+	kill "$pid" 2>/dev/null || true
+	for _wait in 1 2 3; do
+		sleep 1
+		reap_launcher_if_done "$pid" && return 0
+	done
+	kill -9 "$pid" 2>/dev/null || true
+	sleep 1
+	reap_launcher_if_done "$pid"
+}
+
+run_active_weston_openvt() {
+	for required in openvt chvt fgconsole timeout weston; do
+		command -v "$required" >/dev/null 2>&1 || {
+			echo "weston_precondition=${required}-missing"
+			return 1
+		}
+	done
+	runtime=/run/lmi-root-weston
+	pidfile=/run/lmi-root-weston.pid
+	weston_log=/run/lmi-root-weston.log
+	lockdir=/run/lmi-root-weston.lock
+	launcher_pid=
+	launcher_status=not-started
+	weston_pid=
+	weston_pid_valid=0
+	weston_timebox_status=not-started
+	cleanup_status=0
+	cleanup_done=0
+	lock_held=0
+
+	cleanup_active_weston() {
+		[ "$cleanup_done" -eq 0 ] || return 0
+		cleanup_done=1
+		if [ -z "$weston_pid" ] && [ -r "$pidfile" ]; then
+			weston_pid=$(cat "$pidfile" 2>/dev/null || true)
+		fi
+		case "$launcher_pid:$weston_pid" in
+			[0-9]*:) cleanup_status=1 ;;
+		esac
+		weston_cleanup_pending=0
+		terminate_pid "$weston_pid" || weston_cleanup_pending=1
+		terminate_launcher "$launcher_pid" || cleanup_status=1
+		if [ "$weston_cleanup_pending" -ne 0 ]; then
+			terminate_pid "$weston_pid" || cleanup_status=1
+		fi
+		if ! timeout -k 1 5 chvt "$previous_vt"; then
+			cleanup_status=1
+		fi
+		active_vt_after=$(fgconsole 2>/dev/null || true)
+		[ "$active_vt_after" = "$previous_vt" ] || cleanup_status=1
+		rm -f "$pidfile"
+		if [ "$lock_held" -eq 1 ]; then
+			rm -f "$lockdir/owner"
+			if rmdir "$lockdir" 2>/dev/null; then
+				lock_held=0
+			else
+				cleanup_status=1
+			fi
+		fi
+		return 0
+	}
+
+	on_active_weston_signal() {
+		trap - HUP INT TERM EXIT
+		cleanup_active_weston
+		exit 130
+	}
+
+	previous_vt=$(fgconsole 2>/dev/null) || {
+		echo 'weston_precondition=fgconsole-failed'
+		return 1
+	}
+	case "$previous_vt" in
+		''|*[!0-9]*) echo "weston_precondition=invalid-active-vt:$previous_vt"; return 1 ;;
+	esac
+	echo "active_vt_before=$previous_vt"
+	if ! mkdir "$lockdir" 2>/dev/null; then
+		echo "weston_precondition=singleton-lock-busy"
+		return 1
+	fi
+	lock_held=1
+	trap cleanup_active_weston EXIT
+	trap on_active_weston_signal HUP INT TERM
+	if ! printf '%s\n' "$$" > "$lockdir/owner" ||
+		! mkdir -p "$runtime" ||
+		! chmod 700 "$runtime" ||
+		! rm -f "$pidfile" ||
+		! : > "$weston_log"; then
+		echo 'weston_precondition=runtime-setup-failed'
+		cleanup_active_weston
+		trap - HUP INT TERM EXIT
+		return 1
+	fi
+
+	openvt -s -w -- sh -c '
+		printf "%s\n" "$$" > "$1"
+		exec env XDG_RUNTIME_DIR="$2" weston --config=/etc/xdg/weston/weston.ini --backend=drm-backend.so --idle-time=0 --continue-without-input >>"$3" 2>&1
+	' sh "$pidfile" "$runtime" "$weston_log" >>"$weston_log" 2>&1 &
+	launcher_pid=$!
+	echo "openvt_launcher_pid=$launcher_pid"
+
+	elapsed=0
+	while [ "$elapsed" -lt 18 ]; do
+		sleep 1
+		elapsed=$((elapsed + 1))
+		if ! kill -0 "$launcher_pid" 2>/dev/null; then
+			weston_timebox_status=launcher-exited-early
+			break
+		fi
+		candidate=
+		[ ! -r "$pidfile" ] || candidate=$(cat "$pidfile" 2>/dev/null || true)
+		case "$candidate" in
+			''|*[!0-9]*|0|1) candidate_valid=0 ;;
+			*)
+				candidate_comm=$(cat "/proc/$candidate/comm" 2>/dev/null || true)
+				if kill -0 "$candidate" 2>/dev/null && [ "$candidate_comm" = weston ]; then
+					candidate_valid=1
+				else
+					candidate_valid=0
+				fi
+				;;
+		esac
+		if [ "$candidate_valid" -eq 1 ]; then
+			weston_pid=$candidate
+			weston_pid_valid=1
+		elif [ "$elapsed" -ge 3 ]; then
+			if [ "$weston_pid_valid" -eq 1 ]; then
+				weston_timebox_status=weston-exited-early
+			else
+				weston_timebox_status=weston-pid-invalid
+			fi
+			break
+		fi
+	done
+	if [ -z "$weston_pid" ] && [ -r "$pidfile" ]; then
+		weston_pid=$(cat "$pidfile" 2>/dev/null || true)
+	fi
+	if [ "$elapsed" -eq 18 ] && kill -0 "$launcher_pid" 2>/dev/null &&
+		[ "$weston_pid_valid" -eq 1 ] && kill -0 "$weston_pid" 2>/dev/null &&
+		[ "$(cat "/proc/$weston_pid/comm" 2>/dev/null || true)" = weston ]; then
+		weston_timebox_status=expired
+	else
+		weston_pid_valid=0
+		[ "$weston_timebox_status" != not-started ] || weston_timebox_status=incomplete
+	fi
+	echo "weston_pid=${weston_pid:-<missing>}"
+	echo "weston_pid_valid=$weston_pid_valid"
+
+	cleanup_active_weston
+	trap - HUP INT TERM EXIT
+
+	echo "weston_timebox_seconds=18"
+	echo "weston_timebox_status=$weston_timebox_status"
+	echo "openvt_launcher_exit=$launcher_status"
+	echo "active_vt_after=${active_vt_after:-<missing>}"
+	echo "weston_cleanup_status=$cleanup_status"
+	echo "--- weston log ---"
+	cat "$weston_log" 2>&1 || true
+	rmdir "$runtime" 2>/dev/null || true
+	active_weston_result=0
+	[ "$weston_timebox_status" = expired ] || active_weston_result=1
+	[ "$elapsed" -eq 18 ] || active_weston_result=1
+	[ "$weston_pid_valid" -eq 1 ] || active_weston_result=1
+	[ "$cleanup_status" -eq 0 ] || active_weston_result=1
+	[ "$active_vt_after" = "$previous_vt" ] || active_weston_result=1
+	return "$active_weston_result"
+}
+
+section "identity"
+run date
+run uname -a
+run id
+
+section "drm nodes"
+run ls -l /dev/dri /dev/kgsl-3d0 /sys/class/drm 2>/dev/null
+run find /dev/dri -maxdepth 2 -type l -o -type c 2>/dev/null
+
+section "connector sysfs"
+for f in /sys/class/drm/*/status /sys/class/drm/*/modes \
+	/sys/class/drm/*/enabled /sys/class/drm/*/dpms; do
+	cat_file "$f"
+done
+
+section "kms object state"
+for f in /sys/kernel/debug/dri/0/name /sys/kernel/debug/dri/0/state \
+	/sys/kernel/debug/dri/0/clients /sys/kernel/debug/dri/0/gem_names \
+	/sys/kernel/debug/dri/0/gem_objects; do
+	cat_file "$f"
+done
+
+section "gpu state"
+for f in /sys/class/kgsl/kgsl-3d0/gpu_model \
+	/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage \
+	/sys/class/kgsl/kgsl-3d0/devfreq/cur_freq \
+	/sys/class/kgsl/kgsl-3d0/devfreq/available_frequencies; do
+	cat_file "$f"
+done
+
+section "userspace tools"
+for cmd in modetest kmscube weston openvt weston-info tinydm sway cage drm_info \
+	fbset fbsplash loginctl seatd dbus-run-session; do
+	if command -v "$cmd" >/dev/null 2>&1; then
+		echo "$cmd=$(command -v "$cmd")"
+	else
+		echo "$cmd=<missing>"
+	fi
+done
+
+section "passive drm queries"
+if command -v modetest >/dev/null 2>&1; then
+	run modetest -M msm -c
+	run modetest -M msm -p
+	run modetest -M msm -e
+	run modetest -c
+	run modetest -p
+fi
+if command -v drm_info >/dev/null 2>&1; then
+	run drm_info
+fi
+
+section "processes"
+run ps aux
+
+section "focused dmesg before active test"
+dmesg | grep -Ei 'drm|dsi|panel|sde|mdss|kgsl|adreno|gpu|kms|fb|splash|fail|error|denied|timeout' | tail -240 || true
+
+if [ "$active" = 1 ]; then
+	section "active takeover attempts"
+	echo "running short userspace KMS attempt: $active_mode"
+	if [ "$active_mode" = all ] || [ "$active_mode" = kmscube ]; then
+		if command -v kmscube >/dev/null 2>&1; then
+			run timeout 12 kmscube -D /dev/dri/card0
+		else
+			echo "kmscube=<missing>"
+		fi
+	fi
+	if [ "$active_mode" = all ] || [ "$active_mode" = weston ]; then
+		if command -v weston >/dev/null 2>&1; then
+			active_weston_status=0
+			run_active_weston_openvt || active_weston_status=$?
+			echo "active_weston_status=$active_weston_status"
+			probe_status=$active_weston_status
+		else
+			echo "weston=<missing>"
+		fi
+	fi
+	section "focused dmesg after active test"
+	dmesg | grep -Ei 'drm|dsi|panel|sde|mdss|kgsl|adreno|gpu|kms|weston|fb|splash|fail|error|denied|timeout' | tail -260 || true
+else
+	section "active takeover skipped"
+	echo "Pass --active-kmscube, --active-weston, or --active-all only after explicit operator approval."
+fi
+
+exit "$probe_status"

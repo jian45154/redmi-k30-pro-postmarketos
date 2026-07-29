@@ -1,0 +1,108 @@
+# Reference: <https://postmarketos.org/vendorkernel>
+# Kernel config merged from: arch/arm64/configs/vendor/{kona-perf_defconfig,
+#   debugfs.config,xiaomi/sm8250-common.config,xiaomi/lmi.config}
+# SELinux disabled to avoid building the SELinux host tools (genheaders/mdp).
+
+maintainer=""
+pkgname=linux-xiaomi-lmi
+pkgver=4.19.325
+pkgrel=15
+pkgdesc="xiaomi lmi kernel fork"
+arch="aarch64"
+_carch="arm64"
+_flavor="xiaomi-lmi"
+url="https://github.com/LineageOS/android_kernel_xiaomi_sm8250"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps pmb:cross-native"
+makedepends="
+	bash
+	bc
+	bison
+	clang
+	devicepkg-dev
+	dtc
+	findutils
+	flex
+	gcc
+	lld
+	llvm
+	openssl-dev
+	perl
+"
+
+# Source
+_repository="android_kernel_xiaomi_sm8250"
+_commit="a5b3099017ae581aae8bf597b2f9c8c765026af1"
+_config="config-$_flavor.$arch"
+source="
+	$pkgname-$_commit.tar.gz::https://github.com/LineageOS/$_repository/archive/$_commit.tar.gz
+	$_config
+	lmi-vfs-mount-diagnostic.patch
+	lmi-shmem-tmpfs-context-diagnostic.patch
+	lmi-shmem-monolithic-parser-diagnostic.patch
+	lmi-vfs-param-dispatch-diagnostic.patch
+	lmi-security-hook-label-diagnostic.patch
+	lmi-bpf-fs-context-default-enoparam.patch
+	lmi-rmtfs-mem-node.patch
+"
+builddir="$srcdir/$_repository-$_commit"
+_outdir="out"
+
+prepare() {
+	default_prepare
+	# Configure with the same LLVM toolchain as build(), so the Kconfig linker
+	# probe resolves $(LD) to ld.lld instead of the absent GNU cross linker
+	# aarch64-alpine-linux-musl-ld.
+	export LLVM=1 LLVM_IAS=1
+	# Downstream tree ships its own compiler-gcc.h; keep it (REPLACE_GCCH=0).
+	export REPLACE_GCCH=0
+	. downstreamkernel_prepare
+}
+
+build() {
+	unset LDFLAGS
+	# SELinux is disabled in config-xiaomi-lmi.aarch64, so the SELinux host
+	# tools (genheaders/mdp) that needed the arm64 UAPI headers are no longer
+	# built. A plain LLVM build is sufficient; no host include injection.
+	make O="$_outdir" ARCH="$_carch" LLVM=1 LLVM_IAS=1 \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS"
+	# Device trees are not part of the default arm64 image target; build them
+	# explicitly. dtbs_install does not understand this downstream overlay
+	# tree, so package() collects the blobs by hand.
+	make O="$_outdir" ARCH="$_carch" LLVM=1 LLVM_IAS=1 dtbs
+}
+
+package() {
+	downstreamkernel_package "$builddir" "$pkgdir" "$_carch" \
+		"$_flavor" "$_outdir"
+
+	# `make dtbs_install` does not collect this downstream qcom overlay tree,
+	# so install the built kona base DTBs (and the lmi overlay) by hand. The
+	# boot image carries the base DTBs; the lmi bootloader picks the one
+	# matching the SoC revision and merges the device dtbo partition on top.
+	_dts="$builddir/$_outdir/arch/arm64/boot/dts/vendor/qcom"
+	install -Dm644 "$_dts/kona.dtb"      "$pkgdir/boot/dtbs/qcom/kona.dtb"
+	install -Dm644 "$_dts/kona-v2.dtb"   "$pkgdir/boot/dtbs/qcom/kona-v2.dtb"
+	install -Dm644 "$_dts/kona-v2.1.dtb" "$pkgdir/boot/dtbs/qcom/kona-v2.1.dtb"
+	install -Dm644 "$_dts/lmi-sm8250-overlay.dtbo" \
+		"$pkgdir/boot/dtbs/qcom/lmi-sm8250-overlay.dtbo"
+
+	# Pre-merge the lmi device overlay into the base dtb so the boot image
+	# carries the full tree (panel, wlan pinmux, regulators) without relying
+	# on the bootloader to apply the dtbo partition during fastboot boot.
+	fdtoverlay -i "$_dts/kona-v2.1.dtb" \
+		-o "$pkgdir/boot/dtbs/qcom/kona-v2.1-lmi.dtb" \
+		"$_dts/lmi-sm8250-overlay.dtbo"
+}
+
+sha512sums="
+b9d00e0efcb88d613bd65b1f2cd6b75e2b5f0d79b23def0b9c14eb397265e582a580e93cb365d81e7aa167b027920845ff8db798bbf781bbd9e7845e796bd923  linux-xiaomi-lmi-a5b3099017ae581aae8bf597b2f9c8c765026af1.tar.gz
+3ace86445e5ee47a7ca296d9780daa4ee7082756653b409c6f746d762aeaaf2cb4c5f1393e8c82d9f69b4c0a0b82bb56bb7a1aebe58d4f9eab45d8343130a547  config-xiaomi-lmi.aarch64
+0ae5ab2b80c8273dd15d3e981c78b3ef8cc7650949be297d007b2bb37133a0f7db7899543822056a7c1df5e167ef087f4dc66bd1cb066dc3d2452f4a0c95454e  lmi-vfs-mount-diagnostic.patch
+35efc358e6ce7748429ab4eca91a8c13312876d162a5b873e8eff21b1ff9aa5a5f9e396bc54dca0615105471bcbfe7cf78233a46c748c277dbc812832d24a802  lmi-shmem-tmpfs-context-diagnostic.patch
+26c55c2596dabda40d2679ed7f788c6e98f7dc4f7cb96d4e2c826a0e19255c0f4249e3b40d8c40d71030fc5febf944174fa51bedd1224399438a33e460b0b121  lmi-shmem-monolithic-parser-diagnostic.patch
+5b915bec29a11aa92999ade5855019986fb8d3e04cda8ca7d434608e1590ec0ae7ed05a39fd16872a74cf64a2f240fa5a79c5afce32797267e34ab5d429797be  lmi-vfs-param-dispatch-diagnostic.patch
+d21c5d8d97296aa48d216a41344d9a4104a5e9e6577e047b25cf6fc414d180617d26ad7a1c5bad2cb5555695e58b364ae1e32cca5416ec2ed4681f6710f32084  lmi-security-hook-label-diagnostic.patch
+8466956c486653b723b94f94eb87b3d95959c61f1563737eb348ba00ee8061926299cd466155f2ccbc5c68171d7e36f181cb4ddf1b0cc67031799fc7f7ebac8b  lmi-bpf-fs-context-default-enoparam.patch
+7d868893515778256b85a87f30adbe085588d3ae288fb8ec56b8a936a8e6e6b1dfa643dc086283da6d7d0747b90d1b6b9aa94aff65de693e8ebe0b676052be79  lmi-rmtfs-mem-node.patch
+"

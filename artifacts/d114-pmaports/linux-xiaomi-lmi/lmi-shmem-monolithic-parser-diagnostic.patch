@@ -1,0 +1,38 @@
+diff --git a/mm/shmem.c b/mm/shmem.c
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -3527,5 +3527,6 @@ static int shmem_parse_options(struct fs_context *fc, void *data)
+ {
+ 	char *options = data;
++	struct shmem_options *ctx = fc->fs_private;
+ 
+ 	while (options != NULL) {
+ 		char *this_char = options;
+@@ -3553,6 +3553,7 @@ static int shmem_parse_options(struct fs_context *fc, void *data)
+ 		if (*this_char) {
+ 			char *value = strchr(this_char,'=');
+ 			size_t len = 0;
++			bool trace_option;
+ 			int err;
+ 
+ 			if (value) {
+@@ -3560,6 +3561,19 @@ static int shmem_parse_options(struct fs_context *fc, void *data)
+ 				len = strlen(value);
+ 			}
++			trace_option = !strcmp(this_char, "mode") ||
++				       !strcmp(this_char, "uid") ||
++				       !strcmp(this_char, "gid");
++			if (trace_option)
++				pr_err("LMI_VFS_DIAG shmem_monolithic before key=%s value=%s ctx=0%o:%u:%u\n",
++				       this_char, value ?: "(null)", ctx->mode,
++				       from_kuid(&init_user_ns, ctx->uid),
++				       from_kgid(&init_user_ns, ctx->gid));
+ 			err = vfs_parse_fs_string(fc, this_char, value, len);
++			if (trace_option)
++				pr_err("LMI_VFS_DIAG shmem_monolithic after key=%s err=%d ctx=0%o:%u:%u\n",
++				       this_char, err, ctx->mode,
++				       from_kuid(&init_user_ns, ctx->uid),
++				       from_kgid(&init_user_ns, ctx->gid));
+ 			if (err < 0)
+ 				return err;
+ 		}

@@ -25,11 +25,11 @@ LAUNCHER = REPO / "scripts/lmi_p2_d114/launch_inject_rootfs_candidate.sh"
 LOCK = REPO / "config/lmi-p2-d114/candidate-rebuild-lock.json"
 RUNTIME_LOCK = REPO / "config/lmi-p2-d114/injector-runtime-lock.json"
 INJECTION_POLICY_LOCK = REPO / "config/lmi-p2-d114/injection-policy-lock.json"
-BUILD = REPO / "private/lmi-p1/recovery/d110-d114/p2-d114-build-20260720"
+BUILD = REPO / "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724"
 SIXROW_APK = (
     REPO
-    / "private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722"
-    / "lmi-weston-sixrow-clients-14.0.2-r1.apk"
+    / "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724"
+    / "lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk"
 )
 
 EXPECTED_DELTA_OP_PATHS = (
@@ -52,7 +52,6 @@ EXPECTED_DELTA_OP_PATHS = (
     "M|/etc/machine-id",
     "M|/etc/resolv.conf",
     "M|/etc/shadow-",
-    "D|/home/lmi/.ssh/authorized_keys",
     "D|/var/cache/apk/APKINDEX.066df28d.tar.gz",
     "D|/var/cache/apk/APKINDEX.30e6f5af.tar.gz",
     "D|/var/cache/apk/APKINDEX.b53994b4.tar.gz",
@@ -88,19 +87,19 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
     @staticmethod
     def valid_p2_installed_record() -> str:
         dependencies = (
-            "device-xiaomi-lmi=1-r142 greetd=0.10.3-r11 greetd-openrc=0.10.3-r11 "
-            "greetd-phrog=0.53.0-r0 libseat=0.9.3-r0 libweston=14.0.2-r10 "
-            "linux-xiaomi-lmi=4.19.325-r9 lmi-weston-sixrow-clients=14.0.2-r1 "
-            "openrc=0.63.2-r0 seatd=0.9.3-r0 "
-            "seatd-openrc=0.9.3-r0 weston=14.0.2-r10 weston-backend-drm=14.0.2-r10 "
-            "weston-shell-desktop=14.0.2-r10 weston-terminal=14.0.2-r10 /bin/sh"
+            "device-xiaomi-lmi=1-r144 greetd=0.10.3-r11 greetd-openrc=0.10.3-r11 "
+            "greetd-phrog=0.53.0-r0 libseat=0.9.3-r1 libweston=14.0.2-r5 "
+            "linux-xiaomi-lmi=4.19.325-r15 lmi-weston-sixrow-clients=14.0.2-r2 "
+            "openrc=0.63.2-r0 seatd=0.9.3-r1 "
+            "seatd-openrc=0.9.3-r1 weston=14.0.2-r5 weston-backend-drm=14.0.2-r5 "
+            "weston-shell-desktop=14.0.2-r5 weston-terminal=14.0.2-r5 /bin/sh"
         )
         lines = [
-            "C:Q1CgJ9oAvCtPMD0gpMqjIRwUt4gow=",
+            "C:Q1xmDSKg+38KWGNRvP8eE/06z1gTg=",
             "P:device-xiaomi-lmi-terminal",
-            "V:0.1.0-r1",
+            "V:0.1.0-r2",
             "A:noarch",
-            "S:8768",
+            "S:8776",
             "I:24926",
             "T:Pinned non-root Weston terminal session for Xiaomi lmi D114",
             "U:https://postmarketos.org",
@@ -108,7 +107,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "o:device-xiaomi-lmi-terminal",
             "m:lmi P2 maintainers <noreply@example.invalid>",
             "t:1784522705",
-            "c:uncommitted-p2-d114-source-lock-v3",
+            "c:uncommitted-p2-d114-source-lock-v4",
             f"D:{dependencies}",
             "F:etc",
             "F:etc/lmi-p2-d114",
@@ -124,7 +123,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "Z:Q1fz2JibH7B8jAdosh8vogpdSyQZM=",
             "R:session",
             "a:0:0:755",
-            "Z:Q1HZ+4EtKUzGLZ9gU4XrAdWTyoAVM=",
+            "Z:Q1VY+DEJK+eyq5Mv5rs4gUBmgVyD4=",
             "F:usr/share",
             "F:usr/share/lmi-p2-d114",
             "R:greetd.confd",
@@ -141,26 +140,25 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "so:libwayland-cursor.so.0 so:libxkbcommon.so.0"
         )
         lines = [
-            "C:Q1z+kF3cP7AS8SIoqzAnBB/K89PAc=",
+            "C:Q1dyp8uNSMxPIjVUwuCP4wyyBBCs4=",
             "P:lmi-weston-sixrow-clients",
-            "V:14.0.2-r1",
+            "V:14.0.2-r2",
             "A:aarch64",
-            "S:120891",
+            "S:121842",
             "I:335416",
             "T:Hash-locked six-row Weston keyboard and text-input terminal for xiaomi-lmi",
             "U:https://gitlab.freedesktop.org/wayland/weston",
             "L:MIT",
             "o:lmi-weston-sixrow-clients",
             "m:Local lmi port work <noreply@example.invalid>",
-            "t:1784659116",
-            "c:-dirty",
+            "t:1784730238",
             f"D:{dependencies}",
             "F:usr",
             "F:usr/libexec",
             "F:usr/libexec/lmi-p2-d114",
             "R:weston-keyboard-sixrow",
             "a:0:0:755",
-            "Z:Q1azIWyRjIlMC3OdDOa9HLxShf19M=",
+            "Z:Q1XSUCcmg4Qp6FPO9eNoHsqhU0Rls=",
             "R:weston-terminal-sixrow",
             "a:0:0:755",
             "Z:Q1TfC5e5TmOzP1rew68T4D0bOCiE4=",
@@ -223,7 +221,6 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         for relative in (
             "etc/conf.d",
             "etc/ssh/sshd_config.d",
-            "home/lmi/.ssh",
             "usr/bin",
             "usr/lib/apk/db",
             "usr/libexec",
@@ -244,7 +241,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         (root / "etc/unchanged").write_text("unchanged\n", encoding="utf-8")
         (root / "etc/empty").write_bytes(b"")
         (root / "etc/machine-id").write_bytes(b"m" * 33)
-        (root / "etc/resolv.conf").write_bytes(b"r" * 211)
+        (root / "etc/resolv.conf").write_bytes(b"r" * 215)
         (root / "etc/shadow").write_bytes(b"s" * 731)
         (root / "etc/shadow-").write_bytes(b"b" * 730)
         (root / "etc/shadow").chmod(0o640)
@@ -252,19 +249,16 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         (root / "etc/ssh/sshd_config").write_bytes(b"s" * 3542)
         (root / "etc/ssh/sshd_config.d/50-postmarketos-ui-policy.conf").write_bytes(b"p" * 176)
         (root / "etc/ssh/sshd_config.d/50-postmarketos-ui-policy.conf").chmod(0o600)
-        (root / "home/lmi/.ssh/authorized_keys").write_bytes(b"k" * 573)
-        (root / "home/lmi/.ssh").chmod(0o700)
-        (root / "home/lmi/.ssh/authorized_keys").chmod(0o644)
         (root / "usr/lib/apk/db/installed").write_text("baseline-installed\n", encoding="utf-8")
         (root / "usr/lib/apk/db/scripts.tar.gz").write_bytes(b"baseline-scripts")
         for name, size in (
-            ("APKINDEX.066df28d.tar.gz", 528174),
-            ("APKINDEX.30e6f5af.tar.gz", 750911),
-            ("APKINDEX.b53994b4.tar.gz", 2514943),
-            ("APKINDEX.bc99f2f3.tar.gz", 116688),
+            ("APKINDEX.066df28d.tar.gz", 527944),
+            ("APKINDEX.30e6f5af.tar.gz", 748453),
+            ("APKINDEX.b53994b4.tar.gz", 2507751),
+            ("APKINDEX.bc99f2f3.tar.gz", 110467),
         ):
             (root / "var/cache/apk" / name).write_bytes(b"c" * size)
-        (root / "var/log/apk.log").write_bytes(b"l" * 69179)
+        (root / "var/log/apk.log").write_bytes(b"l" * 68657)
         # These unchanged names mirror legal paths in the fixed Alpine
         # candidate.  Full-tree validation must not apply the deliberately
         # narrow grammar used for the 20 allowlisted delta operations.
@@ -339,13 +333,12 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         )
         (root / "usr/lib/apk/db/installed").write_text("installed-with-target\n", encoding="utf-8")
         (root / "usr/lib/apk/db/scripts.tar.gz").write_bytes(b"scripts-with-target")
-        (root / "etc/machine-id").write_bytes(b"")
+        (root / "etc/machine-id").write_bytes(b"1835a845d0bb85b283be20a5fd1c18a4\n")
         (root / "etc/resolv.conf").write_bytes(b"")
         (root / "etc/shadow-").write_bytes((root / "etc/shadow").read_bytes())
         (root / "var/log/apk.log").write_bytes(b"")
         for member in (root / "var/cache/apk").iterdir():
             member.unlink()
-        (root / "home/lmi/.ssh/authorized_keys").unlink()
 
     def test_shell_files_are_syntactically_valid(self) -> None:
         for path in (SCRIPT, LAUNCHER):
@@ -372,13 +365,13 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_scripts_delta_runs_under_nounset_through_final_inventory_comparison(self) -> None:
         target_sources = {
-            "device-xiaomi-lmi-terminal-0.1.0-r1.post-install": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.post-install": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-install"
             ).read_bytes(),
-            "device-xiaomi-lmi-terminal-0.1.0-r1.post-upgrade": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.post-upgrade": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-upgrade"
             ).read_bytes(),
-            "device-xiaomi-lmi-terminal-0.1.0-r1.pre-deinstall": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.pre-deinstall": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.pre-deinstall"
             ).read_bytes(),
         }
@@ -402,10 +395,10 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_scripts_delta_failure_is_removed_by_exit_cleanup(self) -> None:
         target_sources = {
-            "device-xiaomi-lmi-terminal-0.1.0-r1.post-install": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.post-install": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-install"
             ).read_bytes(),
-            "device-xiaomi-lmi-terminal-0.1.0-r1.post-upgrade": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.post-upgrade": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-upgrade"
             ).read_bytes(),
         }
@@ -471,7 +464,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             self.assertEqual(set(op_paths), set(EXPECTED_DELTA_OP_PATHS))
             self.assertEqual(sum(item.startswith("A|") for item in op_paths), 14)
             self.assertEqual(sum(item.startswith("M|") for item in op_paths), 11)
-            self.assertEqual(sum(item.startswith("D|") for item in op_paths), 5)
+            self.assertEqual(sum(item.startswith("D|") for item in op_paths), 4)
             for parent in ("/etc", "/usr/libexec", "/usr/share", "/var/lib"):
                 self.assertIn(f"M|{parent}", op_paths)
             before_paths = {
@@ -494,13 +487,11 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         for required in (
             "home/lmi/.ssh",
             "authorized_keys",
-            "644:10000:10000:1:573",
-            "700:10000:10000",
-            'rm -- "$authorized_keys"',
+            'fail "image lmi SSH directory unexpectedly present"',
+            'fail "image authorized_keys unexpectedly present"',
             "etc/machine-id",
             "644:0:0:1:33",
-            ': >"$machine_id"',
-            "644:0:0:1:0",
+            'printf \'%s\\n\' "$MACHINE_ID" >"$machine_id"',
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         ):
             self.assertIn(required, sanitation)
@@ -822,10 +813,10 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
     def test_fixed_inputs_are_private_canonical_and_candidate_is_never_mutated(self) -> None:
         host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
         for name in (
-            "xiaomi-lmi-v114-splash-recursion-fix-userdata-20260716.img",
-            "xiaomi-lmi-v114-splash-recursion-fix-userdata-20260716.android-sparse.img",
+            "xiaomi-lmi-d114-r2-most-complete-userdata-20260724.normalized.img",
+            "xiaomi-lmi-d114-r2-most-complete-userdata-20260724.android-sparse.img",
             "lmi-d114-rootfs-base.ext4",
-            "lmi-d114-rootfs-p2-candidate-20260720.ext4",
+            "lmi-d114-rootfs-p2-candidate-20260724.ext4",
         ):
             path = BUILD / name
             self.assertEqual(path.resolve(strict=True), path)
@@ -844,22 +835,22 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_rebuild_lock_is_exactly_pinned_and_cross_matches_script_constants(self) -> None:
         self.assertEqual(self.lock["schema"], "lmi-p2-d114-candidate-rebuild-lock/v1")
-        self.assertEqual(digest(LOCK), "1122fae16487ab77406fe444f1fc96da4848fcfb277fd4ad71dc51d81da01489")
+        self.assertEqual(digest(LOCK), "80c4952c9f71eda4bb49d72facd451630927a53a5550103caffe9e818469a7a2")
         expected = {
-            "61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6",
-            "e8a30dc37cb4b75508d89725a9603bc15a985f4e51af77384e8d43c2928f8d68",
-            "76f032775b110855a5984b1ed45b10f9653c59af69b070ceac0e73e7216eb96c",
-            "90b9f0ab94198f78eb251cff0d4c521f7b4bb47fb50967a7c661eacc026e0e82",
-            "4e23b50bc020fddde6daacf5b5a9a4f5472bcc156e7c58c5c932a8ba4c6ffc4f",
-            "9a3b20f3e422ee80cb6615158f1cc8b08fd71dda9a2e49745642404decf60837",
+            "33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8",
+            "1315e3a06ddff42e91f930f01b16a62ab30ab3d4f490e8e8e40d0af89c657279",
+            "5f351c9184fec53070886f3e9aa6a04178d2be8858ec2237b13af19e4a0e8cf6",
+            "d331433af3b7fdb78e42732a1d6b5530a5cf9e6a90a4f4e648f7a97aa696f790",
+            "b2256b9695e96bf57505a107edb2ca1581bcc307b70fc04997e1f016e936daf5",
+            "b2256b9695e96bf57505a107edb2ca1581bcc307b70fc04997e1f016e936daf5",
             "2e51f521c676729920eaba694933d9d4048645f1a5789556fd0027e62d11ecc8",
         }
         for value in expected:
             self.assertIn(value, self.source)
         self.assertEqual(self.lock["geometry"]["logical_sector_size"], 4096)
         self.assertEqual(self.lock["geometry"]["partitions"][1]["first_lba"], 124928)
-        self.assertEqual(self.lock["geometry"]["partitions"][1]["sector_count"], 690176)
-        self.assertEqual(self.lock["candidate"]["normalized_superblock"]["epoch"], 1784551824)
+        self.assertEqual(self.lock["geometry"]["partitions"][1]["sector_count"], 713728)
+        self.assertEqual(self.lock["candidate"]["normalized_superblock"]["epoch"], 1784734606)
         self.assertIn('verify_open_path_unchanged "$path" "$descriptor" "$identity"', self.source)
 
     def test_runtime_lock_is_exact_and_matches_the_copied_sandbox_closure(self) -> None:
@@ -903,13 +894,13 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_candidate_primary_superblock_has_reviewed_little_endian_epoch(self) -> None:
         host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
-        candidate = BUILD / "lmi-d114-rootfs-p2-candidate-20260720.ext4"
+        candidate = BUILD / "lmi-d114-rootfs-p2-candidate-20260724.ext4"
         with candidate.open("rb") as source:
             source.seek(1072)
             wtime = int.from_bytes(source.read(4), "little")
             source.seek(1088)
             lastcheck = int.from_bytes(source.read(4), "little")
-        self.assertEqual((wtime, lastcheck), (1784551824, 1784551824))
+        self.assertEqual((wtime, lastcheck), (1784734606, 1784734606))
         self.assertIn("normalize_repair_epoch", self.source)
         self.assertIn('"$E2FSCK" -fn "$SCRATCH_IMAGE"', self.source)
 
@@ -1192,8 +1183,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             'cmp -s -- "$FULL_TREE_AFTER" "$FULL_TREE_NORMALIZED"',
             "JOURNAL_INACTIVE_FIRST_BLOCK=327681",
             "JOURNAL_INACTIVE_BLOCK_COUNT=16383",
-            "REVIEWED_FREED_BLOCK_ONE=586227",
-            "REVIEWED_FREED_BLOCK_TWO=661606",
+            "REVIEWED_FREED_BLOCKS=()",
             "all_free_blocks_zero",
             "tree_identity_sha256",
         ):
@@ -1742,14 +1732,14 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
                 (
                     "validate_p2_installed_record",
                     self.valid_p2_installed_record(),
-                    "C:Q1CgJ9oAvCtPMD0gpMqjIRwUt4gow=",
-                    "V:0.1.0-r1",
+                    "C:Q1xmDSKg+38KWGNRvP8eE/06z1gTg=",
+                    "V:0.1.0-r2",
                 ),
                 (
                     "validate_sixrow_installed_record",
                     self.valid_sixrow_installed_record(),
-                    "C:Q1z+kF3cP7AS8SIoqzAnBB/K89PAc=",
-                    "V:14.0.2-r1",
+                    "C:Q1dyp8uNSMxPIjVUwuCP4wyyBBCs4=",
+                    "V:14.0.2-r2",
                 ),
             )
             for parser, baseline, checksum, version in records:

@@ -46,17 +46,17 @@ SPARSE_DONT_CARE = 0xCAC3
 SPARSE_CRC32 = 0xCAC4
 ESP_GUID = uuid.UUID("c12a7328-f81f-11d2-ba4b-00a0c93ec93b")
 ARM64_ROOT_GUID = uuid.UUID("b921b045-1df0-41c3-af44-4c6f280d3fae")
-BASELINE_SHA256 = "61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6"
-BASELINE_SIZE = 3_339_714_560
-P2_SIZE = 2_826_960_896
+BASELINE_SHA256 = "33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8"
+BASELINE_SIZE = 3_436_183_552
+P2_SIZE = 2_923_429_888
 P2_UUID = "f8eb7c4b-a7bc-4c44-972f-ee4a7c2e075f"
 SPARSE_TOOL_LOCK_SHA256 = (
     "e8258f018496761191a4643bd3c516ae277c65b1a8b1ec2eedeff59cc1f386d0"
 )
 INJECTION_POLICY_LOCK_SHA256 = (
-    "0d9fc7bdd82e58d6bece646873124b7b9258a6e7bbd94661c5f845623b49105b"
+    "15cac53665f18d6cbf93d975d8beef06dbc061bcfcda2731a479f4b961b9fac5"
 )
-SOURCE_LOCK_SHA256 = "96513219a6f1267edd7762a5206aca6b6bdf344f340decc5676198ac2373ab8f"
+SOURCE_LOCK_SHA256 = "095edff64f5d8c6a998123a8d5eef6186d32eb16c9d2d3ced3450945b9b26bae"
 D110_BOOT_SHA256 = "2b264d64d2ed22f0ab5c3c2615b0bda9ed821fa5d8d5d691ea513e5d2f071487"
 D110_BOOT_SIZE = 52_944_896
 D110_BOOT_UUID = "d4f78f7d-f5b5-4edc-94d5-ba5e6c877888"
@@ -114,7 +114,7 @@ class AssemblyPolicy:
     p1_first_lba: int = 2048
     p1_last_lba: int = 124927
     p2_first_lba: int = 124928
-    p2_last_lba: int = 815103
+    p2_last_lba: int = 838655
     partition_names: tuple[str, str] = ("primary", "primary")
 
     def __post_init__(self) -> None:
@@ -201,7 +201,7 @@ class AssemblyPolicy:
 
 PRODUCTION_POLICY = AssemblyPolicy()
 assert PRODUCTION_POLICY.p2_offset == 511_705_088
-assert PRODUCTION_POLICY.p2_end == 3_338_665_984
+assert PRODUCTION_POLICY.p2_end == 3_435_134_976
 assert PRODUCTION_POLICY.suffix_size == 1_048_576
 
 
@@ -1104,8 +1104,8 @@ def load_injection_policy_lock(
     if value["sanitization"] != {
         "apk_cache": "exact-four-index-members-removed",
         "apk_log": "empty",
-        "authorized_keys": "removed",
-        "machine_id": "empty",
+        "authorized_keys": "absent-in-base",
+        "machine_id": "baked-fixed-hardware-test",
         "resolv_conf": "empty",
         "shadow_backup": "exact-copy-of-locked-active-shadow",
         "ssh_password_authentication": "disabled-by-locked-drop-in",
@@ -1129,7 +1129,7 @@ def load_injection_policy_lock(
             },
             "journal_extent": {"block_count": 16384, "first_block": 327680},
             "proof": "second-e2image-byte-identical",
-            "reviewed_freed_blocks": [586227, 661606],
+            "reviewed_freed_blocks": [],
         }
     ):
         raise AssemblyError("injection policy normalization mismatch")

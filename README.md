@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%" alt="Redmi K30 Pro → Linux: A provenance-first postmarketOS port with guarded hardware milestones">
+</p>
+
 # Redmi K30 Pro (`lmi`) → postmarketOS / Linux
 
 Turning a **Redmi K30 Pro / POCO F2 Pro** (`lmi`, Qualcomm **SM8250 / Snapdragon 865**)

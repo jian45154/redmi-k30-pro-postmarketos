@@ -1,0 +1,180 @@
+#!/bin/sh
+set -eu
+
+usage() {
+	cat >&2 <<'EOF'
+Usage: lmi-display-takeover
+
+Release the inherited D67 continuous-splash KMS state for three seconds, prove
+CRTC 129 and plane 58 are clear, then run the existing bounded DSI-only Weston
+openvt lifecycle. This writes only temporary state below /run and /tmp.
+EOF
+	exit 2
+}
+
+[ "$#" -eq 0 ] || usage
+[ "$(id -u)" = 0 ] || {
+	echo 'takeover_precondition=root-required' >&2
+	exit 1
+}
+
+lockdir=/run/lmi-display-takeover.lock
+work=
+fifo=
+feeder_pid=
+modetest_pid=
+weston_probe_pid=
+lock_held=0
+
+reap_child_if_done() {
+	pid=$1
+	case "$pid" in
+		''|*[!0-9]*) return 0 ;;
+	esac
+	state=$(awk '{ print $3 }' "/proc/$pid/stat" 2>/dev/null || true)
+	if [ -e "/proc/$pid" ] && [ "$state" != Z ]; then
+		return 1
+	fi
+	wait "$pid" 2>/dev/null || true
+	return 0
+}
+
+terminate_child() {
+	pid=$1
+	reap_child_if_done "$pid" && return 0
+	kill "$pid" 2>/dev/null || true
+	for _wait in 1 2 3; do
+		reap_child_if_done "$pid" && return 0
+		kill -0 "$pid" 2>/dev/null || return 0
+		sleep 1
+	done
+	kill -9 "$pid" 2>/dev/null || true
+	sleep 1
+	reap_child_if_done "$pid"
+}
+
+cleanup() {
+	status=$?
+	trap - EXIT HUP INT TERM
+	set +e
+	terminate_child "$weston_probe_pid" || status=1
+	terminate_child "$modetest_pid" || status=1
+	terminate_child "$feeder_pid" || status=1
+	[ -z "$work" ] || rm -rf -- "$work"
+	if [ "$lock_held" -eq 1 ]; then
+		rm -f "$lockdir/owner"
+		rmdir "$lockdir" 2>/dev/null || status=1
+	fi
+	exit "$status"
+}
+
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+for command in awk cat chvt fgconsole grep mkfifo modetest openvt pgrep tail timeout weston; do
+	command -v "$command" >/dev/null 2>&1 || {
+		echo "takeover_precondition=${command}-missing" >&2
+		exit 1
+	}
+done
+[ -x /usr/sbin/lmi-display-probe ] || {
+	echo 'takeover_precondition=display-probe-missing' >&2
+	exit 1
+}
+[ -r /etc/xdg/weston/weston.ini ] &&
+	grep -Fx '[output]' /etc/xdg/weston/weston.ini >/dev/null &&
+	grep -Fx 'name=Virtual-1' /etc/xdg/weston/weston.ini >/dev/null &&
+	grep -Fx 'mode=off' /etc/xdg/weston/weston.ini >/dev/null || {
+	echo 'takeover_precondition=dsi-only-weston-config-invalid' >&2
+	exit 1
+}
+[ -r /dev/dri/card0 ] && [ -w /dev/dri/card0 ] || {
+	echo 'takeover_precondition=card0-permission' >&2
+	exit 1
+}
+[ "$(cat /sys/class/drm/card0-DSI-1/status 2>/dev/null || true)" = connected ] || {
+	echo 'takeover_precondition=dsi-not-connected' >&2
+	exit 1
+}
+[ -S /run/seatd.sock ] || {
+	echo 'takeover_precondition=seatd-socket-missing' >&2
+	exit 1
+}
+[ ! -e /run/lmi-root-weston.lock ] || {
+	echo 'takeover_precondition=weston-lock-present' >&2
+	exit 1
+}
+if pgrep -x weston >/dev/null 2>&1 || pgrep -x openvt >/dev/null 2>&1 ||
+	pgrep -x kmscube >/dev/null 2>&1 || pgrep -x modetest >/dev/null 2>&1; then
+	echo 'takeover_precondition=preexisting-display-process' >&2
+	exit 1
+fi
+if ! mkdir "$lockdir" 2>/dev/null; then
+	echo 'takeover_precondition=transition-lock-busy' >&2
+	exit 1
+fi
+lock_held=1
+printf '%s\n' "$$" > "$lockdir/owner"
+
+work=$(mktemp -d /tmp/lmi-display-takeover.XXXXXX)
+fifo=$work/input
+modetest_log=$work/modetest.log
+weston_log=$work/weston.log
+mkfifo "$fifo"
+
+tail -f /dev/null > "$fifo" &
+feeder_pid=$!
+echo 'splash_release_commit_attempt=1'
+modetest -a -s '29@129:#0@XR24' -P '58@129:1080x2400@XR24' < "$fifo" > "$modetest_log" 2>&1 &
+modetest_pid=$!
+sleep 3
+terminate_child "$feeder_pid" || {
+	echo 'splash_release_status=feeder-cleanup-failed' >&2
+	exit 1
+}
+feeder_pid=
+set +e
+wait "$modetest_pid"
+modetest_exit=$?
+set -e
+modetest_pid=
+cat "$modetest_log"
+printf 'splash_release_modetest_exit=%s\n' "$modetest_exit"
+if [ "$modetest_exit" -ne 0 ] || ! grep -q '^setting mode ' "$modetest_log"; then
+	echo 'splash_release_status=modetest-failed' >&2
+	exit 1
+fi
+
+post_clear=$(timeout -k 1 5 modetest -p 2>&1) || {
+	echo 'splash_release_status=postclear-query-failed' >&2
+	exit 1
+}
+printf '%s\n' "$post_clear" | awk '/^129[[:space:]]/{print "post_clear_crtc129=" $0; found=1; next} found && /^  #0 /{print "post_clear_crtc129_mode=" $0; exit}'
+printf '%s\n' "$post_clear" | awk '/^58[[:space:]]/{print "post_clear_plane58=" $0; exit}'
+printf '%s\n' "$post_clear" | grep -Eq '^129[[:space:]]+0[[:space:]]+\(0,0\)[[:space:]]+\(0x0\)' || {
+	echo 'splash_release_status=crtc129-not-cleared' >&2
+	exit 1
+}
+printf '%s\n' "$post_clear" | grep -Eq '^58[[:space:]]+0[[:space:]]+0[[:space:]]' || {
+	echo 'splash_release_status=plane58-not-cleared' >&2
+	exit 1
+}
+[ "$(cat /sys/class/drm/card0-DSI-1/status 2>/dev/null || true)" = connected ] || {
+	echo 'splash_release_status=dsi-disconnected' >&2
+	exit 1
+}
+echo 'splash_release_status=crtc129-plane58-cleared'
+
+/usr/sbin/lmi-display-probe --active-weston > "$weston_log" 2>&1 &
+weston_probe_pid=$!
+set +e
+wait "$weston_probe_pid"
+weston_probe_exit=$?
+set -e
+weston_probe_pid=
+cat "$weston_log"
+printf 'weston_probe_exit=%s\n' "$weston_probe_exit"
+[ "$weston_probe_exit" -eq 0 ] || exit 1
+echo 'display_takeover_status=complete'

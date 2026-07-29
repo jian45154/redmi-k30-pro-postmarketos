@@ -1,0 +1,37 @@
+#!/bin/sh
+set -eu
+
+backlight=/sys/class/backlight/panel0-backlight/bl_power
+input=/dev/input/event1
+
+unblank() {
+	printf '0\n' > "$backlight" 2>/dev/null || true
+}
+
+cleanup() {
+	trap - EXIT HUP INT TERM
+	unblank
+	exit 0
+}
+
+trap cleanup EXIT HUP INT TERM
+
+[ "$(id -u)" = 0 ] || { echo 'lmi-power-panel: root required' >&2; exit 1; }
+[ -c "$input" ] || { echo "lmi-power-panel: missing $input" >&2; exit 1; }
+[ -r "$backlight" ] && [ -w "$backlight" ] || { echo "lmi-power-panel: unavailable $backlight" >&2; exit 1; }
+command -v evtest >/dev/null 2>&1 || { echo 'lmi-power-panel: evtest missing' >&2; exit 1; }
+
+unblank
+while :; do
+	evtest "$input" 2>/dev/null | while IFS= read -r line; do
+		case "$line" in
+			*'type 1 (EV_KEY), code 116 (KEY_POWER), value 1'*)
+				case "$(cat "$backlight" 2>/dev/null || true)" in
+					0) printf '4\n' > "$backlight" ;;
+					*) printf '0\n' > "$backlight" ;;
+				esac
+				;;
+		esac
+	done
+	sleep 1
+done
