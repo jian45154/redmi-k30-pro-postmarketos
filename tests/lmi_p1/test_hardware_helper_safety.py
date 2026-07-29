@@ -20,6 +20,7 @@ _PRIVATE_ABSENT_REASON = (
     "in this checkout"
 )
 STAGE_SCRIPT = REPO / "scripts/72_stage_downstream_ssh_wifi_test.sh"
+SESSION_MODULE = REPO / "scripts/lmi_d110_session.py"
 LOOP_SCRIPT = REPO / "scripts/68_mainline_progress_loop.sh"
 CLAIM = (
     "No explicit fastboot partition flash; "
@@ -444,6 +445,13 @@ esac
         self.stage_script = self.scripts / STAGE_SCRIPT.name
         self.stage_script.write_text(script, encoding="utf-8")
         self.stage_script.chmod(0o755)
+        # The stage script pins scripts/lmi_d110_session.py by SHA-256, so the
+        # fixture must place an identical module copy next to the script copy.
+        self.session_module = self.scripts / SESSION_MODULE.name
+        self.session_module.write_text(
+            SESSION_MODULE.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        self.session_module.chmod(0o644)
 
     @staticmethod
     def production_anchor(script: str) -> str:
@@ -454,9 +462,26 @@ esac
             raise AssertionError("production policy anchor is not a literal SHA-256")
         return anchor
 
+    @staticmethod
+    def module_anchor(script: str) -> str:
+        prefix = "readonly TRUSTED_SESSION_MODULE_SHA256='"
+        start = script.index(prefix) + len(prefix)
+        anchor = script[start : start + 64]
+        if len(anchor) != 64 or any(c not in "0123456789abcdef" for c in anchor):
+            raise AssertionError("session module anchor is not a literal SHA-256")
+        return anchor
+
     def repin_script(self) -> None:
         script = self.stage_script.read_text(encoding="utf-8")
         script = script.replace(self.production_anchor(script), self.digest(self.policy), 1)
+        self.stage_script.write_text(script, encoding="utf-8")
+        self.stage_script.chmod(0o755)
+
+    def repin_module(self) -> None:
+        script = self.stage_script.read_text(encoding="utf-8")
+        script = script.replace(
+            self.module_anchor(script), self.digest(self.session_module), 1
+        )
         self.stage_script.write_text(script, encoding="utf-8")
         self.stage_script.chmod(0o755)
 
@@ -654,7 +679,9 @@ class DownstreamStageSafetyTests(unittest.TestCase):
             (receipt["policy_sha256"] + "\0" + receipt["challenge_nonce"]).encode("ascii")
         ).hexdigest()
         self.assertEqual(receipts[0].name, f"receipt-{receipt_id}.consumed.json")
-        source = self.fixture.stage_script.read_text(encoding="utf-8")
+        source = self.fixture.stage_script.read_text(
+            encoding="utf-8"
+        ) + self.fixture.session_module.read_text(encoding="utf-8")
         self.assertIn('if name != "receipt-" + receipt_id + ".json":', source)
 
     def test_failed_action_is_exactly_one_attempt_without_automatic_retry(self) -> None:
@@ -861,12 +888,13 @@ class DownstreamStageSafetyTests(unittest.TestCase):
             fixture.private_write(
                 fixture.policy, json.dumps(policy, indent=2, sort_keys=True) + "\n"
             )
-            script = fixture.stage_script.read_text(encoding="utf-8").replace(
+            module = fixture.session_module.read_text(encoding="utf-8").replace(
                 'ttl = integer(execution["receipt_ttl_seconds"], 30, 300)',
                 'ttl = integer(execution["receipt_ttl_seconds"], 2, 300)',
             )
-            fixture.stage_script.write_text(script, encoding="utf-8")
-            fixture.stage_script.chmod(0o755)
+            fixture.session_module.write_text(module, encoding="utf-8")
+            fixture.session_module.chmod(0o644)
+            fixture.repin_module()
             fixture.repin_script()
             self.assertEqual(fixture.authorize().returncode, 0)
             marker = fixture.root / "deadline-marker"
@@ -1210,6 +1238,13 @@ class MainlineProgressPasswordTests(unittest.TestCase):
         self.loop_script = self.scripts / LOOP_SCRIPT.name
         shutil.copyfile(LOOP_SCRIPT, self.loop_script)
         self.loop_script.chmod(0o755)
+        # The loop sources the shared release env defaults; stage them too.
+        lib_dir = self.scripts / "lib"
+        lib_dir.mkdir()
+        shutil.copyfile(
+            REPO / "scripts/lib/mainline_r6_env.sh",
+            lib_dir / "mainline_r6_env.sh",
+        )
         self.fake_bin = self.root / "bin"
         self.fake_bin.mkdir()
         self.pmbootstrap_log = self.root / "pmbootstrap.log"

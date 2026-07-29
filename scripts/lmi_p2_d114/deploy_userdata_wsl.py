@@ -27,12 +27,16 @@ import signal
 import stat
 import struct
 import subprocess
+import sys
 import tempfile
 import time
+import types
 from typing import Any, BinaryIO, Callable, Mapping, Sequence
 
 
 REPO = Path(__file__).resolve().parents[2]
+FASTBOOT_TRANSCRIPT_SHA256 = "a15bb7bc0f79585dad76d12d1dc8183dd6cff81560344d611c13044b59ad1621"
+FASTBOOT_TRANSCRIPT_MAX_BYTES = 64 * 1024
 PROFILE_SCHEMA = "lmi-p2-d114-userdata-deploy-profile-wsl/v1"
 POLICY_SCHEMA = "lmi-p2-d114-userdata-deploy-policy-lock-wsl/v1"
 RUNTIME_SCHEMA = "lmi-p2-d114-fastboot-wsl-runtime-lock/v2"
@@ -82,6 +86,78 @@ QUERY_NAMES = (
 )
 
 SAFE_ENV = {"LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"}
+
+
+def _stat_identity(info: os.stat_result) -> tuple[int, ...]:
+    return (
+        info.st_dev,
+        info.st_ino,
+        info.st_mode,
+        info.st_nlink,
+        info.st_uid,
+        info.st_size,
+        info.st_mtime_ns,
+        info.st_ctime_ns,
+    )
+
+
+def _load_pinned_fastboot_transcript() -> types.ModuleType:
+    """Load the transcript grammar from one verified, retained byte snapshot."""
+
+    path = Path(__file__).with_name("fastboot_transcript.py")
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as error:
+        raise RuntimeError("cannot open the pinned fastboot transcript grammar") from error
+    try:
+        before = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or before.st_uid != os.geteuid()
+            or before.st_nlink != 1
+            or stat.S_IMODE(before.st_mode) & 0o022
+            or before.st_size > FASTBOOT_TRANSCRIPT_MAX_BYTES
+        ):
+            raise RuntimeError("unsafe fastboot transcript grammar metadata")
+        chunks = []
+        remaining = FASTBOOT_TRANSCRIPT_MAX_BYTES + 1
+        while remaining:
+            chunk = os.read(descriptor, min(1 << 16, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        source = b"".join(chunks)
+        after = os.fstat(descriptor)
+    finally:
+        os.close(descriptor)
+    if (
+        len(source) > FASTBOOT_TRANSCRIPT_MAX_BYTES
+        or len(source) != before.st_size
+        or _stat_identity(before) != _stat_identity(after)
+        or hashlib.sha256(source).hexdigest() != FASTBOOT_TRANSCRIPT_SHA256
+    ):
+        raise RuntimeError("fastboot transcript grammar does not match its pinned bytes")
+
+    module_name = "scripts.lmi_p2_d114.fastboot_transcript"
+    module = types.ModuleType(module_name)
+    module.__file__ = str(path)
+    module.__package__ = "scripts.lmi_p2_d114"
+    previous = sys.modules.get(module_name)
+    sys.modules[module_name] = module
+    try:
+        exec(compile(source, str(path), "exec"), module.__dict__)
+    except BaseException:
+        if previous is None:
+            del sys.modules[module_name]
+        else:
+            sys.modules[module_name] = previous
+        raise
+    return module
+
+
+fastboot_transcript = _load_pinned_fastboot_transcript()
 LOADER_ENV_NAMES = frozenset(
     {"LD_AUDIT", "LD_DEBUG", "LD_LIBRARY_PATH", "LD_PRELOAD", "LD_PROFILE"}
 )
@@ -1140,17 +1216,14 @@ def _strict_devices(result: CommandResult) -> str:
         text = result.stdout.decode("ascii")
     except UnicodeDecodeError:
         raise DeployError("fastboot devices output is not ASCII") from None
-    match = re.fullmatch(
-        r"([A-Za-z0-9._:-]{1,128})(?:\tfastboot(?:\n|\r\n)|\t fastboot(?:\n\n|\r\n\r\n))",
-        text,
-    )
-    if match is None:
+    serial = fastboot_transcript.parse_devices(text)
+    if serial is None:
         raise DeployError("exactly one bootloader-mode fastboot device is required")
-    return match.group(1)
+    return serial
 
 
 def _finished_pattern() -> str:
-    return r"Finished\. Total time: [0-9]+(?:\.[0-9]+)?s\r?\n?"
+    return fastboot_transcript.finished_footer_pattern()
 
 
 def _strict_getvar(name: str, result: CommandResult, *, allow_unsupported: bool = False) -> tuple[str | None, bool]:
@@ -1160,19 +1233,9 @@ def _strict_getvar(name: str, result: CommandResult, *, allow_unsupported: bool 
         text = result.stderr.decode("ascii")
     except UnicodeDecodeError:
         raise DeployError(f"getvar:{name} stderr is not ASCII") from None
-    success = re.fullmatch(
-        rf"(?:\(bootloader\) )?{re.escape(name)}: ([^\r\n]+)\r?\n{_finished_pattern()}",
-        text,
-    )
-    if result.returncode == 0 and success is not None:
-        return success.group(1), False
-    if allow_unsupported:
-        unsupported = re.fullmatch(
-            rf"getvar:{re.escape(name)}[ \t]+FAILED \(remote: 'GetVar Variable Not found'\)\r?\n{_finished_pattern()}",
-            text,
-        )
-        if result.returncode == 0 and unsupported is not None:
-            return None, True
+    parsed = fastboot_transcript.parse_getvar(name, text, allow_unsupported=allow_unsupported)
+    if result.returncode == 0 and parsed is not None:
+        return parsed
     raise DeployError(f"getvar:{name} output shape or exit status mismatch")
 
 
@@ -1487,40 +1550,10 @@ def _transport_completed(result: CommandResult) -> bool:
         or result.timed_out
         or result.output_limited
         or result.returncode != 0
-        or result.stdout != b""
     ):
         return False
-    try:
-        lines = result.stderr.decode("ascii").splitlines()
-    except UnicodeDecodeError:
-        return False
-    if not lines or re.fullmatch(r"Finished\. Total time: [0-9]+(?:\.[0-9]+)?s", lines[-1]) is None:
-        return False
-    sending = re.compile(
-        r"Sending sparse 'userdata'(?: (?P<index>[0-9]+)/(?P<total>[0-9]+))? \([0-9]+ KB\)[ .]*OKAY \[[ ]*[0-9]+(?:\.[0-9]+)?s\]"
-    )
-    writing = re.compile(
-        r"Writing 'userdata'[ .]*OKAY \[[ ]*[0-9]+(?:\.[0-9]+)?s\]"
-    )
-    body = lines[:-1]
-    if len(body) < 2 or len(body) % 2:
-        return False
-    matches: list[re.Match[str]] = []
-    for index in range(0, len(body), 2):
-        match = sending.fullmatch(body[index])
-        if match is None or writing.fullmatch(body[index + 1]) is None:
-            return False
-        matches.append(match)
-    fractions = [(match.group("index"), match.group("total")) for match in matches]
-    if all(index is None and total is None for index, total in fractions):
-        return len(matches) == 1
-    if any(index is None or total is None for index, total in fractions):
-        return False
-    totals = {int(total) for _index, total in fractions if total is not None}
-    if len(totals) != 1:
-        return False
-    total = totals.pop()
-    return total == len(matches) and [int(index) for index, _total in fractions if index is not None] == list(range(1, total + 1))
+    classification = fastboot_transcript.classify(result.stdout, result.stderr)
+    return classification.outcome is fastboot_transcript.Outcome.COMPLETED
 
 
 def _validate_approval(

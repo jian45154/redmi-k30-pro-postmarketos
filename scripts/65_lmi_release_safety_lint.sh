@@ -6,7 +6,7 @@ usage() {
 Usage:
   scripts/65_lmi_release_safety_lint.sh
 
-Static safety lint (bringup governance v4). Five checks, all read-only:
+Static safety lint (bringup governance v4). Six checks, all read-only:
 
 1. Shell invoker set: fastboot state-change command text (flash/boot/reboot/
    erase/format) may only appear in the enumerated shell set below.
@@ -15,7 +15,9 @@ Static safety lint (bringup governance v4). Five checks, all read-only:
 3. D114 transition set: every Python/PowerShell file containing the exact
    userdata-flash contract must be in the reviewed transition allowlist.
 4. Retired route: removed M-r6/M-r7 helpers may not reappear.
-5. Governance data: config/governance/constants.json and policy.json must
+5. D114 Python transition TCB: the WSL deployer must pin and load the
+   transcript grammar from verified bytes; the grammar may not invoke tools.
+6. Governance data: config/governance/constants.json and policy.json must
    validate against scripts/bringup_loop.py, which asserts that the data
    file's forbidden_command_words match the engine's hardcoded copy.
 
@@ -36,12 +38,12 @@ if [ "$#" -ne 0 ]; then
 	exit 2
 fi
 
-failures=0
-
-fail() {
-	printf 'FAIL: %s\n' "$*" >&2
-	failures=$((failures + 1))
-}
+# Shared assertion vocabulary in count-and-continue mode: fail() prints
+# "FAIL: ..." to stderr and increments $release_checks_failures. All
+# safety pattern data (allowlists, forbidden operation patterns) stays in
+# this file by design; the library holds only generic helpers.
+RELEASE_CHECKS_MODE=count
+. "$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib/release_checks.sh"
 
 echo "lmi safety lint: fastboot invoker set"
 # Scripts permitted to contain fastboot state-change command text.
@@ -151,12 +153,26 @@ for retired in "${retired_helpers[@]}"; do
 	fi
 done
 
+echo "lmi safety lint: D114 Python transition TCB"
+transcript_path=scripts/lmi_p2_d114/fastboot_transcript.py
+deployer_path=scripts/lmi_p2_d114/deploy_userdata_wsl.py
+transcript_sha=$(/usr/bin/sha256sum -- "$transcript_path" | /usr/bin/awk 'NR == 1 { print $1 }')
+if ! grep -Fqx "FASTBOOT_TRANSCRIPT_SHA256 = \"$transcript_sha\"" "$deployer_path"; then
+	fail "D114 WSL deployer does not pin the exact transcript grammar"
+fi
+if ! grep -Fqx 'fastboot_transcript = _load_pinned_fastboot_transcript()' "$deployer_path"; then
+	fail "D114 WSL deployer does not load the transcript grammar through its pinned loader"
+fi
+if grep -Eq 'subprocess|os\.(exec|system)' "$transcript_path"; then
+	fail "D114 transcript grammar contains device-process vocabulary"
+fi
+
 echo "lmi safety lint: governance data consistency"
 if ! python3 scripts/bringup_loop.py validate >/dev/null; then
 	fail "bringup governance validation failed (constants/policy/active record)"
 fi
 
-if [ "$failures" -ne 0 ]; then
+if [ "$release_checks_failures" -ne 0 ]; then
 	exit 1
 fi
 
