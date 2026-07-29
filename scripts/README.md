@@ -13,6 +13,7 @@ names are preserved because many notes cite them directly.
 | `32`-`39` | Firmware service, inventory, display/audio/power/network probes. |
 | `70`-`72` | Downstream SSH/Wi-Fi build, sidecar monitor, and staged downstream Wi-Fi test helpers. The `72` gate's Python bodies live in `lmi_d110_session.py`, pinned by SHA-256 inside `72` (see "Re-pinning the D110 session module" below). |
 | `74` | SSH protocol acceptance with no explicit remote mutation; mocked tests cover logic only, and hardware claims require captured real-device evidence. |
+| `75` | Host-only owner-mode opt-in config staging generator (root key-only SSH plus blanket lmi sudo); never contacts the phone. See `notes/ssh-owner-mode-addendum-2026-07-29.md`. |
 
 ## Mainline/copydown sequence (`M-rNN`)
 
