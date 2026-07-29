@@ -140,6 +140,25 @@ class ClassifyNotCompletedTests(unittest.TestCase):
         )
         self.assertUnknown(repeated, "UNNUMBERED_SENDING_REPEATED")
 
+    def test_numbered_raw_transfers_are_not_completed(self) -> None:
+        for body in (
+            (
+                b"Sending 'userdata' 1/1 (123 KB) OKAY [  1.000s]\n"
+                b"Writing 'userdata' OKAY [  1.000s]\n"
+            ),
+            (
+                b"Sending 'userdata' 1/2 (123 KB) OKAY [  1.000s]\n"
+                b"Writing 'userdata' OKAY [  1.000s]\n"
+                b"Sending 'userdata' 2/2 (123 KB) OKAY [  1.000s]\n"
+                b"Writing 'userdata' OKAY [  1.000s]\n"
+            ),
+        ):
+            with self.subTest(body=body):
+                self.assertUnknown(
+                    body + b"Finished. Total time: 4.000s\n",
+                    "RAW_SENDING_MUST_BE_SINGLE_UNNUMBERED",
+                )
+
     def test_mixed_sparse_and_raw_sending_is_not_completed(self) -> None:
         mixed = (
             b"Sending sparse 'userdata' 1/2 (123 KB) OKAY [  1.000s]\n"

@@ -215,12 +215,17 @@ def classify(stdout: bytes, stderr: bytes, *, partition: str = "userdata") -> Cl
     sparse_flags = {match.group("sparse") is not None for match in sendings}
     if len(sparse_flags) != 1:
         return _unknown("MIXED_SPARSE_AND_RAW_SENDING")
+    is_sparse = sparse_flags.pop()
     fractions = [(match.group("index"), match.group("total")) for match in sendings]
     reason = (
         "SPARSE_TRANSPORT_LADDER_COMPLETE"
-        if sparse_flags.pop()
+        if is_sparse
         else "RAW_TRANSPORT_LADDER_COMPLETE"
     )
+    if not is_sparse and any(
+        index is not None or total is not None for index, total in fractions
+    ):
+        return _unknown("RAW_SENDING_MUST_BE_SINGLE_UNNUMBERED")
     if all(index is None and total is None for index, total in fractions):
         if len(sendings) != 1:
             return _unknown("UNNUMBERED_SENDING_REPEATED")

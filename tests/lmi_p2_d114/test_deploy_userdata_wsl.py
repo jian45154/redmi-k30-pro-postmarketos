@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import stat
+import subprocess
 import tempfile
 import threading
 import unittest
@@ -1088,6 +1089,54 @@ class DeployUserdataWslTests(unittest.TestCase):
         self.assertIn("os.killpg", source)
         self.assertIn("/proc/self/fd/", source)
         self.assertNotIn("fastbootd", " ".join(deploy._parser()._actions[-1].choices or ()))
+
+    def test_transcript_grammar_is_loaded_from_exact_pinned_bytes(self) -> None:
+        grammar = (
+            deploy.REPO
+            / "scripts/lmi_p2_d114/fastboot_transcript.py"
+        )
+        self.assertEqual(
+            hashlib.sha256(grammar.read_bytes()).hexdigest(),
+            deploy.FASTBOOT_TRANSCRIPT_SHA256,
+        )
+        source = (
+            deploy.REPO
+            / "scripts/lmi_p2_d114/deploy_userdata_wsl.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("fastboot_transcript = _load_pinned_fastboot_transcript()", source)
+        self.assertNotIn(
+            "from scripts.lmi_p2_d114 import fastboot_transcript",
+            source,
+        )
+
+    def test_tampered_transcript_grammar_fails_before_cli_startup(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "scripts/lmi_p2_d114"
+            root.mkdir(parents=True)
+            deployer = root / "deploy_userdata_wsl.py"
+            grammar = root / "fastboot_transcript.py"
+            deployer.write_bytes(
+                (
+                    deploy.REPO
+                    / "scripts/lmi_p2_d114/deploy_userdata_wsl.py"
+                ).read_bytes()
+            )
+            grammar.write_bytes(
+                (
+                    deploy.REPO
+                    / "scripts/lmi_p2_d114/fastboot_transcript.py"
+                ).read_bytes()
+                + b"\n# tampered\n"
+            )
+            result = subprocess.run(
+                [os.environ.get("PYTHON", "python3"), str(deployer), "--help"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+                timeout=10,
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"does not match its pinned bytes", result.stderr)
 
 
 if __name__ == "__main__":
