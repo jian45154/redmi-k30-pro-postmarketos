@@ -1,14 +1,17 @@
-# Claude Code flash gate: repo governance as the authorizer
+# Claude Code flash gate: fail-closed harness classifier
 
-This repo can act as its own permission authority for Claude Code sessions:
-instead of a human approving every tool call, a `PreToolUse` hook delegates
-device-write authorization to the bringup governance v4 chain.
+A Claude Code `PreToolUse` hook can narrow what the harness permission layer
+may approve automatically. It is not a device authorization, receipt, claim,
+or executor and does not replace the owner or the bringup governance v4
+chain. An exact D110 command still passes every gate inside script 72; the
+hook merely lets that command reach the executor without also granting raw
+fastboot or image-write commands.
 
 ## Decision table
 
 | Bash tool call | Decision | Decided by |
 | --- | --- | --- |
-| One exact canonical invocation of `scripts/72_stage_downstream_ssh_wifi_test.sh` (governed D110 executor) | **allow** if `scripts/65_lmi_release_safety_lint.sh` passes, **deny** if it fails | the safety lint, at call time |
+| One exact canonical invocation of `scripts/72_stage_downstream_ssh_wifi_test.sh` (governed D110 executor) | **allow at the harness layer** if `scripts/65_lmi_release_safety_lint.sh` passes; script 72 still performs its own authorization and device gates | classifier + executor |
 | Raw `fastboot flash/boot/reboot/erase/format`, or `dd` onto a block device | **deny**, always | the hook (mirrors lint check 1/2) |
 | D114 Python/PowerShell transition entrypoints | no opinion — normal permission prompt | the operator (until D114 is wired to v4 claims) |
 | Everything else | no opinion — normal permission flow / allowlist | harness |
