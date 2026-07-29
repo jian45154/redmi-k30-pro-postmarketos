@@ -23,20 +23,26 @@ decide() {
 	exit 0
 }
 
-# Governed executor: authorization is delegated to the safety lint, which
-# statically re-verifies the whole invoker set before every device session.
+# Raw device/image state changes outside the governed set are never approved.
+# This deliberately matches options between fastboot and its verb (for example
+# ``fastboot -s SERIAL flash``) and treats every /dev target as sensitive.
+# Run this check before the governed-executor allow rule so a compound Bash
+# command can never smuggle a raw state change behind an allowed invocation.
 if printf '%s' "$cmd" | grep -qE \
-	'(^|[[:space:]])(bash[[:space:]]+)?scripts/72_stage_downstream_ssh_wifi_test\.sh'; then
+	'fastboot(\.exe)?[^[:cntrl:]]*[[:space:]](flash|boot|reboot|erase|format)([[:space:];&|]|$)|(^|[[:space:];&|])([^[:space:];&|]*/)?dd[[:space:]][^[:cntrl:]]*of=/dev/'; then # detection regex only; this gate never executes device commands
+	decide deny "fastboot/image write outside the governed invoker set (see scripts/65_lmi_release_safety_lint.sh)"
+fi
+
+# Governed executor: only one complete, canonical command is auto-approved.
+# Anchoring the whole string is intentional: quoting, redirection, pipelines,
+# command substitution, environment prefixes, and compound commands fall
+# through to the normal permission flow instead of inheriting this allow.
+if printf '%s' "$cmd" | grep -qE \
+	'^((/usr/bin/)?bash[[:space:]]+)?(\./)?scripts/72_stage_downstream_ssh_wifi_test\.sh[[:space:]]+--stage[[:space:]]+ramboot[[:space:]]+(--dry-run|--preflight|--authorize-session|--execute|--revoke-session)[[:space:]]*$'; then
 	if bash scripts/65_lmi_release_safety_lint.sh >/dev/null 2>&1; then
 		decide allow "governed D110 executor, safety lint green"
 	fi
 	decide deny "safety lint failed; fix governance before touching the device"
-fi
-
-# Raw device/image state changes outside the governed set are never approved.
-if printf '%s' "$cmd" | grep -qE \
-	'fastboot(\.exe)?[[:space:]]+(flash|boot|reboot|erase|format)([[:space:]]|$)|of=/dev/(sd[a-z]|mmcblk|nvme|block/)'; then # detection regex only; this gate never executes device commands
-	decide deny "fastboot/image write outside the governed invoker set (see scripts/65_lmi_release_safety_lint.sh)"
 fi
 
 exit 0
