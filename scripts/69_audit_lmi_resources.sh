@@ -16,8 +16,17 @@ partition writes.
 EOF
 }
 
-repo=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-bundle_dir=${LMI_RELEASE_BUNDLE_DIR:-/tmp/lmi-release-r6-bootmem-20260624}
+script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+# Shared release env defaults and repo-root discovery.
+. "$script_dir/lib/mainline_r6_env.sh"
+# Shared assertion vocabulary in count-and-continue mode; FAIL lines flow
+# through log() into stdout and the report file.
+RELEASE_CHECKS_MODE=count
+RELEASE_CHECKS_FAIL_TO=log
+. "$script_dir/lib/release_checks.sh"
+
+repo=$lmi_repo
+bundle_dir=$lmi_default_bundle_dir
 report=${LMI_RESOURCE_AUDIT_REPORT:-$bundle_dir/LMI_RESOURCE_AUDIT.txt}
 network=0
 
@@ -50,55 +59,9 @@ done
 mkdir -p "$(dirname "$report")"
 : > "$report"
 
-log() {
-	printf '%s\n' "$*" | tee -a "$report"
-}
-
-failures=0
-warnings=0
-
-fail() {
-	log "FAIL: $*"
-	failures=$((failures + 1))
-}
-
-warn() {
-	log "WARN: $*"
-	warnings=$((warnings + 1))
-}
-
-require_file() {
-	local path=$1
-	if [ -f "$path" ]; then
-		log "OK file: $path"
-	else
-		fail "missing file: $path"
-	fi
-}
-
-require_dir() {
-	local path=$1
-	if [ -d "$path" ]; then
-		log "OK dir: $path"
-	else
-		fail "missing directory: $path"
-	fi
-}
-
-require_grep() {
-	local label=$1
-	local pattern=$2
-	local path=$3
-	if [ ! -f "$path" ]; then
-		fail "$label: missing file $path"
-		return
-	fi
-	if grep -q "$pattern" "$path"; then
-		log "OK grep: $label"
-	else
-		fail "$label: pattern not found in $path: $pattern"
-	fi
-}
+# log/fail/warn/require_file/require_dir/require_grep come from
+# scripts/lib/release_checks.sh; log() tees every line into the report.
+RELEASE_CHECKS_REPORT=$report
 
 sha_line() {
 	local path=$1
@@ -256,10 +219,10 @@ else
 	log
 fi
 
-log "warnings=$warnings"
-log "failures=$failures"
+log "warnings=$release_checks_warnings"
+log "failures=$release_checks_failures"
 log "report=$report"
 
-if [ "$failures" -ne 0 ]; then
+if [ "$release_checks_failures" -ne 0 ]; then
 	exit 1
 fi
