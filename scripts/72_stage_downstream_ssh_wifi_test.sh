@@ -66,6 +66,8 @@ script_dir=${script_path%/*}
 repo=$(/usr/bin/readlink -f -- "$script_dir/..") || fail "could not resolve repository root"
 policy_path=$repo/$POLICY_REL
 session_module=$script_dir/lmi_d110_session.py
+readonly session_module_fd=9
+readonly session_module_exec=/proc/self/fd/$session_module_fd
 session_module_identity=
 
 mode=
@@ -118,35 +120,42 @@ done
 # The pinned session module carries the exact Python bodies that used to be
 # embedded here as heredocs. A heredoc could not be swapped without changing
 # this file (which the helper-identity checkpoints detect); the module file
-# regains that property by being hashed against TRUSTED_SESSION_MODULE_SHA256
-# before any use and re-verified at every helper-identity checkpoint.
+# regains that property by being opened once, hashed against
+# TRUSTED_SESSION_MODULE_SHA256, and executed only through the retained fd.
+# Path identity is still re-verified at every helper-identity checkpoint.
 capture_session_module() {
-	local actual_sha before after
+	local actual_sha before after path_identity
 	[[ $TRUSTED_SESSION_MODULE_SHA256 =~ ^[0-9a-f]{64}$ ]] || fail "the session module pin is not a literal SHA-256"
 	[ ! -L "$session_module" ] || fail "the session module must not be a symlink"
 	[ -f "$session_module" ] || fail "the session module is missing"
 	[ "$(/usr/bin/stat -c '%h' -- "$session_module")" = 1 ] || fail "the session module must have exactly one hard link"
-	before=$(/usr/bin/stat -c '%d:%i:%f:%h:%s:%y:%z' -- "$session_module") || fail "could not inspect the session module"
-	actual_sha=$(/usr/bin/sha256sum -- "$session_module" | /usr/bin/awk 'NR == 1 { print $1 }')
+	exec 9<"$session_module" || fail "could not retain the session module descriptor"
+	before=$(/usr/bin/stat -Lc '%d:%i:%f:%h:%s:%y:%z' -- "$session_module_exec") || fail "could not inspect the retained session module"
+	actual_sha=$(/usr/bin/sha256sum -- "$session_module_exec" | /usr/bin/awk 'NR == 1 { print $1 }')
 	[ "$actual_sha" = "$TRUSTED_SESSION_MODULE_SHA256" ] || fail "the session module does not match its trusted pin"
-	after=$(/usr/bin/stat -c '%d:%i:%f:%h:%s:%y:%z' -- "$session_module") || fail "could not reinspect the session module"
+	after=$(/usr/bin/stat -Lc '%d:%i:%f:%h:%s:%y:%z' -- "$session_module_exec") || fail "could not reinspect the retained session module"
 	[ "$before" = "$after" ] || fail "the session module changed while it was hashed"
+	[ ! -L "$session_module" ] && [ -f "$session_module" ] || fail "the session module path changed type"
+	path_identity=$(/usr/bin/stat -c '%d:%i:%f:%h:%s:%y:%z' -- "$session_module") || fail "could not inspect the session module path"
+	[ "$path_identity" = "$before" ] || fail "the retained session module differs from its reviewed path"
 	session_module_identity=$before
 }
 
 verify_session_module() {
-	local actual_sha current
+	local actual_sha current path_identity
 	[ ! -L "$session_module" ] && [ -f "$session_module" ] || fail "the session module changed type"
-	current=$(/usr/bin/stat -c '%d:%i:%f:%h:%s:%y:%z' -- "$session_module") || fail "could not inspect the session module"
+	current=$(/usr/bin/stat -Lc '%d:%i:%f:%h:%s:%y:%z' -- "$session_module_exec") || fail "could not inspect the retained session module"
 	[ "$current" = "$session_module_identity" ] || fail "the session module changed during the gated operation"
-	actual_sha=$(/usr/bin/sha256sum -- "$session_module" | /usr/bin/awk 'NR == 1 { print $1 }')
+	actual_sha=$(/usr/bin/sha256sum -- "$session_module_exec" | /usr/bin/awk 'NR == 1 { print $1 }')
 	[ "$actual_sha" = "$TRUSTED_SESSION_MODULE_SHA256" ] || fail "the session module SHA-256 changed during the gated operation"
+	path_identity=$(/usr/bin/stat -c '%d:%i:%f:%h:%s:%y:%z' -- "$session_module") || fail "could not inspect the session module path"
+	[ "$path_identity" = "$session_module_identity" ] || fail "the session module path no longer names the retained file"
 }
 
 capture_helper_identity() {
 	local output status
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module" helper-identity "$script_path")
+	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" helper-identity "$script_path")
 	status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "the helper identity could not be captured safely"
@@ -169,7 +178,7 @@ verify_helper_identity() {
 capture_local_policy() {
 	local output
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module" local-policy "$repo" "$policy_path" "$TRUSTED_POLICY_SHA256")
+	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" local-policy "$repo" "$policy_path" "$TRUSTED_POLICY_SHA256")
 	local status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "private D110 policy or pinned local evidence validation failed"
@@ -329,7 +338,7 @@ read_getvar() {
 parse_uint() {
 	local input=$1 output status
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module" parse-uint "$input")
+	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" parse-uint "$input")
 	status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "a numeric fastboot property is invalid"
@@ -339,7 +348,7 @@ parse_uint() {
 verify_private_device_identity() {
 	local status
 	set +e
-	/usr/bin/python3 -I -S -B "$session_module" device-identity "$privacy_nonce" "$expected_identity" "$historical_fingerprint" 3<<< "$device_serial"
+	/usr/bin/python3 -I -S -B "$session_module_exec" device-identity "$privacy_nonce" "$expected_identity" "$historical_fingerprint" 3<<< "$device_serial"
 	status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "the connected handset does not match the private D199/D200 identity policy"
@@ -376,7 +385,7 @@ preflight_device() {
 capture_session_scope() {
 	local output status
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module" session-scope)
+	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" session-scope)
 	status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "a valid current CODEX_THREAD_ID session scope is required"
@@ -389,7 +398,7 @@ capture_session_scope() {
 prepare_session_storage() {
 	local create=$1 status
 	set +e
-	/usr/bin/python3 -I -S -B "$session_module" session-storage "$grant_dir" "$create"
+	/usr/bin/python3 -I -S -B "$session_module_exec" session-storage "$grant_dir" "$create"
 	status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "the private session grant storage is missing or unsafe"
@@ -426,7 +435,7 @@ create_session_grant() {
 		return 0
 	fi
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module" grant-create "$grant_dir" "$thread_binding" \
+	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" grant-create "$grant_dir" "$thread_binding" \
 		"$host_boot_id_sha" "$TRUSTED_POLICY_SHA256" "$action_digest" "$boot_sha" \
 		"$expected_identity" "$fastboot_sha" "$fastboot_identity" "$stage" "$helper_sha" \
 		"$session_max_seconds")
@@ -441,7 +450,7 @@ verify_session_grant() {
 	local status
 	grant_path=$grant_dir/active/grant-$thread_binding.json
 	set +e
-	/usr/bin/python3 -I -S -B "$session_module" grant-verify "$grant_path" "$thread_binding" "$host_boot_id_sha" \
+	/usr/bin/python3 -I -S -B "$session_module_exec" grant-verify "$grant_path" "$thread_binding" "$host_boot_id_sha" \
 		"$TRUSTED_POLICY_SHA256" "$action_digest" "$boot_sha" "$expected_identity" \
 		"$fastboot_sha" "$fastboot_identity" "$stage" "$helper_sha" "$session_max_seconds"
 	status=$?
@@ -452,7 +461,7 @@ verify_session_grant() {
 revoke_session_grant() {
 	local status
 	set +e
-	/usr/bin/python3 -I -S -B "$session_module" grant-revoke "$grant_dir" "$thread_binding"
+	/usr/bin/python3 -I -S -B "$session_module_exec" grant-revoke "$grant_dir" "$thread_binding"
 	status=$?
 	set -e
 	[ "$status" -eq 0 ] || fail "the session grant could not be atomically revoked"
@@ -461,7 +470,7 @@ revoke_session_grant() {
 create_attempt_receipt() {
 	local output status
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module" receipt-create "$receipt_dir" "$TRUSTED_POLICY_SHA256" \
+	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" receipt-create "$receipt_dir" "$TRUSTED_POLICY_SHA256" \
 		"$action_digest" "$boot_sha" "$expected_identity" "$thread_binding" \
 		"$host_boot_id_sha" "$helper_sha" "$fastboot_identity" "$stage" "$device_battery_mv" \
 		"$device_max_download" "$receipt_ttl")
@@ -474,7 +483,7 @@ create_attempt_receipt() {
 consume_attempt_receipt() {
 	local output status
 	set +e
-	output=$(/usr/bin/python3 -I -S -B "$session_module" receipt-consume "$receipt_dir" "$pending_receipt" \
+	output=$(/usr/bin/python3 -I -S -B "$session_module_exec" receipt-consume "$receipt_dir" "$pending_receipt" \
 		"$TRUSTED_POLICY_SHA256" "$action_digest" "$boot_sha" "$expected_identity" \
 		"$thread_binding" "$host_boot_id_sha" "$helper_sha" "$fastboot_identity" "$stage" "$receipt_ttl")
 	status=$?
