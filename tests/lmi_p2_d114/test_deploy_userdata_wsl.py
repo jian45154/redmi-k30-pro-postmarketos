@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import stat
+import subprocess
 import tempfile
 import threading
 import unittest
@@ -223,6 +224,7 @@ class DeployUserdataWslTests(unittest.TestCase):
             "reject-except-exact-locked-interpreter-usrmerge-chain",
         )
         profile_path = root / "private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722/lmi-d114-userdata-p2-r1-sixrow-wsl-deploy-profile-20260722.json"
+        host_bound.require_path(profile_path)
         profile = json.loads(profile_path.read_text())
         for name, path in (
             ("fastboot_runtime_lock", root / "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json"),
@@ -643,6 +645,39 @@ class DeployUserdataWslTests(unittest.TestCase):
         self.assertFalse(deploy._transport_completed(partial))
         self.assertTrue(deploy._transport_completed(FakeFastboot().write_result))
 
+    def test_transport_parser_accepts_observed_nonsparse_and_crlf_success(self) -> None:
+        nonsparse = deploy.CommandResult(
+            0,
+            b"",
+            b"Sending 'userdata' (2109484 KB)                    OKAY [ 47.585s]\n"
+            b"Writing 'userdata'                                 OKAY [  0.986s]\n"
+            b"Finished. Total time: 48.571s\n",
+        )
+        self.assertTrue(deploy._transport_completed(nonsparse))
+        crlf = deploy.CommandResult(
+            0, b"", FakeFastboot().write_result.stderr.replace(b"\n", b"\r\n")
+        )
+        self.assertTrue(deploy._transport_completed(crlf))
+        trailing_blank = deploy.CommandResult(
+            0, b"", FakeFastboot().write_result.stderr + b"\n"
+        )
+        self.assertTrue(deploy._transport_completed(trailing_blank))
+        for incomplete in (
+            deploy.CommandResult(1, b"", nonsparse.stderr),
+            deploy.CommandResult(0, b"stdout", nonsparse.stderr),
+            deploy.CommandResult(0, b"", nonsparse.stderr, timed_out=True),
+            deploy.CommandResult(0, b"", nonsparse.stderr, output_limited=True),
+            deploy.CommandResult(0, b"", nonsparse.stderr, started=False),
+            deploy.CommandResult(
+                0,
+                b"",
+                b"Sending 'userdata' (123 KB) FAILED (remote: 'data too large')\n"
+                b"fastboot: error: Command failed\n",
+            ),
+        ):
+            with self.subTest(incomplete=incomplete):
+                self.assertFalse(deploy._transport_completed(incomplete))
+
     def test_preflight_uses_exact_fixed_read_only_queries_and_redacts_serial(self) -> None:
         audit = self.fixture.audit()
         runner = FakeFastboot()
@@ -1054,6 +1089,54 @@ class DeployUserdataWslTests(unittest.TestCase):
         self.assertIn("os.killpg", source)
         self.assertIn("/proc/self/fd/", source)
         self.assertNotIn("fastbootd", " ".join(deploy._parser()._actions[-1].choices or ()))
+
+    def test_transcript_grammar_is_loaded_from_exact_pinned_bytes(self) -> None:
+        grammar = (
+            deploy.REPO
+            / "scripts/lmi_p2_d114/fastboot_transcript.py"
+        )
+        self.assertEqual(
+            hashlib.sha256(grammar.read_bytes()).hexdigest(),
+            deploy.FASTBOOT_TRANSCRIPT_SHA256,
+        )
+        source = (
+            deploy.REPO
+            / "scripts/lmi_p2_d114/deploy_userdata_wsl.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("fastboot_transcript = _load_pinned_fastboot_transcript()", source)
+        self.assertNotIn(
+            "from scripts.lmi_p2_d114 import fastboot_transcript",
+            source,
+        )
+
+    def test_tampered_transcript_grammar_fails_before_cli_startup(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "scripts/lmi_p2_d114"
+            root.mkdir(parents=True)
+            deployer = root / "deploy_userdata_wsl.py"
+            grammar = root / "fastboot_transcript.py"
+            deployer.write_bytes(
+                (
+                    deploy.REPO
+                    / "scripts/lmi_p2_d114/deploy_userdata_wsl.py"
+                ).read_bytes()
+            )
+            grammar.write_bytes(
+                (
+                    deploy.REPO
+                    / "scripts/lmi_p2_d114/fastboot_transcript.py"
+                ).read_bytes()
+                + b"\n# tampered\n"
+            )
+            result = subprocess.run(
+                [os.environ.get("PYTHON", "python3"), str(deployer), "--help"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+                timeout=10,
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"does not match its pinned bytes", result.stderr)
 
 
 if __name__ == "__main__":
