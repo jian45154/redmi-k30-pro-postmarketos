@@ -1,0 +1,73 @@
+{
+  "schema": "lmi-weston-sixrow-build-attestation/v1",
+  "generated_at": "2026-07-29T16:26:44Z",
+  "status": "BUILT_REPRODUCIBLE_STATIC_AUDIT_PASSED_NOT_DEVICE_TESTED",
+  "device": "xiaomi-lmi",
+  "architecture": "aarch64",
+  "source": {
+    "weston_version": "14.0.2",
+    "source_lock": "config/lmi-weston-sixrow/source-lock.json",
+    "source_lock_sha256": "9ef57a14ac50a381d9cddbc301df2c16cbc4ad77ae357957fa935905434ffdd7",
+    "apkbuild": "files/lmi-weston-sixrow/APKBUILD",
+    "apkbuild_sha256": "bd38ca8a2b22521e8bfcbc3a3ca0ae49b69771c071a81f20c1c2613f3f1d988b",
+    "verification_sources": [
+      {
+        "path": "scripts/lmi_weston_sixrow/verify.py",
+        "sha256": "0d317ebef6d64cebe2eb2ec7053232d94b4dbaebba2af845d338bc6466eade96"
+      },
+      {
+        "path": "tests/lmi_weston_sixrow/test_static.py",
+        "sha256": "d076458921b7ea5f113f5a50a3925340fff33808436e835a33c833b51db24729"
+      }
+    ],
+    "build_method": "Two clean unprivileged aarch64 builds from the recorded offline pmbootstrap cache: apk.static under a single-uid user namespace materialized the same 199-package Alpine edge build root (aarch64 install scripts and triggers cannot exec without binfmt; the busybox applet farm and abuild group were replayed inside the guest), then proot -0 with PROOT_NO_SECCOMP=1 translated child execs through qemu-aarch64 11.0.2-r1 and abuild ran with -F -d against the hash-locked local Weston tarball and three patches. Both runs used SOURCE_DATE_EPOCH=1785283200 and ABUILD_LAST_COMMIT=uncommitted-sixrow-layout-r3.",
+    "signing_key": "pmos@local-6a5d38f2",
+    "signing_note": "Both APKs were signed during abuild with the readable canonical P2-track key pmos@local-6a5d38f2. All downstream consumers verify the payload SHA-256 whitelist below, not the signature."
+  },
+  "artifact": {
+    "path": ".work/sixrow-local-build-r3/packages/edge/aarch64/lmi-weston-sixrow-clients-14.0.2-r3.apk",
+    "sha256": "438ea5a527002bc3a671244cca9d8ae7708d006a2ce2d1227c2f2ecfcb0f01b5",
+    "compressed_size": 122611,
+    "installed_size": 335416,
+    "package_version": "14.0.2-r3",
+    "payload": {
+      "/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow": "139d98ce31f81cc66d4fb2797824954926fbbfcc1d07df9c93c25f97edf7d743",
+      "/usr/libexec/lmi-p2-d114/weston-terminal-sixrow": "6602f7ac8e0c11892eec1d9db0411397e95f704a1655b94e0885a1220962a8cf"
+    }
+  },
+  "elf": {
+    "class": "ELF64",
+    "endianness": "little",
+    "machine": "AArch64",
+    "type": "PIE",
+    "interpreter": "/lib/ld-musl-aarch64.so.1",
+    "required_sonames_present_in_recorded_d114_rootfs": true
+  },
+  "verification": {
+    "unit_tests": "12 tests: 11 passed, 1 skipped (tests/lmi_weston_sixrow; incl. official tarball fuzz-0 dry run and reproducible two-run r3 APK payload whitelist; the frozen r2 transient stage test takes its documented skip path because the superseded r2 APK was relocated to .work/sixrow-local-build/superseded-by-r3/)",
+    "official_tarball_sha256_and_sha512_verified": true,
+    "patches_applied_with_fuzz_zero": true,
+    "layout_and_shift_map_verified": true,
+    "paged_layout_fixed_rows_verified": true,
+    "reproducible_two_run_sha256_match": true,
+    "arrow_and_hide_keys_cairo_icons_verified": true,
+    "hide_key_collapsed_strip_verified": true,
+    "shift_chord_and_one_shot_verified": true,
+    "ctrl_tap_latch_and_hold_chord_verified": true,
+    "ctrl_space_nul_path_verified": true,
+    "long_press_magnifier_slide_select_verified": true,
+    "shared_physical_and_text_input_key_encoder_verified": true,
+    "normal_and_application_cursor_paths_verified": true,
+    "apk_content_whitelist_verified": true,
+    "stock_paths_overwritten": false,
+    "phone_connected_or_modified": false,
+    "persistent_install_performed": false,
+    "physical_touch_test_performed": false
+  },
+  "supersedes": {
+    "artifact": ".work/sixrow-local-build/packages/edge/aarch64/lmi-weston-sixrow-clients-14.0.2-r2.apk",
+    "sha256": "23756d255515757d67050ad25ca43d07863a6dec7be89136fa22f8f71ac7ac19",
+    "status": "SUPERSEDED_STATIC_ONLY_R2_PAGED_KEYBOARD"
+  },
+  "claim_limit": "This attests one exact local APK and its static checks. It does not prove runtime loading, physical key geometry, touch behavior, terminal byte semantics on the phone, persistence, or release readiness. Rebuilds may differ in package metadata or signature even when source inputs are unchanged."
+}

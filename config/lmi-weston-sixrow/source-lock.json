@@ -25,7 +25,7 @@
     },
     {
       "path": "files/lmi-weston-sixrow/0003-sixrow-paged-touch.patch",
-      "sha256": "2d920976ced378aea4490d65253c1211eb9e2accd726c417cdf14093d0b59a86"
+      "sha256": "2aa400a0ebc7414fa03c9a41285aa092259dbd1dd846466120d6765a08c4b2b5"
     }
   ],
   "install_paths": [

@@ -26,7 +26,7 @@
  	struct zwp_input_panel_v1 *input_panel;
  	struct zwp_input_method_v1 *input_method;
  	struct zwp_input_method_context_v1 *context;
-@@ -74,17 +76,20 @@
+@@ -74,17 +76,21 @@
  	keytype_space,
  	keytype_switch,
  	keytype_symbols,
@@ -39,7 +39,8 @@
 +	keytype_home,
 +	keytype_end,
 +	keytype_page_up,
-+	keytype_page_down
++	keytype_page_down,
++	keytype_hide
  };
  
  struct key {
@@ -48,7 +49,7 @@
  	char *label;
  	char *uppercase;
  	char *symbol;
-@@ -98,222 +103,213 @@
+@@ -98,222 +104,216 @@
  
  	uint32_t columns;
  	uint32_t rows;
@@ -77,20 +78,18 @@
 -	{ keytype_default, "-", "_", "_", 1 },
 -	{ keytype_default, "=", "+", "+", 1 },
 +/*
-+ * Two 11-column pages share fixed rows 0 (navigation), 4 (modifiers) and 5
-+ * (page tag + space); only rows 1-3 change when the page is switched.
++ * Two 11-column pages share fixed rows 0 (navigation), 4 (modifiers plus
++ * Home/End) and 5 (page tag + space + hide); only rows 1-3 change when the
++ * page is switched.
 + */
 +static const struct key letter_keys[] = {
 +	{ keytype_escape, "Esc", "Esc", "Esc", 1 },
-+	{ keytype_arrow_left, "←", "←", "←", 1 },
-+	{ keytype_arrow_up, "↑", "↑", "↑", 1 },
-+	{ keytype_arrow_down, "↓", "↓", "↓", 1 },
-+	{ keytype_arrow_right, "→", "→", "→", 1 },
-+	{ keytype_home, "Hom", "Hom", "Hom", 1 },
-+	{ keytype_end, "End", "End", "End", 1 },
++	{ keytype_arrow_left, "←", "←", "←", 2 },
++	{ keytype_arrow_up, "↑", "↑", "↑", 2 },
++	{ keytype_arrow_down, "↓", "↓", "↓", 2 },
++	{ keytype_arrow_right, "→", "→", "→", 2 },
 +	{ keytype_page_up, "PgU", "PgU", "PgU", 1 },
 +	{ keytype_page_down, "PgD", "PgD", "PgD", 1 },
-+	{ keytype_backspace, "Bksp", "Bksp", "Bksp", 2 },
  
  	{ keytype_default, "q", "Q", "Q", 1 },
  	{ keytype_default, "w", "W", "W", 1 },
@@ -104,7 +103,7 @@
  	{ keytype_default, "p", "P", "P", 1 },
 -	{ keytype_default, "[", "{", "{", 1 },
 -	{ keytype_default, "]", "}", "}", 1 },
-+	{ keytype_default, "/", "?", "?", 1 },
++	{ keytype_default, "-", "_", "_", 1 },
  
  	{ keytype_default, "a", "A", "A", 1 },
  	{ keytype_default, "s", "S", "S", 1 },
@@ -118,8 +117,9 @@
  	{ keytype_default, ";", ":", ":", 1 },
 -	{ keytype_default, "'", "\"", "\"", 1 },
 -	{ keytype_enter, "Enter", "Enter", "Enter", 1 },
-+	{ keytype_default, "-", "_", "_", 1 },
++	{ keytype_default, "\\", "|", "|", 1 },
  
++	{ keytype_switch, "Shift", "Shift", "Shift", 1 },
  	{ keytype_default, "z", "Z", "Z", 1 },
  	{ keytype_default, "x", "X", "X", 1 },
  	{ keytype_default, "c", "C", "C", 1 },
@@ -127,73 +127,28 @@
  	{ keytype_default, "b", "B", "B", 1 },
  	{ keytype_default, "n", "N", "N", 1 },
  	{ keytype_default, "m", "M", "M", 1 },
-+	{ keytype_default, "'", "\"", "\"", 1 },
- 	{ keytype_default, ",", "<", "<", 1 },
+-	{ keytype_default, ",", "<", "<", 1 },
 -	{ keytype_default, ".", ">", ">", 1 },
--	{ keytype_default, "/", "?", "?", 1 },
++	{ keytype_default, ".", ",", ",", 1 },
+ 	{ keytype_default, "/", "?", "?", 1 },
 -	{ keytype_default, "\\", "|", "|", 1 },
 -	{ keytype_switch, "Shift", "Shift", "Shift", 1 },
-+	{ keytype_default, ".", ">", ">", 2 },
-+
++	{ keytype_backspace, "Bksp", "Bksp", "Bksp", 1 },
+ 
 +	{ keytype_tab, "Tab", "Tab", "Tab", 2 },
 +	{ keytype_control, "Ctrl", "Ctrl", "Ctrl", 2 },
-+	{ keytype_switch, "Shift", "Shift", "Shift", 3 },
-+	{ keytype_enter, "Enter", "Enter", "Enter", 4 },
++	{ keytype_home, "Hom", "Hom", "Hom", 2 },
++	{ keytype_end, "End", "End", "End", 2 },
++	{ keytype_enter, "Enter", "Enter", "Enter", 3 },
 +
 +	{ keytype_symbols, "ABC/#&", "ABC/#&", "ABC/#&", 2 },
-+	{ keytype_space, "Space", "Space", "Space", 9 }
-+};
- 
--	{ keytype_space, "Space", "Space", "Space", 8 },
-+static const struct key symbol_keys[] = {
-+	{ keytype_escape, "Esc", "Esc", "Esc", 1 },
- 	{ keytype_arrow_left, "←", "←", "←", 1 },
- 	{ keytype_arrow_up, "↑", "↑", "↑", 1 },
- 	{ keytype_arrow_down, "↓", "↓", "↓", 1 },
+ 	{ keytype_space, "Space", "Space", "Space", 8 },
+-	{ keytype_arrow_left, "←", "←", "←", 1 },
+-	{ keytype_arrow_up, "↑", "↑", "↑", 1 },
+-	{ keytype_arrow_down, "↓", "↓", "↓", 1 },
 -	{ keytype_arrow_right, "→", "→", "→", 1 }
--};
-+	{ keytype_arrow_right, "→", "→", "→", 1 },
-+	{ keytype_home, "Hom", "Hom", "Hom", 1 },
-+	{ keytype_end, "End", "End", "End", 1 },
-+	{ keytype_page_up, "PgU", "PgU", "PgU", 1 },
-+	{ keytype_page_down, "PgD", "PgD", "PgD", 1 },
-+	{ keytype_backspace, "Bksp", "Bksp", "Bksp", 2 },
-+
-+	{ keytype_default, "1", "1", "1", 1 },
-+	{ keytype_default, "2", "2", "2", 1 },
-+	{ keytype_default, "3", "3", "3", 1 },
-+	{ keytype_default, "4", "4", "4", 1 },
-+	{ keytype_default, "5", "5", "5", 1 },
-+	{ keytype_default, "6", "6", "6", 1 },
-+	{ keytype_default, "7", "7", "7", 1 },
-+	{ keytype_default, "8", "8", "8", 1 },
-+	{ keytype_default, "9", "9", "9", 1 },
-+	{ keytype_default, "0", "0", "0", 1 },
-+	{ keytype_default, "_", "_", "_", 1 },
-+
-+	{ keytype_default, "~", "~", "~", 1 },
-+	{ keytype_default, "!", "!", "!", 1 },
-+	{ keytype_default, "@", "@", "@", 1 },
-+	{ keytype_default, "#", "#", "#", 1 },
-+	{ keytype_default, "$", "$", "$", 1 },
-+	{ keytype_default, "%", "%", "%", 1 },
-+	{ keytype_default, "^", "^", "^", 1 },
-+	{ keytype_default, "&", "&", "&", 1 },
-+	{ keytype_default, "*", "*", "*", 1 },
-+	{ keytype_default, "`", "`", "`", 1 },
-+	{ keytype_default, "|", "|", "|", 1 },
-+
-+	{ keytype_default, "(", "(", "(", 1 },
-+	{ keytype_default, ")", ")", ")", 1 },
-+	{ keytype_default, "[", "[", "[", 1 },
-+	{ keytype_default, "]", "]", "]", 1 },
-+	{ keytype_default, "{", "{", "{", 1 },
-+	{ keytype_default, "}", "}", "}", 1 },
-+	{ keytype_default, "\\", "\\", "\\", 1 },
-+	{ keytype_default, "=", "=", "=", 1 },
-+	{ keytype_default, "+", "+", "+", 1 },
-+	{ keytype_default, "&&", "&&", "&&", 1 },
-+	{ keytype_default, "||", "||", "||", 1 },
++	{ keytype_hide, "Hide", "Hide", "Hide", 1 }
+ };
  
 -static const struct key numeric_keys[] = {
 -	{ keytype_default, "1", "1", "1", 1},
@@ -216,10 +171,50 @@
 -	{ keytype_arrow_down, "\\/", "\\/", "\\/", 1},
 -	{ keytype_style, "", "", "", 2}
 -};
-+	{ keytype_tab, "Tab", "Tab", "Tab", 2 },
-+	{ keytype_control, "Ctrl", "Ctrl", "Ctrl", 2 },
-+	{ keytype_switch, "Shift", "Shift", "Shift", 3 },
-+	{ keytype_enter, "Enter", "Enter", "Enter", 4 },
++static const struct key symbol_keys[] = {
++	{ keytype_escape, "Esc", "Esc", "Esc", 1 },
++	{ keytype_arrow_left, "←", "←", "←", 2 },
++	{ keytype_arrow_up, "↑", "↑", "↑", 2 },
++	{ keytype_arrow_down, "↓", "↓", "↓", 2 },
++	{ keytype_arrow_right, "→", "→", "→", 2 },
++	{ keytype_page_up, "PgU", "PgU", "PgU", 1 },
++	{ keytype_page_down, "PgD", "PgD", "PgD", 1 },
++
++	{ keytype_default, "1", "1", "1", 1 },
++	{ keytype_default, "2", "2", "2", 1 },
++	{ keytype_default, "3", "3", "3", 1 },
++	{ keytype_default, "4", "4", "4", 1 },
++	{ keytype_default, "5", "5", "5", 1 },
++	{ keytype_default, "6", "6", "6", 1 },
++	{ keytype_default, "7", "7", "7", 1 },
++	{ keytype_default, "8", "8", "8", 1 },
++	{ keytype_default, "9", "9", "9", 1 },
++	{ keytype_default, "0", "0", "0", 1 },
++	{ keytype_default, "'", "'", "'", 1 },
++
++	{ keytype_default, "~", "~", "~", 1 },
++	{ keytype_default, "!", "!", "!", 1 },
++	{ keytype_default, "@", "@", "@", 1 },
++	{ keytype_default, "#", "#", "#", 1 },
++	{ keytype_default, "$", "$", "$", 1 },
++	{ keytype_default, "%", "%", "%", 1 },
++	{ keytype_default, "^", "^", "^", 1 },
++	{ keytype_default, "&", "&", "&", 1 },
++	{ keytype_default, "*", "*", "*", 1 },
++	{ keytype_default, "`", "`", "`", 1 },
++	{ keytype_default, "\"", "\"", "\"", 1 },
++
++	{ keytype_default, "(", "(", "(", 1 },
++	{ keytype_default, ")", ")", ")", 1 },
++	{ keytype_default, "[", "[", "[", 1 },
++	{ keytype_default, "]", "]", "]", 1 },
++	{ keytype_default, "{", "{", "{", 1 },
++	{ keytype_default, "}", "}", "}", 1 },
++	{ keytype_default, "\\", "\\", "\\", 1 },
++	{ keytype_default, "=", "=", "=", 1 },
++	{ keytype_default, "+", "+", "+", 1 },
++	{ keytype_default, "<", "<", "<", 1 },
++	{ keytype_default, ">", ">", ">", 1 },
  
 -static const struct key arabic_keys[] = {
 -	{ keytype_default, "ض", "ﹶ", "۱", 1},
@@ -267,11 +262,18 @@
 -	{ keytype_default, ".", "ذ", "]", 1},
 -	{ keytype_default, "ط", "ﺝ", "[", 1},
 -	{ keytype_style, "", "", "", 2}
-+	{ keytype_symbols, "ABC/#&", "ABC/#&", "ABC/#&", 2 },
-+	{ keytype_space, "Space", "Space", "Space", 9 }
- };
+-};
++	{ keytype_tab, "Tab", "Tab", "Tab", 2 },
++	{ keytype_control, "Ctrl", "Ctrl", "Ctrl", 2 },
++	{ keytype_home, "Hom", "Hom", "Hom", 2 },
++	{ keytype_end, "End", "End", "End", 2 },
++	{ keytype_enter, "Enter", "Enter", "Enter", 3 },
  
--
++	{ keytype_symbols, "ABC/#&", "ABC/#&", "ABC/#&", 2 },
++	{ keytype_space, "Space", "Space", "Space", 8 },
++	{ keytype_hide, "Hide", "Hide", "Hide", 1 }
++};
+ 
 -static const struct layout normal_layout = {
 -	normal_keys,
 -	sizeof(normal_keys) / sizeof(*normal_keys),
@@ -351,6 +353,8 @@
 +#define LONG_PRESS_USEC 350000
 +#define TOUCH_ID_NONE (-1)
 +#define TOUCH_ID_POINTER (-2)
++/* width, in key units, of the collapsed tap-to-restore strip */
++#define HIDDEN_COLUMNS 2
 +
 +struct touch_slot {
 +	bool active;
@@ -367,6 +371,7 @@
  	enum keyboard_state state;
  	bool control_latched;
 +	bool symbols_page;
++	bool hidden;
 +
 +	/* multi-touch chording state for the two modifier keys */
 +	int32_t shift_touch_id;
@@ -392,7 +397,7 @@
  #ifdef DEBUG
  	va_list argp;
  
-@@ -322,88 +318,256 @@
+@@ -322,88 +322,330 @@
  	va_end(argp);
  #endif
  }
@@ -446,9 +451,8 @@
 +		col -= layout->keys[i].width;
 +		if (col < 0)
 +			return (int)i;
- 	}
- 
--	return "";
++	}
++
 +	return -1;
 +}
 +
@@ -551,6 +555,71 @@
 +	cairo_line_to(cr, x + half, y + h - 4);
 +	cairo_set_line_width(cr, 1);
 +	cairo_stroke(cr);
++}
++
++/*
++ * The phone's fallback fonts may lack the U+2190..U+2193 arrow glyphs, so
++ * the arrow and hide keys are drawn with cairo primitives instead of text.
++ */
++static bool
++key_uses_icon(const struct key *key)
++{
++	switch (key->key_type) {
++	case keytype_arrow_up:
++	case keytype_arrow_down:
++	case keytype_arrow_left:
++	case keytype_arrow_right:
++	case keytype_hide:
++		return true;
++	default:
++		return false;
++	}
++}
++
++static void
++draw_key_icon(const struct key *key, cairo_t *cr,
++	      double x, double y, double w, double h)
++{
++	double cx = x + w / 2, cy = y + h / 2;
++	double r = (w < h ? w : h) * 0.30;
++	double dx = 0, dy = 0, px, py, bx, by;
++
++	if (key->key_type == keytype_hide) {
++		/* dismiss icon: a bar over a down chevron */
++		cairo_set_line_width(cr, 3);
++		cairo_move_to(cr, cx - r, cy - r * 0.9);
++		cairo_line_to(cr, cx + r, cy - r * 0.9);
++		cairo_stroke(cr);
++		cairo_move_to(cr, cx - r, cy - r * 0.1);
++		cairo_line_to(cr, cx, cy + r);
++		cairo_line_to(cr, cx + r, cy - r * 0.1);
++		cairo_stroke(cr);
++		return;
+ 	}
+ 
+-	return "";
++	switch (key->key_type) {
++	case keytype_arrow_left: dx = -1; break;
++	case keytype_arrow_right: dx = 1; break;
++	case keytype_arrow_up: dy = -1; break;
++	case keytype_arrow_down: dy = 1; break;
++	default: return;
++	}
++
++	bx = cx + dx * r * 0.2;
++	by = cy + dy * r * 0.2;
++	cairo_set_line_width(cr, 4);
++	cairo_move_to(cr, cx - dx * r, cy - dy * r);
++	cairo_line_to(cr, bx, by);
++	cairo_stroke(cr);
++
++	px = -dy;
++	py = dx;
++	cairo_move_to(cr, cx + dx * r, cy + dy * r);
++	cairo_line_to(cr, bx + px * r * 0.7, by + py * r * 0.7);
++	cairo_line_to(cr, bx - px * r * 0.7, by - py * r * 0.7);
++	cairo_close_path(cr);
++	cairo_fill(cr);
  }
  
  static void
@@ -607,6 +676,12 @@
 +		return;
 +	}
 +
++	if (key_uses_icon(key)) {
++		draw_key_icon(key, cr, x, y, w, h);
++		cairo_restore(cr);
++		return;
++	}
++
  	label = label_from_key(keyboard, key);
  	cairo_text_extents(cr, label, &extents);
 -
@@ -640,7 +715,6 @@
 -				return &arabic_layout;
 -			else
 -				return &normal_layout;
--	}
 +	const struct key *key;
 +	const char *label;
 +	cairo_text_extents_t extents;
@@ -673,14 +747,18 @@
 +	cairo_set_line_width(cr, 3);
 +	cairo_stroke(cr);
 +
-+	label = label_from_key(keyboard, key);
 +	cairo_set_font_size(cr, 26);
 +	cairo_set_source_rgb(cr, 0, 0, 0);
-+	cairo_text_extents(cr, label, &extents);
-+	cairo_move_to(cr,
-+		      x + (w - extents.width) / 2 - extents.x_bearing,
-+		      y + (h - extents.height) / 2 - extents.y_bearing);
-+	cairo_show_text(cr, label);
++	if (key_uses_icon(key)) {
++		draw_key_icon(key, cr, x, y, w, h);
++	} else {
++		label = label_from_key(keyboard, key);
++		cairo_text_extents(cr, label, &extents);
++		cairo_move_to(cr,
++			      x + (w - extents.width) / 2 - extents.x_bearing,
++			      y + (h - extents.height) / 2 - extents.y_bearing);
++		cairo_show_text(cr, label);
+ 	}
 +	cairo_restore(cr);
  }
  
@@ -690,13 +768,41 @@
  	struct keyboard *keyboard = data;
  	cairo_surface_t *surface;
  	struct rectangle allocation;
-@@ -431,24 +595,27 @@
+@@ -429,37 +671,89 @@
+ 
+ 	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
  	cairo_set_source_rgba(cr, 1, 1, 1, 0.75);
  	cairo_rectangle(cr, 0, 0, layout->columns * key_width, layout->rows * key_height);
  	cairo_paint(cr);
  
  	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
  
++	if (keyboard->hidden) {
++		/* collapsed strip: one key that restores the keyboard */
++		double w = HIDDEN_COLUMNS * key_width - 2 * key_margin;
++		double h = key_height - 2 * key_margin;
++		double cx = key_margin + w / 2, cy = key_margin + h / 2;
++		double r = h * 0.30;
++
++		cairo_set_source_rgb(cr, 0, 0, 0);
++		cairo_rectangle(cr, key_margin, key_margin, w, h);
++		cairo_set_line_width(cr, 2);
++		cairo_stroke(cr);
++		/* restore icon: an up chevron under a bar */
++		cairo_set_line_width(cr, 3);
++		cairo_move_to(cr, cx - r, cy - r * 0.9);
++		cairo_line_to(cr, cx + r, cy - r * 0.9);
++		cairo_stroke(cr);
++		cairo_move_to(cr, cx - r, cy + r);
++		cairo_line_to(cr, cx, cy - r * 0.1);
++		cairo_line_to(cr, cx + r, cy + r);
++		cairo_stroke(cr);
++
++		cairo_destroy(cr);
++		cairo_surface_destroy(surface);
++		return;
++	}
++
  	for (i = 0; i < layout->count; ++i) {
  		cairo_set_source_rgb(cr, 0, 0, 0);
 -		draw_key(keyboard, &layout->keys[i], cr, row, col);
@@ -719,7 +825,41 @@
  resize_handler(struct widget *widget,
  	       int32_t width, int32_t height, void *data)
  {
-@@ -575,289 +742,422 @@
+ 	/* struct keyboard *keyboard = data; */
+ }
+ 
++static void
++keyboard_set_hidden(struct keyboard *keyboard, bool hidden)
++{
++	const struct layout *layout = get_current_layout(keyboard->keyboard);
++
++	keyboard->hidden = hidden;
++	toytimer_disarm(&keyboard->longpress_timer);
++	keyboard->longpress_slot = -1;
++	magnifier_dismiss(keyboard);
++	memset(keyboard->touches, 0, sizeof keyboard->touches);
++	if (hidden)
++		window_schedule_resize(keyboard->window,
++				       (int)(HIDDEN_COLUMNS * key_width *
++					     keyboard_scale_x + 0.5),
++				       (int)(key_height * keyboard_scale_y +
++					     0.5));
++	else
++		window_schedule_resize(keyboard->window,
++				       keyboard_width(layout),
++				       keyboard_height(layout));
++	widget_schedule_redraw(keyboard->widget);
++}
++
+ static char *
+ insert_text(const char *text, uint32_t offset, const char *insert)
+ {
+ 	int tlen = strlen(text), ilen = strlen(insert);
+ 	char *new_text = xmalloc(tlen + ilen + 1);
+ 
+ 	memcpy(new_text, text, offset);
+ 	memcpy(new_text + offset, insert, ilen);
+@@ -575,289 +869,437 @@
  	s = xrealloc(s1, len1 + len2 + 1);
  	memcpy(s + len1, s2, len2);
  	s[len1 + len2] = '\0';
@@ -1005,6 +1145,10 @@
 +			break;
 +		case keytype_page_down:
 +			keysym = XKB_KEY_Page_Down;
++			break;
++		case keytype_hide:
++			if (state == WL_POINTER_BUTTON_STATE_PRESSED)
++				keyboard_set_hidden(keyboard, true);
  			break;
 -		case keytype_style:
 -			if (state != WL_POINTER_BUTTON_STATE_PRESSED)
@@ -1063,6 +1207,12 @@
  		return;
  	}
  
++	if (keyboard->hidden) {
++		if (state == WL_POINTER_BUTTON_STATE_PRESSED)
++			keyboard_set_hidden(keyboard, false);
++		return;
++	}
++
  	input_get_position(input, &x, &y);
  
  	widget_get_allocation(keyboard->widget, &allocation);
@@ -1124,11 +1274,15 @@
 -	int row, col;
 -	unsigned int i;
 -	const struct layout *layout;
--
--	layout = get_current_layout(keyboard->keyboard);
 +	struct touch_slot *slot;
 +	const struct key *key;
 +	int index;
+ 
+-	layout = get_current_layout(keyboard->keyboard);
++	if (keyboard->hidden) {
++		keyboard_set_hidden(keyboard, false);
++		return;
++	}
  
  	widget_get_allocation(keyboard->widget, &allocation);
 +	index = key_index_from_position(layout,
@@ -1260,14 +1414,14 @@
 +	slot->active = false;
 +	widget_schedule_redraw(keyboard->widget);
 +}
- 
--  touch_handler(input, time, x, y,
--		WL_POINTER_BUTTON_STATE_RELEASED, data);
++
 +static void
 +touch_cancel_handler(struct widget *widget, struct input *input, void *data)
 +{
 +	struct keyboard *keyboard = data;
-+
+ 
+-  touch_handler(input, time, x, y,
+-		WL_POINTER_BUTTON_STATE_RELEASED, data);
 +	if (keyboard->shift_touch_id >= 0)
 +		shift_release(keyboard);
 +	if (keyboard->ctrl_touch_id >= 0)
@@ -1285,7 +1439,7 @@
  			const char *text,
  			uint32_t cursor,
  			uint32_t anchor)
-@@ -970,16 +1270,25 @@
+@@ -970,16 +1412,27 @@
  		      struct zwp_input_method_context_v1 *context)
  {
  	struct virtual_keyboard *keyboard = data;
@@ -1294,6 +1448,8 @@
  
  	keyboard->keyboard->state = KEYBOARD_STATE_DEFAULT;
  	keyboard->keyboard->control_latched = false;
++	/* a new activation always restores the collapsed keyboard */
++	keyboard->keyboard->hidden = false;
 +	keyboard->keyboard->shift_touch_id = TOUCH_ID_NONE;
 +	keyboard->keyboard->shift_chorded = false;
 +	keyboard->keyboard->ctrl_touch_id = TOUCH_ID_NONE;
@@ -1311,7 +1467,7 @@
  		free(keyboard->preedit_string);
  
  	keyboard->preedit_string = strdup("");
-@@ -1099,32 +1408,40 @@
+@@ -1099,32 +1552,40 @@
  	const struct layout *layout;
  
  	layout = get_current_layout(virtual_keyboard);
@@ -1352,7 +1508,7 @@
  	display_set_output_configure_handler(virtual_keyboard->display,
  					     display_output_handler);
  }
-@@ -1136,16 +1453,17 @@
+@@ -1136,16 +1597,17 @@
  		zwp_input_panel_surface_v1_destroy(virtual_keyboard->ips);
  
  	if (virtual_keyboard->input_panel)
