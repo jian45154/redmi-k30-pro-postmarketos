@@ -27,9 +27,15 @@ import signal
 import stat
 import struct
 import subprocess
+import sys
 import tempfile
 import time
 from typing import Any, BinaryIO, Callable, Mapping, Sequence
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from scripts.lmi_p2_d114 import fastboot_transcript
 
 
 REPO = Path(__file__).resolve().parents[2]
@@ -1140,17 +1146,14 @@ def _strict_devices(result: CommandResult) -> str:
         text = result.stdout.decode("ascii")
     except UnicodeDecodeError:
         raise DeployError("fastboot devices output is not ASCII") from None
-    match = re.fullmatch(
-        r"([A-Za-z0-9._:-]{1,128})(?:\tfastboot(?:\n|\r\n)|\t fastboot(?:\n\n|\r\n\r\n))",
-        text,
-    )
-    if match is None:
+    serial = fastboot_transcript.parse_devices(text)
+    if serial is None:
         raise DeployError("exactly one bootloader-mode fastboot device is required")
-    return match.group(1)
+    return serial
 
 
 def _finished_pattern() -> str:
-    return r"Finished\. Total time: [0-9]+(?:\.[0-9]+)?s\r?\n?"
+    return fastboot_transcript.finished_footer_pattern()
 
 
 def _strict_getvar(name: str, result: CommandResult, *, allow_unsupported: bool = False) -> tuple[str | None, bool]:
@@ -1160,19 +1163,9 @@ def _strict_getvar(name: str, result: CommandResult, *, allow_unsupported: bool 
         text = result.stderr.decode("ascii")
     except UnicodeDecodeError:
         raise DeployError(f"getvar:{name} stderr is not ASCII") from None
-    success = re.fullmatch(
-        rf"(?:\(bootloader\) )?{re.escape(name)}: ([^\r\n]+)\r?\n{_finished_pattern()}",
-        text,
-    )
-    if result.returncode == 0 and success is not None:
-        return success.group(1), False
-    if allow_unsupported:
-        unsupported = re.fullmatch(
-            rf"getvar:{re.escape(name)}[ \t]+FAILED \(remote: 'GetVar Variable Not found'\)\r?\n{_finished_pattern()}",
-            text,
-        )
-        if result.returncode == 0 and unsupported is not None:
-            return None, True
+    parsed = fastboot_transcript.parse_getvar(name, text, allow_unsupported=allow_unsupported)
+    if result.returncode == 0 and parsed is not None:
+        return parsed
     raise DeployError(f"getvar:{name} output shape or exit status mismatch")
 
 
@@ -1487,40 +1480,10 @@ def _transport_completed(result: CommandResult) -> bool:
         or result.timed_out
         or result.output_limited
         or result.returncode != 0
-        or result.stdout != b""
     ):
         return False
-    try:
-        lines = result.stderr.decode("ascii").splitlines()
-    except UnicodeDecodeError:
-        return False
-    if not lines or re.fullmatch(r"Finished\. Total time: [0-9]+(?:\.[0-9]+)?s", lines[-1]) is None:
-        return False
-    sending = re.compile(
-        r"Sending sparse 'userdata'(?: (?P<index>[0-9]+)/(?P<total>[0-9]+))? \([0-9]+ KB\)[ .]*OKAY \[[ ]*[0-9]+(?:\.[0-9]+)?s\]"
-    )
-    writing = re.compile(
-        r"Writing 'userdata'[ .]*OKAY \[[ ]*[0-9]+(?:\.[0-9]+)?s\]"
-    )
-    body = lines[:-1]
-    if len(body) < 2 or len(body) % 2:
-        return False
-    matches: list[re.Match[str]] = []
-    for index in range(0, len(body), 2):
-        match = sending.fullmatch(body[index])
-        if match is None or writing.fullmatch(body[index + 1]) is None:
-            return False
-        matches.append(match)
-    fractions = [(match.group("index"), match.group("total")) for match in matches]
-    if all(index is None and total is None for index, total in fractions):
-        return len(matches) == 1
-    if any(index is None or total is None for index, total in fractions):
-        return False
-    totals = {int(total) for _index, total in fractions if total is not None}
-    if len(totals) != 1:
-        return False
-    total = totals.pop()
-    return total == len(matches) and [int(index) for index, _total in fractions if index is not None] == list(range(1, total + 1))
+    classification = fastboot_transcript.classify(result.stdout, result.stderr)
+    return classification.outcome is fastboot_transcript.Outcome.COMPLETED
 
 
 def _validate_approval(
