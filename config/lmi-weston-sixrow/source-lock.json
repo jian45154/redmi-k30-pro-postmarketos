@@ -25,7 +25,7 @@
     },
     {
       "path": "files/lmi-weston-sixrow/0003-sixrow-paged-touch.patch",
-      "sha256": "2d920976ced378aea4490d65253c1211eb9e2accd726c417cdf14093d0b59a86"
+      "sha256": "8052a88d68d655d3230f7a1215b6bfa170a7c13027f8b57a5c0a5e73867c9e3e"
     },
     {
       "path": "files/lmi-weston-sixrow/0004-terminal-touch-scrollback.patch",
