@@ -51,17 +51,26 @@ class SessionModulePinTests(unittest.TestCase):
     def test_stage_script_keeps_isolated_interpreter_and_fd3_serial_protocol(self) -> None:
         script = STAGE_SCRIPT.read_text(encoding="utf-8")
         self.assertIn(
-            '/usr/bin/python3 -I -S -B "$session_module" device-identity '
+            '/usr/bin/python3 -I -S -B "$session_module_exec" device-identity '
             '"$privacy_nonce" "$expected_identity" "$historical_fingerprint" '
             '3<<< "$device_serial"',
             script,
         )
         for line in script.splitlines():
-            if "$session_module" in line and "python3" in line:
+            if "$session_module_exec" in line and "python3" in line:
                 self.assertIn("/usr/bin/python3 -I -S -B", line)
                 # The raw serial must never be an argv item; it is only ever
                 # attached via the fd-3 herestring redirection.
                 self.assertNotIn("$device_serial", line.split("3<<<")[0])
+        self.assertNotIn(
+            '/usr/bin/python3 -I -S -B "$session_module" ',
+            script,
+        )
+        self.assertIn('exec 9<"$session_module"', script)
+        self.assertIn(
+            "readonly session_module_exec=/proc/self/fd/$session_module_fd",
+            script,
+        )
         # The module pin is captured in the main flow before the first module
         # invocation (capture_helper_identity).
         self.assertLess(
