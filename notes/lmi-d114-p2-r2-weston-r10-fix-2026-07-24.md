@@ -1,7 +1,7 @@
 # D114 P2 r2 — weston r10 black-screen fix (2026-07-24)
 
 ## ✅ CONFIRMED WORKING ON DEVICE (2026-07-24)
-Flashed the r10 userdata to the phone (serial <device-serial>, sparse `77ff1993`,
+Flashed the r10 userdata to the phone (serial `<device-serial>`, sparse `77ff1993`,
 fastboot exit 0), verified the r10 `.so`s on-disk from the initramfs debug shell,
 then RAM-booted the D110 boot (`2b264d64`, cmdline `d4f78f7d`/`f8eb7c4b`) via the
 sanctioned `scripts/72_stage_downstream_ssh_wifi_test.sh --stage ramboot`
