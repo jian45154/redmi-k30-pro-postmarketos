@@ -16,8 +16,8 @@ class SixRowTransientStageTests(unittest.TestCase):
     def setUp(self) -> None:
         self.artifact = (
             transient.REPO
-            / ".work/pmbootstrap-sixrow/packages/edge/aarch64/"
-            "lmi-weston-sixrow-clients-14.0.2-r1.apk"
+            / ".work/sixrow-local-build/packages/edge/aarch64/"
+            "lmi-weston-sixrow-clients-14.0.2-r2.apk"
         )
 
     def _render_components(self) -> tuple[str, str, str, str]:
@@ -93,7 +93,7 @@ class SixRowTransientStageTests(unittest.TestCase):
 
         self.assertIn("export HOME=$stage/home", candidate)
         self.assertIn("export XDG_STATE_HOME=$stage/state", candidate)
-        self.assertIn("wayland-lmi-sixrow-r1", candidate)
+        self.assertIn("wayland-lmi-sixrow-r2", candidate)
         self.assertIn(
             f"{transient.REMOTE_ROOT}/weston-keyboard-sixrow", candidate
         )
@@ -267,7 +267,7 @@ class SixRowTransientStageTests(unittest.TestCase):
 
     def test_exact_artifact_stage_and_atomic_failure_cleanup(self) -> None:
         if not self.artifact.exists():
-            self.skipTest("attested local r1 APK is not present")
+            self.skipTest("attested local r2 APK is not present")
         with tempfile.TemporaryDirectory(prefix="lmi-sixrow-stage-test-") as temp:
             root = Path(temp)
             output = root / "stage"
@@ -279,8 +279,8 @@ class SixRowTransientStageTests(unittest.TestCase):
             self.assertIs(manifest["execution_enabled"], False)
             self.assertEqual(
                 manifest["apk"]["path"],
-                ".work/pmbootstrap-sixrow/packages/edge/aarch64/"
-                "lmi-weston-sixrow-clients-14.0.2-r1.apk",
+                ".work/sixrow-local-build/packages/edge/aarch64/"
+                "lmi-weston-sixrow-clients-14.0.2-r2.apk",
             )
             self.assertNotIn(str(transient.REPO), json.dumps(manifest))
             self.assertEqual(

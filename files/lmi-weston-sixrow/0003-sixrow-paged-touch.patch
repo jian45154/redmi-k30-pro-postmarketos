@@ -1,0 +1,1372 @@
+--- a/clients/keyboard.c
++++ b/clients/keyboard.c
+@@ -25,23 +25,25 @@
+ #include "config.h"
+ 
+ #include <stdbool.h>
+ #include <stdint.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <errno.h>
++#include <time.h>
+ 
+ #include <linux/input.h>
+ #include <cairo.h>
+ 
+ #include "window.h"
+ #include "input-method-unstable-v1-client-protocol.h"
+ #include "text-input-unstable-v1-client-protocol.h"
++#include "shared/helpers.h"
+ #include "shared/xalloc.h"
+ 
+ struct keyboard;
+ 
+ struct virtual_keyboard {
+ 	struct zwp_input_panel_v1 *input_panel;
+ 	struct zwp_input_method_v1 *input_method;
+ 	struct zwp_input_method_context_v1 *context;
+@@ -74,17 +76,20 @@
+ 	keytype_space,
+ 	keytype_switch,
+ 	keytype_symbols,
+ 	keytype_tab,
+ 	keytype_arrow_up,
+ 	keytype_arrow_left,
+ 	keytype_arrow_right,
+ 	keytype_arrow_down,
+-	keytype_style
++	keytype_home,
++	keytype_end,
++	keytype_page_up,
++	keytype_page_down
+ };
+ 
+ struct key {
+ 	enum key_type key_type;
+ 
+ 	char *label;
+ 	char *uppercase;
+ 	char *symbol;
+@@ -98,222 +103,213 @@
+ 
+ 	uint32_t columns;
+ 	uint32_t rows;
+ 
+ 	const char *language;
+ 	uint32_t text_direction;
+ };
+ 
+-static const struct key normal_keys[] = {
+-	{ keytype_escape, "Esc", "Esc", "Esc", 2 },
+-	{ keytype_tab, "Tab", "Tab", "Tab", 2 },
+-	{ keytype_control, "Ctrl", "Ctrl", "Ctrl", 2 },
+-	{ keytype_switch, "Shift", "Shift", "Shift", 2 },
+-	{ keytype_backspace, "Backspace", "Backspace", "Backspace", 4 },
+-
+-	{ keytype_default, "1", "!", "!", 1 },
+-	{ keytype_default, "2", "@", "@", 1 },
+-	{ keytype_default, "3", "#", "#", 1 },
+-	{ keytype_default, "4", "$", "$", 1 },
+-	{ keytype_default, "5", "%", "%", 1 },
+-	{ keytype_default, "6", "^", "^", 1 },
+-	{ keytype_default, "7", "&", "&", 1 },
+-	{ keytype_default, "8", "*", "*", 1 },
+-	{ keytype_default, "9", "(", "(", 1 },
+-	{ keytype_default, "0", ")", ")", 1 },
+-	{ keytype_default, "-", "_", "_", 1 },
+-	{ keytype_default, "=", "+", "+", 1 },
++/*
++ * Two 11-column pages share fixed rows 0 (navigation), 4 (modifiers) and 5
++ * (page tag + space); only rows 1-3 change when the page is switched.
++ */
++static const struct key letter_keys[] = {
++	{ keytype_escape, "Esc", "Esc", "Esc", 1 },
++	{ keytype_arrow_left, "←", "←", "←", 1 },
++	{ keytype_arrow_up, "↑", "↑", "↑", 1 },
++	{ keytype_arrow_down, "↓", "↓", "↓", 1 },
++	{ keytype_arrow_right, "→", "→", "→", 1 },
++	{ keytype_home, "Hom", "Hom", "Hom", 1 },
++	{ keytype_end, "End", "End", "End", 1 },
++	{ keytype_page_up, "PgU", "PgU", "PgU", 1 },
++	{ keytype_page_down, "PgD", "PgD", "PgD", 1 },
++	{ keytype_backspace, "Bksp", "Bksp", "Bksp", 2 },
+ 
+ 	{ keytype_default, "q", "Q", "Q", 1 },
+ 	{ keytype_default, "w", "W", "W", 1 },
+ 	{ keytype_default, "e", "E", "E", 1 },
+ 	{ keytype_default, "r", "R", "R", 1 },
+ 	{ keytype_default, "t", "T", "T", 1 },
+ 	{ keytype_default, "y", "Y", "Y", 1 },
+ 	{ keytype_default, "u", "U", "U", 1 },
+ 	{ keytype_default, "i", "I", "I", 1 },
+ 	{ keytype_default, "o", "O", "O", 1 },
+ 	{ keytype_default, "p", "P", "P", 1 },
+-	{ keytype_default, "[", "{", "{", 1 },
+-	{ keytype_default, "]", "}", "}", 1 },
++	{ keytype_default, "/", "?", "?", 1 },
+ 
+ 	{ keytype_default, "a", "A", "A", 1 },
+ 	{ keytype_default, "s", "S", "S", 1 },
+ 	{ keytype_default, "d", "D", "D", 1 },
+ 	{ keytype_default, "f", "F", "F", 1 },
+ 	{ keytype_default, "g", "G", "G", 1 },
+ 	{ keytype_default, "h", "H", "H", 1 },
+ 	{ keytype_default, "j", "J", "J", 1 },
+ 	{ keytype_default, "k", "K", "K", 1 },
+ 	{ keytype_default, "l", "L", "L", 1 },
+ 	{ keytype_default, ";", ":", ":", 1 },
+-	{ keytype_default, "'", "\"", "\"", 1 },
+-	{ keytype_enter, "Enter", "Enter", "Enter", 1 },
++	{ keytype_default, "-", "_", "_", 1 },
+ 
+ 	{ keytype_default, "z", "Z", "Z", 1 },
+ 	{ keytype_default, "x", "X", "X", 1 },
+ 	{ keytype_default, "c", "C", "C", 1 },
+ 	{ keytype_default, "v", "V", "V", 1 },
+ 	{ keytype_default, "b", "B", "B", 1 },
+ 	{ keytype_default, "n", "N", "N", 1 },
+ 	{ keytype_default, "m", "M", "M", 1 },
++	{ keytype_default, "'", "\"", "\"", 1 },
+ 	{ keytype_default, ",", "<", "<", 1 },
+-	{ keytype_default, ".", ">", ">", 1 },
+-	{ keytype_default, "/", "?", "?", 1 },
+-	{ keytype_default, "\\", "|", "|", 1 },
+-	{ keytype_switch, "Shift", "Shift", "Shift", 1 },
++	{ keytype_default, ".", ">", ">", 2 },
++
++	{ keytype_tab, "Tab", "Tab", "Tab", 2 },
++	{ keytype_control, "Ctrl", "Ctrl", "Ctrl", 2 },
++	{ keytype_switch, "Shift", "Shift", "Shift", 3 },
++	{ keytype_enter, "Enter", "Enter", "Enter", 4 },
++
++	{ keytype_symbols, "ABC/#&", "ABC/#&", "ABC/#&", 2 },
++	{ keytype_space, "Space", "Space", "Space", 9 }
++};
+ 
+-	{ keytype_space, "Space", "Space", "Space", 8 },
++static const struct key symbol_keys[] = {
++	{ keytype_escape, "Esc", "Esc", "Esc", 1 },
+ 	{ keytype_arrow_left, "←", "←", "←", 1 },
+ 	{ keytype_arrow_up, "↑", "↑", "↑", 1 },
+ 	{ keytype_arrow_down, "↓", "↓", "↓", 1 },
+-	{ keytype_arrow_right, "→", "→", "→", 1 }
+-};
++	{ keytype_arrow_right, "→", "→", "→", 1 },
++	{ keytype_home, "Hom", "Hom", "Hom", 1 },
++	{ keytype_end, "End", "End", "End", 1 },
++	{ keytype_page_up, "PgU", "PgU", "PgU", 1 },
++	{ keytype_page_down, "PgD", "PgD", "PgD", 1 },
++	{ keytype_backspace, "Bksp", "Bksp", "Bksp", 2 },
++
++	{ keytype_default, "1", "1", "1", 1 },
++	{ keytype_default, "2", "2", "2", 1 },
++	{ keytype_default, "3", "3", "3", 1 },
++	{ keytype_default, "4", "4", "4", 1 },
++	{ keytype_default, "5", "5", "5", 1 },
++	{ keytype_default, "6", "6", "6", 1 },
++	{ keytype_default, "7", "7", "7", 1 },
++	{ keytype_default, "8", "8", "8", 1 },
++	{ keytype_default, "9", "9", "9", 1 },
++	{ keytype_default, "0", "0", "0", 1 },
++	{ keytype_default, "_", "_", "_", 1 },
++
++	{ keytype_default, "~", "~", "~", 1 },
++	{ keytype_default, "!", "!", "!", 1 },
++	{ keytype_default, "@", "@", "@", 1 },
++	{ keytype_default, "#", "#", "#", 1 },
++	{ keytype_default, "$", "$", "$", 1 },
++	{ keytype_default, "%", "%", "%", 1 },
++	{ keytype_default, "^", "^", "^", 1 },
++	{ keytype_default, "&", "&", "&", 1 },
++	{ keytype_default, "*", "*", "*", 1 },
++	{ keytype_default, "`", "`", "`", 1 },
++	{ keytype_default, "|", "|", "|", 1 },
++
++	{ keytype_default, "(", "(", "(", 1 },
++	{ keytype_default, ")", ")", ")", 1 },
++	{ keytype_default, "[", "[", "[", 1 },
++	{ keytype_default, "]", "]", "]", 1 },
++	{ keytype_default, "{", "{", "{", 1 },
++	{ keytype_default, "}", "}", "}", 1 },
++	{ keytype_default, "\\", "\\", "\\", 1 },
++	{ keytype_default, "=", "=", "=", 1 },
++	{ keytype_default, "+", "+", "+", 1 },
++	{ keytype_default, "&&", "&&", "&&", 1 },
++	{ keytype_default, "||", "||", "||", 1 },
+ 
+-static const struct key numeric_keys[] = {
+-	{ keytype_default, "1", "1", "1", 1},
+-	{ keytype_default, "2", "2", "2", 1},
+-	{ keytype_default, "3", "3", "3", 1},
+-	{ keytype_default, "4", "4", "4", 1},
+-	{ keytype_default, "5", "5", "5", 1},
+-	{ keytype_default, "6", "6", "6", 1},
+-	{ keytype_default, "7", "7", "7", 1},
+-	{ keytype_default, "8", "8", "8", 1},
+-	{ keytype_default, "9", "9", "9", 1},
+-	{ keytype_default, "0", "0", "0", 1},
+-	{ keytype_backspace, "<--", "<--", "<--", 2},
+-
+-	{ keytype_space, "", "", "", 4},
+-	{ keytype_enter, "Enter", "Enter", "Enter", 2},
+-	{ keytype_arrow_up, "/\\", "/\\", "/\\", 1},
+-	{ keytype_arrow_left, "<", "<", "<", 1},
+-	{ keytype_arrow_right, ">", ">", ">", 1},
+-	{ keytype_arrow_down, "\\/", "\\/", "\\/", 1},
+-	{ keytype_style, "", "", "", 2}
+-};
++	{ keytype_tab, "Tab", "Tab", "Tab", 2 },
++	{ keytype_control, "Ctrl", "Ctrl", "Ctrl", 2 },
++	{ keytype_switch, "Shift", "Shift", "Shift", 3 },
++	{ keytype_enter, "Enter", "Enter", "Enter", 4 },
+ 
+-static const struct key arabic_keys[] = {
+-	{ keytype_default, "ض", "ﹶ", "۱", 1},
+-	{ keytype_default, "ص", "ﹰ", "۲", 1},
+-	{ keytype_default, "ث", "ﹸ", "۳", 1},
+-	{ keytype_default, "ق", "ﹲ", "۴", 1},
+-	{ keytype_default, "ف", "ﻹ", "۵", 1},
+-	{ keytype_default, "غ", "ﺇ", "۶", 1},
+-	{ keytype_default, "ع", "`", "۷", 1},
+-	{ keytype_default, "ه", "٪", "۸", 1},
+-	{ keytype_default, "خ", ">", "۹", 1},
+-	{ keytype_default, "ح", "<", "۰", 1},
+-	{ keytype_backspace, "-->", "-->", "-->", 2},
+-
+-	{ keytype_tab, "->|", "->|", "->|", 1},
+-	{ keytype_default, "ش", "ﹺ", "ﹼ", 1},
+-	{ keytype_default, "س", "ﹴ", "!", 1},
+-	{ keytype_default, "ي", "[", "@", 1},
+-	{ keytype_default, "ب", "]", "#", 1},
+-	{ keytype_default, "ل", "ﻷ", "$", 1},
+-	{ keytype_default, "ا", "أ", "%", 1},
+-	{ keytype_default, "ت", "-", "^", 1},
+-	{ keytype_default, "ن", "x", "&", 1},
+-	{ keytype_default, "م", "/", "*", 1},
+-	{ keytype_default, "ك", ":", "_", 1},
+-	{ keytype_default, "د", "\"", "+", 1},
+-	{ keytype_enter, "Enter", "Enter", "Enter", 2},
+-
+-	{ keytype_switch, "Shift", "Base", "Shift", 2},
+-	{ keytype_default, "ئ", "~", ")", 1},
+-	{ keytype_default, "ء", "°", "(", 1},
+-	{ keytype_default, "ؤ", "{", "\"", 1},
+-	{ keytype_default, "ر", "}", "\'", 1},
+-	{ keytype_default, "ى", "ﺁ", "؟", 1},
+-	{ keytype_default, "ة", "'", "!", 1},
+-	{ keytype_default, "و", ",", ";", 1},
+-	{ keytype_default, "ﺯ", ".", "\\", 1},
+-	{ keytype_default, "ظ", "؟", "=", 1},
+-	{ keytype_switch, "Shift", "Base", "Shift", 2},
+-
+-	{ keytype_symbols, "؟٣٢١", "؟٣٢١", "Base", 1},
+-	{ keytype_default, "ﻻ", "ﻵ", "|", 1},
+-	{ keytype_default, ",", "،", "،", 1},
+-	{ keytype_space, "", "", "", 6},
+-	{ keytype_default, ".", "ذ", "]", 1},
+-	{ keytype_default, "ط", "ﺝ", "[", 1},
+-	{ keytype_style, "", "", "", 2}
++	{ keytype_symbols, "ABC/#&", "ABC/#&", "ABC/#&", 2 },
++	{ keytype_space, "Space", "Space", "Space", 9 }
+ };
+ 
+-
+-static const struct layout normal_layout = {
+-	normal_keys,
+-	sizeof(normal_keys) / sizeof(*normal_keys),
+-	12,
++static const struct layout letter_layout = {
++	letter_keys,
++	sizeof(letter_keys) / sizeof(*letter_keys),
++	11,
+ 	6,
+ 	"en",
+ 	ZWP_TEXT_INPUT_V1_TEXT_DIRECTION_LTR
+ };
+ 
+-static const struct layout numeric_layout = {
+-	numeric_keys,
+-	sizeof(numeric_keys) / sizeof(*numeric_keys),
+-	12,
+-	2,
++static const struct layout symbol_layout = {
++	symbol_keys,
++	sizeof(symbol_keys) / sizeof(*symbol_keys),
++	11,
++	6,
+ 	"en",
+ 	ZWP_TEXT_INPUT_V1_TEXT_DIRECTION_LTR
+ };
+ 
+-static const struct layout arabic_layout = {
+-	arabic_keys,
+-	sizeof(arabic_keys) / sizeof(*arabic_keys),
+-	13,
+-	4,
+-	"ar",
+-	ZWP_TEXT_INPUT_V1_TEXT_DIRECTION_RTL
+-};
+-
+-static const char *style_labels[] = {
+-	"default",
+-	"none",
+-	"active",
+-	"inactive",
+-	"highlight",
+-	"underline",
+-	"selection",
+-	"incorrect"
+-};
+-
+ static const double key_width = 60;
+ static const double key_height = 60;
++/* visual gap between neighbouring keys, in key units per side */
++static const double key_margin = 4;
+ /* DSI-1 is 540 logical pixels wide at the phone's configured scale. */
+-static const double keyboard_scale_x = 0.75;
++static const double keyboard_scale_x = 540.0 / 660.0;
+ static const double keyboard_scale_y = 1.0;
+ 
+ static int
+ keyboard_width(const struct layout *layout)
+ {
+ 	return (int)(layout->columns * key_width * keyboard_scale_x + 0.5);
+ }
+ 
+ static int
+ keyboard_height(const struct layout *layout)
+ {
+ 	return (int)(layout->rows * key_height * keyboard_scale_y + 0.5);
+ }
+ 
+ enum keyboard_state {
+ 	KEYBOARD_STATE_DEFAULT,
+-	KEYBOARD_STATE_UPPERCASE,
+-	KEYBOARD_STATE_SYMBOLS
++	KEYBOARD_STATE_UPPERCASE
++};
++
++#define MAX_TOUCH_SLOTS 10
++#define LONG_PRESS_USEC 350000
++#define TOUCH_ID_NONE (-1)
++#define TOUCH_ID_POINTER (-2)
++
++struct touch_slot {
++	bool active;
++	int32_t id;
++	int key_index;
++	float x, y;
+ };
+ 
+ struct keyboard {
+ 	struct virtual_keyboard *keyboard;
+ 	struct window *window;
+ 	struct widget *widget;
+ 
+ 	enum keyboard_state state;
+ 	bool control_latched;
++	bool symbols_page;
++
++	/* multi-touch chording state for the two modifier keys */
++	int32_t shift_touch_id;
++	bool shift_chorded;
++	enum keyboard_state shift_state_at_press;
++	int32_t ctrl_touch_id;
++	bool ctrl_chorded;
++	bool ctrl_latched_at_press;
++
++	struct touch_slot touches[MAX_TOUCH_SLOTS];
++
++	/* long-press slide selection with a magnifier bubble */
++	struct toytimer longpress_timer;
++	int longpress_slot;
++	bool magnifier_active;
++	int magnifier_slot;
++	int magnifier_key;
+ };
+ 
+ static void __attribute__ ((format (printf, 1, 2)))
+ dbg(const char *fmt, ...)
+ {
+ #ifdef DEBUG
+ 	va_list argp;
+ 
+@@ -322,88 +318,256 @@
+ 	va_end(argp);
+ #endif
+ }
+ 
+ static const char *
+ label_from_key(struct keyboard *keyboard,
+ 	       const struct key *key)
+ {
+-	if (key->key_type == keytype_style)
+-		return style_labels[keyboard->keyboard->preedit_style];
+-
+-	switch(keyboard->state) {
+-	case KEYBOARD_STATE_DEFAULT:
+-		return key->label;
+-	case KEYBOARD_STATE_UPPERCASE:
++	if (keyboard->state == KEYBOARD_STATE_UPPERCASE)
+ 		return key->uppercase;
+-	case KEYBOARD_STATE_SYMBOLS:
+-		return key->symbol;
++
++	return key->label;
++}
++
++static const struct layout *
++get_current_layout(struct virtual_keyboard *keyboard)
++{
++	if (keyboard->keyboard && keyboard->keyboard->symbols_page)
++		return &symbol_layout;
++
++	return &letter_layout;
++}
++
++static int
++key_index_from_position(const struct layout *layout, double x, double y)
++{
++	unsigned int i;
++	int row, cell, col;
++
++	x /= keyboard_scale_x;
++	y /= keyboard_scale_y;
++	if (x < 0 || y < 0)
++		return -1;
++
++	row = (int)(y / key_height);
++	cell = (int)(x / key_width);
++	if (row >= (int)layout->rows || cell >= (int)layout->columns)
++		return -1;
++
++	col = cell + row * layout->columns;
++	for (i = 0; i < layout->count; ++i) {
++		col -= layout->keys[i].width;
++		if (col < 0)
++			return (int)i;
+ 	}
+ 
+-	return "";
++	return -1;
++}
++
++static void
++key_row_col(const struct layout *layout, int index,
++	    unsigned int *row_out, unsigned int *col_out)
++{
++	unsigned int i, row = 0, col = 0;
++
++	for (i = 0; i < (unsigned int)index && i < layout->count; ++i) {
++		col += layout->keys[i].width;
++		if (col >= layout->columns) {
++			row += 1;
++			col = 0;
++		}
++	}
++
++	*row_out = row;
++	*col_out = col;
++}
++
++static struct touch_slot *
++touch_slot_find(struct keyboard *keyboard, int32_t id)
++{
++	int i;
++
++	for (i = 0; i < MAX_TOUCH_SLOTS; ++i)
++		if (keyboard->touches[i].active &&
++		    keyboard->touches[i].id == id)
++			return &keyboard->touches[i];
++
++	return NULL;
++}
++
++static struct touch_slot *
++touch_slot_take(struct keyboard *keyboard, int32_t id)
++{
++	struct touch_slot *slot = touch_slot_find(keyboard, id);
++	int i;
++
++	if (slot)
++		return slot;
++
++	for (i = 0; i < MAX_TOUCH_SLOTS; ++i)
++		if (!keyboard->touches[i].active)
++			return &keyboard->touches[i];
++
++	return NULL;
++}
++
++static bool
++key_is_pressed(struct keyboard *keyboard, int index)
++{
++	int i;
++
++	if (keyboard->magnifier_active && keyboard->magnifier_key == index)
++		return true;
++
++	for (i = 0; i < MAX_TOUCH_SLOTS; ++i)
++		if (keyboard->touches[i].active &&
++		    keyboard->touches[i].key_index == index)
++			return true;
++
++	return false;
++}
++
++static void
++magnifier_dismiss(struct keyboard *keyboard)
++{
++	keyboard->magnifier_active = false;
++	keyboard->magnifier_slot = -1;
++	keyboard->magnifier_key = -1;
++}
++
++static void
++draw_page_switch_label(struct keyboard *keyboard, cairo_t *cr,
++		       double x, double y, double w, double h)
++{
++	cairo_text_extents_t extents;
++	double half = w / 2;
++
++	/* fixed [ABC|#&] tag: the active page half is highlighted */
++	cairo_rectangle(cr, keyboard->symbols_page ? x + half : x, y, half, h);
++	cairo_set_source_rgba(cr, 0.15, 0.40, 0.85, 0.45);
++	cairo_fill(cr);
++
++	cairo_set_source_rgb(cr, 0, 0, 0);
++	cairo_text_extents(cr, "ABC", &extents);
++	cairo_move_to(cr,
++		      x + (half - extents.width) / 2 - extents.x_bearing,
++		      y + (h - extents.height) / 2 - extents.y_bearing);
++	cairo_show_text(cr, "ABC");
++	cairo_text_extents(cr, "#&", &extents);
++	cairo_move_to(cr,
++		      x + half + (half - extents.width) / 2 - extents.x_bearing,
++		      y + (h - extents.height) / 2 - extents.y_bearing);
++	cairo_show_text(cr, "#&");
++
++	cairo_move_to(cr, x + half, y + 4);
++	cairo_line_to(cr, x + half, y + h - 4);
++	cairo_set_line_width(cr, 1);
++	cairo_stroke(cr);
+ }
+ 
+ static void
+ draw_key(struct keyboard *keyboard,
+ 	 const struct key *key,
+ 	 cairo_t *cr,
+ 	 unsigned int row,
+-	 unsigned int col)
++	 unsigned int col,
++	 bool pressed)
+ {
+ 	const char *label;
+ 	cairo_text_extents_t extents;
++	double x = col * key_width + key_margin;
++	double y = row * key_height + key_margin;
++	double w = key->width * key_width - 2 * key_margin;
++	double h = key_height - 2 * key_margin;
++	bool latched = false;
+ 
+ 	cairo_save(cr);
+-	cairo_rectangle(cr,
+-			col * key_width, row * key_height,
+-			key->width * key_width, key_height);
++	cairo_rectangle(cr, x, y, w, h);
+ 	cairo_clip(cr);
+ 
+-	/* Paint frame */
+-	cairo_rectangle(cr,
+-			col * key_width, row * key_height,
+-			key->width * key_width, key_height);
+-	if (key->key_type == keytype_control && keyboard->control_latched) {
++	cairo_rectangle(cr, x, y, w, h);
++	if (key->key_type == keytype_control && keyboard->control_latched)
++		latched = true;
++	if (key->key_type == keytype_switch &&
++	    keyboard->state == KEYBOARD_STATE_UPPERCASE)
++		latched = true;
++	if (pressed) {
++		cairo_set_source_rgba(cr, 0.2, 0.2, 0.2, 0.35);
++		cairo_fill_preserve(cr);
++	} else if (latched) {
+ 		cairo_set_source_rgba(cr, 0.15, 0.40, 0.85, 0.45);
+ 		cairo_fill_preserve(cr);
+ 	}
+ 	cairo_set_source_rgb(cr, 0, 0, 0);
+-	cairo_set_line_width(cr, 3);
++	cairo_set_line_width(cr, 2);
+ 	cairo_stroke(cr);
+ 
+-	/* Paint text */
++	if (key->key_type == keytype_symbols) {
++		draw_page_switch_label(keyboard, cr, x, y, w, h);
++		cairo_restore(cr);
++		return;
++	}
++
+ 	label = label_from_key(keyboard, key);
+ 	cairo_text_extents(cr, label, &extents);
+-
+-	cairo_translate(cr,
+-			col * key_width,
+-			row * key_height);
+-	cairo_translate(cr,
+-			(key->width * key_width - extents.width) / 2,
+-			(key_height - extents.y_bearing) / 2);
++	cairo_move_to(cr,
++		      x + (w - extents.width) / 2 - extents.x_bearing,
++		      y + (h - extents.height) / 2 - extents.y_bearing);
+ 	cairo_show_text(cr, label);
+ 
+ 	cairo_restore(cr);
+ }
+ 
+-static const struct layout *
+-get_current_layout(struct virtual_keyboard *keyboard)
++static void
++draw_magnifier(struct keyboard *keyboard, cairo_t *cr,
++	       const struct layout *layout)
+ {
+-	switch (keyboard->content_purpose) {
+-		case ZWP_TEXT_INPUT_V1_CONTENT_PURPOSE_DIGITS:
+-		case ZWP_TEXT_INPUT_V1_CONTENT_PURPOSE_NUMBER:
+-			return &numeric_layout;
+-		default:
+-			if (keyboard->preferred_language &&
+-			    strcmp(keyboard->preferred_language, "ar") == 0)
+-				return &arabic_layout;
+-			else
+-				return &normal_layout;
+-	}
++	const struct key *key;
++	const char *label;
++	cairo_text_extents_t extents;
++	unsigned int row, col;
++	double w, h, x, y;
++
++	if (!keyboard->magnifier_active || keyboard->magnifier_key < 0)
++		return;
++
++	key = &layout->keys[keyboard->magnifier_key];
++	key_row_col(layout, keyboard->magnifier_key, &row, &col);
++
++	w = key->width * key_width * 1.6;
++	h = key_height * 1.6;
++	x = col * key_width + (key->width * key_width - w) / 2;
++	y = row * key_height - h - 2 * key_margin;
++	if (x < 2)
++		x = 2;
++	if (x + w > layout->columns * key_width - 2)
++		x = layout->columns * key_width - 2 - w;
++	/* no room above the top row: show the bubble below the key */
++	if (y < 2)
++		y = row * key_height + key_height + 2 * key_margin;
++
++	cairo_save(cr);
++	cairo_rectangle(cr, x, y, w, h);
++	cairo_set_source_rgb(cr, 1, 1, 1);
++	cairo_fill_preserve(cr);
++	cairo_set_source_rgb(cr, 0.15, 0.40, 0.85);
++	cairo_set_line_width(cr, 3);
++	cairo_stroke(cr);
++
++	label = label_from_key(keyboard, key);
++	cairo_set_font_size(cr, 26);
++	cairo_set_source_rgb(cr, 0, 0, 0);
++	cairo_text_extents(cr, label, &extents);
++	cairo_move_to(cr,
++		      x + (w - extents.width) / 2 - extents.x_bearing,
++		      y + (h - extents.height) / 2 - extents.y_bearing);
++	cairo_show_text(cr, label);
++	cairo_restore(cr);
+ }
+ 
+ static void
+ redraw_handler(struct widget *widget, void *data)
+ {
+ 	struct keyboard *keyboard = data;
+ 	cairo_surface_t *surface;
+ 	struct rectangle allocation;
+@@ -431,24 +595,27 @@
+ 	cairo_set_source_rgba(cr, 1, 1, 1, 0.75);
+ 	cairo_rectangle(cr, 0, 0, layout->columns * key_width, layout->rows * key_height);
+ 	cairo_paint(cr);
+ 
+ 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+ 
+ 	for (i = 0; i < layout->count; ++i) {
+ 		cairo_set_source_rgb(cr, 0, 0, 0);
+-		draw_key(keyboard, &layout->keys[i], cr, row, col);
++		draw_key(keyboard, &layout->keys[i], cr, row, col,
++			 key_is_pressed(keyboard, (int)i));
+ 		col += layout->keys[i].width;
+ 		if (col >= layout->columns) {
+ 			row += 1;
+ 			col = 0;
+ 		}
+ 	}
+ 
++	draw_magnifier(keyboard, cr, layout);
++
+ 	cairo_destroy(cr);
+ 	cairo_surface_destroy(surface);
+ }
+ 
+ static void
+ resize_handler(struct widget *widget,
+ 	       int32_t width, int32_t height, void *data)
+ {
+@@ -575,289 +742,422 @@
+ 	s = xrealloc(s1, len1 + len2 + 1);
+ 	memcpy(s + len1, s2, len2);
+ 	s[len1 + len2] = '\0';
+ 
+ 	return s;
+ }
+ 
+ static void
+-keyboard_handle_key(struct keyboard *keyboard, uint32_t time, const struct key *key, struct input *input, enum wl_pointer_button_state state)
++shift_press(struct keyboard *keyboard, int32_t touch_id)
+ {
+-	const char *label = NULL;
++	keyboard->shift_touch_id = touch_id;
++	keyboard->shift_chorded = false;
++	keyboard->shift_state_at_press = keyboard->state;
++	keyboard->state = KEYBOARD_STATE_UPPERCASE;
++}
+ 
+-	switch(keyboard->state) {
+-	case KEYBOARD_STATE_DEFAULT :
+-		label = key->label;
+-		break;
+-	case KEYBOARD_STATE_UPPERCASE :
+-		label = key->uppercase;
+-		break;
+-	case KEYBOARD_STATE_SYMBOLS :
+-		label = key->symbol;
+-		break;
+-	}
++static void
++shift_release(struct keyboard *keyboard)
++{
++	/* hold+type is momentary; a plain tap arms one-shot uppercase */
++	if (keyboard->shift_chorded ||
++	    keyboard->shift_state_at_press == KEYBOARD_STATE_UPPERCASE)
++		keyboard->state = KEYBOARD_STATE_DEFAULT;
++	keyboard->shift_touch_id = TOUCH_ID_NONE;
++	keyboard->shift_chorded = false;
++}
++
++static void
++shift_after_use(struct keyboard *keyboard)
++{
++	if (keyboard->state != KEYBOARD_STATE_UPPERCASE)
++		return;
++	if (keyboard->shift_touch_id != TOUCH_ID_NONE)
++		keyboard->shift_chorded = true;
++	else
++		keyboard->state = KEYBOARD_STATE_DEFAULT;
++}
++
++static void
++control_press(struct keyboard *keyboard, int32_t touch_id)
++{
++	keyboard->ctrl_touch_id = touch_id;
++	keyboard->ctrl_chorded = false;
++	keyboard->ctrl_latched_at_press = keyboard->control_latched;
++	keyboard->control_latched = true;
++}
++
++static void
++control_release(struct keyboard *keyboard)
++{
++	/* hold+type is momentary; a plain tap toggles the latch */
++	if (keyboard->ctrl_chorded)
++		keyboard->control_latched = false;
++	else
++		keyboard->control_latched = !keyboard->ctrl_latched_at_press;
++	keyboard->ctrl_touch_id = TOUCH_ID_NONE;
++	keyboard->ctrl_chorded = false;
++}
++
++static void
++control_after_use(struct keyboard *keyboard)
++{
++	if (!keyboard->control_latched)
++		return;
++	if (keyboard->ctrl_touch_id != TOUCH_ID_NONE)
++		keyboard->ctrl_chorded = true;
++	else
++		keyboard->control_latched = false;
++}
++
++static void
++keyboard_switch_page(struct keyboard *keyboard)
++{
++	keyboard->symbols_page = !keyboard->symbols_page;
++	toytimer_disarm(&keyboard->longpress_timer);
++	keyboard->longpress_slot = -1;
++	magnifier_dismiss(keyboard);
++	widget_schedule_redraw(keyboard->widget);
++}
++
++static void
++keyboard_handle_key(struct keyboard *keyboard, uint32_t time, const struct key *key, struct input *input, enum wl_pointer_button_state state)
++{
++	const char *label = label_from_key(keyboard, key);
+ 
+ 	xkb_mod_mask_t mod_mask = keyboard->state == KEYBOARD_STATE_DEFAULT ? 0 : keyboard->keyboard->keysym.shift_mask;
+ 	bool consume_control = keyboard->control_latched &&
+ 		key->key_type != keytype_control &&
+ 		key->key_type != keytype_switch &&
+-		key->key_type != keytype_symbols &&
+-		key->key_type != keytype_style;
++		key->key_type != keytype_symbols;
+ 	uint32_t key_state = (state == WL_POINTER_BUTTON_STATE_PRESSED) ? WL_KEYBOARD_KEY_STATE_PRESSED : WL_KEYBOARD_KEY_STATE_RELEASED;
++	xkb_keysym_t keysym = XKB_KEY_NoSymbol;
+ 	if (consume_control)
+ 		mod_mask |= keyboard->keyboard->keysym.control_mask;
+ 
+ 	switch (key->key_type) {
+ 		case keytype_default:
+ 			if (state != WL_POINTER_BUTTON_STATE_PRESSED)
+ 				break;
+ 			if (consume_control) {
+-				xkb_keysym_t keysym = (unsigned char)label[0];
++				xkb_keysym_t ctrl_sym = (unsigned char)label[0];
+ 
+ 				virtual_keyboard_commit_preedit(keyboard->keyboard);
+ 				zwp_input_method_context_v1_keysym(
+ 					keyboard->keyboard->context,
+ 					display_get_serial(keyboard->keyboard->display),
+-					time, keysym,
++					time, ctrl_sym,
+ 					WL_KEYBOARD_KEY_STATE_PRESSED, mod_mask);
+ 				zwp_input_method_context_v1_keysym(
+ 					keyboard->keyboard->context,
+ 					display_get_serial(keyboard->keyboard->display),
+-					time, keysym,
++					time, ctrl_sym,
+ 					WL_KEYBOARD_KEY_STATE_RELEASED, mod_mask);
+-				keyboard->control_latched = false;
++				control_after_use(keyboard);
++				shift_after_use(keyboard);
+ 				break;
+ 			}
+ 
++			/* commit immediately: no preedit churn on screen */
+ 			keyboard->keyboard->preedit_string =
+ 				append(keyboard->keyboard->preedit_string,
+ 				       label);
+-			virtual_keyboard_send_preedit(keyboard->keyboard, -1);
++			virtual_keyboard_commit_preedit(keyboard->keyboard);
++			shift_after_use(keyboard);
+ 			break;
+ 		case keytype_escape:
+-			virtual_keyboard_commit_preedit(keyboard->keyboard);
+-			zwp_input_method_context_v1_keysym(keyboard->keyboard->context,
+-							   display_get_serial(keyboard->keyboard->display),
+-							   time,
+-							   XKB_KEY_Escape, key_state, mod_mask);
++			keysym = XKB_KEY_Escape;
+ 			break;
+ 		case keytype_backspace:
+-			virtual_keyboard_commit_preedit(keyboard->keyboard);
+-			zwp_input_method_context_v1_keysym(keyboard->keyboard->context,
+-							   display_get_serial(keyboard->keyboard->display),
+-							   time,
+-							   XKB_KEY_BackSpace, key_state, mod_mask);
++			keysym = XKB_KEY_BackSpace;
+ 			break;
+ 		case keytype_control:
+ 			if (state == WL_POINTER_BUTTON_STATE_PRESSED)
+-				keyboard->control_latched = !keyboard->control_latched;
++				control_press(keyboard, TOUCH_ID_POINTER);
++			else
++				control_release(keyboard);
+ 			break;
+ 		case keytype_enter:
+-			virtual_keyboard_commit_preedit(keyboard->keyboard);
+-			zwp_input_method_context_v1_keysym(keyboard->keyboard->context,
+-							   display_get_serial(keyboard->keyboard->display),
+-							   time,
+-							   XKB_KEY_Return, key_state, mod_mask);
++			keysym = XKB_KEY_Return;
+ 			break;
+ 		case keytype_space:
+ 			if (state != WL_POINTER_BUTTON_STATE_PRESSED)
+ 				break;
+ 			if (consume_control) {
+ 				virtual_keyboard_commit_preedit(keyboard->keyboard);
+ 				zwp_input_method_context_v1_keysym(
+ 					keyboard->keyboard->context,
+ 					display_get_serial(keyboard->keyboard->display),
+ 					time, XKB_KEY_space,
+ 					WL_KEYBOARD_KEY_STATE_PRESSED, mod_mask);
+ 				zwp_input_method_context_v1_keysym(
+ 					keyboard->keyboard->context,
+ 					display_get_serial(keyboard->keyboard->display),
+ 					time, XKB_KEY_space,
+ 					WL_KEYBOARD_KEY_STATE_RELEASED, mod_mask);
+-				keyboard->control_latched = false;
++				control_after_use(keyboard);
+ 				break;
+ 			}
+ 			keyboard->keyboard->preedit_string =
+ 				append(keyboard->keyboard->preedit_string, " ");
+ 			virtual_keyboard_commit_preedit(keyboard->keyboard);
+ 			break;
+ 		case keytype_switch:
+-			if (state != WL_POINTER_BUTTON_STATE_PRESSED)
+-				break;
+-			switch(keyboard->state) {
+-			case KEYBOARD_STATE_DEFAULT:
+-				keyboard->state = KEYBOARD_STATE_UPPERCASE;
+-				break;
+-			case KEYBOARD_STATE_UPPERCASE:
+-				keyboard->state = KEYBOARD_STATE_DEFAULT;
+-				break;
+-			case KEYBOARD_STATE_SYMBOLS:
+-				keyboard->state = KEYBOARD_STATE_UPPERCASE;
+-				break;
+-			}
++			if (state == WL_POINTER_BUTTON_STATE_PRESSED)
++				shift_press(keyboard, TOUCH_ID_POINTER);
++			else
++				shift_release(keyboard);
+ 			break;
+ 		case keytype_symbols:
+ 			if (state != WL_POINTER_BUTTON_STATE_PRESSED)
+ 				break;
+-			switch(keyboard->state) {
+-			case KEYBOARD_STATE_DEFAULT:
+-				keyboard->state = KEYBOARD_STATE_SYMBOLS;
+-				break;
+-			case KEYBOARD_STATE_UPPERCASE:
+-				keyboard->state = KEYBOARD_STATE_SYMBOLS;
+-				break;
+-			case KEYBOARD_STATE_SYMBOLS:
+-				keyboard->state = KEYBOARD_STATE_DEFAULT;
+-				break;
+-			}
++			keyboard_switch_page(keyboard);
+ 			break;
+ 		case keytype_tab:
+-			virtual_keyboard_commit_preedit(keyboard->keyboard);
+-			zwp_input_method_context_v1_keysym(keyboard->keyboard->context,
+-							   display_get_serial(keyboard->keyboard->display),
+-							   time,
+-							   XKB_KEY_Tab, key_state, mod_mask);
++			keysym = XKB_KEY_Tab;
+ 			break;
+ 		case keytype_arrow_up:
+-			virtual_keyboard_commit_preedit(keyboard->keyboard);
+-			zwp_input_method_context_v1_keysym(keyboard->keyboard->context,
+-							   display_get_serial(keyboard->keyboard->display),
+-							   time,
+-							   XKB_KEY_Up, key_state, mod_mask);
++			keysym = XKB_KEY_Up;
+ 			break;
+ 		case keytype_arrow_left:
+-			virtual_keyboard_commit_preedit(keyboard->keyboard);
+-			zwp_input_method_context_v1_keysym(keyboard->keyboard->context,
+-							   display_get_serial(keyboard->keyboard->display),
+-							   time,
+-							   XKB_KEY_Left, key_state, mod_mask);
++			keysym = XKB_KEY_Left;
+ 			break;
+ 		case keytype_arrow_right:
+-			virtual_keyboard_commit_preedit(keyboard->keyboard);
+-			zwp_input_method_context_v1_keysym(keyboard->keyboard->context,
+-							   display_get_serial(keyboard->keyboard->display),
+-							   time,
+-							   XKB_KEY_Right, key_state, mod_mask);
++			keysym = XKB_KEY_Right;
+ 			break;
+ 		case keytype_arrow_down:
+-			virtual_keyboard_commit_preedit(keyboard->keyboard);
+-			zwp_input_method_context_v1_keysym(keyboard->keyboard->context,
+-							   display_get_serial(keyboard->keyboard->display),
+-							   time,
+-							   XKB_KEY_Down, key_state, mod_mask);
++			keysym = XKB_KEY_Down;
++			break;
++		case keytype_home:
++			keysym = XKB_KEY_Home;
++			break;
++		case keytype_end:
++			keysym = XKB_KEY_End;
++			break;
++		case keytype_page_up:
++			keysym = XKB_KEY_Page_Up;
++			break;
++		case keytype_page_down:
++			keysym = XKB_KEY_Page_Down;
+ 			break;
+-		case keytype_style:
+-			if (state != WL_POINTER_BUTTON_STATE_PRESSED)
+-				break;
+-			keyboard->keyboard->preedit_style = (keyboard->keyboard->preedit_style + 1) % 8; /* TODO */
+-				virtual_keyboard_send_preedit(keyboard->keyboard, -1);
+-				break;
+ 	}
+ 
+-	if (consume_control &&
+-	    state == WL_POINTER_BUTTON_STATE_RELEASED &&
+-	    key->key_type != keytype_default &&
+-	    key->key_type != keytype_space)
+-		keyboard->control_latched = false;
++	if (keysym != XKB_KEY_NoSymbol) {
++		virtual_keyboard_commit_preedit(keyboard->keyboard);
++		zwp_input_method_context_v1_keysym(keyboard->keyboard->context,
++						   display_get_serial(keyboard->keyboard->display),
++						   time,
++						   keysym, key_state, mod_mask);
++		if (state == WL_POINTER_BUTTON_STATE_RELEASED) {
++			if (consume_control)
++				control_after_use(keyboard);
++			shift_after_use(keyboard);
++		}
++	}
++}
++
++static void
++tap_key(struct keyboard *keyboard, uint32_t time, const struct key *key,
++	struct input *input)
++{
++	keyboard_handle_key(keyboard, time, key, input,
++			    WL_POINTER_BUTTON_STATE_PRESSED);
++	keyboard_handle_key(keyboard, time, key, input,
++			    WL_POINTER_BUTTON_STATE_RELEASED);
+ }
+ 
+ static void
+ button_handler(struct widget *widget,
+ 	       struct input *input, uint32_t time,
+ 	       uint32_t button,
+ 	       enum wl_pointer_button_state state, void *data)
+ {
+ 	struct keyboard *keyboard = data;
+ 	struct rectangle allocation;
+ 	int32_t x, y;
+-	int row, col;
+-	unsigned int i;
++	int index;
+ 	const struct layout *layout;
+ 
+ 	layout = get_current_layout(keyboard->keyboard);
+ 
+ 	if (button != BTN_LEFT) {
+ 		return;
+ 	}
+ 
+ 	input_get_position(input, &x, &y);
+ 
+ 	widget_get_allocation(keyboard->widget, &allocation);
+-	x -= allocation.x;
+-	y -= allocation.y;
+-	x /= keyboard_scale_x;
+-	y /= keyboard_scale_y;
+-
+-	row = y / key_height;
+-	col = x / key_width + row * layout->columns;
+-	for (i = 0; i < layout->count; ++i) {
+-		col -= layout->keys[i].width;
+-		if (col < 0) {
+-			keyboard_handle_key(keyboard, time, &layout->keys[i], input, state);
+-			break;
+-		}
+-	}
++	index = key_index_from_position(layout,
++					x - allocation.x, y - allocation.y);
++	if (index >= 0)
++		keyboard_handle_key(keyboard, time,
++				    &layout->keys[index], input, state);
+ 
+ 	widget_schedule_redraw(widget);
+ }
+ 
+ static void
+-touch_handler(struct input *input, uint32_t time,
+-	      float x, float y, uint32_t state, void *data)
++longpress_timer_handler(struct toytimer *tt)
++{
++	struct keyboard *keyboard =
++		container_of(tt, struct keyboard, longpress_timer);
++	const struct layout *layout = get_current_layout(keyboard->keyboard);
++	struct touch_slot *slot;
++
++	if (keyboard->longpress_slot < 0)
++		return;
++	slot = &keyboard->touches[keyboard->longpress_slot];
++	if (!slot->active)
++		return;
++
++	keyboard->magnifier_active = true;
++	keyboard->magnifier_slot = keyboard->longpress_slot;
++	keyboard->magnifier_key =
++		key_index_from_position(layout, slot->x, slot->y);
++	keyboard->longpress_slot = -1;
++	widget_schedule_redraw(keyboard->widget);
++}
++
++static void
++touch_down_handler(struct widget *widget, struct input *input,
++		   uint32_t serial, uint32_t time, int32_t id,
++		   float x, float y, void *data)
+ {
+ 	struct keyboard *keyboard = data;
++	const struct layout *layout = get_current_layout(keyboard->keyboard);
+ 	struct rectangle allocation;
+-	int row, col;
+-	unsigned int i;
+-	const struct layout *layout;
+-
+-	layout = get_current_layout(keyboard->keyboard);
++	struct touch_slot *slot;
++	const struct key *key;
++	int index;
+ 
+ 	widget_get_allocation(keyboard->widget, &allocation);
++	index = key_index_from_position(layout,
++					x - allocation.x, y - allocation.y);
++	if (index < 0)
++		return;
+ 
+-	x -= allocation.x;
+-	y -= allocation.y;
+-	x /= keyboard_scale_x;
+-	y /= keyboard_scale_y;
+-
+-	row = (int)y / key_height;
+-	col = (int)x / key_width + row * layout->columns;
+-	for (i = 0; i < layout->count; ++i) {
+-		col -= layout->keys[i].width;
+-		if (col < 0) {
+-			keyboard_handle_key(keyboard, time,
+-					    &layout->keys[i], input, state);
+-			break;
+-		}
++	slot = touch_slot_take(keyboard, id);
++	if (!slot)
++		return;
++	slot->active = true;
++	slot->id = id;
++	slot->key_index = index;
++	slot->x = x - allocation.x;
++	slot->y = y - allocation.y;
++
++	key = &layout->keys[index];
++	if (key->key_type == keytype_switch) {
++		shift_press(keyboard, id);
++	} else if (key->key_type == keytype_control) {
++		control_press(keyboard, id);
++	} else {
++		/* the newest finger owns the single slide-select magnifier */
++		keyboard->longpress_slot = slot - keyboard->touches;
++		toytimer_arm_once_usec(&keyboard->longpress_timer,
++				       LONG_PRESS_USEC);
+ 	}
+ 
+ 	widget_schedule_redraw(keyboard->widget);
+ }
+ 
+ static void
+-touch_down_handler(struct widget *widget, struct input *input,
+-		   uint32_t serial, uint32_t time, int32_t id,
+-		   float x, float y, void *data)
++touch_motion_handler(struct widget *widget, struct input *input,
++		     uint32_t time, int32_t id, float x, float y, void *data)
+ {
+-  touch_handler(input, time, x, y,
+-		WL_POINTER_BUTTON_STATE_PRESSED, data);
++	struct keyboard *keyboard = data;
++	const struct layout *layout = get_current_layout(keyboard->keyboard);
++	struct rectangle allocation;
++	struct touch_slot *slot;
++	int index;
++
++	slot = touch_slot_find(keyboard, id);
++	if (!slot)
++		return;
++
++	widget_get_allocation(keyboard->widget, &allocation);
++	slot->x = x - allocation.x;
++	slot->y = y - allocation.y;
++
++	if (keyboard->magnifier_active &&
++	    keyboard->magnifier_slot == slot - keyboard->touches) {
++		index = key_index_from_position(layout, slot->x, slot->y);
++		if (index != keyboard->magnifier_key) {
++			keyboard->magnifier_key = index;
++			widget_schedule_redraw(keyboard->widget);
++		}
++	}
+ }
+ 
+ static void
+ touch_up_handler(struct widget *widget, struct input *input,
+ 		 uint32_t serial, uint32_t time, int32_t id,
+ 		 void *data)
+ {
+-  float x, y;
++	struct keyboard *keyboard = data;
++	const struct layout *layout = get_current_layout(keyboard->keyboard);
++	struct touch_slot *slot;
++	const struct key *key = NULL;
++	int slot_index, index;
++
++	slot = touch_slot_find(keyboard, id);
++	if (!slot) {
++		/* the slot may have been dropped; still finish a hold */
++		if (id == keyboard->shift_touch_id)
++			shift_release(keyboard);
++		if (id == keyboard->ctrl_touch_id)
++			control_release(keyboard);
++		widget_schedule_redraw(keyboard->widget);
++		return;
++	}
++	slot_index = slot - keyboard->touches;
++	if (slot->key_index >= 0 && slot->key_index < (int)layout->count)
++		key = &layout->keys[slot->key_index];
++
++	if (id == keyboard->shift_touch_id) {
++		shift_release(keyboard);
++	} else if (id == keyboard->ctrl_touch_id) {
++		control_release(keyboard);
++	} else if (keyboard->magnifier_active &&
++		   keyboard->magnifier_slot == slot_index) {
++		if (keyboard->magnifier_key >= 0 &&
++		    keyboard->magnifier_key < (int)layout->count)
++			tap_key(keyboard, time,
++				&layout->keys[keyboard->magnifier_key], input);
++		magnifier_dismiss(keyboard);
++	} else if (key) {
++		/* a short tap only commits while the finger is still on the
++		 * pressed key, so brushing a neighbour cannot mistype */
++		index = key_index_from_position(layout, slot->x, slot->y);
++		if (index == slot->key_index)
++			tap_key(keyboard, time, key, input);
++	}
+ 
+-  input_get_touch(input, id, &x, &y);
++	if (keyboard->longpress_slot == slot_index) {
++		toytimer_disarm(&keyboard->longpress_timer);
++		keyboard->longpress_slot = -1;
++	}
++	slot->active = false;
++	widget_schedule_redraw(keyboard->widget);
++}
+ 
+-  touch_handler(input, time, x, y,
+-		WL_POINTER_BUTTON_STATE_RELEASED, data);
++static void
++touch_cancel_handler(struct widget *widget, struct input *input, void *data)
++{
++	struct keyboard *keyboard = data;
++
++	if (keyboard->shift_touch_id >= 0)
++		shift_release(keyboard);
++	if (keyboard->ctrl_touch_id >= 0)
++		control_release(keyboard);
++	toytimer_disarm(&keyboard->longpress_timer);
++	keyboard->longpress_slot = -1;
++	magnifier_dismiss(keyboard);
++	memset(keyboard->touches, 0, sizeof keyboard->touches);
++	widget_schedule_redraw(keyboard->widget);
+ }
+ 
+ static void
+ handle_surrounding_text(void *data,
+ 			struct zwp_input_method_context_v1 *context,
+ 			const char *text,
+ 			uint32_t cursor,
+ 			uint32_t anchor)
+@@ -970,16 +1270,25 @@
+ 		      struct zwp_input_method_context_v1 *context)
+ {
+ 	struct virtual_keyboard *keyboard = data;
+ 	struct wl_array modifiers_map;
+ 	const struct layout *layout;
+ 
+ 	keyboard->keyboard->state = KEYBOARD_STATE_DEFAULT;
+ 	keyboard->keyboard->control_latched = false;
++	keyboard->keyboard->shift_touch_id = TOUCH_ID_NONE;
++	keyboard->keyboard->shift_chorded = false;
++	keyboard->keyboard->ctrl_touch_id = TOUCH_ID_NONE;
++	keyboard->keyboard->ctrl_chorded = false;
++	toytimer_disarm(&keyboard->keyboard->longpress_timer);
++	keyboard->keyboard->longpress_slot = -1;
++	magnifier_dismiss(keyboard->keyboard);
++	memset(keyboard->keyboard->touches, 0,
++	       sizeof keyboard->keyboard->touches);
+ 
+ 	if (keyboard->context)
+ 		zwp_input_method_context_v1_destroy(keyboard->context);
+ 
+ 	if (keyboard->preedit_string)
+ 		free(keyboard->preedit_string);
+ 
+ 	keyboard->preedit_string = strdup("");
+@@ -1099,32 +1408,40 @@
+ 	const struct layout *layout;
+ 
+ 	layout = get_current_layout(virtual_keyboard);
+ 
+ 	keyboard = xzalloc(sizeof *keyboard);
+ 	keyboard->keyboard = virtual_keyboard;
+ 	keyboard->window = window_create_custom(virtual_keyboard->display);
+ 	keyboard->widget = window_add_widget(keyboard->window, keyboard);
++	keyboard->shift_touch_id = TOUCH_ID_NONE;
++	keyboard->ctrl_touch_id = TOUCH_ID_NONE;
++	keyboard->longpress_slot = -1;
++	magnifier_dismiss(keyboard);
++	toytimer_init(&keyboard->longpress_timer, CLOCK_MONOTONIC,
++		      virtual_keyboard->display, longpress_timer_handler);
+ 
+ 	virtual_keyboard->ips =
+ 		zwp_input_panel_v1_get_input_panel_surface(virtual_keyboard->input_panel,
+ 							   window_get_wl_surface(keyboard->window));
+ 	virtual_keyboard->keyboard = keyboard;
+ 
+ 	window_set_title(keyboard->window, "Virtual keyboard");
+ 	window_set_appid(keyboard->window,
+ 			 "org.freedesktop.weston.virtual-keyboard");
+ 	window_set_user_data(keyboard->window, keyboard);
+ 
+ 	widget_set_redraw_handler(keyboard->widget, redraw_handler);
+ 	widget_set_resize_handler(keyboard->widget, resize_handler);
+ 	widget_set_button_handler(keyboard->widget, button_handler);
+ 	widget_set_touch_down_handler(keyboard->widget, touch_down_handler);
+ 	widget_set_touch_up_handler(keyboard->widget, touch_up_handler);
++	widget_set_touch_motion_handler(keyboard->widget, touch_motion_handler);
++	widget_set_touch_cancel_handler(keyboard->widget, touch_cancel_handler);
+ 
+ 	window_schedule_resize(keyboard->window,
+ 			       keyboard_width(layout),
+ 			       keyboard_height(layout));
+ 
+ 	display_set_output_configure_handler(virtual_keyboard->display,
+ 					     display_output_handler);
+ }
+@@ -1136,16 +1453,17 @@
+ 		zwp_input_panel_surface_v1_destroy(virtual_keyboard->ips);
+ 
+ 	if (virtual_keyboard->input_panel)
+ 		zwp_input_panel_v1_destroy(virtual_keyboard->input_panel);
+ 
+ 	if (virtual_keyboard->input_method)
+ 		zwp_input_method_v1_destroy(virtual_keyboard->input_method);
+ 
++	toytimer_fini(&virtual_keyboard->keyboard->longpress_timer);
+ 	widget_destroy(virtual_keyboard->keyboard->widget);
+ 	window_destroy(virtual_keyboard->keyboard->window);
+ 	free(virtual_keyboard->keyboard);
+ }
+ 
+ int
+ main(int argc, char *argv[])
+ {
