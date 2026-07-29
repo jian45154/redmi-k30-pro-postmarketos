@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Claude Code PreToolUse gate (bringup governance v4).
+# Claude Code PreToolUse classifier (bringup governance v4).
 #
-# The repo's own governance chain — not a human prompt — decides whether a
-# Bash tool call that changes device or raw-image state may proceed:
+# This hook is not an authorization, receipt, claim, or executor. It only
+# prevents the harness permission layer from approving raw state changes and
+# lets one exact D110 command reach that executor's own independent gates:
 #   * governed D110 executor (scripts/72) with a green safety lint -> allow
 #   * governed executor with a failing safety lint                 -> deny
 #   * any other fastboot state change or raw block-device write    -> deny
