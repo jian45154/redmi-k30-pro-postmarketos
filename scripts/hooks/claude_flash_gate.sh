@@ -32,25 +32,65 @@ decide() {
 # denial, never auto-approval.
 scan_cmd=${cmd//$'\\\n'/}
 scan_cmd=$(printf '%s' "$scan_cmd" | python3 -c '
-import codecs
 import re
+import string
 import sys
 
 text = sys.stdin.read()
 ansi_quote = re.compile(r"\$(\x27)((?:\\.|[^\x27])*)\1")
+simple = {
+    "a": "\a", "b": "\b", "e": "\x1b", "E": "\x1b", "f": "\f",
+    "n": "\n", "r": "\r", "t": "\t", "v": "\v",
+    "\\": "\\", "\x27": "\x27", "\"": "\"",
+}
+
+def scalar(value):
+    if value == 0 or value > 0x10ffff or 0xd800 <= value <= 0xdfff:
+        return ""
+    return chr(value)
+
+def decode_ansi(raw):
+    out = []
+    index = 0
+    while index < len(raw):
+        if raw[index] != "\\" or index + 1 == len(raw):
+            out.append(raw[index])
+            index += 1
+            continue
+        code = raw[index + 1]
+        index += 2
+        if code in simple:
+            out.append(simple[code])
+        elif code == "c" and index < len(raw):
+            out.append(scalar(ord(raw[index].upper()) & 0x1f))
+            index += 1
+        elif code in "01234567":
+            digits = code
+            while index < len(raw) and len(digits) < 3 and raw[index] in "01234567":
+                digits += raw[index]
+                index += 1
+            out.append(scalar(int(digits, 8) & 0xff))
+        elif code == "x":
+            digits = ""
+            while index < len(raw) and len(digits) < 2 and raw[index] in string.hexdigits:
+                digits += raw[index]
+                index += 1
+            out.append(scalar(int(digits, 16)) if digits else "x")
+        elif code in ("u", "U"):
+            limit = 4 if code == "u" else 8
+            digits = ""
+            while index < len(raw) and len(digits) < limit and raw[index] in string.hexdigits:
+                digits += raw[index]
+                index += 1
+            out.append(scalar(int(digits, 16)) if digits else code)
+        else:
+            # Dropping an unknown escape is conservative for denial: it may
+            # reveal a protected token but can never widen auto-approval.
+            out.append(code)
+    return "".join(out).replace("\x00", "")
 
 def decode(match):
-    try:
-        raw = re.sub(
-            r"\\c(.)",
-            lambda control: chr(ord(control.group(1).upper()) & 0x1f),
-            match.group(2),
-        )
-        # Bash cannot retain NUL in an argument. Removing it here mirrors the
-        # spelling that reaches execve and avoids command-substitution warnings.
-        return codecs.decode(raw, "unicode_escape").replace("\x00", "")
-    except (UnicodeDecodeError, ValueError):
-        return ""
+    return decode_ansi(match.group(2))
 
 for _ in range(32):
     normalized = ansi_quote.sub(decode, text)
