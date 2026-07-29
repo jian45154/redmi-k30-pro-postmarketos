@@ -40,6 +40,13 @@ the engine's rules.
     entry approved by the owner (ian) for that specific profile, plus a
     distinct-hash rollback artifact, a repeat guard on re-writes, and
     post-write verification.
+- The canonical owner entry point for a persistent-profile authorization is
+  `python3 scripts/bringup_loop.py authorize-profile ...`. It is host-only,
+  requires safe idle, a profile under `profiles/`, a clean reviewed Git
+  `HEAD`/index/worktree for its TCB, and an exact interactive TTY
+  confirmation. It may only update `policy.json`; it never creates an
+  experiment, claims a receipt, or calls an executor. The TTY ceremony records
+  an owner declaration, not cryptographic identity proof.
 - `erase`, `format`, repartition, `set_active`, `--force`, and
   verity-disable flags are permanently refused; the forbidden set is
   hardcoded in the engine and no data file can widen it. Bootloader relock
@@ -48,7 +55,9 @@ the engine's rules.
 - One state change per experiment. After a claim consumes its receipt, no
   outcome permits an automatic retry; running again means a new experiment
   and a new receipt. The claims ledger `notes/bringup-claims/` is
-  append-only and is never cleaned.
+  append-only and is never cleaned. A durable per-experiment guard is written
+  before the ledger/active-record commit, so a partial host failure stops for
+  audit and cannot reissue the command.
 - Prefer, in order: read-only probes → host-side rebuilds verified without
   the device → the smallest reversible device step.
 - Stop and report when device identity, partition target, image provenance,
@@ -60,8 +69,10 @@ the engine's rules.
   (`scripts/72_stage_downstream_ssh_wifi_test.sh`,
   `docs/lmi-d110-session-approval.md`) and the D114 userdata deploy gates
   (`scripts/lmi_p2_d114/`). No fastboot state change may happen outside
-  those executors or an engine-claimed `exact_command`;
-  `scripts/65_lmi_release_safety_lint.sh` enforces the invoker set.
+  those executors or an engine-claimed `exact_command`.
+  `scripts/65_lmi_release_safety_lint.sh` enforces the shell invoker set and
+  enumerates the separately hash-locked/tested D114 Python/PowerShell
+  transition graph.
 
 ## Data hygiene
 

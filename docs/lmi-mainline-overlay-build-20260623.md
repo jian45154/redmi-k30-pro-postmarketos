@@ -3,6 +3,8 @@
 > **Archived evidence — do not execute commands from this file.**
 > This record preserves commands and observations from a completed historical
 > experiment; it is not a current device-action workflow.
+> The retired helper filenames preserved below were removed in the 2026-07-25
+> governance cleanup and no longer form a runnable chain.
 
 ## Purpose
 

@@ -58,9 +58,10 @@ fully redistributable.
    launcher relative-invocation fix, and the governance consolidation
    (`AGENTS.md`). These must be committed and merged to `master` to be part
    of the public tree.
-2. **CI not installed.** `docs/release/edge-release-checks.workflow.yml` is a
-   template only; copying it to `.github/workflows/` (requires a token with
-   workflow scope) would let the public run the same static release checks.
+2. **CI installation resolved after this audit.** The former
+   `docs/release/edge-release-checks.workflow.yml` duplicate template was
+   removed; `.github/workflows/edge-release-checks.yml` is the single installed
+   workflow and runs the same static release checks.
 3. **Installer release assets.** Tag `v0.1.0-alpha.1` with
    `scripts/73_build_lmi_installer_source_release.sh` output
    (source tarball + sha256) as a GitHub pre-release, per

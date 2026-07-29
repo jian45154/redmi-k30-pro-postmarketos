@@ -1,7 +1,10 @@
 # LMI D114 WSL deploy host-gate refusal — 2026-07-22
 
-Status: **host gate aborted; no device query, transport attempt, or device state
-change. A new exact approval is required before any later invocation.**
+> **Archived evidence — do not execute commands from this file.**
+
+Status: **host gate aborted; no device query, transport attempt, or device
+state change. The recorded approval is expired and grants no later
+invocation.**
 
 The owner approved the complete `deploy-once` command recorded in
 [lmi-d114-wsl-userdata-preflight-2026-07-22.md](lmi-d114-wsl-userdata-preflight-2026-07-22.md),

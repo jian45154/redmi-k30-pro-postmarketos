@@ -1,5 +1,9 @@
 # Repair Phase 41: v27 Boot Partition Write
 
+> **Archived evidence — do not execute commands from this file.**
+> The approval recorded below was consumed in 2026 and grants no present
+> authorization.
+
 Operator: Lucien Auregin (ian)
 Date: 2026-06-23 Australia/Sydney
 

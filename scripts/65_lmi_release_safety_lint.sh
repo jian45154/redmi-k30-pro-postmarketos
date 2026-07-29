@@ -6,20 +6,23 @@ usage() {
 Usage:
   scripts/65_lmi_release_safety_lint.sh
 
-Static safety lint (bringup governance v4). Three checks, all read-only:
+Static safety lint (bringup governance v4). Five checks, all read-only:
 
-1. Invoker set: fastboot state-change command text (flash/boot/reboot/
-   erase/format) may only appear in the enumerated script set below. Adding
-   a new fastboot-invoking script requires editing this allowlist in review.
+1. Shell invoker set: fastboot state-change command text (flash/boot/reboot/
+   erase/format) may only appear in the enumerated shell set below.
 2. Forbidden operations: no live shell script may contain erase/format/
    relock commands or flash targets outside the governed set.
-3. Governance data: config/governance/constants.json and policy.json must
+3. D114 transition set: every Python/PowerShell file containing the exact
+   userdata-flash contract must be in the reviewed transition allowlist.
+4. Retired route: removed M-r6/M-r7 helpers may not reappear.
+5. Governance data: config/governance/constants.json and policy.json must
    validate against scripts/bringup_loop.py, which asserts that the data
    file's forbidden_command_words match the engine's hardcoded copy.
 
-This script never talks to the phone. Literal-line pinning of individual
-retired scripts was removed with governance v4; the retired r6 stage
-scripts remain listed here only until they are deleted (migration M2').
+This script never talks to the phone. The retired M-r6/M-r7 state-change and
+command-generation chain has been deleted. D110 remains the only live shell
+executor. The separately hash-locked and tested D114 Python/PowerShell
+transition graph is enumerated by this lint until it is wired to v4 claims.
 EOF
 }
 
@@ -43,19 +46,9 @@ fail() {
 echo "lmi safety lint: fastboot invoker set"
 # Scripts permitted to contain fastboot state-change command text.
 #   executor (active):  72 — guarded D110 RAM-boot session flow
-#   executor (retired): 53 55 60 61 — mainline r6 stages; evidence only,
-#                       scheduled for deletion in migration M2'
-#   generator/lint:     48 49 57 59 63 65 — emit or check command text,
-#                       never execute device state changes
-allowed_fastboot_scripts='scripts/48_preflight_lmi_fastbootd.sh
-scripts/49_generate_lmi_flash_command_sheet.sh
-scripts/53_stage_lmi_fastbootd_flash.sh
-scripts/55_stage_lmi_rollback_boot.sh
-scripts/57_archive_lmi_release_manifest.sh
-scripts/59_release_static_ci.sh
-scripts/60_stage_lmi_enter_fastbootd.sh
-scripts/61_stage_lmi_reboot_after_flash.sh
-scripts/63_generate_lmi_handoff_status.sh
+#   lint/contracts:     59 65 — check command text, never execute device
+#                      state changes
+allowed_fastboot_scripts='scripts/59_release_static_ci.sh
 scripts/65_lmi_release_safety_lint.sh
 scripts/72_stage_downstream_ssh_wifi_test.sh'
 fastboot_invokers=$(git grep -lE \
@@ -95,6 +88,68 @@ reject_pattern "forbidden pmbootstrap flasher write helper in scripts" \
 	'flasher[[:space:]]+(flash_kernel|flash_dtbo|flash_vbmeta|sideload)'
 reject_pattern "forbidden erase/format/relock in scripts" \
 	'(fastboot|"\$fastboot_bin")[^[:cntrl:]]*(erase|format|oem[[:space:]]+lock|flashing[[:space:]]+lock)'
+
+echo "lmi safety lint: D114 transition contract set"
+# These are the only retained Python/PowerShell files allowed to contain the
+# exact quoted `flash userdata` contract. Two are executors/orchestrators and
+# two revalidate that frozen command in the transition evidence graph.
+allowed_d114_contract_files='scripts/lmi_p2_d114/deploy_userdata.py
+scripts/lmi_p2_d114/deploy_userdata_helper.ps1
+scripts/lmi_p2_d114/deploy_userdata_wsl.py
+scripts/lmi_p2_d114/postwrite_revalidate_wsl.py'
+d114_contract_files=$(git grep -lE \
+	"['\"]flash['\"][^[:cntrl:]]{0,160}['\"]userdata['\"]|['\"]userdata['\"][^[:cntrl:]]{0,160}['\"]flash['\"]" \
+	-- 'scripts/**/*.py' 'scripts/**/*.ps1' 'scripts/*.py' 'scripts/*.ps1' \
+	| sort || true)
+unexpected_d114=$(comm -23 <(printf '%s\n' "$d114_contract_files") \
+	<(printf '%s\n' "$allowed_d114_contract_files" | sort))
+missing_d114=$(comm -13 <(printf '%s\n' "$d114_contract_files") \
+	<(printf '%s\n' "$allowed_d114_contract_files" | sort))
+if [ -n "$unexpected_d114" ]; then
+	printf '%s\n' "$unexpected_d114" >&2
+	fail "userdata flash contract text outside the reviewed D114 transition set"
+fi
+if [ -n "$missing_d114" ]; then
+	printf '%s\n' "$missing_d114" >&2
+	fail "reviewed D114 transition contract file is missing its frozen command"
+fi
+if ! git grep -qF \
+	"\$write = Invoke-Fastboot @('-s', \$serial, 'flash', 'userdata', \$candidatePath)" \
+	-- scripts/lmi_p2_d114/deploy_userdata_helper.ps1; then
+	fail "Windows D114 executor no longer exposes the reviewed exact flash boundary"
+fi
+if ! git grep -qF \
+	'argv = (*audit.argv_prefix, "-s", device.serial, "flash", "userdata", candidate_arg)' \
+	-- scripts/lmi_p2_d114/deploy_userdata_wsl.py; then
+	fail "WSL D114 executor no longer exposes the reviewed exact flash boundary"
+fi
+
+echo "lmi safety lint: retired M-r6/M-r7 helper absence"
+retired_helpers=(
+	scripts/48_preflight_lmi_fastbootd.sh
+	scripts/49_generate_lmi_flash_command_sheet.sh
+	scripts/50_scan_lmi_rollback_boots.sh
+	scripts/51_prepare_lmi_fastbootd_entry.sh
+	scripts/52_wait_lmi_fastbootd.sh
+	scripts/53_stage_lmi_fastbootd_flash.sh
+	scripts/54_monitor_lmi_post_boot.sh
+	scripts/55_stage_lmi_rollback_boot.sh
+	scripts/56_lmi_persistent_flash_plan.sh
+	scripts/57_archive_lmi_release_manifest.sh
+	scripts/58_generate_lmi_execution_checklist.sh
+	scripts/60_stage_lmi_enter_fastbootd.sh
+	scripts/61_stage_lmi_reboot_after_flash.sh
+	scripts/62_refresh_lmi_release_docs.sh
+	scripts/63_generate_lmi_handoff_status.sh
+	scripts/64_audit_lmi_persistent_readiness.sh
+	scripts/66_wait_and_audit_lmi_fastbootd.sh
+	scripts/67_summarize_lmi_post_boot_evidence.sh
+)
+for retired in "${retired_helpers[@]}"; do
+	if [ -e "$retired" ] || [ -L "$retired" ]; then
+		fail "retired governance helper reappeared: $retired"
+	fi
+done
 
 echo "lmi safety lint: governance data consistency"
 if ! python3 scripts/bringup_loop.py validate >/dev/null; then

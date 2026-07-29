@@ -1,5 +1,8 @@
 # Flash Plan: Persistent pmOS rootfs (PLAN ONLY — needs ian approval)
 
+> **Archived evidence — do not execute commands from this file.**
+> This predates governance v4 and grants no present authorization.
+
 签名：codex_ian | 2026-06-17
 
 > NOTHING in this file has been executed. Do not run any write command until

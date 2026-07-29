@@ -8,7 +8,7 @@
 ## 1. 今天已完成（已提交推送到 `agent/lmi-d114-p2-r1-sixrow-release`）
 
 - **治理基线 v4 落地**：`config/governance/{constants,policy}.json`、
-  `scripts/bringup_loop.py`、`tests/governance/`（27 测试）、lint 重写、
+  `scripts/bringup_loop.py`、`tests/governance/`（现为 52 测试）、lint 重写、
   AGENTS.md 改写。见 `notes/governance-v4-landing-2026-07-22.md`。
 - **公开 CI 首次全绿**：workflow 触发器改 master/edge；P1/P2-D114 的宿主绑定
   测试改为异质主机跳过（`LMI_P1_REQUIRE_PINNED_FIXTURE_TOOLS`、

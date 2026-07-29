@@ -1,5 +1,8 @@
 # Repair Phase 42: v27 Persistent Boot Display Observation
 
+> **Archived evidence — do not execute commands from this file.**
+> This is an outcome record, not a current device-action workflow.
+
 Operator: Lucien Auregin (ian)
 Date: 2026-06-23 Australia/Sydney
 

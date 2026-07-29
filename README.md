@@ -98,17 +98,38 @@ per-profile owner authorization. The intent summary lives in
 [`AGENTS.md`](AGENTS.md); the landing rationale is recorded in
 [`notes/governance-v4-landing-2026-07-22.md`](notes/governance-v4-landing-2026-07-22.md).
 
+The owner can record one exact persistent profile/target authorization without
+editing JSON manually. The tracked profile format and local-image boundary are
+documented in [`profiles/README.md`](profiles/README.md):
+
+```bash
+python3 scripts/bringup_loop.py authorize-profile \
+  --profile profiles/<reviewed-profile>.json \
+  --target <boot|userdata|dtbo|vbmeta> \
+  --note "<what the owner reviewed>"
+```
+
+This single invocation requires the engine, constants, policy, and profile to
+match one clean reviewed Git commit; it then stream-verifies the candidate and
+distinct-hash rollback artifact, displays their complete pins, and requires an
+exact confirmation on an interactive TTY. It only updates
+`config/governance/policy.json`: it does not create an experiment, issue or
+claim a receipt, print a device command, or contact hardware. The declared
+owner comes from policy; the TTY ceremony is an auditable declaration rather
+than cryptographic authentication. A profile authorization remains in policy
+until separately reviewed and removed, while every actual state change still
+consumes its own one-shot claim.
+
 Static release checks, including the installer and P1, P2, P2-D114, and P3 host
-test suites, can be run locally with `scripts/59_release_static_ci.sh`. A GitHub
-Actions workflow template is kept at
-[`docs/release/edge-release-checks.workflow.yml`](docs/release/edge-release-checks.workflow.yml);
-copy it to `.github/workflows/` only with a token that has workflow scope.
-The old r6 refresh helper is retained only to reconstruct its dated records;
-it is not a current release workflow.
+test suites, can be run locally with `scripts/59_release_static_ci.sh`. The
+installed GitHub Actions workflow is
+[`edge-release-checks.yml`](.github/workflows/edge-release-checks.yml). The
+retired M-r6/M-r7 device-execution and command-generation helpers were removed;
+their dated documents remain non-runnable historical evidence.
 
 The reusable host-side automation loop is documented in
 [`docs/mainline-automation-loop-20260624.md`](docs/mainline-automation-loop-20260624.md).
-Use `scripts/68_mainline_progress_loop.sh --once --quick` for the default
+Use `scripts/68_mainline_progress_loop.sh --once` for the default
 read-only loop, and `scripts/69_audit_lmi_resources.sh --network` when local
 mainline resources need to be compared with remote repository refs.
 

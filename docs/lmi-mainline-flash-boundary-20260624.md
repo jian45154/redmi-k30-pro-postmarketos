@@ -3,6 +3,8 @@
 > **Archived evidence — do not execute commands from this file.**
 > This record predates the final M-r6/M-r7 results. Its command blocks and
 > "current" labels are historical evidence, not present authorization.
+> The retired helper filenames preserved below were removed in the 2026-07-25
+> governance cleanup and no longer form a runnable chain.
 
 ## Decision update
 

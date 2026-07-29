@@ -7,9 +7,8 @@ Usage:
   scripts/68_mainline_progress_loop.sh [options]
 
 Run a reusable host-side loop for the xiaomi-lmi mainline/copydown route.
-The default loop is read-only: local resource audit, static CI, and release
-bundle/readiness checks when the bundle exists. It never executes reboot, boot,
-flash, erase, format, sideload, or partition writes.
+The loop is read-only: local resource audit, static CI, and release-bundle hash
+verification when the bundle exists. It never changes device state.
 
 Options:
   --once                 Run one iteration. This is the default.
@@ -19,15 +18,12 @@ Options:
                          bundle, and release docs before audits.
   --r7-earlydebug        With --build, build the r7 earlydebug boot-only
                          candidate naming set instead of the r6 default.
-  --fastbootd            Include read-only fastbootd wait/preflight/audit.
   --network-resources    Ask the resource audit to compare remote refs too.
-  --quick                Use quick checks where supported.
   --report PATH          Write loop report to PATH.
   -h, --help             Show this help.
 
 Environment overrides:
   LMI_RELEASE_BUNDLE_DIR
-  LMI_ROLLBACK_BOOT_IMG
   LMI_PMOS_TEST_PASSWORD   Required with --build; never written to the report.
   PMOS_EXPORT_DIR
   OUT_DIR
@@ -42,9 +38,7 @@ report=${LMI_MAINLINE_LOOP_REPORT:-$bundle_dir/MAINLINE_PROGRESS_LOOP.txt}
 iterations=1
 interval_s=300
 do_build=0
-do_fastbootd=0
 network_resources=0
-quick=0
 test_password=
 overlay_variant=--debug-shell-android-cmdline-no-efi-stub-48bit-bootmem
 
@@ -82,16 +76,8 @@ while [ "$#" -gt 0 ]; do
 			report=${LMI_MAINLINE_LOOP_REPORT:-$bundle_dir/MAINLINE_PROGRESS_LOOP.txt}
 			shift
 			;;
-		--fastbootd)
-			do_fastbootd=1
-			shift
-			;;
 		--network-resources)
 			network_resources=1
-			shift
-			;;
-		--quick)
-			quick=1
 			shift
 			;;
 		--report)
@@ -216,19 +202,20 @@ build_release_bundle() {
 		env OUT_DIR="$copydown_dir" LMI_RELEASE_TAG="$release_tag" \
 			LMI_RELEASE_BUNDLE_DIR="$bundle_dir" \
 			"$repo/scripts/47_make_lmi_release_bundle.sh"
-	run_step "refresh release docs" \
-		"$repo/scripts/62_refresh_lmi_release_docs.sh" --quick || true
+}
+
+verify_release_bundle() {
+	(
+		cd "$bundle_dir"
+		sha256sum -c SHA256SUMS
+	)
 }
 
 audit_iteration() {
 	local idx=$1
 	local resource_args=()
-	local fastbootd_args=()
 	if [ "$network_resources" -eq 1 ]; then
 		resource_args+=(--network)
-	fi
-	if [ "$quick" -eq 1 ]; then
-		fastbootd_args+=(--quick)
 	fi
 
 	log "# iteration $idx"
@@ -238,7 +225,6 @@ audit_iteration() {
 	log "release_tag=$release_tag"
 	log "overlay_variant=$overlay_variant"
 	log "do_build=$do_build"
-	log "do_fastbootd=$do_fastbootd"
 	log "network_resources=$network_resources"
 	log
 	log "No reboot, boot, flash, erase, format, sideload, or partition write is executed by this loop."
@@ -252,14 +238,10 @@ audit_iteration() {
 	fi
 
 	if bundle_complete; then
-		run_step "persistent readiness audit" "$repo/scripts/64_audit_lmi_persistent_readiness.sh" || true
-		if [ "$do_fastbootd" -eq 1 ]; then
-			run_step "fastbootd wait and audit" \
-				"$repo/scripts/66_wait_and_audit_lmi_fastbootd.sh" "${fastbootd_args[@]}" || true
-		fi
+		run_step "release bundle hashes" verify_release_bundle || true
 	else
 		log "bundle_status=MISSING"
-		log "bundle_message=run this loop with --build, or restore $bundle_dir before fastbootd preflight."
+		log "bundle_message=run this loop with --build, or restore $bundle_dir for host-side verification."
 		log
 	fi
 }

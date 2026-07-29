@@ -8,12 +8,14 @@ known_good_kernel_apk_sha256=01b199611407c100c621599bd3060084c19e1fd90f8e9df64cc
 
 echo "release static CI: shell syntax"
 while IFS= read -r script; do
+	[ -f "$script" ] || continue
 	echo "  bash -n $script"
 	bash -n "$script"
 done < <(git ls-files 'scripts/*.sh' | sort)
 
 echo "release static CI: python syntax"
 while IFS= read -r script; do
+	[ -f "$script" ] || continue
 	echo "  compile $script"
 	python3 - "$script" <<'PY'
 import pathlib
@@ -147,6 +149,7 @@ if ! git ls-files --error-unmatch -- "$known_good_kernel_apk" >/dev/null 2>&1; t
 	exit 1
 fi
 while IFS= read -r -d '' path; do
+	[ -f "$path" ] || continue
 	size=$(stat -c '%s' "$path")
 	if [ "$size" -gt "$max_tracked_file_bytes" ]; then
 		if [ "$path" = "$known_good_kernel_apk" ]; then

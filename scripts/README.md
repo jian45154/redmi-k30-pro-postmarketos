@@ -20,8 +20,9 @@ names are preserved because many notes cite them directly.
 | --- | --- |
 | `40` | Prepare the external mainline overlay in a temporary pmbootstrap cache. |
 | `45`-`47` | Build, verify, and bundle copydown boot images. |
-| `48`-`58` | Fastbootd preflight, approval sheets, rollback scan, staged write, monitor, and release docs. |
-| `59`-`69` | Static CI, guarded fastbootd/reboot helpers, release refresh, readiness audit, and mainline progress/resource loops. |
+| `48`-`58`, `60`-`64`, `66`-`67` | Retired M-r6/M-r7 execution, generation, readiness, and monitoring chain; removed after governance v4 consolidation. |
+| `59`, `65` | Static release CI and the governance safety lint. |
+| `68`-`69` | Read-only mainline host progress and resource-audit loops. |
 
 ## P1 sealed-build helpers
 
@@ -49,9 +50,13 @@ Prefer explicit track names in new scripts:
 - `downstream_vNN_<action>.sh` for downstream work.
 - `mainline_rNN_<action>.sh` for mainline/copydown work.
 
-Keep destructive or hardware-state-changing commands behind an explicit,
-exact-scope approval gate. Persistent partition writes retain their fresh
-per-action confirmation. The D110 RAM-boot helper instead uses one approval
+`scripts/bringup_loop.py` is the only current governance authority. The owner
+records a persistent profile with its host-only `authorize-profile` command;
+every device state change then uses a separate experiment and one-shot claim.
+Do not add a parallel approval workflow.
+
+Keep destructive or hardware-state-changing commands behind that exact-scope
+gate. The D110 RAM-boot helper temporarily uses one transition approval
 bound to the current Codex thread, helper, policy, image, tool, host boot, and
 device; every execute invocation still performs a fresh read-only preflight
 and an internal single-use attempt ticket.

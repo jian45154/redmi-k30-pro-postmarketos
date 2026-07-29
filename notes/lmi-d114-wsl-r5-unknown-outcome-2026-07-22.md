@@ -1,5 +1,7 @@
 # LMI D114 WSL r5 write attempt — UNKNOWN outcome investigation (2026-07-22)
 
+> **Archived evidence — do not execute commands from this file.**
+
 Status: **the one authorized r5 attempt is spent; route
 `USERDATA_WRITE_OUTCOME_UNKNOWN_NO_RETRY`. No retry, no re-flash, and no
 rollback is authorized by this note. Investigation evidence only.**

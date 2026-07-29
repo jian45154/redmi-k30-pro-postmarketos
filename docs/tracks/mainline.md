@@ -12,15 +12,16 @@
   - `artifacts/mainline-pmaports/linux-postmarketos-qcom-sm8250-lmi/`
 - Primary boot strategy: copydown boot image that presents an ABL-compatible
   outer image and passes a runtime mainline DTB.
-- Persistent test gate: recovery fastbootd with `is-userspace=yes`, exact
-  artifact hashes, and separate approvals for each write.
+- Persistent test gate: governance-v4 hash-bound profile authorization, an
+  exact one-shot claim, and executor-side device verification.
 
 ## Distinctive Features
 
 - Intended long-term path for mainline SM8250 hardware support.
 - Uses Linux 6.19 based artifacts in the imported overlay work.
 - Separates host-side candidate generation from hardware writes.
-- Uses guarded scripts for preflight, stage execution, rollback, and monitoring.
+- Uses `scripts/bringup_loop.py` as the single governance authority; the
+  retired M-r6/M-r7 helper chain remains only in dated evidence.
 - Treats failed USB/SSH after boot as an early kernel/initramfs visibility
   problem, not as a rootfs or firewall problem.
 
@@ -41,7 +42,7 @@ evidence yet that the `M-r6` or `M-r7` kernel reaches an observable initramfs.
 ## Open Work
 
 - Recover or collect earlier boot evidence before another mainline write.
-- Use read-only fastbootd/preflight checks before any future write.
+- Use v4 `preflight` and executor-side identity checks before any future write.
 - Avoid rewriting rootfs unless new evidence proves the existing rootfs image is
   wrong.
 - Keep `super`, `dtbo`, `vbmeta`, `persist`, modem/EFS, calibration,
@@ -49,8 +50,8 @@ evidence yet that the `M-r6` or `M-r7` kernel reaches an observable initramfs.
 
 ## Safety Boundary
 
-Every hardware-state change in this track requires fresh exact approval:
-entering fastbootd, writing rootfs, writing boot, rebooting, or rollback. The
-recorded `M-r7` rollback changed the visible device behavior from persistent
-Redmi logo to recovery screen, so recovery appears available but must not be
-treated as guaranteed.
+Every hardware-state change in this track requires a fresh v4 experiment and
+one-shot claim. Persistent writes additionally require an owner-entered,
+hash-bound profile authorization. The recorded `M-r7` rollback changed the
+visible device behavior from persistent Redmi logo to recovery screen, so
+recovery appears available but must not be treated as guaranteed.

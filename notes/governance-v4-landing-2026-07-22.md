@@ -11,22 +11,25 @@ real state, and what is deliberately deferred.
   receipt TTL, partition targets, operation tiers, forbidden command words.
   The engine keeps a hardcoded copy of the forbidden set and refuses to run
   if the data file diverges (the only permitted double-write).
-- `config/governance/policy.json` — schema-validated policy (no byte-exact
-  code binding). Standing scopes: volatile (`device_reboot`) and ram_rw
+- `config/governance/policy.json` — schema-validated policy (not itself a
+  cryptographic code signature). Standing scopes: volatile (`device_reboot`) and ram_rw
   (`ram_boot`, `runtime_handoff`). `authorized_profiles` is empty: no
   persistent write is authorized by this landing.
-- `scripts/bringup_loop.py` — L3 engine: `new` (auto-computes all hashes) /
-  `validate` / `approve` (dry-run) / `claim` (atomic issue-and-claim under
-  the ledger lock) / `result` / `observe` / `archive`. Single receipt,
+- `scripts/bringup_loop.py` — L3 engine: `authorize-profile` (clean-Git,
+  host-only owner entry point) / `new` (auto-computes all hashes) / `validate`
+  / `preflight` (dry-run; renamed from the original ambiguous `approve`) /
+  `claim` (durable replay guard followed by ledger and active-record commit
+  under one lock) / `result` / `observe` / `archive`. Single receipt,
   single `action_digest`, append-only ledger `notes/bringup-claims/claims.log`,
   frozen archive `notes/bringup-completed/`. One structural validator shared
   by every subcommand (the `_open_spec` split-validator failure mode from
   `notes/lmi-d114-wsl-deploy-refusal-2026-07-22.md` is structurally excluded).
-- `tests/governance/test_bringup_loop.py` — 27 host tests; wired into
+- `tests/governance/test_bringup_loop.py` — 52 host tests; wired into
   `scripts/59_release_static_ci.sh`.
 - `scripts/65_lmi_release_safety_lint.sh` — rewritten: literal-line pinning
-  replaced by an enumerated fastboot invoker set plus the existing forbidden
-  pattern scans, plus governance data validation.
+  replaced by an enumerated shell invoker set, explicit D114 transition
+  contracts, retired-helper absence, forbidden pattern scans, and governance
+  data validation.
 - `AGENTS.md` — hardware governance and workflow-gate sections rewritten to
   the v4 tier model; data hygiene, multi-agent, routing, conventions kept.
 
@@ -65,11 +68,13 @@ change may happen outside the allowlisted executors or an engine-claimed
 
 ## Deferred (in order)
 
-- **M2′ deployer convergence**: merge `deploy_userdata.py` (3118 lines) and
-  `deploy_userdata_wsl.py` (2014 lines) into one shared validation core with
-  platform shims, driven by `profiles/*.json`; wire its execute path to
-  engine claims; then delete the retired r6 stage scripts (53/55/60/61 and
-  the generators that reference them) and shrink the lint invoker set.
+- **M2′ deployer convergence**: the retired M-r6/M-r7 stage scripts and their
+  command-generation chain were removed on 2026-07-25, and the lint invoker
+  set was reduced to the live D110 executor plus static contract checks.
+  The remaining work is to merge `deploy_userdata.py` and
+  `deploy_userdata_wsl.py` into one shared validation core with platform
+  shims, driven by `profiles/*.json`, and wire its execute path to engine
+  claims.
 - **M3′ probe boilerplate**: extract the `section()`/`run()`/`grep_dmesg()`
   helpers duplicated across 9 on-device probe scripts (the draft's "SSH
   preamble" premise was wrong — probes run on-device).
@@ -82,7 +87,7 @@ change may happen outside the allowlisted executors or an engine-claimed
 
 ## Acceptance evidence
 
-- `python3 -m unittest discover -s tests/governance` — 27 tests, all pass.
+- `python3 -m unittest discover -s tests/governance` — 52 tests, all pass.
 - `bash scripts/65_lmi_release_safety_lint.sh` — OK (invoker set, forbidden
   patterns, governance validation).
 - `python3 scripts/bringup_loop.py validate` — "safe idle state" with no

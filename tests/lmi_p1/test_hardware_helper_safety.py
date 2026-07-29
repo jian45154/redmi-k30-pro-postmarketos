@@ -1221,7 +1221,6 @@ class MainlineProgressPasswordTests(unittest.TestCase):
             "45_build_lmi_copydown_boot.sh",
             "46_verify_lmi_copydown_boot.sh",
             "47_make_lmi_release_bundle.sh",
-            "62_refresh_lmi_release_docs.sh",
             "69_audit_lmi_resources.sh",
             "59_release_static_ci.sh",
         )

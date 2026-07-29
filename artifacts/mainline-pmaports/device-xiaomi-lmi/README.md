@@ -1,5 +1,10 @@
 # device-xiaomi-lmi — Xiaomi POCO F2 Pro / Redmi K30 Pro
 
+> **Imported reference — not an executable project procedure.**
+> Device-action commands from the upstream reference were removed. This
+> repository accepts hardware state changes only through governance v4 and a
+> claimed external executor.
+
 Mainline port (kernel `linux-postmarketos-qcom-sm8250-lmi`, SoC Qualcomm SM8250 / Snapdragon 865).
 
 ## Estado del hardware
@@ -67,15 +72,12 @@ nmcli c add type gsm ifname '*' con-name internet apn TU_APN
 - Blobs QCOM (adsp, cdsp, slpi, venus, a650_zap, ipa_fws) + sensores: paquete `firmware-xiaomi-lmi`.
 - Cirrus Logic (audio) y Focaltech (táctil): extraídos de `firmware-xiaomi-lmi-Tag.zip` (incluido en el árbol).
 
-## Flasheo
+## Installation boundary
 
-```bash
-pmbootstrap install
-pmbootstrap export
-fastboot flash boot boot.img
-fastboot flash system xiaomi-lmi.img
-fastboot reboot
-```
+This imported package does not define an installation route for this project.
+Build artifacts must first be represented by a reviewed, hash-bound profile
+with a distinct rollback artifact. Authorization, claim, live device gates,
+execution, and result capture remain separate governance-v4 steps.
 
 ## Debug primer boot
 

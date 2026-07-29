@@ -1,5 +1,8 @@
 # Repair Phase 40: v27 Boot Persistence Preflight
 
+> **Archived evidence — do not execute commands from this file.**
+> The recorded preflight is expired and is not a current governance route.
+
 Operator: Lucien Auregin (ian)
 Date: 2026-06-23 Australia/Sydney
 

@@ -61,18 +61,22 @@ Contents:
 - SHA256SUMS
 
 Safety boundary:
-- Do not flash from bootloader fastboot as a default path.
-- For persistent boot image testing, use recovery fastbootd only after
-  `fastboot getvar is-userspace` returns `yes`.
-- Do not flash boot/rootfs without fresh exact approval for the exact command.
+- This is a host-side artifact bundle, not an authorization or execution
+  procedure.
+- Persistent testing requires a reviewed profile with a distinct-hash rollback
+  artifact, an owner `bringup_loop.py authorize-profile` declaration, a fresh
+  experiment, preflight, and one-shot claim.
+- The governance engine does not execute device commands. Use only an executor
+  adapter that consumes the claimed exact command and enforces the live device
+  gates; no generic adapter is wired for this historical bundle.
 - Do not touch super, dtbo, vbmeta, persist, modem/EFS/calibration partitions,
   vendor_boot, init_boot, or bootloader relock paths.
 
-Expected preflight:
+Expected host-side checks:
 1. scripts/46_verify_lmi_copydown_boot.sh with OUT_DIR set to the copydown dir.
-2. scripts/48_preflight_lmi_fastbootd.sh with LMI_COPYDOWN_BOOT_IMG and
-   LMI_COPYDOWN_MANIFEST pointing to this bundle.
-3. Verify a known-good rollback boot image and ROM/recovery path before any write.
+2. Verify SHA256SUMS from inside this bundle.
+3. Treat the bundle as historical until a fresh reviewed profile and executor
+   adapter exist.
 EOF
 
 printf 'release_tag=%s\n' "$release_tag" > "$bundle_dir/RELEASE_TAG"

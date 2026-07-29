@@ -1,9 +1,10 @@
 # LMI D114 WSL userdata preflight and rollback — 2026-07-22
 
-Status: **runtime-v2, postwrite, devices-output, and partition-size gates are
-independently reviewed GO; no current device-write authorization. Four earlier
-approved invocations were refused before any state-changing command. A new
-immediate approval is required for the exact `r5` command below.**
+> **Archived evidence — do not execute commands from this file.**
+
+Status: **the r5 authorization described below was consumed in 2026 and grants
+no present device-write authorization. Any future write must use a fresh
+governance-v4 profile authorization, experiment, claim, and executor gate.**
 
 This note covers exactly one persistent write to the physical, unslotted
 `userdata` partition of the identity-matched Xiaomi `lmi`. It does not approve
