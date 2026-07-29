@@ -1,0 +1,50 @@
+{
+  "schema_version": 4,
+  "status": "completed",
+  "experiment_id": "d114-p2-r1-reboot-wifi-probe-20260729",
+  "tier": "volatile",
+  "hypothesis": "The flashed D114 P2 r1 chain boots from disk to postmarketOS with USB RNDIS and key-only SSH, enabling runtime wifi validation against the v46 baseline.",
+  "discriminator": "Within the timebox after 'fastboot reboot', the RNDIS gadget enumerates and 'ssh lmi@172.16.42.1 uname -a' succeeds (positive) or no RNDIS/SSH appears (negative); UNKNOWN transport parses do not count as negative.",
+  "next_if_positive": "Read-only wifi state capture (iw dev, cnss state, script/sudoers diff vs v46 note), then runtime lmi-wifi-start scan-only check.",
+  "next_if_negative": "Record evidence, return device to fastboot via volume-down+power, plan vault recovery boot path; no further writes without a new receipt.",
+  "timebox_seconds": 600,
+  "lanes": [],
+  "observations": [],
+  "result": {
+    "outcome": "failure",
+    "evidence": "logs/d114-boot-pairing-mismatch-20260729.txt",
+    "evidence_sha256": "1390b4caaa881d2915b170ee6efc8f49a4904965cfc2489dd720dc717bccfa9a",
+    "recorded_at": "2026-07-29T06:06:15Z",
+    "note": "SSH never appeared; initramfs shell reached. v46 boot image over D114-family userdata (root UUID absent) plus kpartx missing from initramfs."
+  },
+  "action": {
+    "operation": "device_reboot",
+    "target": "device",
+    "profile": null,
+    "profile_sha256": null,
+    "artifact": null,
+    "artifact_sha256": null,
+    "artifact_size": null,
+    "exact_command": [
+      "fastboot",
+      "reboot"
+    ]
+  },
+  "gates": {
+    "identity": {
+      "expected_product": "lmi"
+    },
+    "persistent_media": null,
+    "rollback": null
+  },
+  "repeat_guard": null,
+  "receipt": {
+    "issued_at": "2026-07-29T05:55:28Z",
+    "expires_at": "2026-07-29T06:10:28Z",
+    "consumed_at": "2026-07-29T05:55:28Z",
+    "authority": "standing-policy",
+    "policy_revision": "2026-07-22.1",
+    "policy_sha256": "d3175b836f1e12d57751e18a11489acbaa24c9c6e55321402382d3a4a015d24f",
+    "action_digest": "80b66b2fd7b371ff840340fb3769fe7484fd5e6816e238a84ea00f5b76c522aa"
+  }
+}

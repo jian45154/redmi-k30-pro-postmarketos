@@ -1,0 +1,54 @@
+{
+  "schema_version": 4,
+  "status": "completed",
+  "experiment_id": "d110-ramboot-wifi-validation-20260729",
+  "tier": "ram_rw",
+  "hypothesis": "RAM-booting the attested D110 recovery boot (2b264d64) over the on-disk D114-family userdata reaches the full OS with SSH, allowing runtime wifi validation: lmi-wifi-start brings up wlan0 and a scan returns BSS entries, matching the v46 baseline.",
+  "discriminator": "Positive: after 'fastboot boot', SSH as lmi at 172.16.42.1 succeeds and, after runtime lmi-wifi-start, 'iw dev' shows wlan0 and a scan lists at least one BSS. Negative: SSH never appears, or wlan0/scan fails. UNKNOWN transport parses do not count as negative.",
+  "next_if_positive": "Record wifi validation vs v46 baseline; optionally join owner network (owner-supplied credentials) to attempt SSH over WLAN; fold kpartx+pairing fix into the r145 clean rebuild for persistent boot.",
+  "next_if_negative": "Capture dmesg/service evidence, reboot back to fastboot, no writes; escalate to rebuild path per docs/release/v1-firmware-free-release-plan-2026-07-29.md.",
+  "timebox_seconds": 900,
+  "lanes": [],
+  "observations": [],
+  "result": {
+    "outcome": "failure",
+    "evidence": "logs/d110-ramboot-ssh-auth-denied-20260729.txt",
+    "evidence_sha256": "1bd53194763fe93f52700d90059d73c9f4cecc18041f507eecb3c59449ff1bc4",
+    "recorded_at": "2026-07-29T07:35:57Z",
+    "note": "RAM boot itself succeeded to full OS with sshd listening; SSH publickey denied because the sanitized r1 rootfs contains no authorized_keys. Wifi checks unreachable. Repair path: D111 debug-shell key recovery per its manifest."
+  },
+  "action": {
+    "operation": "ram_boot",
+    "target": "ram",
+    "profile": null,
+    "profile_sha256": null,
+    "artifact": "private/lmi-p1/recovery/d110-d114/pmos-lmi-normalboot-v110-bpf-fs-context-enoparam-r15-20260713.img",
+    "artifact_sha256": "2b264d64d2ed22f0ab5c3c2615b0bda9ed821fa5d8d5d691ea513e5d2f071487",
+    "artifact_size": 52944896,
+    "exact_command": [
+      "fastboot",
+      "boot",
+      "private/lmi-p1/recovery/d110-d114/pmos-lmi-normalboot-v110-bpf-fs-context-enoparam-r15-20260713.img"
+    ]
+  },
+  "gates": {
+    "identity": {
+      "expected_product": "lmi"
+    },
+    "persistent_media": {
+      "acknowledged": true,
+      "rebuild_reference": "userdata is rebuildable from vault lmi-recovery-images release recovery-20260722 (d114-p2-assembled-userdata-20260721.raw.zst, inner GPT 45721c80) or reassembled via scripts/lmi_p2_d114 from the injected rootfs bundle per its assembly-attestation"
+    },
+    "rollback": null
+  },
+  "repeat_guard": null,
+  "receipt": {
+    "issued_at": "2026-07-29T07:17:14Z",
+    "expires_at": "2026-07-29T07:32:14Z",
+    "consumed_at": "2026-07-29T07:17:14Z",
+    "authority": "standing-policy",
+    "policy_revision": "2026-07-22.1",
+    "policy_sha256": "d3175b836f1e12d57751e18a11489acbaa24c9c6e55321402382d3a4a015d24f",
+    "action_digest": "d2bbb8f202e1db9d93980c11f81e8233e4c16cbc445701a10af808bc26e123f0"
+  }
+}

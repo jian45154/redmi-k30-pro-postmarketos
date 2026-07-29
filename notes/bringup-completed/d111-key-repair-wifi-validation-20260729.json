@@ -1,0 +1,54 @@
+{
+  "schema_version": 4,
+  "status": "completed",
+  "experiment_id": "d111-key-repair-wifi-validation-20260729",
+  "tier": "ram_rw",
+  "hypothesis": "D111 debug shell allows installing the attested owner-test-ed25519 line into p2 authorized_keys; after boot continuation SSH as lmi succeeds and lmi-wifi-start yields wlan0 with a successful scan",
+  "discriminator": "Positive: SSH with owner-test-ed25519 succeeds and iw dev shows wlan0 with >=1 BSS scanned. Negative: shell absent, repair impossible, SSH denied, or scan fails.",
+  "next_if_positive": "scripts/74 suite as evidence; wifi validation vs v46 baseline; optional owner-credential WLAN join",
+  "next_if_negative": "capture evidence, no writes, escalate to r145 rebuild",
+  "timebox_seconds": 1800,
+  "lanes": [],
+  "observations": [],
+  "result": {
+    "outcome": "success",
+    "evidence": "logs/d111-key-repair-wifi-validation-20260729.txt",
+    "evidence_sha256": "4b7593ee7bb3f14490cd3daeb5f1d5ffc7eedb173244376b7f9468e21c69a0b4",
+    "recorded_at": "2026-07-29T14:47:27Z",
+    "note": "Key repair verified (b86935a2, 81 bytes) on attested P2 rootfs; key-only SSH succeeded; wlan0 present at boot with 23 BSS scanned. WLAN-transport SSH not yet attempted (needs owner credentials)."
+  },
+  "action": {
+    "operation": "ram_boot",
+    "target": "ram",
+    "profile": null,
+    "profile_sha256": null,
+    "artifact": "private/lmi-p1/recovery/d110-d114/pmos-lmi-ramboot-d111-debug-shell-key-recovery-20260720.img",
+    "artifact_sha256": "fd1c80093adccdcb74b8a31ab767760fa26245eaccf262b47f40bff4f896dadc",
+    "artifact_size": 52944896,
+    "exact_command": [
+      "fastboot",
+      "boot",
+      "private/lmi-p1/recovery/d110-d114/pmos-lmi-ramboot-d111-debug-shell-key-recovery-20260720.img"
+    ]
+  },
+  "gates": {
+    "identity": {
+      "expected_product": "lmi"
+    },
+    "persistent_media": {
+      "acknowledged": true,
+      "rebuild_reference": "userdata rebuildable from vault recovery-20260722 assembled image or scripts/lmi_p2_d114 reassembly; repair touches only /home/lmi/.ssh/authorized_keys on p2 per the D111 manifest repair intent (b86935a2, 81 bytes)"
+    },
+    "rollback": null
+  },
+  "repeat_guard": null,
+  "receipt": {
+    "issued_at": "2026-07-29T09:57:26Z",
+    "expires_at": "2026-07-29T10:12:26Z",
+    "consumed_at": "2026-07-29T09:57:26Z",
+    "authority": "standing-policy",
+    "policy_revision": "2026-07-22.1",
+    "policy_sha256": "d3175b836f1e12d57751e18a11489acbaa24c9c6e55321402382d3a4a015d24f",
+    "action_digest": "32d15642e6315369f01d83138c12444a2f229b5b43cfd6c3af5375484f43a95c"
+  }
+}
