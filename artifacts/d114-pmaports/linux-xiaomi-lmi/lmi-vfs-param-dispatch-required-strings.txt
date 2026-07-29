@@ -1,0 +1,4 @@
+LMI_VFS_DIAG vfs_param stage=sb_flag key=%s ret=%d
+LMI_VFS_DIAG vfs_param stage=security key=%s ret=%d
+LMI_VFS_DIAG vfs_param stage=fs_callback_enter key=%s
+LMI_VFS_DIAG vfs_param stage=fs_callback_exit key=%s ret=%d

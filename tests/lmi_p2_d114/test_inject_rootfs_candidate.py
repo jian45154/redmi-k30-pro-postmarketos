@@ -1,18 +1,22 @@
 from __future__ import annotations
 
 import base64
+import copy
 import hashlib
 import io
 import json
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import stat
 import subprocess
 import tarfile
 import tempfile
 import unittest
+
+from tests.lmi_p2_d114 import host_bound
 
 
 REPO = Path(__file__).resolve().parents[2]
@@ -21,11 +25,11 @@ LAUNCHER = REPO / "scripts/lmi_p2_d114/launch_inject_rootfs_candidate.sh"
 LOCK = REPO / "config/lmi-p2-d114/candidate-rebuild-lock.json"
 RUNTIME_LOCK = REPO / "config/lmi-p2-d114/injector-runtime-lock.json"
 INJECTION_POLICY_LOCK = REPO / "config/lmi-p2-d114/injection-policy-lock.json"
-BUILD = REPO / "private/lmi-p1/recovery/d110-d114/p2-d114-build-20260720"
+BUILD = REPO / "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724"
 SIXROW_APK = (
     REPO
-    / "private/lmi-p1/recovery/d110-d114/p2-d114-r1-sixrow-build-20260722"
-    / "lmi-weston-sixrow-clients-14.0.2-r1.apk"
+    / "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724"
+    / "lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk"
 )
 
 EXPECTED_DELTA_OP_PATHS = (
@@ -48,7 +52,6 @@ EXPECTED_DELTA_OP_PATHS = (
     "M|/etc/machine-id",
     "M|/etc/resolv.conf",
     "M|/etc/shadow-",
-    "D|/home/lmi/.ssh/authorized_keys",
     "D|/var/cache/apk/APKINDEX.066df28d.tar.gz",
     "D|/var/cache/apk/APKINDEX.30e6f5af.tar.gz",
     "D|/var/cache/apk/APKINDEX.b53994b4.tar.gz",
@@ -84,19 +87,19 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
     @staticmethod
     def valid_p2_installed_record() -> str:
         dependencies = (
-            "device-xiaomi-lmi=1-r142 greetd=0.10.3-r11 greetd-openrc=0.10.3-r11 "
-            "greetd-phrog=0.53.0-r0 libseat=0.9.3-r0 libweston=14.0.2-r10 "
-            "linux-xiaomi-lmi=4.19.325-r9 lmi-weston-sixrow-clients=14.0.2-r1 "
-            "openrc=0.63.2-r0 seatd=0.9.3-r0 "
-            "seatd-openrc=0.9.3-r0 weston=14.0.2-r10 weston-backend-drm=14.0.2-r10 "
-            "weston-shell-desktop=14.0.2-r10 weston-terminal=14.0.2-r10 /bin/sh"
+            "device-xiaomi-lmi=1-r144 greetd=0.10.3-r11 greetd-openrc=0.10.3-r11 "
+            "greetd-phrog=0.53.0-r0 libseat=0.9.3-r1 libweston=14.0.2-r5 "
+            "linux-xiaomi-lmi=4.19.325-r15 lmi-weston-sixrow-clients=14.0.2-r2 "
+            "openrc=0.63.2-r0 seatd=0.9.3-r1 "
+            "seatd-openrc=0.9.3-r1 weston=14.0.2-r5 weston-backend-drm=14.0.2-r5 "
+            "weston-shell-desktop=14.0.2-r5 weston-terminal=14.0.2-r5 /bin/sh"
         )
         lines = [
-            "C:Q1CgJ9oAvCtPMD0gpMqjIRwUt4gow=",
+            "C:Q1xmDSKg+38KWGNRvP8eE/06z1gTg=",
             "P:device-xiaomi-lmi-terminal",
-            "V:0.1.0-r1",
+            "V:0.1.0-r2",
             "A:noarch",
-            "S:8768",
+            "S:8776",
             "I:24926",
             "T:Pinned non-root Weston terminal session for Xiaomi lmi D114",
             "U:https://postmarketos.org",
@@ -104,7 +107,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "o:device-xiaomi-lmi-terminal",
             "m:lmi P2 maintainers <noreply@example.invalid>",
             "t:1784522705",
-            "c:uncommitted-p2-d114-source-lock-v3",
+            "c:uncommitted-p2-d114-source-lock-v4",
             f"D:{dependencies}",
             "F:etc",
             "F:etc/lmi-p2-d114",
@@ -120,7 +123,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "Z:Q1fz2JibH7B8jAdosh8vogpdSyQZM=",
             "R:session",
             "a:0:0:755",
-            "Z:Q1HZ+4EtKUzGLZ9gU4XrAdWTyoAVM=",
+            "Z:Q1VY+DEJK+eyq5Mv5rs4gUBmgVyD4=",
             "F:usr/share",
             "F:usr/share/lmi-p2-d114",
             "R:greetd.confd",
@@ -137,26 +140,25 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "so:libwayland-cursor.so.0 so:libxkbcommon.so.0"
         )
         lines = [
-            "C:Q1z+kF3cP7AS8SIoqzAnBB/K89PAc=",
+            "C:Q1dyp8uNSMxPIjVUwuCP4wyyBBCs4=",
             "P:lmi-weston-sixrow-clients",
-            "V:14.0.2-r1",
+            "V:14.0.2-r2",
             "A:aarch64",
-            "S:120891",
+            "S:121842",
             "I:335416",
             "T:Hash-locked six-row Weston keyboard and text-input terminal for xiaomi-lmi",
             "U:https://gitlab.freedesktop.org/wayland/weston",
             "L:MIT",
             "o:lmi-weston-sixrow-clients",
             "m:Local lmi port work <noreply@example.invalid>",
-            "t:1784659116",
-            "c:-dirty",
+            "t:1784730238",
             f"D:{dependencies}",
             "F:usr",
             "F:usr/libexec",
             "F:usr/libexec/lmi-p2-d114",
             "R:weston-keyboard-sixrow",
             "a:0:0:755",
-            "Z:Q1azIWyRjIlMC3OdDOa9HLxShf19M=",
+            "Z:Q1XSUCcmg4Qp6FPO9eNoHsqhU0Rls=",
             "R:weston-terminal-sixrow",
             "a:0:0:755",
             "Z:Q1TfC5e5TmOzP1rew68T4D0bOCiE4=",
@@ -219,7 +221,6 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         for relative in (
             "etc/conf.d",
             "etc/ssh/sshd_config.d",
-            "home/lmi/.ssh",
             "usr/bin",
             "usr/lib/apk/db",
             "usr/libexec",
@@ -240,7 +241,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         (root / "etc/unchanged").write_text("unchanged\n", encoding="utf-8")
         (root / "etc/empty").write_bytes(b"")
         (root / "etc/machine-id").write_bytes(b"m" * 33)
-        (root / "etc/resolv.conf").write_bytes(b"r" * 211)
+        (root / "etc/resolv.conf").write_bytes(b"r" * 215)
         (root / "etc/shadow").write_bytes(b"s" * 731)
         (root / "etc/shadow-").write_bytes(b"b" * 730)
         (root / "etc/shadow").chmod(0o640)
@@ -248,19 +249,16 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         (root / "etc/ssh/sshd_config").write_bytes(b"s" * 3542)
         (root / "etc/ssh/sshd_config.d/50-postmarketos-ui-policy.conf").write_bytes(b"p" * 176)
         (root / "etc/ssh/sshd_config.d/50-postmarketos-ui-policy.conf").chmod(0o600)
-        (root / "home/lmi/.ssh/authorized_keys").write_bytes(b"k" * 573)
-        (root / "home/lmi/.ssh").chmod(0o700)
-        (root / "home/lmi/.ssh/authorized_keys").chmod(0o644)
         (root / "usr/lib/apk/db/installed").write_text("baseline-installed\n", encoding="utf-8")
         (root / "usr/lib/apk/db/scripts.tar.gz").write_bytes(b"baseline-scripts")
         for name, size in (
-            ("APKINDEX.066df28d.tar.gz", 528174),
-            ("APKINDEX.30e6f5af.tar.gz", 750911),
-            ("APKINDEX.b53994b4.tar.gz", 2514943),
-            ("APKINDEX.bc99f2f3.tar.gz", 116688),
+            ("APKINDEX.066df28d.tar.gz", 527944),
+            ("APKINDEX.30e6f5af.tar.gz", 748453),
+            ("APKINDEX.b53994b4.tar.gz", 2507751),
+            ("APKINDEX.bc99f2f3.tar.gz", 110467),
         ):
             (root / "var/cache/apk" / name).write_bytes(b"c" * size)
-        (root / "var/log/apk.log").write_bytes(b"l" * 69179)
+        (root / "var/log/apk.log").write_bytes(b"l" * 68657)
         # These unchanged names mirror legal paths in the fixed Alpine
         # candidate.  Full-tree validation must not apply the deliberately
         # narrow grammar used for the 20 allowlisted delta operations.
@@ -335,13 +333,12 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         )
         (root / "usr/lib/apk/db/installed").write_text("installed-with-target\n", encoding="utf-8")
         (root / "usr/lib/apk/db/scripts.tar.gz").write_bytes(b"scripts-with-target")
-        (root / "etc/machine-id").write_bytes(b"")
+        (root / "etc/machine-id").write_bytes(b"1835a845d0bb85b283be20a5fd1c18a4\n")
         (root / "etc/resolv.conf").write_bytes(b"")
         (root / "etc/shadow-").write_bytes((root / "etc/shadow").read_bytes())
         (root / "var/log/apk.log").write_bytes(b"")
         for member in (root / "var/cache/apk").iterdir():
             member.unlink()
-        (root / "home/lmi/.ssh/authorized_keys").unlink()
 
     def test_shell_files_are_syntactically_valid(self) -> None:
         for path in (SCRIPT, LAUNCHER):
@@ -368,13 +365,13 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_scripts_delta_runs_under_nounset_through_final_inventory_comparison(self) -> None:
         target_sources = {
-            "device-xiaomi-lmi-terminal-0.1.0-r1.post-install": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.post-install": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-install"
             ).read_bytes(),
-            "device-xiaomi-lmi-terminal-0.1.0-r1.post-upgrade": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.post-upgrade": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-upgrade"
             ).read_bytes(),
-            "device-xiaomi-lmi-terminal-0.1.0-r1.pre-deinstall": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.pre-deinstall": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.pre-deinstall"
             ).read_bytes(),
         }
@@ -398,10 +395,10 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_scripts_delta_failure_is_removed_by_exit_cleanup(self) -> None:
         target_sources = {
-            "device-xiaomi-lmi-terminal-0.1.0-r1.post-install": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.post-install": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-install"
             ).read_bytes(),
-            "device-xiaomi-lmi-terminal-0.1.0-r1.post-upgrade": (
+            "device-xiaomi-lmi-terminal-0.1.0-r2.post-upgrade": (
                 REPO / "files/lmi-p2-d114/device-xiaomi-lmi-terminal.post-upgrade"
             ).read_bytes(),
         }
@@ -427,6 +424,8 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             self.assertFalse(scratch.exists())
 
     def test_full_delta_real_tree_fixture_covers_exact_operations_and_parent_links(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
+        host_bound.require_tree_snapshot_tools()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             before, after = root / "before", root / "after"
@@ -465,7 +464,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             self.assertEqual(set(op_paths), set(EXPECTED_DELTA_OP_PATHS))
             self.assertEqual(sum(item.startswith("A|") for item in op_paths), 14)
             self.assertEqual(sum(item.startswith("M|") for item in op_paths), 11)
-            self.assertEqual(sum(item.startswith("D|") for item in op_paths), 5)
+            self.assertEqual(sum(item.startswith("D|") for item in op_paths), 4)
             for parent in ("/etc", "/usr/libexec", "/usr/share", "/var/lib"):
                 self.assertIn(f"M|{parent}", op_paths)
             before_paths = {
@@ -488,13 +487,11 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         for required in (
             "home/lmi/.ssh",
             "authorized_keys",
-            "644:10000:10000:1:573",
-            "700:10000:10000",
-            'rm -- "$authorized_keys"',
+            'fail "image lmi SSH directory unexpectedly present"',
+            'fail "image authorized_keys unexpectedly present"',
             "etc/machine-id",
             "644:0:0:1:33",
-            ': >"$machine_id"',
-            "644:0:0:1:0",
+            'printf \'%s\\n\' "$MACHINE_ID" >"$machine_id"',
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         ):
             self.assertIn(required, sanitation)
@@ -551,6 +548,8 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
                 self.assertFalse(inventory.exists())
 
     def test_full_delta_rejects_metadata_drift_on_unknown_added_and_allowed_paths(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
+        host_bound.require_tree_snapshot_tools()
         mutations = (
             "root-mode",
             "unknown-xattr",
@@ -665,6 +664,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             self.assertFalse(inventory.exists())
 
     def test_metadata_inventory_tools_are_host_pinned_and_attested(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
         tools = {
             "getfattr": (Path("/usr/bin/getfattr"), "GETFATTR_SHA256", "getfattr_sha256", "755"),
             "lsattr": (Path("/usr/bin/lsattr"), "LSATTR_SHA256", "lsattr_sha256", "755"),
@@ -689,6 +689,8 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
                 self.assertIn(f'|{mode}|{label}|${constant}', self.source)
 
     def test_full_delta_exact_set_accepts_reordering_without_losing_operations(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
+        host_bound.require_tree_snapshot_tools()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             before, after = root / "before", root / "after"
@@ -809,11 +811,12 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             self.assertFalse(scratch.exists())
 
     def test_fixed_inputs_are_private_canonical_and_candidate_is_never_mutated(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
         for name in (
-            "xiaomi-lmi-v114-splash-recursion-fix-userdata-20260716.img",
-            "xiaomi-lmi-v114-splash-recursion-fix-userdata-20260716.android-sparse.img",
+            "xiaomi-lmi-d114-r2-most-complete-userdata-20260724.normalized.img",
+            "xiaomi-lmi-d114-r2-most-complete-userdata-20260724.android-sparse.img",
             "lmi-d114-rootfs-base.ext4",
-            "lmi-d114-rootfs-p2-candidate-20260720.ext4",
+            "lmi-d114-rootfs-p2-candidate-20260724.ext4",
         ):
             path = BUILD / name
             self.assertEqual(path.resolve(strict=True), path)
@@ -832,25 +835,26 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
 
     def test_rebuild_lock_is_exactly_pinned_and_cross_matches_script_constants(self) -> None:
         self.assertEqual(self.lock["schema"], "lmi-p2-d114-candidate-rebuild-lock/v1")
-        self.assertEqual(digest(LOCK), "1122fae16487ab77406fe444f1fc96da4848fcfb277fd4ad71dc51d81da01489")
+        self.assertEqual(digest(LOCK), "80c4952c9f71eda4bb49d72facd451630927a53a5550103caffe9e818469a7a2")
         expected = {
-            "61ca69e6c241a92ad86539ffeebc0d4ef296572709445604ce26a78648f27bf6",
-            "e8a30dc37cb4b75508d89725a9603bc15a985f4e51af77384e8d43c2928f8d68",
-            "76f032775b110855a5984b1ed45b10f9653c59af69b070ceac0e73e7216eb96c",
-            "90b9f0ab94198f78eb251cff0d4c521f7b4bb47fb50967a7c661eacc026e0e82",
-            "4e23b50bc020fddde6daacf5b5a9a4f5472bcc156e7c58c5c932a8ba4c6ffc4f",
-            "9a3b20f3e422ee80cb6615158f1cc8b08fd71dda9a2e49745642404decf60837",
+            "33067d6954e28b88b78a79a6ba0f994c1b6aff5e77a664b726e5dbb6e90084d8",
+            "1315e3a06ddff42e91f930f01b16a62ab30ab3d4f490e8e8e40d0af89c657279",
+            "5f351c9184fec53070886f3e9aa6a04178d2be8858ec2237b13af19e4a0e8cf6",
+            "d331433af3b7fdb78e42732a1d6b5530a5cf9e6a90a4f4e648f7a97aa696f790",
+            "b2256b9695e96bf57505a107edb2ca1581bcc307b70fc04997e1f016e936daf5",
+            "b2256b9695e96bf57505a107edb2ca1581bcc307b70fc04997e1f016e936daf5",
             "2e51f521c676729920eaba694933d9d4048645f1a5789556fd0027e62d11ecc8",
         }
         for value in expected:
             self.assertIn(value, self.source)
         self.assertEqual(self.lock["geometry"]["logical_sector_size"], 4096)
         self.assertEqual(self.lock["geometry"]["partitions"][1]["first_lba"], 124928)
-        self.assertEqual(self.lock["geometry"]["partitions"][1]["sector_count"], 690176)
-        self.assertEqual(self.lock["candidate"]["normalized_superblock"]["epoch"], 1784551824)
+        self.assertEqual(self.lock["geometry"]["partitions"][1]["sector_count"], 713728)
+        self.assertEqual(self.lock["candidate"]["normalized_superblock"]["epoch"], 1784734606)
         self.assertIn('verify_open_path_unchanged "$path" "$descriptor" "$identity"', self.source)
 
     def test_runtime_lock_is_exact_and_matches_the_copied_sandbox_closure(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
         self.assertEqual(self.runtime_lock["schema"], "lmi-p2-d114-injector-runtime-lock/v1")
         self.assertEqual(
             digest(RUNTIME_LOCK),
@@ -889,13 +893,14 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         self.assertEqual(version.stdout.strip(), "bubblewrap 0.11.1")
 
     def test_candidate_primary_superblock_has_reviewed_little_endian_epoch(self) -> None:
-        candidate = BUILD / "lmi-d114-rootfs-p2-candidate-20260720.ext4"
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
+        candidate = BUILD / "lmi-d114-rootfs-p2-candidate-20260724.ext4"
         with candidate.open("rb") as source:
             source.seek(1072)
             wtime = int.from_bytes(source.read(4), "little")
             source.seek(1088)
             lastcheck = int.from_bytes(source.read(4), "little")
-        self.assertEqual((wtime, lastcheck), (1784551824, 1784551824))
+        self.assertEqual((wtime, lastcheck), (1784734606, 1784734606))
         self.assertIn("normalize_repair_epoch", self.source)
         self.assertIn('"$E2FSCK" -fn "$SCRATCH_IMAGE"', self.source)
 
@@ -919,18 +924,18 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         self.assertIn(f"readonly INJECTOR_SHA256={injector_hash}", self.launcher)
         copy_at = self.launcher.index('/usr/bin/cp --reflink=never -- "$INJECTOR" "$staged"')
         staged_hash_at = self.launcher.index('"$(sha256_of "$staged")" == "$INJECTOR_SHA256"')
-        first_sudo_at = self.launcher.index("/usr/bin/sudo -n --", self.launcher.index("main()"))
+        first_transport_at = self.launcher.index('"${root_transport[@]}" /usr/bin/env -i')
         root_install_at = self.launcher.index('/usr/bin/install -o root -g root -m 0700 -- "/proc/self/fd/$staged_fd" "$sealed"')
         unshare_at = self.launcher.index("/usr/bin/unshare --mount --net --pid --fork --ipc --uts --mount-proc=/proc")
         self.assertLess(copy_at, staged_hash_at)
-        self.assertLess(staged_hash_at, first_sudo_at)
+        self.assertLess(staged_hash_at, first_transport_at)
         self.assertLess(root_install_at, unshare_at)
         for fragment in (
             "root-owned sealed entry digest mismatch",
             "close_inherited_fds_and_reject_stdio_sockets",
             "/usr/bin/env -i",
             "/bin/bash --noprofile --norc",
-            "launcher accepts no arguments",
+            "launcher accepts no arguments or exactly one --wsl-root argument",
             "caller uid/gid must exactly match repository owner",
             "injector returned without removing its sealed entry",
             "published bundle failed caller-side inode/metadata/hash verification",
@@ -940,7 +945,114 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         cleanup = self.launcher[self.launcher.index("cleanup() {") : self.launcher.index("verify_published_bundle()")]
         self.assertNotIn("sudo", cleanup)
 
+    def test_launcher_root_transport_modes_are_strict_and_share_one_root_block(self) -> None:
+        self.assertEqual(self.launcher.count("/usr/bin/sudo -n --"), 1)
+        self.assertIn("sudo) root_transport=(/usr/bin/sudo -n --) ;;", self.launcher)
+        self.assertIn(
+            'root_transport=("$WSL_ROOT_TRANSPORT" -d "$WSL_ROOT_DISTRO" -u root --exec)',
+            self.launcher,
+        )
+        self.assertNotIn(" -u root -- ", self.launcher)
+        self.assertEqual(self.launcher.count('"${root_transport[@]}" /usr/bin/env -i'), 1)
+        root_block = self.launcher[
+            self.launcher.index('"${root_transport[@]}" /usr/bin/env -i') :
+            self.launcher.index(' lmi-p2-d114-root-wrapper', self.launcher.index('"${root_transport[@]}" /usr/bin/env -i'))
+        ]
+        self.assertIn('"$(/usr/bin/id -ru)" == 0', root_block)
+        self.assertIn('"$(/usr/bin/id -rg)" == 0', root_block)
+        self.assertIn("/usr/bin/install -o root -g root -m 0700", root_block)
+        self.assertIn("/usr/bin/unshare --mount --net --pid --fork --ipc --uts", root_block)
+
+    def test_wsl_root_transport_is_fixed_pinned_nonwritable_and_drvfs_identified(self) -> None:
+        for fragment in (
+            "readonly WSL_ROOT_WINDOWS_DIR=/mnt/c/WINDOWS",
+            "readonly WSL_ROOT_SYSTEM32_DIR=/mnt/c/WINDOWS/system32",
+            "readonly WSL_ROOT_TRANSPORT=/mnt/c/WINDOWS/system32/wsl.exe",
+            "readonly WSL_ROOT_TRANSPORT_SHA256=e27cbfcbd61c44796e2cfdd031663245bda8d6e4a43c1451b1fc505333908126",
+            "readonly WSL_ROOT_TRANSPORT_SIZE=278528",
+            "readonly WSL_ROOT_DISTRO=Ubuntu",
+            "readonly WSL_ROOT_KERNEL=6.6.87.2-microsoft-standard-WSL2",
+            '[[ "$fstype" == 9p ]]',
+            "for required_option in aname=drvfs 'path=C:\\' access=client",
+            '! -w "$WSL_ROOT_TRANSPORT"',
+            "%d:%i:%a:%s:%Y:%Z",
+            '[[ "$transport_digest" == "$WSL_ROOT_TRANSPORT_SHA256" ]]',
+            '[[ "$transport_after" == "$transport_before" ]]',
+        ):
+            self.assertIn(fragment, self.launcher)
+        self.assertNotRegex(self.launcher, r"(?:^|[,;])(?:rfd|wfd|fd)=")
+
+    def test_wsl_transport_ancestors_are_canonical_nonwritable_and_identity_locked(self) -> None:
+        ancestor_gate = self.launcher[
+            self.launcher.index('for ancestor in "$WSL_ROOT_WINDOWS_DIR" "$WSL_ROOT_SYSTEM32_DIR"') :
+            self.launcher.index('[[ -f "$WSL_ROOT_TRANSPORT"', self.launcher.index("verify_wsl_root_transport()"))
+        ]
+        for fragment in (
+            '[[ -d "$ancestor" && ! -L "$ancestor" && ! -w "$ancestor" ]]',
+            'ancestor_canonical="$(/usr/bin/realpath -e -- "$ancestor")"',
+            '[[ "$ancestor_canonical" == "$ancestor" ]]',
+            '[[ "$(/usr/bin/stat -c %F -- "$ancestor")" == directory ]]',
+            'ancestor_identity="$(/usr/bin/stat -c %d:%i:%a:%s:%Y:%Z -- "$ancestor")"',
+            '[[ "$ancestor_identity" == *:555:* ]]',
+            "WSL_ROOT_WINDOWS_IDENTITY=$ancestor_identity",
+            "WSL_ROOT_SYSTEM32_IDENTITY=$ancestor_identity",
+        ):
+            self.assertIn(fragment, ancestor_gate)
+        self.assertIn(
+            "WSL_ROOT_TRANSPORT_TREE_IDENTITY=$WSL_ROOT_TRANSPORT_IDENTITY$'\\n'$WSL_ROOT_WINDOWS_IDENTITY$'\\n'$WSL_ROOT_SYSTEM32_IDENTITY",
+            self.launcher,
+        )
+
+    def test_wsl_transport_is_rehashed_immediately_before_common_execution(self) -> None:
+        preexec_at = self.launcher.index('if [[ "$root_mode" == wsl-root ]]')
+        second_identity_at = self.launcher.index(
+            'transport_current="$(wsl_root_transport_tree_identity)"',
+            preexec_at,
+        )
+        second_digest_at = self.launcher.index(
+            'transport_current="$(sha256_of "$WSL_ROOT_TRANSPORT")"',
+            second_identity_at,
+        )
+        final_identity_at = self.launcher.index(
+            'transport_current="$(wsl_root_transport_tree_identity)"',
+            second_digest_at,
+        )
+        common_execution_at = self.launcher.index('"${root_transport[@]}" /usr/bin/env -i')
+        self.assertLess(second_identity_at, second_digest_at)
+        self.assertLess(second_digest_at, final_identity_at)
+        self.assertLess(final_identity_at, common_execution_at)
+        between_final_stat_and_exec = self.launcher[final_identity_at:common_execution_at]
+        self.assertNotIn("sha256_of", between_final_stat_and_exec)
+        self.assertNotIn("findmnt", between_final_stat_and_exec)
+
+    def test_root_block_requires_transport_namespace_equality_before_sealing(self) -> None:
+        root_block_at = self.launcher.index('"${root_transport[@]}" /usr/bin/env -i')
+        equality_at = self.launcher.index('[[ "$current_value" == "$parent_value" ]]', root_block_at)
+        seal_at = self.launcher.index('/usr/bin/install -d -o root -g root -m 0700 -- "$seal_dir"', root_block_at)
+        unshare_at = self.launcher.index("/usr/bin/unshare --mount --net --pid --fork --ipc --uts", root_block_at)
+        self.assertLess(equality_at, seal_at)
+        self.assertLess(seal_at, unshare_at)
+        self.assertIn("for namespace in mnt net pid ipc uts", self.launcher[root_block_at:seal_at])
+
+    def test_launcher_rejects_every_non_contract_argument_before_transport(self) -> None:
+        for arguments in (("--not-wsl-root",), ("--wsl-root", "extra"), ("extra", "--wsl-root")):
+            result = subprocess.run(
+                [str(LAUNCHER), *arguments],
+                cwd=REPO,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(
+                "launcher accepts no arguments or exactly one --wsl-root argument",
+                result.stderr,
+            )
+            self.assertNotIn("sudo:", result.stderr)
+
     def test_private_input_gate_accepts_only_the_four_exact_old_build_inputs(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
         allowed = self.run_helper(
             'REPO_OWNER="$(stat -Lc %u:%g -- "$REPO")"\n'
             'for spec in "$RAW|raw" "$SPARSE|sparse" "$BASE|base" "$INPUT|candidate-input"; do\n'
@@ -1029,7 +1141,33 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         self.assertEqual(derived.returncode, 0, derived.stderr)
         self.assertEqual(derived.stdout, f"{REPO}\n")
 
+    def test_launcher_accepts_relative_canonical_invocation(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            scripts = repository / "scripts/lmi_p2_d114"
+            scripts.mkdir(parents=True)
+            launcher = scripts / LAUNCHER.name
+            injector = scripts / SCRIPT.name
+            shutil.copy2(LAUNCHER, launcher)
+            shutil.copy2(SCRIPT, injector)
+            launcher.chmod(0o755)
+            injector.chmod(0o755)
+            result = subprocess.run(
+                [f"./scripts/lmi_p2_d114/{LAUNCHER.name}"],
+                cwd=repository,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("launcher source path is unsafe", result.stderr)
+        self.assertNotIn("could not derive canonical repository root", result.stderr)
+        self.assertNotIn("launcher is not running from its canonical project path", result.stderr)
+
     def test_ext4_normalization_is_allocated_only_zero_proven_and_tree_identical(self) -> None:
+        host_bound.require_path(host_bound.REPO / "private/lmi-p1/recovery/d110-d114")
+        host_bound.require_tree_snapshot_tools()
         normalization = self.injection_policy_lock["normalization"]
         self.assertEqual(
             normalization["fixed"]["allocated_only_command"],
@@ -1045,8 +1183,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             'cmp -s -- "$FULL_TREE_AFTER" "$FULL_TREE_NORMALIZED"',
             "JOURNAL_INACTIVE_FIRST_BLOCK=327681",
             "JOURNAL_INACTIVE_BLOCK_COUNT=16383",
-            "REVIEWED_FREED_BLOCK_ONE=586227",
-            "REVIEWED_FREED_BLOCK_TWO=661606",
+            "REVIEWED_FREED_BLOCKS=()",
             "all_free_blocks_zero",
             "tree_identity_sha256",
         ):
@@ -1595,14 +1732,14 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
                 (
                     "validate_p2_installed_record",
                     self.valid_p2_installed_record(),
-                    "C:Q1CgJ9oAvCtPMD0gpMqjIRwUt4gow=",
-                    "V:0.1.0-r1",
+                    "C:Q1xmDSKg+38KWGNRvP8eE/06z1gTg=",
+                    "V:0.1.0-r2",
                 ),
                 (
                     "validate_sixrow_installed_record",
                     self.valid_sixrow_installed_record(),
-                    "C:Q1z+kF3cP7AS8SIoqzAnBB/K89PAc=",
-                    "V:14.0.2-r1",
+                    "C:Q1dyp8uNSMxPIjVUwuCP4wyyBBCs4=",
+                    "V:14.0.2-r2",
                 ),
             )
             for parser, baseline, checksum, version in records:
@@ -1716,6 +1853,112 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         self.assertIn('chmod 0640 -- "$PUBLISH_TMP/rootfs.ext4" "$PUBLISH_TMP/attestation.json"', self.source)
         self.assertIn("publish_bundle", self.source)
         self.assertNotIn("publish_pair", self.source)
+
+    def test_complete_producer_payload_is_exact_canonical_json(self) -> None:
+        policy = self.injection_policy_lock
+
+        def fixture_sha(label: str) -> str:
+            return hashlib.sha256(label.encode("ascii")).hexdigest()
+
+        output_hashes = {
+            field: fixture_sha(field) for field in policy["output"]["sha256_fields"]
+        }
+        output = copy.deepcopy(policy["output"]["fixed"])
+        output.update(output_hashes)
+        output["owner"] = f"0:{os.getgid()}"
+
+        normalization = copy.deepcopy(policy["normalization"]["fixed"])
+        normalization.update(
+            {
+                "pre_normalization_sha256": fixture_sha("pre-normalization"),
+                "proof_sha256": output["sha256"],
+                "sparse_st_blocks": 1234,
+                "tree_identity_sha256": fixture_sha("tree-identity"),
+            }
+        )
+        namespaces = {
+            name: os.readlink(f"/proc/self/ns/{name}")
+            for name in policy["runtime"]["namespace_fields"]
+        }
+        runtime = copy.deepcopy(policy["runtime"]["fixed"])
+        runtime.update(
+            {
+                "kernel_release": "6.6.87.2-fixture",
+                "mount_loop": {
+                    "backing_identity": "123:456",
+                    "block_identity": "7:0:1792",
+                    "mount_options": "ext4 rw,nosuid,nodev,relatime",
+                },
+                "namespaces": namespaces,
+                "proc_version_sha256": fixture_sha("proc-version"),
+                "sealed_script_sha256": digest(SCRIPT),
+            }
+        )
+        expected = {
+            "claims": copy.deepcopy(policy["claims"]),
+            "commands": copy.deepcopy(policy["commands"]),
+            "input": copy.deepcopy(policy["input"]),
+            "normalization": normalization,
+            "output": output,
+            "runtime": runtime,
+            "sanitization": copy.deepcopy(policy["sanitization"]),
+            "schema": policy["attestation_schema"],
+            "tools": copy.deepcopy(policy["tools"]),
+        }
+        canonical = (
+            json.dumps(expected, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("ascii")
+
+        shell_values = {
+            "ATTESTED_LOOP_BACKING_ID": runtime["mount_loop"]["backing_identity"],
+            "ATTESTED_LOOP_DEVICE_ID": runtime["mount_loop"]["block_identity"],
+            "CALLER_GID": os.getgid(),
+            "FINAL_SHA256": output["sha256"],
+            "FULL_DELTA_SHA256": output["filesystem_delta_sha256"],
+            "GEOMETRY_SHA256": output["geometry_sha256"],
+            "INSTALLED_DB_FINAL_SHA256": output["installed_db_sha256"],
+            "KEY_INVENTORY_SHA256": output["key_inventory_sha256"],
+            "KERNEL_RELEASE": runtime["kernel_release"],
+            "MOUNT_OPTIONS": runtime["mount_loop"]["mount_options"],
+            "NORMALIZATION_PROOF_SHA256": normalization["proof_sha256"],
+            "NORMALIZATION_TREE_SHA256": normalization["tree_identity_sha256"],
+            "NORMALIZED_ST_BLOCKS": normalization["sparse_st_blocks"],
+            "P2_PACKAGE_RECORD_SHA256": output["p2_package_record_sha256"],
+            "PRE_NORMALIZATION_SHA256": normalization["pre_normalization_sha256"],
+            "PROC_VERSION_SHA256": runtime["proc_version_sha256"],
+            "SANDBOX_ENTRY_SHA256": runtime["sandbox_entry_sha256"],
+            "SCRIPTS_DB_FINAL_SHA256": output["scripts_db_sha256"],
+            "SEALED_SCRIPT_SHA256": runtime["sealed_script_sha256"],
+            "SIXROW_PACKAGE_RECORD_SHA256": output[
+                "sixrow_package_record_sha256"
+            ],
+        }
+        assignments = ["SCRATCH_DIR=$2"]
+        assignments.extend(
+            f"{name}={shlex.quote(str(value))}"
+            for name, value in shell_values.items()
+        )
+        producer_start = self.source.index(
+            '\tATTESTATION_TMP="$SCRATCH_DIR/attestation.json"'
+        )
+        producer_end = self.source.index(
+            '\tATTESTATION_SHA256="$(sha256_of "$ATTESTATION_TMP")"',
+            producer_start,
+        )
+        producer = self.source[producer_start:producer_end]
+
+        with tempfile.TemporaryDirectory() as temporary:
+            result = self.run_helper(
+                "\n".join(assignments)
+                + "\n"
+                + producer
+                + '\ncat -- "$ATTESTATION_TMP"\n',
+                Path(temporary),
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = result.stdout.encode("ascii")
+        self.assertEqual(json.loads(payload), expected)
+        self.assertEqual(payload, canonical)
 
     def test_attestation_tool_fields_are_emitted_in_canonical_json_order(self) -> None:
         attestation_writer = self.source.split(

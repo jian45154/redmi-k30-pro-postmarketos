@@ -15,6 +15,7 @@ import unittest
 from unittest import mock
 
 from scripts.lmi_p2_d114 import deploy_userdata as deploy
+from tests.lmi_p2_d114 import host_bound
 
 
 def canonical(value: object) -> bytes:
@@ -847,6 +848,7 @@ class FakePowerShell:
 
 class DeployUserdataTests(unittest.TestCase):
     def setUp(self) -> None:
+        host_bound.require_path(deploy.REPO / deploy.FASTBOOT_ARCHIVE_PATH)
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
         self.fixture = Fixture(self.root)
