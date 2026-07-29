@@ -23,6 +23,12 @@ names are preserved because many notes cite them directly.
 | `48`-`58` | Fastbootd preflight, approval sheets, rollback scan, staged write, monitor, and release docs. |
 | `59`-`69` | Static CI, guarded fastbootd/reboot helpers, release refresh, readiness audit, and mainline progress/resource loops. |
 
+## Release pin registry
+
+`lmi_release_pins.py` is the read-only registry of every hand-copied release
+pin site (`verify` cross-checks all of them and exits nonzero listing each
+mismatched or unreadable site; `list` prints the re-pin checklist).
+
 ## P1 sealed-build helpers
 
 The Python modules under `scripts/lmi_p1/` implement the source-locked P1
