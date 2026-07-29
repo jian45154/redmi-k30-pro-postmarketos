@@ -38,15 +38,15 @@ STOCK_TERMINAL_SHA256 = "1bdeb6070eab5bb05eb2bece2803812e9824fb1a9c76a820352abb8
 STOCK_KEYBOARD_SHA256 = "4649049a9793172cc592bc8c1a07eef6eb387fb42f5ee4039aab09a4808d99d3"
 BUSYBOX_SHA256 = "a8d8e2b9898537c8b9fb4fcb3d9c95c2e09fecc76c9adfb19ac75965e1a4f19b"
 SETSID_SHA256 = "53c7e6e86b00235ccd9c2c1c15667d5c5a02500ddc6a587d3702dcb482763903"
-REMOTE_ROOT = "/tmp/lmi-weston-sixrow-r1-ff8dbb022089"
+REMOTE_ROOT = "/tmp/lmi-weston-sixrow-r2-23756d255515"
 ACTIVE_STOCK_SESSION = "/tmp/lmi-p2-d114-r1-57c77281/session"
-EXPECTED_APK_SHA256 = "ff8dbb02208959db4af9f1da735cb7b4f8765138388b6f7daebabce161fe208b"
+EXPECTED_APK_SHA256 = "23756d255515757d67050ad25ca43d07863a6dec7be89136fa22f8f71ac7ac19"
 TRANSIENT_LOCK_STATUS = "NO_GO_EXECUTION_DISABLED_PID_SIGNAL_RACE"
 TRANSIENT_NO_GO_REASON_CODE = "LEGACY_STOCK_PID_SIGNAL_RACE"
 PAYLOAD = {
     "usr/libexec/lmi-p2-d114/weston-keyboard-sixrow": (
         "weston-keyboard-sixrow",
-        "88d06d99f7c2d3eb1da64e7f89a0f5e37b87bc4c93f8b6778b1ca6491bf1dba6",
+        "d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a",
     ),
     "usr/libexec/lmi-p2-d114/weston-terminal-sixrow": (
         "weston-terminal-sixrow",
@@ -147,9 +147,9 @@ def render_session(role: str = "candidate") -> str:
 
     candidate = role == "candidate"
     directory_prefix = "" if candidate else "stock-"
-    wayland_display = "wayland-lmi-sixrow-r1" if candidate else "wayland-lmi-p2-d114"
+    wayland_display = "wayland-lmi-sixrow-r2" if candidate else "wayland-lmi-p2-d114"
     session_lock_name = (
-        "lmi-weston-sixrow-r1-session.lock"
+        "lmi-weston-sixrow-r2-session.lock"
         if candidate
         else "lmi-p2-d114-session.lock"
     )
@@ -539,7 +539,7 @@ def render_config() -> str:
 
 def extract_payload(apk: Path) -> dict[str, bytes]:
     if digest(apk) != EXPECTED_APK_SHA256:
-        raise StageError("refusing APK whose exact r1 SHA-256 is not approved")
+        raise StageError("refusing APK whose exact r2 SHA-256 is not approved")
     extracted: dict[str, bytes] = {}
     with tarfile.open(apk, mode="r:gz") as archive:
         for member in archive.getmembers():
@@ -714,7 +714,7 @@ def stage(apk: Path, output: Path) -> dict:
     expected_apk = Path(os.path.abspath(REPO / artifact_path))
     supplied_apk = Path(os.path.abspath(apk))
     if apk.is_symlink() or supplied_apk != expected_apk:
-        raise StageError("APK must be the exact non-symlink attested r1 path")
+        raise StageError("APK must be the exact non-symlink attested r2 path")
     verify.verify_build_attestation(require_artifact=True)
 
     output = Path(os.path.abspath(output))
