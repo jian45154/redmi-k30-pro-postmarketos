@@ -78,6 +78,58 @@ CI blind. A format-shaped guard (flagging serial-like tokens near
 `androidboot.serialno=` and similar contexts) would close the gap without
 revealing anything.
 
+## Update 2026-07-31: pins resolved, a portability regression exposed
+
+`df99e43` reconciled the registry against the merged r2-most-complete chain
+(truths now follow the r2 attestation). **`lmi_release_pins.py verify` is back
+to 56 ok, 0 mismatched**, and the stale `candidate-rebuild-lock.json` was
+re-pointed, clearing the earlier 12 failures.
+
+Static CI still exits 1, now with **3 errors of a different kind**:
+
+```
+DeployError: ELF interpreter resolved identity mismatch
+  tests/lmi_p2_d114/test_deploy_userdata_wsl.py
+  tests/lmi_p2_d114/test_postwrite_revalidate_wsl.py (x2)
+```
+
+`config/lmi-p2-d114/fastboot-wsl-runtime-lock.json` pins the ELF interpreter
+as sha256 `223b94a4…`; this host now has `c5e80a56…` (same size, 254864).
+The cause is benign and verified: Ubuntu updated `libc6` to `2.43-2ubuntu2.3`
+on 2026-07-23, `dpkg -S` attributes the file to that package, and `dpkg -V
+libc6` reports no modification. Every revision — `a24e3d1`, `7917720`,
+`origin/master`, `HEAD` — carries the same locked value, so the merge did not
+regress it; the *host* moved.
+
+The real problem is portability, not the lock. `test_deploy_userdata_wsl.py`
+reads the **real** lock file and validates it against the **real** host
+filesystem:
+
+```python
+runtime = json.loads((deploy.REPO / "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json").read_text())
+...
+prefix, held = deploy._validate_runtime(runtime, runtime_only_runner)
+```
+
+Such a test can only pass on the exact machine, with the exact glibc build,
+where the lock was captured. `.github/workflows/edge-release-checks.yml` runs
+`scripts/59_release_static_ci.sh`, so **these tests will also fail on GitHub's
+runner** — they were merged in from the r2 line and contradict the portability
+policy recorded in `d14c03a`.
+
+Two ways out, and the choice is a security judgement, not a mechanical fix:
+
+1. **Gate it** — `skipUnless` the captured lock matches the live host. Cheap,
+   but a deploy-trust guard that silently skips is a weaker guard.
+2. **Use a fixture** — validate against a synthetic runtime tree built in the
+   test, and keep the real-lock check in a separate, explicitly host-bound
+   suite that public CI does not run.
+
+Option 2 preserves the guard's meaning and is the recommended one. Re-pinning
+the lock to the new glibc is a separate owner action: it re-establishes trust
+in the deploy toolchain, and the project rule is that pinned attestations are
+never regenerated in place.
+
 ## Unblock sequence
 
 1. Decide the authoritative six-row revision; reconcile all 15 copies and the
