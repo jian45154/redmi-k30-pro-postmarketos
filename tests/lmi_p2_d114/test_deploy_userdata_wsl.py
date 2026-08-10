@@ -13,6 +13,7 @@ import threading
 import unittest
 
 from tests.lmi_p2_d114 import host_bound
+from tests.lmi_p2_d114 import runtime_lock_fixture
 from unittest import mock
 
 from scripts.lmi_p2_d114 import deploy_userdata_wsl as deploy
@@ -240,9 +241,9 @@ class DeployUserdataWslTests(unittest.TestCase):
                 },
             )
 
-    def test_current_wsl_runtime_lock_accepts_exact_usrmerge_without_device_command(self) -> None:
-        host_bound.require_path("/usr/bin/fastboot")
+    def test_runtime_lock_accepts_exact_usrmerge_without_device_command(self) -> None:
         runtime = json.loads((deploy.REPO / "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json").read_text())
+        locked_runner = runtime_lock_fixture.locked_process_runner(runtime)
         calls: list[tuple[str, ...]] = []
 
         def runtime_only_runner(
@@ -256,9 +257,10 @@ class DeployUserdataWslTests(unittest.TestCase):
             self.assertFalse(any(value.startswith("getvar:") for value in command))
             self.assertNotIn("flash", command)
             calls.append(command)
-            return deploy.run_bounded(command, timeout, pass_fds, environment)
+            return locked_runner(command, timeout, pass_fds, environment)
 
-        prefix, held = deploy._validate_runtime(runtime, runtime_only_runner)
+        with runtime_lock_fixture.synthetic_runtime_host(runtime):
+            prefix, held = deploy._validate_runtime(runtime, runtime_only_runner)
         try:
             self.assertEqual(prefix[0], "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2")
             self.assertEqual([command[-1] for command in calls], ["--version", "fastboot"])

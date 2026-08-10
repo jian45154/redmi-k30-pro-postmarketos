@@ -130,6 +130,19 @@ the lock to the new glibc is a separate owner action: it re-establishes trust
 in the deploy toolchain, and the project rule is that pinned attestations are
 never regenerated in place.
 
+## Update 2026-08-10: portability regression fixed (option 2)
+
+The owner chose the fixture route. `tests/lmi_p2_d114/runtime_lock_fixture.py`
+now derives a synthetic host view from the tracked runtime lock itself and
+serves it at the validator's host access points (`Path.lstat`, `os.readlink`,
+`os.fstat`, `deploy._open_regular`), so the accept-path tests pass on any
+host without weakening the validator. The real-lock-vs-real-host binding
+moved to `tests/lmi_p2_d114_hostbound/`, which static CI intentionally does
+not run; on this host it currently fails with the known glibc-drift
+signature, which is the correct signal that the owner must re-capture the
+lock before the next device deploy. `scripts/59_release_static_ci.sh` is
+green end to end.
+
 ## Unblock sequence
 
 1. Decide the authoritative six-row revision; reconcile all 15 copies and the
