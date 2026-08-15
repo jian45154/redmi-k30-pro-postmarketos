@@ -50,16 +50,16 @@ index 6156387..b6b0231 100644
  	row = (int)y / key_height;
  	col = (int)x / key_width + row * layout->columns;
 @@ -824,8 +843,8 @@ handle_commit_state(void *data,
- 	if (keyboard->surrounding_text)
- 		dbg("Surrounding text updated: %s\\n", keyboard->surrounding_text);
- 
- 	window_schedule_resize(keyboard->keyboard->window,
+	if (keyboard->surrounding_text)
+		dbg("Surrounding text updated: %s\\n", keyboard->surrounding_text);
+
+	window_schedule_resize(keyboard->keyboard->window,
 -			       layout->columns * key_width,
 -			       layout->rows * key_height);
 +			       keyboard_width(layout),
 +			       keyboard_height(layout));
- 
- 	zwp_input_method_context_v1_language(context,
+
+	zwp_input_method_context_v1_language(context,
 @@ -1020,8 +1039,8 @@ keyboard_create(struct virtual_keyboard *virtual_keyboard)
  	widget_set_touch_up_handler(keyboard->widget, touch_up_handler);
  
@@ -69,8 +69,8 @@ index 6156387..b6b0231 100644
 +			       keyboard_width(layout),
 +			       keyboard_height(layout));
  
- 	display_set_output_configure_handler(virtual_keyboard->display,
- 					     display_output_handler);
+	display_set_output_configure_handler(virtual_keyboard->display,
+					     display_output_handler);
 diff --git a/desktop-shell/input-panel.c b/desktop-shell/input-panel.c
 index 0612462..6fbb93d 100644
 --- a/desktop-shell/input-panel.c
