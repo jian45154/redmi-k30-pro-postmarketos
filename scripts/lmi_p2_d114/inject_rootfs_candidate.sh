@@ -57,22 +57,22 @@ readonly REBUILD_LOCK_SCHEMA=lmi-p2-d114-candidate-rebuild-lock/v1
 readonly OUTPUT_BUNDLE="$BUILD_DIR/lmi-d114-rootfs-p2-r2-most-complete-injected-20260724.bundle"
 readonly OUTPUT="$OUTPUT_BUNDLE/rootfs.ext4"
 readonly ATTESTATION="$OUTPUT_BUNDLE/attestation.json"
-readonly P2_APK="$INPUT_BUILD_DIR/run2-device-xiaomi-lmi-terminal-0.1.0-r2.apk"
-readonly P2_APK_SHA256=f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4
+readonly P2_APK="$INPUT_BUILD_DIR/device-xiaomi-lmi-terminal-0.1.0-r4.apk"
+readonly P2_APK_SHA256=3954171168f8623f00b6fcb976fa609988975cdf00f19331cf276e5ce5960b27
 readonly P2_APK_SIZE=8776
-readonly P2_APK_CHECKSUM=Q1xmDSKg+38KWGNRvP8eE/06z1gTg=
-readonly SIXROW_APK="$INPUT_BUILD_DIR/lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk"
-readonly SIXROW_APK_SHA256=8d2f23522eb737432577b33ee7dd012b76d06012f1d6918eac289853f6f015e7
-readonly SIXROW_APK_SIZE=121842
-readonly SIXROW_APK_CHECKSUM=Q1dyp8uNSMxPIjVUwuCP4wyyBBCs4=
+readonly P2_APK_CHECKSUM=Q1r7JCFbxjRfcP0nPqvvJSNriEyPU=
+readonly SIXROW_APK="$INPUT_BUILD_DIR/lmi-weston-sixrow-clients-14.0.2-r4.apk"
+readonly SIXROW_APK_SHA256=5bf587a355c7c91865a6f69bbb08c5e092e64eec2401d3b8f564bf1b6c3d18a0
+readonly SIXROW_APK_SIZE=122302
+readonly SIXROW_APK_CHECKSUM=Q10TcLLgp5UfKUc+DelNn7dPTWzKs=
 readonly P2_KEY="$REPO/config/lmi-p2-d114/pmos@local-6a5d38f2.rsa.pub"
 readonly P2_KEY_SHA256=c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79e936736
 readonly SIXROW_KEY="$REPO/config/lmi-p2-d114/pmos@local-6a5d38f2.rsa.pub"
 readonly SIXROW_KEY_SHA256=c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79e936736
 readonly P2_BUILD_ATTESTATION="$REPO/config/lmi-p2-d114/apk-build-attestation.json"
-readonly P2_BUILD_ATTESTATION_SHA256=f0193caac2ab580d5e8a154539e34419ad0a04b25a24a8de5b84fbb12beb40a3
-readonly SIXROW_BUILD_ATTESTATION="$REPO/config/lmi-weston-sixrow/build-attestation-r2.json"
-readonly SIXROW_BUILD_ATTESTATION_SHA256=5bb55928ae0b4109ad028d1a24e29de0dc74d2078f31d33628fd683cfbbaa0a2
+readonly P2_BUILD_ATTESTATION_SHA256=bf2940ac5efe5f5fe1d8d3ac0a98db5662271b0ee8b18531d48a9cbf9961fc06
+readonly SIXROW_BUILD_ATTESTATION="$REPO/config/lmi-weston-sixrow/build-attestation-r4.json"
+readonly SIXROW_BUILD_ATTESTATION_SHA256=dec4ff7f570305fda97e8f231b161fe11d51cb6e1724fd01e1db17b9df17cfe1
 readonly APK_STATIC="$REPO/private/lmi-p1/calibration/acquisition-root/work-proot-chroot2/apk.static"
 readonly APK_STATIC_SHA256=a6542dc1fdb6214be1ef462668241bfe91f301e9249c99c0c6c327269d5e5ce4
 readonly PROOT="$REPO/private/lmi-p1/calibration/acquisition-root/proot-root/usr/bin/proot"
@@ -1121,9 +1121,9 @@ verify_full_delta_fields() {
 			add_file["/etc/lmi-p2-d114/greetd.toml"]="644|260|d576c1f5398bc3820a0ce2361e2b0b187d5c6263b1cf42c8f121d262309de899"
 			add_file["/etc/lmi-p2-d114/weston.ini"]="644|688|b54d838ccf435ee41dbd55f5aab245fd68bb65ab19c784a694375f001a9763a2"
 			add_file["/usr/libexec/lmi-p2-d114/config-lifecycle"]="755|8194|b0315472595e56b521345a40350d588402c265c40c0df8be638f5317c9fc3c96"
-			add_file["/usr/libexec/lmi-p2-d114/session"]="755|15645|d0bfe969f2faae9a8bb9a4cceee2d2e81efe053806a0ec6da865c9624bb13325"
-			add_file["/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"]="755|134456|d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a"
-			add_file["/usr/libexec/lmi-p2-d114/weston-terminal-sixrow"]="755|200960|6602f7ac8e0c11892eec1d9db0411397e95f704a1655b94e0885a1220962a8cf"
+			add_file["/usr/libexec/lmi-p2-d114/session"]="755|15645|8635cf1a33f52eef96d04ee7c5d61d3b974ba21025773e730c82dfb7c878ad8f"
+			add_file["/usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"]="755|134456|8cb3865b8afdd535905d99ac8c9d1d34ae8b730024381b11a899e916d39eb8b1"
+			add_file["/usr/libexec/lmi-p2-d114/weston-terminal-sixrow"]="755|200960|ed3cda9c8dcdcd197385d125c84e3fdaa0429790b1b166d62f6206c4f853cf24"
 			add_file["/usr/share/lmi-p2-d114/greetd.confd"]="644|139|5be125043d60ff2d3b98624191769efd06320b81262b5552489d93076e85e6a4"
 			add_file["/var/lib/lmi-p2-d114/config-v1"]="600|28|2a480e997834e3a1960bd234c1d69905278a026afacdbb37a13522e6dbafe0f9"
 			add_file["/var/lib/lmi-p2-d114/greetd-confd.original"]="600|186|6523d36fa3490b4f518184bb0d5a1dd025f14e93ead2b0f9a80f82d685a953f0"
@@ -1460,7 +1460,7 @@ validate_p2_installed_record() {
 		BEGIN {
 			RS=""; FS="\n"; ORS="\n\n"
 			expected_value["P"]="device-xiaomi-lmi-terminal"
-			expected_value["V"]="0.1.0-r2"
+			expected_value["V"]="0.1.0-r4"
 			expected_value["A"]="noarch"
 			expected_value["S"]="8776"
 			expected_value["I"]="24926"
@@ -1470,8 +1470,8 @@ validate_p2_installed_record() {
 			expected_value["o"]="device-xiaomi-lmi-terminal"
 			expected_value["m"]="lmi P2 maintainers <noreply@example.invalid>"
 			expected_value["t"]="1784522705"
-			expected_value["c"]="uncommitted-p2-d114-source-lock-v4"
-			expected_D="device-xiaomi-lmi=1-r144 greetd=0.10.3-r11 greetd-openrc=0.10.3-r11 greetd-phrog=0.53.0-r0 libseat=0.9.3-r1 libweston=14.0.2-r5 linux-xiaomi-lmi=4.19.325-r15 lmi-weston-sixrow-clients=14.0.2-r2 openrc=0.63.2-r0 seatd=0.9.3-r1 seatd-openrc=0.9.3-r1 weston=14.0.2-r5 weston-backend-drm=14.0.2-r5 weston-shell-desktop=14.0.2-r5 weston-terminal=14.0.2-r5 /bin/sh"
+			expected_value["c"]="uncommitted-p2-d114-source-lock-r4"
+			expected_D="device-xiaomi-lmi=1-r144 greetd=0.10.3-r11 greetd-openrc=0.10.3-r11 greetd-phrog=0.53.0-r0 libseat=0.9.3-r1 libweston=14.0.2-r5 linux-xiaomi-lmi=4.19.325-r15 lmi-weston-sixrow-clients=14.0.2-r4 openrc=0.63.2-r0 seatd=0.9.3-r1 seatd-openrc=0.9.3-r1 weston=14.0.2-r5 weston-backend-drm=14.0.2-r5 weston-shell-desktop=14.0.2-r5 weston-terminal=14.0.2-r5 /bin/sh"
 			expected_dep["/bin/sh"]=1
 			expected_dep["device-xiaomi-lmi=1-r144"]=1
 			expected_dep["greetd=0.10.3-r11"]=1
@@ -1480,7 +1480,7 @@ validate_p2_installed_record() {
 			expected_dep["libseat=0.9.3-r1"]=1
 			expected_dep["libweston=14.0.2-r5"]=1
 			expected_dep["linux-xiaomi-lmi=4.19.325-r15"]=1
-			expected_dep["lmi-weston-sixrow-clients=14.0.2-r2"]=1
+			expected_dep["lmi-weston-sixrow-clients=14.0.2-r4"]=1
 			expected_dep["openrc=0.63.2-r0"]=1
 			expected_dep["seatd=0.9.3-r1"]=1
 			expected_dep["seatd-openrc=0.9.3-r1"]=1
@@ -1491,7 +1491,7 @@ validate_p2_installed_record() {
 			expected_file["etc/lmi-p2-d114/greetd.toml"]="Q17aD3D/27DhKiygFdfBjjWQ46v/4="
 			expected_file["etc/lmi-p2-d114/weston.ini"]="Q1ACVXZU3ZSa9r/vWT8UkYAfbLRlw="
 			expected_file["usr/libexec/lmi-p2-d114/config-lifecycle"]="Q1fz2JibH7B8jAdosh8vogpdSyQZM="
-			expected_file["usr/libexec/lmi-p2-d114/session"]="Q1VY+DEJK+eyq5Mv5rs4gUBmgVyD4="
+			expected_file["usr/libexec/lmi-p2-d114/session"]="Q1eU8fOza0XLu4uiFfnuF1MF0ynjg="
 			expected_file["usr/share/lmi-p2-d114/greetd.confd"]="Q11ujOtYABrGQSohB67SphVfwH5C8="
 			expected_attr["usr/libexec/lmi-p2-d114/config-lifecycle"]="0:0:755"
 			expected_attr["usr/libexec/lmi-p2-d114/session"]="0:0:755"
@@ -1573,16 +1573,16 @@ validate_sixrow_installed_record() {
 		BEGIN {
 			RS=""; FS="\n"; ORS="\n\n"
 			expected_value["P"]="lmi-weston-sixrow-clients"
-			expected_value["V"]="14.0.2-r2"
+			expected_value["V"]="14.0.2-r4"
 			expected_value["A"]="aarch64"
-			expected_value["S"]="121842"
+			expected_value["S"]="122302"
 			expected_value["I"]="335416"
 			expected_value["T"]="Hash-locked six-row Weston keyboard and text-input terminal for xiaomi-lmi"
 			expected_value["U"]="https://gitlab.freedesktop.org/wayland/weston"
 			expected_value["L"]="MIT"
 			expected_value["o"]="lmi-weston-sixrow-clients"
 			expected_value["m"]="Local lmi port work <noreply@example.invalid>"
-			expected_value["t"]="1784730238"
+			expected_value["t"]="1785283200"
 			expected_D="so:libc.musl-aarch64.so.1 so:libcairo.so.2 so:libfontconfig.so.1 so:libgobject-2.0.so.0 so:libpango-1.0.so.0 so:libpangocairo-1.0.so.0 so:libpixman-1.so.0 so:libpng16.so.16 so:libwayland-client.so.0 so:libwayland-cursor.so.0 so:libxkbcommon.so.0"
 			expected_dep["so:libc.musl-aarch64.so.1"]=1
 			expected_dep["so:libcairo.so.2"]=1
@@ -1595,8 +1595,8 @@ validate_sixrow_installed_record() {
 			expected_dep["so:libwayland-client.so.0"]=1
 			expected_dep["so:libwayland-cursor.so.0"]=1
 			expected_dep["so:libxkbcommon.so.0"]=1
-			expected_file["usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"]="Q1XSUCcmg4Qp6FPO9eNoHsqhU0Rls="
-			expected_file["usr/libexec/lmi-p2-d114/weston-terminal-sixrow"]="Q1TfC5e5TmOzP1rew68T4D0bOCiE4="
+			expected_file["usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"]="Q1mFNoTt8T2QOY58h38DOzDSv1rjk="
+			expected_file["usr/libexec/lmi-p2-d114/weston-terminal-sixrow"]="Q1NWFVkiRYpn0e4jIrHdpsPkRavKg="
 			expected_attr["usr/libexec/lmi-p2-d114/weston-keyboard-sixrow"]="0:0:755"
 			expected_attr["usr/libexec/lmi-p2-d114/weston-terminal-sixrow"]="0:0:755"
 			expected_dir["usr"]=1
@@ -1673,7 +1673,7 @@ verify_scripts_delta() {
 	mkdir -m 0700 -- "$work" "$baseline_dir" "$final_dir"
 	tar -xzf "$before" -C "$baseline_dir" --no-same-owner --no-same-permissions
 	tar -xzf "$after" -C "$final_dir" --no-same-owner --no-same-permissions
-	find "$final_dir" -xdev -mindepth 1 -maxdepth 1 -type f -name 'device-xiaomi-lmi-terminal-0.1.0-r2.*' -print | sort >"$target_list"
+	find "$final_dir" -xdev -mindepth 1 -maxdepth 1 -type f -name 'device-xiaomi-lmi-terminal-0.1.0-r4.*' -print | sort >"$target_list"
 	[[ "$(wc -l <"$target_list")" == 3 ]] || fail "target package script inventory mismatch"
 	while IFS= read -r path; do
 		case "$path" in
@@ -2041,9 +2041,9 @@ main() {
 	sanitize_public_image
 
 	verify_image_file /usr/libexec/lmi-p2-d114/config-lifecycle 755 b0315472595e56b521345a40350d588402c265c40c0df8be638f5317c9fc3c96
-	verify_image_file /usr/libexec/lmi-p2-d114/session 755 d0bfe969f2faae9a8bb9a4cceee2d2e81efe053806a0ec6da865c9624bb13325
-	verify_image_file /usr/libexec/lmi-p2-d114/weston-keyboard-sixrow 755 d6b9e514d170024ab95bd0539eb84d5ee32fd4f9673a58f7a1dc8d0a4c5e9d2a
-	verify_image_file /usr/libexec/lmi-p2-d114/weston-terminal-sixrow 755 6602f7ac8e0c11892eec1d9db0411397e95f704a1655b94e0885a1220962a8cf
+	verify_image_file /usr/libexec/lmi-p2-d114/session 755 8635cf1a33f52eef96d04ee7c5d61d3b974ba21025773e730c82dfb7c878ad8f
+	verify_image_file /usr/libexec/lmi-p2-d114/weston-keyboard-sixrow 755 8cb3865b8afdd535905d99ac8c9d1d34ae8b730024381b11a899e916d39eb8b1
+	verify_image_file /usr/libexec/lmi-p2-d114/weston-terminal-sixrow 755 ed3cda9c8dcdcd197385d125c84e3fdaa0429790b1b166d62f6206c4f853cf24
 	verify_image_file /etc/lmi-p2-d114/weston.ini 644 b54d838ccf435ee41dbd55f5aab245fd68bb65ab19c784a694375f001a9763a2
 	verify_image_file /etc/lmi-p2-d114/greetd.toml 644 d576c1f5398bc3820a0ce2361e2b0b187d5c6263b1cf42c8f121d262309de899
 	verify_image_file /usr/share/lmi-p2-d114/greetd.confd 644 5be125043d60ff2d3b98624191769efd06320b81262b5552489d93076e85e6a4
@@ -2192,7 +2192,7 @@ main() {
 	[[ "$KERNEL_RELEASE" =~ ^[A-Za-z0-9._+-]+$ ]] || fail "unsafe kernel release for attestation"
 	PROC_VERSION_SHA256="$(sha256_of /proc/version)"
 	ATTESTATION_TMP="$SCRATCH_DIR/attestation.json"
-	printf '%s\n' "{\"claims\":{\"hardware_test_only\":true,\"production\":false,\"release_eligible\":false},\"commands\":{\"apk\":[\"bubblewrap:unshare-user,pid,uts,ipc;outer-private-net\",\"source-bindings:checked-root-owned-run-bridge;outer-private-mountns\",\"cap-drop=ALL;child-verified-no-new-privs-and-zero-capability-sets\",\"env:clear;HOME=/root;LANG=C;LC_ALL=C;PATH=/usr/sbin:/usr/bin:/sbin:/bin;PWD=/;TZ=UTC\",\"--root=/image\",\"--arch=aarch64\",\"--keys-dir=/keys\",\"--no-logfile\",\"--no-network\",\"--no-cache\",\"--no-scripts\",\"--repositories-file=/dev/null\",\"--force-non-repository\",\"add\",\"/tools/sixrow.apk\",\"/tools/p2.apk\"],\"lifecycle\":[\"bubblewrap:unshare-user,pid,uts,ipc;outer-private-net\",\"source-bindings:checked-root-owned-run-bridge;outer-private-mountns\",\"cap-drop=ALL;child-verified-no-new-privs-and-zero-capability-sets\",\"env:clear;HOME=/root;LANG=C;LC_ALL=C;PATH=/usr/sbin:/usr/bin:/sbin:/bin;PROOT_NO_SECCOMP=1;PWD=/;TZ=UTC\",\"loader:--library-path=/runtime\",\"proot:-r=/image,-q=/tools/qemu-aarch64,-w=/\",\"/usr/libexec/lmi-p2-d114/config-lifecycle\",\"install\"]},\"input\":{\"apks\":{\"p2\":{\"build_attestation_sha256\":\"$P2_BUILD_ATTESTATION_SHA256\",\"sandbox_path\":\"/tools/p2.apk\",\"sha256\":\"$P2_APK_SHA256\",\"source_path\":\"private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724/run2-device-xiaomi-lmi-terminal-0.1.0-r2.apk\"},\"sixrow\":{\"build_attestation_sha256\":\"$SIXROW_BUILD_ATTESTATION_SHA256\",\"sandbox_path\":\"/tools/sixrow.apk\",\"sha256\":\"$SIXROW_APK_SHA256\",\"source_path\":\"private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724/lmi-weston-sixrow-clients-14.0.2-r2.resigned.apk\"}},\"base_sha256\":\"$BASE_SHA256\",\"candidate_rebuild_lock_schema\":\"$REBUILD_LOCK_SCHEMA\",\"candidate_rebuild_lock_sha256\":\"$REBUILD_LOCK_SHA256\",\"candidate_sha256\":\"$INPUT_SHA256\",\"candidate_size\":$IMAGE_SIZE,\"candidate_uuid\":\"$IMAGE_UUID\",\"keys\":{\"p2_sha256\":\"$P2_KEY_SHA256\",\"sixrow_sha256\":\"$SIXROW_KEY_SHA256\"},\"raw_sha256\":\"$RAW_SHA256\",\"repair_epoch\":$REPAIR_EPOCH,\"repair_log_sha256\":\"$REPAIR_LOG_SHA256\",\"sparse_sha256\":\"$SPARSE_SHA256\",\"verify_log_sha256\":\"$REPAIR_VERIFY_LOG_SHA256\"},\"output\":{\"filesystem_delta_sha256\":\"$FULL_DELTA_SHA256\",\"geometry_sha256\":\"$GEOMETRY_SHA256\",\"installed_db_sha256\":\"$INSTALLED_DB_FINAL_SHA256\",\"key_inventory_sha256\":\"$KEY_INVENTORY_SHA256\",\"mode\":\"0640\",\"owner\":\"0:$CALLER_GID\",\"p2_package_record_sha256\":\"$P2_PACKAGE_RECORD_SHA256\",\"packages\":[\"device-xiaomi-lmi-terminal=0.1.0-r2\",\"lmi-weston-sixrow-clients=14.0.2-r2\"],\"path\":\"private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-injected-20260724/lmi-d114-rootfs-p2-r2-most-complete-injected-20260724.bundle/rootfs.ext4\",\"scripts_db_sha256\":\"$SCRIPTS_DB_FINAL_SHA256\",\"sha256\":\"$FINAL_SHA256\",\"sixrow_package_record_sha256\":\"$SIXROW_PACKAGE_RECORD_SHA256\",\"size\":$IMAGE_SIZE,\"triggers_sha256\":\"$TRIGGERS_DB_SHA256\",\"uuid\":\"$IMAGE_UUID\",\"world_sha256\":\"$WORLD_SHA256\"},\"runtime\":{\"injector_runtime_lock_schema\":\"$RUNTIME_LOCK_SCHEMA\",\"injector_runtime_lock_sha256\":\"$RUNTIME_LOCK_SHA256\",\"kernel_release\":\"$KERNEL_RELEASE\",\"mount_loop\":{\"backing_identity\":\"$ATTESTED_LOOP_BACKING_ID\",\"block_identity\":\"$ATTESTED_LOOP_DEVICE_ID\",\"mount_options\":\"$MOUNT_OPTIONS\"},\"namespaces\":{\"ipc\":\"$(readlink /proc/self/ns/ipc)\",\"mnt\":\"$(readlink /proc/self/ns/mnt)\",\"net\":\"$(readlink /proc/self/ns/net)\",\"pid\":\"$(readlink /proc/self/ns/pid)\",\"uts\":\"$(readlink /proc/self/ns/uts)\"},\"proc_version_sha256\":\"$PROC_VERSION_SHA256\",\"sandbox_entry_sha256\":\"$SANDBOX_ENTRY_SHA256\",\"sealed_script_sha256\":\"$SEALED_SCRIPT_SHA256\"},\"sanitization\":{\"apk_cache\":\"exact-four-index-members-removed\",\"apk_log\":\"empty\",\"authorized_keys\":\"absent-in-base\",\"machine_id\":\"baked-fixed-hardware-test\",\"resolv_conf\":\"empty\",\"shadow_backup\":\"exact-copy-of-locked-active-shadow\",\"ssh_password_authentication\":\"disabled-by-locked-drop-in\"},\"schema\":\"lmi-p2-d114-rootfs-injection-attestation/v3\",\"tools\":{\"apk_static_sha256\":\"$APK_STATIC_SHA256\",\"bash_sha256\":\"$BASH_SHA256\",\"bubblewrap_sha256\":\"$BWRAP_SHA256\",\"dumpe2fs_sha256\":\"$DUMPE2FS_SHA256\",\"e2fsck_sha256\":\"$E2FSCK_SHA256\",\"getfattr_sha256\":\"$GETFATTR_SHA256\",\"host_libc_sha256\":\"$HOST_LIBC_SHA256\",\"host_loader_sha256\":\"$HOST_LOADER_SHA256\",\"lsattr_libcom_err_sha256\":\"$LSATTR_LIBCOM_ERR_SHA256\",\"lsattr_libe2p_sha256\":\"$LSATTR_LIBE2P_SHA256\",\"lsattr_sha256\":\"$LSATTR_SHA256\",\"proot_libtalloc_sha256\":\"$PROOT_TALLOC_SHA256\",\"proot_sha256\":\"$PROOT_SHA256\",\"qemu_aarch64_sha256\":\"$QEMU_SHA256\",\"simg2img_sha256\":\"$SIMG2IMG_SHA256\"}}" >"$ATTESTATION_TMP"
+	printf '%s\n' "{\"claims\":{\"hardware_test_only\":true,\"production\":false,\"release_eligible\":false},\"commands\":{\"apk\":[\"bubblewrap:unshare-user,pid,uts,ipc;outer-private-net\",\"source-bindings:checked-root-owned-run-bridge;outer-private-mountns\",\"cap-drop=ALL;child-verified-no-new-privs-and-zero-capability-sets\",\"env:clear;HOME=/root;LANG=C;LC_ALL=C;PATH=/usr/sbin:/usr/bin:/sbin:/bin;PWD=/;TZ=UTC\",\"--root=/image\",\"--arch=aarch64\",\"--keys-dir=/keys\",\"--no-logfile\",\"--no-network\",\"--no-cache\",\"--no-scripts\",\"--repositories-file=/dev/null\",\"--force-non-repository\",\"add\",\"/tools/sixrow.apk\",\"/tools/p2.apk\"],\"lifecycle\":[\"bubblewrap:unshare-user,pid,uts,ipc;outer-private-net\",\"source-bindings:checked-root-owned-run-bridge;outer-private-mountns\",\"cap-drop=ALL;child-verified-no-new-privs-and-zero-capability-sets\",\"env:clear;HOME=/root;LANG=C;LC_ALL=C;PATH=/usr/sbin:/usr/bin:/sbin:/bin;PROOT_NO_SECCOMP=1;PWD=/;TZ=UTC\",\"loader:--library-path=/runtime\",\"proot:-r=/image,-q=/tools/qemu-aarch64,-w=/\",\"/usr/libexec/lmi-p2-d114/config-lifecycle\",\"install\"]},\"input\":{\"apks\":{\"p2\":{\"build_attestation_sha256\":\"$P2_BUILD_ATTESTATION_SHA256\",\"sandbox_path\":\"/tools/p2.apk\",\"sha256\":\"$P2_APK_SHA256\",\"source_path\":\"private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724/device-xiaomi-lmi-terminal-0.1.0-r4.apk\"},\"sixrow\":{\"build_attestation_sha256\":\"$SIXROW_BUILD_ATTESTATION_SHA256\",\"sandbox_path\":\"/tools/sixrow.apk\",\"sha256\":\"$SIXROW_APK_SHA256\",\"source_path\":\"private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724/lmi-weston-sixrow-clients-14.0.2-r4.apk\"}},\"base_sha256\":\"$BASE_SHA256\",\"candidate_rebuild_lock_schema\":\"$REBUILD_LOCK_SCHEMA\",\"candidate_rebuild_lock_sha256\":\"$REBUILD_LOCK_SHA256\",\"candidate_sha256\":\"$INPUT_SHA256\",\"candidate_size\":$IMAGE_SIZE,\"candidate_uuid\":\"$IMAGE_UUID\",\"keys\":{\"p2_sha256\":\"$P2_KEY_SHA256\",\"sixrow_sha256\":\"$SIXROW_KEY_SHA256\"},\"raw_sha256\":\"$RAW_SHA256\",\"repair_epoch\":$REPAIR_EPOCH,\"repair_log_sha256\":\"$REPAIR_LOG_SHA256\",\"sparse_sha256\":\"$SPARSE_SHA256\",\"verify_log_sha256\":\"$REPAIR_VERIFY_LOG_SHA256\"},\"output\":{\"filesystem_delta_sha256\":\"$FULL_DELTA_SHA256\",\"geometry_sha256\":\"$GEOMETRY_SHA256\",\"installed_db_sha256\":\"$INSTALLED_DB_FINAL_SHA256\",\"key_inventory_sha256\":\"$KEY_INVENTORY_SHA256\",\"mode\":\"0640\",\"owner\":\"0:$CALLER_GID\",\"p2_package_record_sha256\":\"$P2_PACKAGE_RECORD_SHA256\",\"packages\":[\"device-xiaomi-lmi-terminal=0.1.0-r4\",\"lmi-weston-sixrow-clients=14.0.2-r4\"],\"path\":\"private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-injected-20260724/lmi-d114-rootfs-p2-r2-most-complete-injected-20260724.bundle/rootfs.ext4\",\"scripts_db_sha256\":\"$SCRIPTS_DB_FINAL_SHA256\",\"sha256\":\"$FINAL_SHA256\",\"sixrow_package_record_sha256\":\"$SIXROW_PACKAGE_RECORD_SHA256\",\"size\":$IMAGE_SIZE,\"triggers_sha256\":\"$TRIGGERS_DB_SHA256\",\"uuid\":\"$IMAGE_UUID\",\"world_sha256\":\"$WORLD_SHA256\"},\"runtime\":{\"injector_runtime_lock_schema\":\"$RUNTIME_LOCK_SCHEMA\",\"injector_runtime_lock_sha256\":\"$RUNTIME_LOCK_SHA256\",\"kernel_release\":\"$KERNEL_RELEASE\",\"mount_loop\":{\"backing_identity\":\"$ATTESTED_LOOP_BACKING_ID\",\"block_identity\":\"$ATTESTED_LOOP_DEVICE_ID\",\"mount_options\":\"$MOUNT_OPTIONS\"},\"namespaces\":{\"ipc\":\"$(readlink /proc/self/ns/ipc)\",\"mnt\":\"$(readlink /proc/self/ns/mnt)\",\"net\":\"$(readlink /proc/self/ns/net)\",\"pid\":\"$(readlink /proc/self/ns/pid)\",\"uts\":\"$(readlink /proc/self/ns/uts)\"},\"proc_version_sha256\":\"$PROC_VERSION_SHA256\",\"sandbox_entry_sha256\":\"$SANDBOX_ENTRY_SHA256\",\"sealed_script_sha256\":\"$SEALED_SCRIPT_SHA256\"},\"sanitization\":{\"apk_cache\":\"exact-four-index-members-removed\",\"apk_log\":\"empty\",\"authorized_keys\":\"absent-in-base\",\"machine_id\":\"baked-fixed-hardware-test\",\"resolv_conf\":\"empty\",\"shadow_backup\":\"exact-copy-of-locked-active-shadow\",\"ssh_password_authentication\":\"disabled-by-locked-drop-in\"},\"schema\":\"lmi-p2-d114-rootfs-injection-attestation/v3\",\"tools\":{\"apk_static_sha256\":\"$APK_STATIC_SHA256\",\"bash_sha256\":\"$BASH_SHA256\",\"bubblewrap_sha256\":\"$BWRAP_SHA256\",\"dumpe2fs_sha256\":\"$DUMPE2FS_SHA256\",\"e2fsck_sha256\":\"$E2FSCK_SHA256\",\"getfattr_sha256\":\"$GETFATTR_SHA256\",\"host_libc_sha256\":\"$HOST_LIBC_SHA256\",\"host_loader_sha256\":\"$HOST_LOADER_SHA256\",\"lsattr_libcom_err_sha256\":\"$LSATTR_LIBCOM_ERR_SHA256\",\"lsattr_libe2p_sha256\":\"$LSATTR_LIBE2P_SHA256\",\"lsattr_sha256\":\"$LSATTR_SHA256\",\"proot_libtalloc_sha256\":\"$PROOT_TALLOC_SHA256\",\"proot_sha256\":\"$PROOT_SHA256\",\"qemu_aarch64_sha256\":\"$QEMU_SHA256\",\"simg2img_sha256\":\"$SIMG2IMG_SHA256\"}}" >"$ATTESTATION_TMP"
 	ATTESTATION_REWRITE="$SCRATCH_DIR/attestation.normalized.json"
 	NORMALIZATION_FRAGMENT="\"normalization\":{\"all_free_blocks_zero\":true,\"allocated_only_command\":[\"e2image\",\"-r\",\"-a\",\"-p\"],\"inactive_journal\":{\"block_count\":$JOURNAL_INACTIVE_BLOCK_COUNT,\"first_block\":$JOURNAL_INACTIVE_FIRST_BLOCK,\"sha256\":\"$JOURNAL_INACTIVE_ZERO_SHA256\"},\"journal_extent\":{\"block_count\":$JOURNAL_BLOCK_COUNT,\"first_block\":$JOURNAL_FIRST_BLOCK},\"pre_normalization_sha256\":\"$PRE_NORMALIZATION_SHA256\",\"proof\":\"second-e2image-byte-identical\",\"proof_sha256\":\"$NORMALIZATION_PROOF_SHA256\",\"reviewed_freed_blocks\":[],\"sparse_st_blocks\":$NORMALIZED_ST_BLOCKS,\"tree_identity_sha256\":\"$NORMALIZATION_TREE_SHA256\"},"
 	awk -v normalization="$NORMALIZATION_FRAGMENT" -v debugfs_sha="$DEBUGFS_SHA256" -v e2image_sha="$E2IMAGE_SHA256" '

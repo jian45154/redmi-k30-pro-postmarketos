@@ -98,7 +98,7 @@ class SourceLockTests(unittest.TestCase):
         for dependency in (
             "device-xiaomi-lmi=1-r144",
             "linux-xiaomi-lmi=4.19.325-r15",
-            "lmi-weston-sixrow-clients=14.0.2-r2",
+            "lmi-weston-sixrow-clients=14.0.2-r4",
             "weston=14.0.2-r5",
             "greetd=0.10.3-r11",
         ):

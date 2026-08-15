@@ -428,6 +428,7 @@ def _session_path_digest(component):
 
 _BUILD_ATTESTATION = "config/lmi-weston-sixrow/build-attestation.json"
 _BUILD_ATTESTATION_R2 = "config/lmi-weston-sixrow/build-attestation-r2.json"
+_BUILD_ATTESTATION_R4 = "config/lmi-weston-sixrow/build-attestation-r4.json"
 _TRANSIENT_STAGE_LOCK = "config/lmi-weston-sixrow/transient-stage-lock.json"
 _INJECTION_POLICY_LOCK = "config/lmi-p2-d114/injection-policy-lock.json"
 _CANDIDATE_REBUILD_LOCK = "config/lmi-p2-d114/candidate-rebuild-lock.json"
@@ -559,10 +560,10 @@ REGISTRY = (
     # earlier NO-GO transient trial below keeps the pre-resign hash, which
     # the same attestation retains as source.resigned_from_sha256.
     Artifact(
-        name="sixrow-clients-apk-injected-r2-resigned",
+        name="sixrow-clients-apk-injected-r4",
         truth=Site(
-            label="build-attestation-r2.artifact.sha256",
-            path=_BUILD_ATTESTATION_R2,
+            label="build-attestation-r4.artifact.sha256",
+            path=_BUILD_ATTESTATION_R4,
             kind="json",
             pointer=("artifact", "sha256"),
         ),
@@ -635,11 +636,11 @@ REGISTRY = (
     # r1 keyboard was superseded); the terminal binary is byte-identical in
     # r1 and r2, so its entry keeps the r1 attestation as truth.
     _payload_artifact(
-        name="weston-keyboard-sixrow-binary-injected-r2",
+        name="weston-keyboard-sixrow-binary-injected-r4",
         component=_KBD,
         add_file_meta=r"755\|134456",
-        attestation=_BUILD_ATTESTATION_R2,
-        attestation_tag="build-attestation-r2",
+        attestation=_BUILD_ATTESTATION_R4,
+        attestation_tag="build-attestation-r4",
         session_sites=(
             Site(
                 label="session-gate check_sha256/stop/wait[%s]" % _KBD,
@@ -667,9 +668,11 @@ REGISTRY = (
         component=_KBD,
     ),
     _payload_artifact(
-        name="weston-terminal-sixrow-binary-frozen-d114-r1",
+        name="weston-terminal-sixrow-binary-injected-r4",
         component=_TERM,
         add_file_meta=r"755\|200960",
+        attestation=_BUILD_ATTESTATION_R4,
+        attestation_tag="build-attestation-r4",
         session_sites=(
             Site(
                 label="session-gate check_sha256/stop/wait[%s]" % _TERM,
@@ -721,8 +724,8 @@ REGISTRY = (
     Artifact(
         name="build-attestation-file-hash",
         truth=Site(
-            label="sha256(%s)" % _BUILD_ATTESTATION_R2,
-            path=_BUILD_ATTESTATION_R2,
+            label="sha256(%s)" % _BUILD_ATTESTATION_R4,
+            path=_BUILD_ATTESTATION_R4,
             kind="file_sha256",
         ),
         sites=(

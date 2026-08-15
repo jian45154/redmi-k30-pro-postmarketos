@@ -25,7 +25,7 @@ readonly REPO="${LAUNCHER_CANONICAL%"$LAUNCHER_SUFFIX"}"
 readonly BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-injected-20260724"
 readonly INJECTOR="$REPO/scripts/lmi_p2_d114/inject_rootfs_candidate.sh"
 # Updated only after the injector passes its focused tests.
-readonly INJECTOR_SHA256=dc099470f9bcf9f693152fe7f842a5aaad574e8c37ca490aea904733d57e6e0b
+readonly INJECTOR_SHA256=0648fe5e00ea3ec9b43ea26b3e1131ddeef2cc0b4dd9beaae44f3fb90c114554
 readonly ROOT_SEAL_DIR=/run/lmi-p2-d114-inject
 readonly OUTPUT_BUNDLE="$BUILD_DIR/lmi-d114-rootfs-p2-r2-most-complete-injected-20260724.bundle"
 readonly OUTPUT="$OUTPUT_BUNDLE/rootfs.ext4"

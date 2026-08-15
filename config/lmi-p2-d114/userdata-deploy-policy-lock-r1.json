@@ -75,12 +75,12 @@
   "repo_bindings": {
     "apk_build_attestation": {
       "path": "config/lmi-p2-d114/apk-build-attestation.json",
-      "sha256": "f0193caac2ab580d5e8a154539e34419ad0a04b25a24a8de5b84fbb12beb40a3",
-      "size": 3551
+      "sha256": "bf2940ac5efe5f5fe1d8d3ac0a98db5662271b0ee8b18531d48a9cbf9961fc06",
+      "size": 3257
     },
     "assembler": {
       "path": "scripts/lmi_p2_d114/assemble_userdata_image.py",
-      "sha256": "1327b3840b07596f8eb877b8d7b075e07067775b1739e120dea9b6f4d0427a26",
+      "sha256": "807370ec72a2781a8a29ac1c3c750e46883bce65b46a972f229a60b84521b9e4",
       "size": 84891
     },
     "candidate_rebuild_lock": {
@@ -95,17 +95,17 @@
     },
     "injection_policy_lock": {
       "path": "config/lmi-p2-d114/injection-policy-lock.json",
-      "sha256": "c0ee1bd17e9fdf919098921db49245c51017ce00042d7c9a0e256a9f730b9c42",
-      "size": 7469
+      "sha256": "d9687f0505a2a6f9d41f42c1ec7aa724918b69f67f27d8ee33ffb93316d055e3",
+      "size": 7455
     },
     "injector": {
       "path": "scripts/lmi_p2_d114/inject_rootfs_candidate.sh",
-      "sha256": "dc099470f9bcf9f693152fe7f842a5aaad574e8c37ca490aea904733d57e6e0b",
-      "size": 124825
+      "sha256": "0648fe5e00ea3ec9b43ea26b3e1131ddeef2cc0b4dd9beaae44f3fb90c114554",
+      "size": 124797
     },
     "injector_launcher": {
       "path": "scripts/lmi_p2_d114/launch_inject_rootfs_candidate.sh",
-      "sha256": "6edcb0794a0f70e3574bab23666e2a0df0ad5882c5077b8b5cd183a21e6d6ac7",
+      "sha256": "910f3188858e2d7cba5852610739ceb86dde973c2aaf9a5f4986e32f594ee918",
       "size": 20125
     },
     "injector_runtime_lock": {
