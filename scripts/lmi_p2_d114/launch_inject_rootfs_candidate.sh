@@ -25,7 +25,7 @@ readonly REPO="${LAUNCHER_CANONICAL%"$LAUNCHER_SUFFIX"}"
 readonly BUILD_DIR="$REPO/private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-injected-20260724"
 readonly INJECTOR="$REPO/scripts/lmi_p2_d114/inject_rootfs_candidate.sh"
 # Updated only after the injector passes its focused tests.
-readonly INJECTOR_SHA256=0da273703f808f3ad0d599835c71812f415b03651a4ee75767e9a38f4a4c213d
+readonly INJECTOR_SHA256=dc099470f9bcf9f693152fe7f842a5aaad574e8c37ca490aea904733d57e6e0b
 readonly ROOT_SEAL_DIR=/run/lmi-p2-d114-inject
 readonly OUTPUT_BUNDLE="$BUILD_DIR/lmi-d114-rootfs-p2-r2-most-complete-injected-20260724.bundle"
 readonly OUTPUT="$OUTPUT_BUNDLE/rootfs.ext4"
@@ -33,7 +33,7 @@ readonly ATTESTATION="$OUTPUT_BUNDLE/attestation.json"
 readonly WSL_ROOT_WINDOWS_DIR=/mnt/c/WINDOWS
 readonly WSL_ROOT_SYSTEM32_DIR=/mnt/c/WINDOWS/system32
 readonly WSL_ROOT_TRANSPORT=/mnt/c/WINDOWS/system32/wsl.exe
-readonly WSL_ROOT_TRANSPORT_SHA256=e27cbfcbd61c44796e2cfdd031663245bda8d6e4a43c1451b1fc505333908126
+readonly WSL_ROOT_TRANSPORT_SHA256=7e9f5cee6d641481e5a942f0e08563bae9c17ee55f0aad888f9aa0be9a5d4757
 readonly WSL_ROOT_TRANSPORT_SIZE=278528
 readonly WSL_ROOT_DISTRO=Ubuntu
 readonly WSL_ROOT_KERNEL=6.6.87.2-microsoft-standard-WSL2

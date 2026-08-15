@@ -35,13 +35,13 @@
       "kind": "dynamic-loader",
       "mode": "0755",
       "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
-      "sha256": "223b94a42758f2434da331cc0aa62db1af5b456481762c5caceefa1a2d1eb8fb"
+      "sha256": "c5e80a563850d6ab5c2f2482e4202d9c1b71fbf44854b8c399e63527202c64e1"
     },
     {
       "kind": "shared-library",
       "mode": "0755",
       "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
-      "sha256": "d763925433ff9b757390549e1b20c085f5e6de27ae700fe89194178d96a8a2b0",
+      "sha256": "a3947513a02831ec692ebf13053c07614882ab54a2101fb91a1b15724062ed0c",
       "soname": "libc.so.6"
     },
     {

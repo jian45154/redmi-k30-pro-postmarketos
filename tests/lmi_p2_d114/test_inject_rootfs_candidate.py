@@ -858,7 +858,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         self.assertEqual(self.runtime_lock["schema"], "lmi-p2-d114-injector-runtime-lock/v1")
         self.assertEqual(
             digest(RUNTIME_LOCK),
-            "11d2cc4e8c327193f2acb23869376cb93838f7d9e775ead24f4755704263ed73",
+            "4f8b683713b6a38ec40b09dc5f1c93dcd49e9611cf745fc0cd5197e1925ed447",
         )
         by_path = {item["path"]: item for item in self.runtime_lock["artifacts"]}
         self.assertEqual(len(by_path), len(self.runtime_lock["artifacts"]))
@@ -968,7 +968,7 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
             "readonly WSL_ROOT_WINDOWS_DIR=/mnt/c/WINDOWS",
             "readonly WSL_ROOT_SYSTEM32_DIR=/mnt/c/WINDOWS/system32",
             "readonly WSL_ROOT_TRANSPORT=/mnt/c/WINDOWS/system32/wsl.exe",
-            "readonly WSL_ROOT_TRANSPORT_SHA256=e27cbfcbd61c44796e2cfdd031663245bda8d6e4a43c1451b1fc505333908126",
+            "readonly WSL_ROOT_TRANSPORT_SHA256=7e9f5cee6d641481e5a942f0e08563bae9c17ee55f0aad888f9aa0be9a5d4757",
             "readonly WSL_ROOT_TRANSPORT_SIZE=278528",
             "readonly WSL_ROOT_DISTRO=Ubuntu",
             "readonly WSL_ROOT_KERNEL=6.6.87.2-microsoft-standard-WSL2",
@@ -1658,8 +1658,8 @@ class InjectRootfsCandidateContractTests(unittest.TestCase):
         expected = {
             bwrap: "0abea81db798ebf6b4742ac0664802d97521547a353c2a0dbdc21d76cbbfd2c0",
             dash: "c626229526bb58ec2d0f585f3c3ae1412e6f973b4353385042d11c38d8426917",
-            loader: "223b94a42758f2434da331cc0aa62db1af5b456481762c5caceefa1a2d1eb8fb",
-            libc: "d763925433ff9b757390549e1b20c085f5e6de27ae700fe89194178d96a8a2b0",
+            loader: "c5e80a563850d6ab5c2f2482e4202d9c1b71fbf44854b8c399e63527202c64e1",
+            libc: "a3947513a02831ec692ebf13053c07614882ab54a2101fb91a1b15724062ed0c",
             proot: "e95e0da51b8948c38743704a0e751276faf95b176e11dc4f1f99bca7157fb2ab",
             talloc: "261d4fd32e2341567eeafba6d4d75684c8eeaedb9bcda04f1fd69792e6197634",
             qemu: "4a2fd0e1fb9c1ba3f63f81113ead9e96e0cdb513c64c83bb2ecfc94e1df05e4c",

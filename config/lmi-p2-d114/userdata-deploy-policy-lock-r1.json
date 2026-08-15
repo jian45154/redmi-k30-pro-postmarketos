@@ -80,7 +80,7 @@
     },
     "assembler": {
       "path": "scripts/lmi_p2_d114/assemble_userdata_image.py",
-      "sha256": "c46b0408fdcc512e56b40730c91dff9e4bff991a0190751dd6e02f5eb353122e",
+      "sha256": "1327b3840b07596f8eb877b8d7b075e07067775b1739e120dea9b6f4d0427a26",
       "size": 84891
     },
     "candidate_rebuild_lock": {
@@ -95,22 +95,22 @@
     },
     "injection_policy_lock": {
       "path": "config/lmi-p2-d114/injection-policy-lock.json",
-      "sha256": "15cac53665f18d6cbf93d975d8beef06dbc061bcfcda2731a479f4b961b9fac5",
+      "sha256": "c0ee1bd17e9fdf919098921db49245c51017ce00042d7c9a0e256a9f730b9c42",
       "size": 7469
     },
     "injector": {
       "path": "scripts/lmi_p2_d114/inject_rootfs_candidate.sh",
-      "sha256": "0da273703f808f3ad0d599835c71812f415b03651a4ee75767e9a38f4a4c213d",
+      "sha256": "dc099470f9bcf9f693152fe7f842a5aaad574e8c37ca490aea904733d57e6e0b",
       "size": 124825
     },
     "injector_launcher": {
       "path": "scripts/lmi_p2_d114/launch_inject_rootfs_candidate.sh",
-      "sha256": "c8986c0111dc2049c06b2dfd20356f30f983f48d31b97619e27c432082c8aa4c",
+      "sha256": "6edcb0794a0f70e3574bab23666e2a0df0ad5882c5077b8b5cd183a21e6d6ac7",
       "size": 20125
     },
     "injector_runtime_lock": {
       "path": "config/lmi-p2-d114/injector-runtime-lock.json",
-      "sha256": "11d2cc4e8c327193f2acb23869376cb93838f7d9e775ead24f4755704263ed73",
+      "sha256": "4f8b683713b6a38ec40b09dc5f1c93dcd49e9611cf745fc0cd5197e1925ed447",
       "size": 3149
     },
     "physical_userdata_mapping": {
@@ -135,7 +135,7 @@
     },
     "sparse_tools_lock": {
       "path": "config/lmi-p2-d114/sparse-tools-lock.json",
-      "sha256": "e8258f018496761191a4643bd3c516ae277c65b1a8b1ec2eedeff59cc1f386d0",
+      "sha256": "cdfc5b1ba9edb98254f40d64b6139e13db153ef38302a340faf8999ff533f366",
       "size": 1746
     },
     "userdata_deploy_profile_template": {

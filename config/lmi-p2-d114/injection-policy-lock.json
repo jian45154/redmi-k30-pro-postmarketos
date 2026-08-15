@@ -126,7 +126,7 @@
   "runtime": {
     "fixed": {
       "injector_runtime_lock_schema": "lmi-p2-d114-injector-runtime-lock/v1",
-      "injector_runtime_lock_sha256": "11d2cc4e8c327193f2acb23869376cb93838f7d9e775ead24f4755704263ed73",
+      "injector_runtime_lock_sha256": "4f8b683713b6a38ec40b09dc5f1c93dcd49e9611cf745fc0cd5197e1925ed447",
       "sandbox_entry_sha256": "9c587c1f521a453fd0d1b14de22cf801dead7ec3935eb73dfc0576f9a74c8a06"
     },
     "mount_required_options": [
@@ -141,7 +141,7 @@
       "pid",
       "uts"
     ],
-    "sealed_injector_script_sha256": "0da273703f808f3ad0d599835c71812f415b03651a4ee75767e9a38f4a4c213d"
+    "sealed_injector_script_sha256": "dc099470f9bcf9f693152fe7f842a5aaad574e8c37ca490aea904733d57e6e0b"
   },
   "sanitization": {
     "apk_cache": "exact-four-index-members-removed",
@@ -162,8 +162,8 @@
     "e2fsck_sha256": "2e51f521c676729920eaba694933d9d4048645f1a5789556fd0027e62d11ecc8",
     "e2image_sha256": "08377ede318c65ef308246cfd2cd8bb7047c829d9997fb2b85c9e922d5205759",
     "getfattr_sha256": "19b08ed0130464b5565205cf8b02cb39a5c656a7e55b0a4130080025f8bf4e14",
-    "host_libc_sha256": "d763925433ff9b757390549e1b20c085f5e6de27ae700fe89194178d96a8a2b0",
-    "host_loader_sha256": "223b94a42758f2434da331cc0aa62db1af5b456481762c5caceefa1a2d1eb8fb",
+    "host_libc_sha256": "a3947513a02831ec692ebf13053c07614882ab54a2101fb91a1b15724062ed0c",
+    "host_loader_sha256": "c5e80a563850d6ab5c2f2482e4202d9c1b71fbf44854b8c399e63527202c64e1",
     "lsattr_libcom_err_sha256": "6fb3115b11fe7e14c26f3e086c4dc1fb41061130869a66c976e0ea69fdb912d6",
     "lsattr_libe2p_sha256": "78b962737fc0df9fdd6b77ed284958065ff4c3ee0776251967f434b764204377",
     "lsattr_sha256": "a302ce5655825f7eec323b106d91b582cc1c231936acb927dbfd360f815b5b99",
