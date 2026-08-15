@@ -51,3 +51,48 @@ untethered — no RAM-boot assistance.** The RAM-boot-per-test era ends here.
 Residual (unchanged by this flash): the six-row keyboard in this userdata
 is the r2-payload generation; the r4 modern-layout upgrade is a separate
 on-device `apk add` (owner sudo) staged the same evening.
+
+## Follow-on same evening: r4 keyboard upgrade + session-package regression
+
+The device booted with `lmi-weston-sixrow-clients=14.0.2-r3` (keyboard
+binary `d6b9e514…`). The owner then `apk add`-ed the attested r4 package
+(`5bf587a3…`, keyboard `8cb3865b…` == build-attestation-r4). apk **purged
+`device-xiaomi-lmi-terminal-0.1.0-r3`** in the process, because every
+`device-xiaomi-lmi-terminal` build carries an EXACT dependency
+`lmi-weston-sixrow-clients=14.0.2-r<same>` — no r4 companion package exists.
+That package provides the greetd session glue (its `.pre-deinstall` runs
+`config-lifecycle remove`, which restored the stock greetd confd), so after
+the upgrade **greetd crashed → black screen** while the persistent boot
+itself was fine (SSH up, no initramfs stall).
+
+Recovery (all owner-sudo over SSH; no reflash):
+
+1. Restored the five session-glue files from the r3 terminal apk payload
+   (`greetd.toml`, `weston.ini`, `config-lifecycle`, `session`,
+   `greetd.confd`) and ran `config-lifecycle install` — `/etc/conf.d/greetd`
+   went baseline `6523d36f…` → active `5be12504…`
+   (== source-lock `greetd_active_confd_sha256`). greetd still crashed.
+2. Root cause of the second crash: `/usr/libexec/lmi-p2-d114/session` pins
+   the keyboard binary by exact sha256 in three places (integrity gate),
+   still the r3 value `d6b9e514…`; the running r4 keyboard `8cb3865b…`
+   failed the identity check, so the session exited. Patched those three
+   pins to the attested r4 hash `8cb3865b…` (verified against
+   build-attestation-r4), redeployed the one file (mode 755), rebooted.
+3. Result: greetd `[ started ]`; `weston` + `weston-keyboard-sixrow` (exe
+   `/proc` = r4 `8cb3865b…`) + `weston-terminal-sixrow` + `desktop-shell`
+   all running; six-row terminal on screen with the r4 keyboard, owner
+   confirmed arrow-key row present. Persistent boot again clean (port 23
+   never opened).
+
+r4 vs r3 is an ergonomic tweak, not a layout overhaul (both are the paged
+11-column arrow layout introduced at r2): Shift moved to the modifier row's
+leftmost slot, the bottom row always carries `/ : - .`, and digits gained
+hardware shift-pairs — hence "looks like r3" at a glance.
+
+**Release-line TODO (not a device fix):** the r4 keyboard is running on the
+device via a hand-patched session script, NOT a packaged artifact. Shipping
+r4 requires a rebuilt `device-xiaomi-lmi-terminal` that depends on
+`lmi-weston-sixrow-clients=14.0.2-r4` and pins the r4 keyboard hash in its
+`session` script — the exact-version dependency is the design that made the
+upgrade remove the r3 session package. Until that package exists, r4 is a
+device-local hand-patch, not a reproducible release configuration.
