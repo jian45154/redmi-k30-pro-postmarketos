@@ -43,7 +43,7 @@ Performed 2026-07-22 over all tracked files:
 | --- | --- | --- | --- |
 | `private/` | 33 GB | Stock/recovery images (proprietary third-party binaries), device backups, operator notes with device identifiers | Manifests + acquisition docs; users supply their own device's stock images. Pinned recovery/tool images are additionally backed up to the owner-only private vault (`lmi-recovery-images`, release `recovery-20260722`); tiers and rules in `docs/resource-inventory-and-usage-20260722.md` |
 | Raw `logs/*.txt` | — | Serial numbers, CPU IDs, bootloader tokens, MACs | Redacted copies are tracked; `scripts/87_redact_downstream_hardware_log.sh` |
-| Built boot/rootfs images | `.work/`, local exports | Policy: no binary ships without exact-hash hardware validation (see D114 readiness doc); later images (v30+ `fw`/`initfs-fw` variants, D114 userdata) stage proprietary firmware content | Per-image manifests are tracked; anyone can rebuild from the recipe |
+| Built boot/rootfs images | `.work/`, local exports | Policy: no binary ships without exact-hash hardware validation (see D114 readiness doc); later images (v30+ `fw`/`initfs-fw` variants, D114 userdata) stage proprietary firmware content | Per-image manifests are tracked; the D-v27/D-v46 downstream track is rebuildable from the recipe. The D114 P2 line is **not** downloader-reproducible today — see `docs/release/d114-p2-reproducibility-gate-2026-08-10.md` |
 | `.work/`, `tmp` scratch, `__pycache__` | 1.3 GB | Generated build state | Rebuildable via scripts |
 
 Note on firmware: the device package deliberately does **not** package

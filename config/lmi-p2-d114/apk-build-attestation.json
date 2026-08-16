@@ -1,70 +1,70 @@
 {
-    "artifact": {
-        "apk_sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
-        "apk_size": 8776,
-        "arch": "noarch",
-        "builddate": 1784522705,
-        "commit": "uncommitted-p2-d114-source-lock-v4",
-        "datahash": "75c1621e2904797e0e04e3cb04486e782569337eae66211ee057f4aa3885cce4",
-        "installed_size": 24926,
-        "maintainer": "lmi P2 maintainers <noreply@example.invalid>",
-        "name": "device-xiaomi-lmi-terminal",
-        "packager": "lmi P2 private builder <noreply@example.invalid>",
-        "pkgver": "0.1.0-r2"
-    },
-    "build": {
-        "abuild_sha256": "74c5263e215aea4f19107dd58ab1ac80fc81aae491dc5015c06eeac33d977f7b",
-        "abuild_version": "3.18.0_rc3-r1",
-        "dependency_install": "disabled-with-abuild-d",
-        "hook_integrity": "all-three-install-hooks-in-source-and-sha512sums",
-        "network_isolation_enforced": false,
-        "remote_sources": [],
-        "source_date_epoch": 1784522705,
-        "warning": "abuild warns when install hooks are also sources; this is intentional integrity hardening for this private candidate"
-    },
-    "inputs": {
-        "generated_overlay_path": "config/lmi-p2-d114/generated-overlay.json",
-        "generated_overlay_sha256": "0f7f62a3a73d654ff134da7b0cfa7f76045a7cb8c3f736913feb7a3ddfb3d567",
-        "source_lock_path": "config/lmi-p2-d114/source-lock.json",
-        "source_lock_sha256": "095edff64f5d8c6a998123a8d5eef6186d32eb16c9d2d3ced3450945b9b26bae"
-    },
-    "reproducibility": {
-        "byte_identical": true,
-        "runs": [
-            {
-                "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724/run1-device-xiaomi-lmi-terminal-0.1.0-r2.apk",
-                "sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
-                "signature_verified": true,
-                "size": 8776
-            },
-            {
-                "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724/run2-device-xiaomi-lmi-terminal-0.1.0-r2.apk",
-                "sha256": "f08120562006e74bf6cb81026c4ee5df06772d0bd1cf319e6f8247863b1ebdb4",
-                "signature_verified": true,
-                "size": 8776
-            }
-        ]
-    },
-    "schema": "lmi-p2-d114-apk-build-attestation/v1",
-    "security_boundaries": {
-        "base_ext4_direct_rw_forbidden": true,
-        "base_ext4_e2fsck_exit": 0,
-        "base_ext4_sha256": "5f351c9184fec53070886f3e9aa6a04178d2be8858ec2237b13af19e4a0e8cf6",
-        "candidate_install_key_policy": "explicit isolated host keys-dir; never allow-untrusted; do not add candidate signing key to image",
-        "device_action_performed": false,
-        "frozen_root_local_key_sha256": "27338706d8ee1771304b5b284a36530911ded5a34bd237ed4dcfaa68b192d4b3",
-        "private_key_in_artifacts": false,
-        "release_eligible": false,
-        "rootfs_injection_completed": false
-    },
-    "signature": {
-        "apk_static_sha256": "a6542dc1fdb6214be1ef462668241bfe91f301e9249c99c0c6c327269d5e5ce4",
-        "apk_static_version": "3.0.6-r0",
-        "public_key_der_sha256": "760aa02aabb114089a54f2c3518d36ab3d185d26859325812bd906e595c91ebe",
-        "public_key_name": "pmos@local-6a5d38f2.rsa.pub",
-        "public_key_path": "config/lmi-p2-d114/pmos@local-6a5d38f2.rsa.pub",
-        "public_key_sha256": "c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79e936736",
-        "verification": "OK"
-    },
-    "status": "private-d114-hardware-test-candidate"
+  "artifact": {
+    "apk_sha256": "3954171168f8623f00b6fcb976fa609988975cdf00f19331cf276e5ce5960b27",
+    "apk_size": 8776,
+    "arch": "noarch",
+    "builddate": 1784522705,
+    "commit": "uncommitted-p2-d114-source-lock-r4",
+    "datahash": "b3462d0141afe60d42ed0136376d48b50be6f5d93a1608daf8cb5889188b752b",
+    "installed_size": 24926,
+    "maintainer": "lmi P2 maintainers <noreply@example.invalid>",
+    "name": "device-xiaomi-lmi-terminal",
+    "packager": "lmi P2 private builder <noreply@example.invalid>",
+    "pkgver": "0.1.0-r4"
+  },
+  "build": {
+    "abuild_sha256": "74c5263e215aea4f19107dd58ab1ac80fc81aae491dc5015c06eeac33d977f7b",
+    "abuild_version": "3.18.0_rc3-r1",
+    "dependency_install": "disabled-with-abuild-d",
+    "hook_integrity": "all-three-install-hooks-in-source-and-sha512sums",
+    "network_isolation_enforced": false,
+    "remote_sources": [],
+    "source_date_epoch": 1784522705,
+    "warning": "abuild warns when install hooks are also sources; this is intentional integrity hardening for this private candidate"
+  },
+  "inputs": {
+    "generated_overlay_path": "config/lmi-p2-d114/generated-overlay.json",
+    "generated_overlay_sha256": "c20865e41f2d05a634d7c55fbe0dba0951cd52f38ac017902a76669e1d892848",
+    "source_lock_path": "config/lmi-p2-d114/source-lock.json",
+    "source_lock_sha256": "b1bbd8b8fbcd6e2d12fcacddfc321715e9e05495cde1ba8ffbd07ae543ee8fee"
+  },
+  "reproducibility": {
+    "byte_identical": true,
+    "runs": [
+      {
+        "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724/device-xiaomi-lmi-terminal-0.1.0-r4.apk",
+        "sha256": "3954171168f8623f00b6fcb976fa609988975cdf00f19331cf276e5ce5960b27",
+        "signature_verified": true,
+        "size": 8776
+      },
+      {
+        "path": "private/lmi-p1/recovery/d110-d114/p2-d114-r2-most-complete-build-20260724/device-xiaomi-lmi-terminal-0.1.0-r4.apk",
+        "sha256": "3954171168f8623f00b6fcb976fa609988975cdf00f19331cf276e5ce5960b27",
+        "signature_verified": true,
+        "size": 8776
+      }
+    ]
+  },
+  "schema": "lmi-p2-d114-apk-build-attestation/v1",
+  "security_boundaries": {
+    "base_ext4_direct_rw_forbidden": true,
+    "base_ext4_e2fsck_exit": 0,
+    "base_ext4_sha256": "5f351c9184fec53070886f3e9aa6a04178d2be8858ec2237b13af19e4a0e8cf6",
+    "candidate_install_key_policy": "explicit isolated host keys-dir; never allow-untrusted; do not add candidate signing key to image",
+    "device_action_performed": false,
+    "frozen_root_local_key_sha256": "27338706d8ee1771304b5b284a36530911ded5a34bd237ed4dcfaa68b192d4b3",
+    "private_key_in_artifacts": false,
+    "release_eligible": false,
+    "rootfs_injection_completed": false
+  },
+  "signature": {
+    "apk_static_sha256": "a6542dc1fdb6214be1ef462668241bfe91f301e9249c99c0c6c327269d5e5ce4",
+    "apk_static_version": "3.0.6-r0",
+    "public_key_der_sha256": "760aa02aabb114089a54f2c3518d36ab3d185d26859325812bd906e595c91ebe",
+    "public_key_name": "pmos@local-6a5d38f2.rsa.pub",
+    "public_key_path": "config/lmi-p2-d114/pmos@local-6a5d38f2.rsa.pub",
+    "public_key_sha256": "c42ba833751ab9ca164c506cd72c2c3b9a6079db09ebe2cf52838ae79e936736",
+    "verification": "OK"
+  },
+  "status": "private-d114-hardware-test-candidate"
 }

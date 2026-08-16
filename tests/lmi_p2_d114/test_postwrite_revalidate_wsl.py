@@ -9,6 +9,7 @@ import tempfile
 import unittest
 
 from tests.lmi_p2_d114 import host_bound
+from tests.lmi_p2_d114 import runtime_lock_fixture
 from unittest import mock
 
 from scripts.lmi_p2_d114 import deploy_userdata_wsl as deploy
@@ -728,7 +729,6 @@ class PostwriteRevalidateWslTests(unittest.TestCase):
         self.assertEqual(runner.calls, [])
 
     def test_local_audit_opens_only_small_contract_files_and_execute_report(self) -> None:
-        host_bound.require_path(host_bound.REPO / "private")
         root = self.fixture.root
         config = root / "config" / "lmi-p2-d114"
         config.mkdir(parents=True)
@@ -780,6 +780,7 @@ class PostwriteRevalidateWslTests(unittest.TestCase):
         os.chmod(write_path, 0o600)
 
         with (
+            runtime_lock_fixture.synthetic_runtime_host(runtime_value),
             mock.patch.object(
                 postwrite,
                 "_static_runtime_runner",
@@ -840,16 +841,18 @@ class PostwriteRevalidateWslTests(unittest.TestCase):
         ):
             self.assertFalse((root / artifacts[artifact_name]["path"]).exists())
 
-    def test_actual_runtime_v2_combines_with_static_postwrite_runner(self) -> None:
-        host_bound.require_path(host_bound.REPO / "private")
+    def test_runtime_lock_v2_combines_with_static_postwrite_runner(self) -> None:
         runtime = json.loads(
             (deploy.REPO / "config/lmi-p2-d114/fastboot-wsl-runtime-lock.json").read_text()
         )
-        with mock.patch.object(
-            postwrite,
-            "_static_runtime_runner",
-            wraps=postwrite._static_runtime_runner,
-        ) as runner:
+        with (
+            runtime_lock_fixture.synthetic_runtime_host(runtime),
+            mock.patch.object(
+                postwrite,
+                "_static_runtime_runner",
+                wraps=postwrite._static_runtime_runner,
+            ) as runner,
+        ):
             prefix, held = deploy._validate_runtime(runtime, runner)
         try:
             self.assertEqual(prefix, tuple(runtime["execution"]["argv_prefix"]))
